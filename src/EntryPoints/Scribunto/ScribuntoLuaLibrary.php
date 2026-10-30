@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\EntryPoints\GraphReads;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\CypherErrorMessage;
@@ -134,6 +135,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		$this->checkType( 'mw.neowiki.query', 1, $cypher, 'string' );
 		$this->checkTypeOptional( 'mw.neowiki.query', 2, $params, 'table', null );
 		$this->incrementExpensiveFunctionCount();
+		GraphReads::record( $this->getParser()->getOutput() );
 
 		try {
 			$rows = $this->getCypherQueryRunner()->run( $cypher, $params ?? [] );
@@ -150,6 +152,7 @@ class ScribuntoLuaLibrary extends LibraryBase {
 	public function sparqlQuery( ?string $sparql = null ): array {
 		$this->checkType( 'mw.neowiki.sparqlQuery', 1, $sparql, 'string' );
 		$this->incrementExpensiveFunctionCount();
+		GraphReads::record( $this->getParser()->getOutput() );
 
 		try {
 			$document = $this->getSparqlQueryRunner()->run( $sparql ?? '' );

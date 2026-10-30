@@ -189,6 +189,8 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		array $subjectIds,
 		Neo4jOrphanCandidates $orphanCandidates
 	): void {
+		$subjectIds = $this->subjectIdsHeldByNoPage( $transaction, $subjectIds );
+
 		if ( $subjectIds === [] ) {
 			return;
 		}
@@ -202,6 +204,35 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 		);
 
 		$this->reduceSubjectsToStubs( $transaction, $referencedSubjectIds, $orphanCandidates );
+	}
+
+	/**
+	 * A Subject node goes only once no page holds it: the page a Subject moved away from can be projected after
+	 * the page it moved to.
+	 *
+	 * @param string[] $subjectIds
+	 * @return string[]
+	 */
+	private function subjectIdsHeldByNoPage( TransactionInterface $transaction, array $subjectIds ): array {
+		if ( $subjectIds === [] ) {
+			return [];
+		}
+
+		/**
+		 * @var SummarizedResult $result
+		 */
+		$result = $transaction->run(
+			'UNWIND $subjectIds AS subjectId
+				MATCH (subject:Subject {id: subjectId})
+				WHERE NOT (:Page)-[:HasSubject]->(subject)
+				RETURN subject.id AS id',
+			[ 'subjectIds' => $subjectIds ]
+		);
+
+		return array_map(
+			fn( $record ) => $record->get( 'id' ),
+			$result->toArray()
+		);
 	}
 
 	/**

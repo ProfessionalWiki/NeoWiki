@@ -379,6 +379,36 @@ class Neo4jProjectionStoreTest extends NeoWikiIntegrationTestCase {
 		$this->assertSubjectDoesNotExist( self::GUID_2 );
 	}
 
+	/**
+	 * A Subject moved to another page: the page it left can be projected after the page it moved to.
+	 */
+	public function testSavingAPageWithoutASubjectAnotherPageNowHoldsKeepsIt(): void {
+		$store = $this->newProjectionStore();
+		$this->moveSecondSubjectToItsOwnPage( $store );
+
+		$store->savePage( TestPage::build( id: 1, mainSubject: TestSubject::build( id: self::GUID_1 ) ) );
+
+		$this->assertPageHasSubjects( [ [ 'id' => self::GUID_2, 'hs' => [ 'isMain' => true ] ] ], 2 );
+	}
+
+	public function testDeletingAPageWhoseSubjectAnotherPageNowHoldsKeepsIt(): void {
+		$store = $this->newProjectionStore();
+		$this->moveSecondSubjectToItsOwnPage( $store );
+
+		$store->deletePage( new PageId( 1 ) );
+
+		$this->assertPageHasSubjects( [ [ 'id' => self::GUID_2, 'hs' => [ 'isMain' => true ] ] ], 2 );
+	}
+
+	private function moveSecondSubjectToItsOwnPage( GraphDatabasePlugin $store ): void {
+		$store->savePage( TestPage::build(
+			id: 1,
+			mainSubject: TestSubject::build( id: self::GUID_1 ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: self::GUID_2 ) )
+		) );
+		$store->savePage( TestPage::build( id: 2, mainSubject: TestSubject::build( id: self::GUID_2 ) ) );
+	}
+
 	public function testSavingASubjectWhoseSchemaStoppedResolvingDeletesIt(): void {
 		$store = $this->newProjectionStore();
 		$store->savePage( TestPage::build(

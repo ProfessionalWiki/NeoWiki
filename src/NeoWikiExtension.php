@@ -104,8 +104,9 @@ use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\LastEditorPagesRebuilder;
+use ProfessionalWiki\NeoWiki\Application\CurrentPageProjector;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\GraphStorePageRebuilder;
 use ProfessionalWiki\NeoWiki\Application\FailureIsolatingRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicyRegistry;
@@ -143,7 +144,9 @@ use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
-use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\EntryPoints\GraphStoreProjector;
+use ProfessionalWiki\NeoWiki\EntryPoints\ProjectPageUpdate;
+use ProfessionalWiki\NeoWiki\EntryPoints\SubjectIndexer;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi;
@@ -191,6 +194,8 @@ use ProfessionalWiki\NeoWiki\Infrastructure\TitleBasedSchemaReferenceNormalizer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageProjectionLock;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\GraphReadingPageRenderings;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectCountLookup;
@@ -230,9 +235,8 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\Sparql
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\REST\SparqlRouteRegistration;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\SparqlPlugin;
 use ProfessionalWiki\NeoWiki\Persistence\DeletedPageIdsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\LastEditorPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseLastEditorPageIdsLookup;
-use ProfessionalWiki\NeoWiki\Persistence\NullPublishedSubjectIndex;
-use ProfessionalWiki\NeoWiki\Persistence\NullSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Persistence\PageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
@@ -298,6 +302,12 @@ class NeoWikiExtension {
 	 * about 100.
 	 */
 	private const int RECENTLY_EDITED_SUBJECTS_READ_BOUND = 200;
+
+	/**
+	 * How long a projection of a page waits for another projection of it before giving up. The one it waits
+	 * for can take each graph store's write timeout in turn.
+	 */
+	private const int PAGE_PROJECTION_LOCK_TIMEOUT_SECONDS = 10;
 
 	private PropertyTypeRegistry $propertyTypeRegistry;
 	private PagePropertyProviderRegistry $pagePropertyProviderRegistry;
@@ -656,58 +666,52 @@ class NeoWikiExtension {
 		return $this->pagePropertyProviderRegistry;
 	}
 
-	/**
-	 * Hook-facing write path (edit/delete/undelete/import). The projection's two halves are isolated and
-	 * logged, so a failure never aborts the triggering user operation: each backend, so one failing
-	 * backend does not starve the others, and the page-properties build, since it parses the page and
-	 * runs extension-contributed providers. See FailureIsolatingGraphDatabasePlugin and
-	 * FailureIsolatingPagePropertiesSource.
-	 *
-	 * The subject -> page index and the published Subject index are deliberately outside that isolation:
-	 * NeoWiki's own features read them rather than a graph, so they are written on the connection the
-	 * operation is already using and fail the operation with it.
-	 */
-	public function getStoreContentUC(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler(
-			$this->getIsolatingGraphDatabasePlugin(),
+	public function newSubjectIndexer(): SubjectIndexer {
+		return new SubjectIndexer(
 			$this->newSubjectPageIndex(),
 			$this->newPublishedSubjectIndex(),
-			new FailureIsolatingPagePropertiesSource(
-				$this->getPagePropertiesBuilder(),
-				LoggerFactory::getInstance( 'NeoWiki' )
+			$this->getRevisionPolicy(),
+			MediaWikiServices::getInstance()->getTitleFormatter(),
+		);
+	}
+
+	/**
+	 * Projection run once the operation that changed the page has committed. Isolated, the projection's two
+	 * halves are logged rather than thrown: each backend, so one failing backend does not starve the others, and
+	 * the page-properties build, since it parses the page and runs extension-contributed providers. See
+	 * FailureIsolatingGraphDatabasePlugin and FailureIsolatingPagePropertiesSource.
+	 */
+	public function newCurrentPageProjector( bool $isolateFailures ): CurrentPageProjector {
+		return new CurrentPageProjector(
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			$isolateFailures
+				? $this->newGraphStoreProjector(
+					$this->getIsolatingGraphDatabasePlugin(),
+					new FailureIsolatingPagePropertiesSource(
+						$this->getPagePropertiesBuilder(),
+						LoggerFactory::getInstance( 'NeoWiki' )
+					)
+				)
+				: $this->newGraphStoreProjector( $this->getGraphDatabasePlugin(), $this->getPagePropertiesBuilder() ),
+			new DatabasePageProjectionLock(
+				MediaWikiServices::getInstance()->getConnectionProvider(),
+				self::PAGE_PROJECTION_LOCK_TIMEOUT_SECONDS
+			),
+			new GraphReadingPageRenderings(
+				MediaWikiServices::getInstance()->getTitleFactory(),
+				MediaWikiServices::getInstance()->getHtmlCacheUpdater()
 			)
 		);
 	}
 
-	/**
-	 * Refresh path, for a page whose published state changed without an edit: an approval extension's
-	 * rebuild(), and the job that reprojects the pages a block hid a user on. Failures propagate so a job
-	 * fails and is retried, rather than the hook path's isolation swallowing them and leaving a skip
-	 * nobody can act on. An approval changes what a page publishes, so this writes the published Subject
-	 * index; graph rebuilds go through newPageRebuilderFor(), which does not.
-	 */
-	private function newRebuildStoreContentHandler(): OnRevisionCreatedHandler {
-		return $this->newStoreContentHandler(
-			$this->getGraphDatabasePlugin(),
-			new NullSubjectPageIndex(),
-			$this->newPublishedSubjectIndex(),
-			$this->getPagePropertiesBuilder()
-		);
-	}
-
-	private function newStoreContentHandler(
+	private function newGraphStoreProjector(
 		GraphDatabasePlugin $graphDatabasePlugin,
-		SubjectPageIndex $subjectPageIndex,
-		PublishedSubjectIndex $publishedSubjectIndex,
-		PagePropertiesSource $pagePropertiesSource,
-	): OnRevisionCreatedHandler {
-		return new OnRevisionCreatedHandler(
+		PagePropertiesSource $pagePropertiesSource
+	): GraphStoreProjector {
+		return new GraphStoreProjector(
 			$graphDatabasePlugin,
-			$subjectPageIndex,
-			$publishedSubjectIndex,
 			$pagePropertiesSource,
 			$this->getRevisionPolicy(),
-			MediaWikiServices::getInstance()->getTitleFormatter(),
 			LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
@@ -1047,8 +1051,8 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Hook-path fan-out: each backend individually wrapped so a projection failure is isolated and
-	 * logged rather than aborting the triggering user operation.
+	 * Fan-out for the projections that follow an operation on a page: each backend individually wrapped so
+	 * its failure is logged rather than failing the projection into the others.
 	 */
 	private function getIsolatingGraphDatabasePlugin(): GraphDatabasePlugin {
 		if ( !isset( $this->isolatingGraphDatabasePlugin ) ) {
@@ -1549,57 +1553,29 @@ class NeoWikiExtension {
 	}
 
 	public function newPageRebuilder(): PageRebuilder {
-		return $this->newPageRebuilderWith( $this->newRebuildStoreContentHandler() );
+		return new PageRebuilder(
+			$this->newSubjectIndexer(),
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			ProjectPageUpdate::schedule( ... )
+		);
 	}
 
-	/**
-	 * Reprojects the pages one user is the last editor of, after a block hid their name or an unblock
-	 * showed it again (#1246). Failures propagate, as on the rebuild path it is built from: this runs in
-	 * a job, where a failure is what makes the queue try again.
-	 */
-	public function newLastEditorPagesRebuilder(): LastEditorPagesRebuilder {
-		return new LastEditorPagesRebuilder(
-			new DatabaseLastEditorPageIdsLookup(
-				MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase(),
-				MediaWikiServices::getInstance()->getActorNormalization()
-			),
-			$this->newPageRebuilder(),
-			MediaWikiServices::getInstance()->getTitleFactory()
+	public function newLastEditorPageIdsLookup(): LastEditorPageIdsLookup {
+		return new DatabaseLastEditorPageIdsLookup(
+			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase(),
+			MediaWikiServices::getInstance()->getActorNormalization()
 		);
 	}
 
 	/**
 	 * Maintenance rebuild path: projects into the one store the run is scoped to, and no other. The
 	 * plugin is used unwrapped, so a projection failure escapes to the rebuild, which decides whether it
-	 * costs a page or the whole run — the hook path's isolation would swallow it and report every page
-	 * as rebuilt.
+	 * costs a page or the whole run — isolation would swallow it and report every page as rebuilt.
 	 */
-	public function newPageRebuilderFor( GraphDatabasePlugin $store ): PageRebuilder {
-		return $this->newPageRebuilderWith(
-			$this->newStoreContentHandler(
-				$store,
-				new NullSubjectPageIndex(),
-				new NullPublishedSubjectIndex(),
-				$this->getPagePropertiesBuilder()
-			)
-		);
-	}
-
-	/**
-	 * Hook paths that project a page they did not themselves write a revision for: import, undeletion,
-	 * a revision-visibility change, and a links refresh. Projects the current revision like the rebuild path,
-	 * but with the hook path's failure isolation, since a projection failure must not abort the user's operation.
-	 * The page is indexed as an edit does it, which costs reads but no write where, as on the visibility
-	 * path, no Subject changed.
-	 */
-	public function newHookPageRebuilder(): PageRebuilder {
-		return $this->newPageRebuilderWith( $this->getStoreContentUC() );
-	}
-
-	private function newPageRebuilderWith( OnRevisionCreatedHandler $handler ): PageRebuilder {
-		return new PageRebuilder(
-			$handler,
-			MediaWikiServices::getInstance()->getWikiPageFactory()
+	public function newGraphStorePageRebuilder( GraphDatabasePlugin $store ): GraphStorePageRebuilder {
+		return new GraphStorePageRebuilder(
+			MediaWikiServices::getInstance()->getWikiPageFactory(),
+			$this->newGraphStoreProjector( $store, $this->getPagePropertiesBuilder() )
 		);
 	}
 
@@ -1631,8 +1607,8 @@ class NeoWikiExtension {
 			jobQueue: new MediaWikiRebuildJobQueue(
 				MediaWikiServices::getInstance()->getJobQueueGroup()
 			),
-			newPageRebuilder: fn ( GraphDatabasePlugin $store ): PageRebuilder
-				=> $this->newPageRebuilderFor( $store ),
+			newPageRebuilder: fn ( GraphDatabasePlugin $store ): GraphStorePageRebuilder
+				=> $this->newGraphStorePageRebuilder( $store ),
 			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 			backgroundBatchSize: $backgroundBatchSize,
 		);

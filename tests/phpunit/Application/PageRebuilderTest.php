@@ -4,14 +4,13 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
-use LogicException;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyOnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectIndexer;
 use Wikimedia\Rdbms\IDBAccessObject;
 use WikiPage;
 
@@ -20,12 +19,14 @@ use WikiPage;
  */
 class PageRebuilderTest extends TestCase {
 
-	/**
-	 * The outcomes of a page that was written rather than skipped.
-	 */
-	private const array WRITE_OUTCOMES = [ PageRefreshOutcome::Refreshed, PageRefreshOutcome::Unpublished ];
+	private const int PAGE_ID = 7;
 
-	private SpyOnRevisionCreatedHandler $handler;
+	private SpySubjectIndexer $indexer;
+
+	/**
+	 * @var PageId[]
+	 */
+	private array $queuedProjections;
 
 	/**
 	 * @var int[]
@@ -33,83 +34,28 @@ class PageRebuilderTest extends TestCase {
 	private array $pageDataReads;
 
 	protected function setUp(): void {
-		$this->handler = new SpyOnRevisionCreatedHandler();
+		$this->indexer = new SpySubjectIndexer();
+		$this->queuedProjections = [];
 		$this->pageDataReads = [];
 	}
 
-	/**
-	 * @dataProvider skipOutcomeProvider
-	 * @covers \ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome::skipReason
-	 */
-	public function testEverySkipOutcomeExplainsItself( PageRefreshOutcome $outcome ): void {
-		$this->assertNotSame( '', $outcome->skipReason() );
-	}
-
-	/**
-	 * @return iterable<array{PageRefreshOutcome}>
-	 */
-	public static function skipOutcomeProvider(): iterable {
-		foreach ( PageRefreshOutcome::cases() as $outcome ) {
-			if ( !in_array( $outcome, self::WRITE_OUTCOMES, true ) ) {
-				yield $outcome->value => [ $outcome ];
-			}
-		}
-	}
-
-	/**
-	 * @dataProvider writeOutcomeProvider
-	 * @covers \ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome::skipReason
-	 */
-	public function testAnOutcomeThatWroteHasNoSkipReason( PageRefreshOutcome $outcome ): void {
-		$this->expectException( LogicException::class );
-
-		$outcome->skipReason();
-	}
-
-	/**
-	 * @return iterable<array{PageRefreshOutcome}>
-	 */
-	public static function writeOutcomeProvider(): iterable {
-		foreach ( self::WRITE_OUTCOMES as $outcome ) {
-			yield $outcome->value => [ $outcome ];
-		}
-	}
-
-	public function testReturnsRefreshedWhenHandlerWritesPage(): void {
-		$this->handler->outcome = PageRefreshOutcome::Refreshed;
-
-		$outcome = $this->newRebuilder( $this->newRevision() )
-			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
-
-		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
-	}
-
-	public function testReturnsTheOutcomeOfTheHandlerForAnExistingPage(): void {
-		$this->handler->outcome = PageRefreshOutcome::SkippedUnreadableSubjects;
-
-		$outcome = $this->newRebuilder( $this->newRevision() )
-			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
-
-		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
-	}
-
-	public function testReturnsSkippedMissingRevisionWhenNoCurrentRevision(): void {
-		$outcome = $this->newRebuilder( null )->rebuild( Title::makeTitle( NS_MAIN, 'Missing' ) );
-
-		$this->assertSame( PageRefreshOutcome::SkippedMissingRevision, $outcome );
-		$this->assertSame( [], $this->handler->calls );
-	}
-
-	public function testRebuildPassesTheCurrentRevisionToTheHandler(): void {
-		$revision = $this->newRevision();
+	public function testIndexesTheCurrentRevision(): void {
+		$revision = $this->createStub( RevisionRecord::class );
 
 		$this->newRebuilder( $revision )->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
-		$this->assertSame( [ $revision ], $this->handler->calls );
+		$this->assertSame( [ $revision ], $this->indexer->indexedRevisions );
 	}
 
-	public function testRebuildReadsPageStateFromPrimary(): void {
-		$this->newRebuilder( $this->newRevision() )
+	public function testQueuesTheProjectionOfThePage(): void {
+		$this->newRebuilder( $this->createStub( RevisionRecord::class ) )
+			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
+
+		$this->assertEquals( [ new PageId( self::PAGE_ID ) ], $this->queuedProjections );
+	}
+
+	public function testReadsPageStateFromPrimary(): void {
+		$this->newRebuilder( $this->createStub( RevisionRecord::class ) )
 			->rebuild( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
 
 		$this->assertSame(
@@ -119,16 +65,18 @@ class PageRebuilderTest extends TestCase {
 		);
 	}
 
-	public function testRebuildFromReplicaLeavesThePrimaryDatabaseAlone(): void {
-		$this->newRebuilder( $this->newRevision() )
-			->rebuildFromReplica( Title::makeTitle( NS_MAIN, 'AnyPage' ) );
+	public function testLeavesAPageWithoutACurrentRevisionAlone(): void {
+		$found = $this->newRebuilder( null )->rebuild( Title::makeTitle( NS_MAIN, 'Missing' ) );
 
-		$this->assertNotContains( IDBAccessObject::READ_LATEST, $this->pageDataReads );
+		$this->assertFalse( $found );
+		$this->assertSame( [], $this->indexer->indexedRevisions );
+		$this->assertSame( [], $this->queuedProjections );
 	}
 
 	private function newRebuilder( ?RevisionRecord $revision ): PageRebuilder {
 		$page = $this->createStub( WikiPage::class );
 		$page->method( 'getRevisionRecord' )->willReturn( $revision );
+		$page->method( 'getId' )->willReturn( $revision === null ? 0 : self::PAGE_ID );
 		$page->method( 'loadPageData' )->willReturnCallback(
 			function ( int $from ): void {
 				$this->pageDataReads[] = $from;
@@ -138,11 +86,13 @@ class PageRebuilderTest extends TestCase {
 		$factory = $this->createStub( WikiPageFactory::class );
 		$factory->method( 'newFromTitle' )->willReturn( $page );
 
-		return new PageRebuilder( $this->handler, $factory );
-	}
-
-	private function newRevision(): RevisionRecord {
-		return $this->createStub( RevisionRecord::class );
+		return new PageRebuilder(
+			$this->indexer,
+			$factory,
+			function ( PageId $pageId ): void {
+				$this->queuedProjections[] = $pageId;
+			}
+		);
 	}
 
 }
