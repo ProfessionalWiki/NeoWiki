@@ -85,6 +85,7 @@ The PropertyType determines the value's Neo4j type:
 | `boolean` | boolean |
 | `date` | list of dates: the earliest day of each value |
 | `dateTime` | list of datetimes |
+| `edtf` | list of strings (raw EDTF values) |
 | `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
 

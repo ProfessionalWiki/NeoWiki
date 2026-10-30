@@ -306,6 +306,8 @@
 	"neowiki-field-min-precision-month": "Validation message shown on a date field when only a year was entered and the property requires at least a year and month.",
 	"neowiki-field-min-precision-day": "Validation message shown on a date field when a year, or a year and month, was entered and the property requires a full date.",
 	"neowiki-property-type-date": "Label for the date (without time) property type in the schema editor",
+	"neowiki-property-type-edtf": "Label for the EDTF date property type in the schema editor",
+	"neowiki-field-invalid-edtf": "Validation error shown when the entered value is not valid Extended Date/Time Format (EDTF). Accepts EDTF levels 0, 1 and 2, for example '1985-04-12' or '15XX-12-25'.",
 	"neowiki-property-type-boolean": "Label for the boolean (true/false) property type shown in the property type selector.",
 	"neowiki-property-type-monolingualtext": "Label for the monolingual text (text plus the language it is in) property type shown in the property type selector.",
 	"neowiki-monolingual-text-more-languages": "Link under a monolingual text value in a View that reveals the texts in the languages not shown to the reader.\n\nParameters:\n* $1 - how many languages those texts are in",

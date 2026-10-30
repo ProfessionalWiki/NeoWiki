@@ -382,6 +382,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSubjectLabelsApi"
 		},
 		{
+			"path": "/neowiki/v0/edtf/humanize",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newHumanizeEdtfApi"
+		},
+		{
 			"path": "/neowiki/v0/schemas",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
@@ -528,6 +533,7 @@
 				"neowiki-property-type-select",
 				"neowiki-property-type-datetime",
 				"neowiki-property-type-date",
+				"neowiki-property-type-edtf",
 				"neowiki-property-type-boolean",
 				"neowiki-property-type-monolingualtext",
 				"neowiki-monolingual-text-more-languages",
@@ -568,6 +574,7 @@
 				"neowiki-date-input-hint-day",
 				"neowiki-field-min-precision-month",
 				"neowiki-field-min-precision-day",
+				"neowiki-field-invalid-edtf",
 				"neowiki-field-invalid-option",
 				"neowiki-field-single-value-only",
 				"neowiki-field-type-mismatch",

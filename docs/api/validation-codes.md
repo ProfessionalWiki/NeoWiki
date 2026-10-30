@@ -71,7 +71,7 @@ raising a Constraint's severity does not make an existing violation count as new
 
 A property declared `required: true` has no usable value. Fires when the Subject body has no
 Statement for the property, and when a Statement is present but its value is empty for its type:
-only whitespace (`text`, `date`, `dateTime`), no parts (`url`, `select`, `monolingualText`), no
+only whitespace (`text`, `date`, `dateTime`, `edtf`), no parts (`url`, `select`, `monolingualText`), no
 targets (`relation`), or no value at all (`number`, `boolean`).
 
 `args`: `[]`. `severity`: set by the `required` Constraint (default `warning`).
@@ -158,6 +158,12 @@ under `"month"`, or a year or year and month under `"day"`. One code per `minPre
 has its own message.
 
 `args`: `[]`. `severity`: set by the `minPrecision` Constraint (default `warning`).
+
+### `invalid-edtf`
+
+On `edtf` properties. The value is not valid Extended Date/Time Format (EDTF) at levels 0, 1 or 2.
+
+`args`: `[]`. `severity`: `error` (fixed).
 
 ### `unregistered-type`
 

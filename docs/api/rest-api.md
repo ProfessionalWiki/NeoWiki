@@ -41,6 +41,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `POST /neowiki/v0/subjects` | Create a Subject together with a page of its own, in one revision, as that page's main Subject. Body `schema` and `statements`, optional `label`, `pageTitle`, `comment` and `id` (an unused Subject ID to assign; the server mints one when it is omitted). The page is titled by `pageTitle`, or by the label, or by the Subject's ID when there is no label or the label cannot be a main-namespace title. `400` for a malformed `id` or a `pageTitle` that cannot be one; `409` when the `id` is in use or the title is taken, and only the title conflict carries `pageTitle`. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects by label; returns `id`/`label` pairs. A Subject with no label is absent. Query: `schema` (only Subjects of that Schema; omit for every Schema), `search` (label prefix), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one, itself excluded, ordered by name. Returns `{referencingSubjects: [{subject, propertyNames}], truncated}`, each `subject` carrying its page identifiers. `truncated` means more were left out; `false` does not promise there are none. Needs a Neo4j store; without one the list is empty. Query: `limit` (default 10). |
+| `GET /neowiki/v0/edtf/humanize` | Humanize an EDTF value into its reader-facing reading. Returns `{value, humanized}`, with `humanized` null when the library provides no reading. Query: `value` (required), `language` (default `en`). |
 
 ### Pages and Subjects
 
