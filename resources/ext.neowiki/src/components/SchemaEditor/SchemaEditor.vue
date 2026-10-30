@@ -387,14 +387,9 @@ defineExpose<SchemaEditorExposes>( {
 		&__property-list {
 			@media ( min-width: @min-width-breakpoint-desktop ) {
 				padding-block: ( @spacing-150 - @spacing-50 );
-				padding-inline: ( @spacing-150 - @spacing-75 ) 0;
-
-				.ext-neowiki-property-list {
-					.ext-neowiki-property-list__item {
-						border-top-right-radius: 0;
-						border-bottom-right-radius: 0;
-					}
-				}
+				/* The end side's 6px, with half the divider's 12px track, matches the 12px a row's
+					background leaves from the dialog's edge on the start side. */
+				padding-inline: ( @spacing-150 - @spacing-75 ) @spacing-35;
 			}
 		}
 

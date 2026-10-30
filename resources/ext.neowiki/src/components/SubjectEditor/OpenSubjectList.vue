@@ -123,15 +123,15 @@ function optionAt( index: number ): HTMLElement | undefined {
 	padding: 0;
 	list-style: none;
 
-	/* The unsaved dot leads, in a column every row keeps: beside a name of any length, in line
-		with the other dots, and moving nothing when it appears. */
+	/* The unsaved dot ends the row, in a column every row keeps: in line with the other dots, and
+		moving nothing when it appears. */
 	&__item {
 		box-sizing: @box-sizing-base;
 		display: grid;
-		grid-template-columns: @size-50 minmax( 0, 1fr );
+		grid-template-columns: minmax( 0, 1fr ) @size-50;
 		align-items: center;
 		gap: @spacing-12 @spacing-50;
-		padding: @spacing-50 @spacing-75;
+		padding: @spacing-50 @spacing-100;
 		border-radius: @border-radius-base;
 		cursor: pointer;
 		transition-property: @transition-property-base;
@@ -161,7 +161,7 @@ function optionAt( index: number ): HTMLElement | undefined {
 
 	&__name,
 	&__schema {
-		grid-column: 2;
+		grid-column: 1;
 	}
 
 	/* A long name wraps rather than giving way at its end: the rows are few, so there is room.
@@ -182,8 +182,11 @@ function optionAt( index: number ): HTMLElement | undefined {
 		justify-self: start;
 	}
 
+	/* On the name's first line, however many it wraps to. */
 	&__unsaved {
-		grid-area: 1 / 1;
+		grid-area: 1 / 2;
+		align-self: start;
+		margin-block-start: calc( ( 1lh - @size-50 ) / 2 );
 	}
 }
 </style>
