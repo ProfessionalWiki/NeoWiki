@@ -244,7 +244,7 @@ function sizeForKey( key: string, sign: number ): number {
  * own and centres the line inside it. An earlier draft made the element wider than a
  * one-pixel track and hung the difference over both neighbours on negative margins,
  * which buys grab area at the cost of covering the trailing edge of the pane before
- * it — and in both hosts that edge is where that pane's own scrollbar sits.
+ * it — and that edge is where that pane's own scrollbar sits.
  *
  * Occupying a track rather than overlapping one also means nothing here has to be
  * positioned. That matters beyond tidiness: Codex un-positions the wrappers around

@@ -43,6 +43,26 @@ describe( 'useEditNotices', () => {
 		expect( notices.value ).toStrictEqual( [] );
 	} );
 
+	it( 'shows none of the last request\'s notices while the next one is in flight', async () => {
+		const notice = { key: 'neowiki-editnotice-0', html: '<p>Namespace</p>' };
+		let call = 0;
+		const repository: EditNoticeRepository = {
+			getNotices: () => {
+				call++;
+
+				return call === 1 ? Promise.resolve( [ notice ] ) : new Promise<EditNotice[]>( () => {
+					// Intentionally never settles.
+				} );
+			},
+		};
+		const { notices, loadNotices } = useEditNotices( () => repository );
+		await loadNotices( PAGE_ID );
+
+		loadNotices( PAGE_ID );
+
+		expect( notices.value ).toStrictEqual( [] );
+	} );
+
 	it( 'lets the newest request win when an earlier one resolves later', async () => {
 		const slow = { key: 'stale', html: '<p>Stale</p>' };
 		const fast = { key: 'fresh', html: '<p>Fresh</p>' };
