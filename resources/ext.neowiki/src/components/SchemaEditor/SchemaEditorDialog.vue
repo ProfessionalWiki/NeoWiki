@@ -216,17 +216,7 @@ defineExpose( { hasChanged } );
 .ext-neowiki-schema-editor-dialog {
 	&.cdx-dialog {
 		.ext-neowiki-schema-dialog-size();
-
-		/* Codex's own `overflow-y: auto` is kept, so anything the columns do not scroll
-			themselves stays reachable at the body, and it is what already lets this flex item
-			shrink below its content. `display: grid` hands the bounded height down to the one
-			child. `flex-grow`, because Codex 2 leaves the body at its content's height and pushes
-			the footer down instead. */
-		.cdx-dialog__body {
-			padding: 0;
-			display: grid;
-			flex-grow: 1;
-		}
+		.ext-neowiki-dialog-grid-body();
 
 		/* Replicate the Codex default dialog header styles, which a custom
 			header slot does not get. Aligned to the start rather than the

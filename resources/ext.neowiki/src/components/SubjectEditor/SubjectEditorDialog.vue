@@ -101,6 +101,7 @@
 				<SummaryAction
 					help-text=""
 					:footer-text="saveScopeText"
+					compact-save-button
 					:save-button-label="saveButtonLabel"
 					:save-disabled="!anyChanged || saving || props.saveDisabled === true"
 					@save="handleSave"
@@ -235,9 +236,9 @@ const dialogElement = computed( (): HTMLElement | undefined =>
 // moves its footer up: it only grows.
 const grownHeight = useGrowOnlyHeight( dialogElement );
 
-const grownHeightStyle = computed( () => grownHeight.tallest.value === null ?
-	undefined :
-	{ '--ext-neowiki-dialog-grown-height': `${ grownHeight.tallest.value }px` } );
+const grownHeightStyle = computed( () => ( {
+	'--ext-neowiki-dialog-grown-height': `${ grownHeight.tallest.value }px`
+} ) );
 
 const isSchemaEditorOpen = ref( false );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
@@ -1041,14 +1042,20 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	@navigator-width: 20rem;
 	/* The form's width plus the navigator and the divider beside it. */
 	@wide-width: calc( @size-3200 + @navigator-width + @spacing-75 );
-	@height-limit: calc( @size-viewport-height-full - @size-250 );
 
-	/* The height limit is set here, not left to Codex, whose limit differs between versions: a Subject
-		that reached a limit above the height held would make its dialog move on every switch. */
+	/* The height limit is set here: a Subject that reached a limit above the height held would make
+		its dialog move on every switch.
+
+		Codex's own 16px/24px body padding is dropped by the mixin and handed to the regions inside,
+		because the border between the two surfaces is the only rule between the navigator and the
+		form and that padding would hold it short of the header's and the footer's rules.
+		Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it scopes
+		them. */
 	&.cdx-dialog {
 		.ext-neowiki-subject-dialog-header();
-		max-height: @height-limit;
-		min-height: min( var( --ext-neowiki-dialog-grown-height, 0px ), @height-limit );
+		.ext-neowiki-dialog-grid-body();
+		max-height: @ext-neowiki-dialog-height-limit;
+		min-height: min( var( --ext-neowiki-dialog-grown-height ), @ext-neowiki-dialog-height-limit );
 	}
 
 	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
@@ -1083,24 +1090,6 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		to Codex. Drop the compound and the dialog silently narrows to 512px, which no test sees. */
 	&--wide.cdx-dialog {
 		max-width: @wide-width;
-	}
-
-	/* `display: grid` hands the bounded height down: the body holds one child, which as a
-		grid item stretches to the body instead of overflowing it. Nothing here has to make the
-		body shrink below its content — Codex's own `overflow-y: auto` already zeroes its
-		automatic minimum size.
-
-		Codex's own 16px/24px padding is dropped here and handed to the regions inside, because
-		the border between the two surfaces is the only rule between the navigator and the form
-		and that padding would hold it short of the header's and the footer's rules.
-
-		`flex-grow`, because Codex 2 leaves the body at its content's height, which in a dialog
-		held taller than its content leaves a gap above the footer. Compounded, as the Schema
-		dialogs' is, to outrank Codex's dialog rules however it scopes them. */
-	&.cdx-dialog .cdx-dialog__body {
-		padding: 0;
-		display: grid;
-		flex-grow: 1;
 	}
 
 	/* Scoped to this dialog: the same list appears in the subject creator, whose body keeps
@@ -1164,13 +1153,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	/* The rule between the navigator and the form, centred in a track of its own. A border
 		rather than a painted box, which forced-colors mode would replace with the canvas. */
 	&__divider {
-		display: flex;
-		justify-content: center;
-
-		&::before {
-			content: '';
-			border-inline-start: @border-subtle;
-		}
+		justify-self: center;
+		border-inline-start: @border-subtle;
 	}
 
 	/* The list carries no inset of its own; this dialog gives it the form's, on its padded
