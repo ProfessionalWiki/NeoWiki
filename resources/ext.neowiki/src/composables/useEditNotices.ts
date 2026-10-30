@@ -29,6 +29,8 @@ export function useEditNotices( resolveRepository: () => EditNoticeRepository ):
 	async function loadNotices( pageId: number, schemaName?: string ): Promise<void> {
 		const request = ++latestRequest;
 		loading.value = true;
+		// At once: a host can stop waiting before the answer, and must not show the last request's meanwhile.
+		notices.value = [];
 		let fetched: EditNotice[] = [];
 
 		try {
