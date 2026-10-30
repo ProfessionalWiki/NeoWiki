@@ -137,8 +137,8 @@ describe( 'SummaryAction', () => {
 			return wrapper.get( '.ext-neowiki-summary-action__actions' );
 		}
 
-		// Without a note there is no extra node in the row, and no class the stylesheet keys
-		// the inline layout off.
+		// A caller that passes no note gets no extra node in the row, and no class the stylesheet
+		// keys the compact layout off.
 		it( 'leaves the action row untouched when no footer text is given', () => {
 			const wrapper = mountComponent();
 
@@ -151,9 +151,18 @@ describe( 'SummaryAction', () => {
 			const wrapper = mountComponent( { footerText: 'Saving updates 2 subjects' } );
 
 			const row = actionRow( wrapper );
-			expect( row.classes() ).toContain( 'ext-neowiki-summary-action__actions--with-text' );
+			expect( row.classes() ).toContain( 'ext-neowiki-summary-action__actions--compact' );
 			expect( row.element.children ).toHaveLength( 2 );
 			expect( row.element.children[ 0 ].textContent?.trim() ).toBe( 'Saving updates 2 subjects' );
+		} );
+
+		// So a note that comes and goes does not move the button it sits beside.
+		it( 'keeps the compact layout while a caller that passes a note has none to show', () => {
+			const wrapper = mountComponent( { footerText: '' } );
+
+			const row = actionRow( wrapper );
+			expect( row.classes() ).toContain( 'ext-neowiki-summary-action__actions--compact' );
+			expect( row.element.children ).toHaveLength( 1 );
 		} );
 
 		// The block above the row keeps its own slot: the two are shown together.
