@@ -3777,6 +3777,20 @@ describe( 'SubjectEditorDialog', () => {
 				expect( wrapper.find( '.ext-neowiki-edit-notice' ).text() ).toBe( 'Heads up' );
 			} );
 
+			it( 'opens without the notices of the last opening when the new ones take a while', async () => {
+				const wrapper = await mountWaitingForNotices();
+				notices.release( [ NOTICE ] );
+				await flushPromises();
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				expect( exposedToHost( wrapper ).shown ).toBe( true );
+				expect( wrapper.find( '.ext-neowiki-edit-notice' ).exists() ).toBe( false );
+			} );
+
 			it( 'waits for them again on a later opening, however long the last one stayed open', async () => {
 				const wrapper = await mountWaitingForNotices();
 				await vi.advanceTimersByTimeAsync( 300 );
