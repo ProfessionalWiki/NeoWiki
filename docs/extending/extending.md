@@ -98,6 +98,9 @@ class MyExtFrontendModulesHook implements NeoWikiGetFrontendModulesHook {
 Example: [`src/RedHerbFrontendModulesHook.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/RedHerbFrontendModulesHook.php). The module is plain
 JavaScript with no build step; [TypeScript](javascript.md#authoring-in-typescript) is optional.
 
+NeoWiki's UI starts once the modules this hook names have loaded or failed to load, so what they register as they run
+is in place before it reads any data, and a slow module delays it. It does not wait for a module you load yourself.
+
 ## Internal surfaces
 
 Not for extensions to build on, however reachable:

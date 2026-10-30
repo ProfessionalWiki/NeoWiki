@@ -13,6 +13,7 @@ import { ValueType, newStringValue } from '@/domain/Value';
 function setupMwHook(): void {
 	const hooks: Record<string, { args: unknown[] | null; handlers: ( ( ...a: unknown[] ) => void )[] }> = {};
 	( globalThis as any ).mw = {
+		config: { get: (): null => null },
 		hook: ( name: string ) => {
 			hooks[ name ] ??= { args: null, handlers: [] };
 			const h = hooks[ name ];
