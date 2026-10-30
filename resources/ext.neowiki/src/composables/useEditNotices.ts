@@ -4,6 +4,8 @@ import type { EditNoticeRepository } from '@/application/EditNoticeRepository';
 
 interface EditNoticesComposable {
 	notices: Ref<EditNotice[]>;
+	/** Whether the newest request has yet to settle. */
+	loading: Ref<boolean>;
 	loadNotices: ( pageId: number, schemaName?: string ) => Promise<void>;
 }
 
@@ -19,6 +21,7 @@ interface EditNoticesComposable {
  */
 export function useEditNotices( resolveRepository: () => EditNoticeRepository ): EditNoticesComposable {
 	const notices = ref<EditNotice[]>( [] );
+	const loading = ref( false );
 	// The creator refetches whenever the Schema changes, so two selections can be in flight at once.
 	// Only the newest request may write, or a slower earlier one lands on top of it.
 	let latestRequest = 0;
@@ -26,6 +29,7 @@ export function useEditNotices( resolveRepository: () => EditNoticeRepository ):
 	// Advisory to the last step: an editor must open whether or not its notices could be fetched.
 	async function loadNotices( pageId: number, schemaName?: string ): Promise<void> {
 		const request = ++latestRequest;
+		loading.value = true;
 
 		try {
 			const fetched = await resolveRepository().getNotices( pageId, schemaName );
@@ -38,7 +42,11 @@ export function useEditNotices( resolveRepository: () => EditNoticeRepository ):
 				notices.value = [];
 			}
 		}
+
+		if ( request === latestRequest ) {
+			loading.value = false;
+		}
 	}
 
-	return { notices, loadNotices };
+	return { notices, loading, loadNotices };
 }

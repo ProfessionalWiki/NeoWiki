@@ -6,7 +6,11 @@
 		<CdxDialog
 			:open="visible"
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
-			:class="{ 'ext-neowiki-subject-editor-dialog--wide': showsNavigator }"
+			:class="{
+				'ext-neowiki-subject-editor-dialog--wide': showsNavigator,
+				'ext-neowiki-subject-editor-dialog--new-root': props.rootIsNew === true
+			}"
+			:style="grownHeightStyle"
 			:title="dialogTitle"
 			:subtitle="headerSubjectId"
 			:use-close-button="true"
@@ -18,7 +22,6 @@
 			<div
 				ref="content"
 				class="ext-neowiki-subject-editor-dialog__content"
-				:style="{ '--ext-neowiki-pane-size': paneSize.cssSize.value }"
 				:inert="saving || undefined"
 				:aria-busy="pending || undefined"
 			>
@@ -26,7 +29,6 @@
 
 				<div
 					v-if="showsNavigator"
-					:id="navigatorId"
 					class="ext-neowiki-subject-editor-dialog__surface"
 				>
 					<OpenSubjectList
@@ -40,20 +42,15 @@
 				<!-- On the navigator's own condition: the second track exists only alongside it,
 					and a divider outside that would hold a track open for a column that is
 					not there. -->
-				<PaneDivider
+				<div
 					v-if="showsNavigator"
 					class="ext-neowiki-subject-editor-dialog__divider"
-					:label="$i18n( 'neowiki-subject-editor-resize-navigator' ).text()"
-					:controls="navigatorId"
-					:size="paneSize.size.value"
-					:min="paneSize.minSize.value"
-					:max="paneSize.maxSize.value"
-					:disabled="!paneSize.resizable.value"
-					@resize="paneSize.resizeTo"
-					@commit="paneSize.persist"
 				/>
 
-				<div class="ext-neowiki-subject-editor-dialog__surface">
+				<div
+					ref="formScroller"
+					class="ext-neowiki-subject-editor-dialog__surface"
+				>
 					<div class="ext-neowiki-subject-editor-dialog__panels">
 						<CdxProgressBar
 							v-if="pending"
@@ -134,7 +131,7 @@ import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectE
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxDialog, CdxMessage, CdxProgressBar, useGeneratedId } from '@wikimedia/codex';
+import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -146,8 +143,7 @@ import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
-import PaneDivider, { PANE_DIVIDER_SIZE } from '@/components/common/PaneDivider.vue';
-import { usePaneSize } from '@/composables/usePaneSize.ts';
+import { useGrowOnlyHeight } from '@/composables/useGrowOnlyHeight.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSaveGuard } from '@/composables/useSaveGuard.ts';
@@ -231,28 +227,26 @@ interface EditPane {
 
 const content = ref<HTMLElement | null>( null );
 
-// Named for the divider to point at, and generated because this dialog opens a schema
-// editor with a divider of its own.
-const navigatorId = useGeneratedId( 'ext-neowiki-subject-navigator' );
+// Codex hands out no ref to the dialog element itself.
+const dialogElement = computed( (): HTMLElement | undefined =>
+	content.value?.closest<HTMLElement>( '.cdx-dialog' ) ?? undefined );
 
-// Its own key rather than the schema editor's: that editor opens inside this dialog, and
-// this one is the wider of the two, so one shared width would be clamped away here.
-const paneSize = usePaneSize( content, {
-	defaultSize: 384,
-	minSize: 256,
-	// Wide enough for the form's own fields and its scrollbar; below it the statement rows
-	// scroll sideways instead of wrapping.
-	minOtherSize: 360,
-	dividerSize: PANE_DIVIDER_SIZE,
-	storageKey: 'neowiki-subject-editor-pane-size'
-} );
+// Held at the tallest it has been this session, so that neither a field taken away nor a switch to a shorter Subject
+// moves its footer up: it only grows, and from its pinned top only downwards.
+const grownHeight = useGrowOnlyHeight( dialogElement );
+
+const grownHeightStyle = computed( () => grownHeight.tallest.value === null ?
+	undefined :
+	{ '--ext-neowiki-dialog-grown-height': `${ grownHeight.tallest.value }px` } );
 
 const isSchemaEditorOpen = ref( false );
 // Mirrors the prop so a schema saved through the nested SchemaEditorDialog takes effect here
 // without waiting for the host to pass a new one down.
 const currentSchema = shallowRef<Schema>( props.schema );
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
-const { notices, loadNotices } = useEditNotices( () => NeoWikiExtension.getInstance().getEditNoticeRepository() );
+const { notices, loading: noticesLoading, loadNotices } = useEditNotices(
+	() => NeoWikiExtension.getInstance().getEditNoticeRepository()
+);
 const subjectRepository = NeoWikiServices.getSubjectRepository();
 const schemaRepository = NeoWikiServices.getSchemaRepository();
 
@@ -271,14 +265,16 @@ function setPaneRef( id: string, el: unknown ): void {
 // until what the root's form needs has loaded.
 const loadedRoot = shallowRef<Subject | null>( null );
 
-// The form shows complete or not at all.
-const shown = computed( (): boolean => props.open && loadedRoot.value !== null );
-
 // Once reading what the form needs takes a while, the dialog shows that it is reading, rather than leave the control
 // that opened it looking inert.
 const PENDING_DELAY_MS = 300;
 const readingLong = ref( false );
 let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+// The form shows complete or not at all, and with its notices, so that none lands above it and pushes it down. Notices
+// that take longer than that delay are not waited for: an editor must open whether or not they could be fetched.
+const shown = computed( (): boolean =>
+	props.open && loadedRoot.value !== null && ( !noticesLoading.value || readingLong.value ) );
 
 const pending = computed( (): boolean => props.open && loadedRoot.value === null && readingLong.value );
 const visible = computed( (): boolean => shown.value || pending.value );
@@ -473,6 +469,28 @@ const openSubjects = computed( (): Subject[] => panes.value.map(
 const showsNavigator = computed( (): boolean => extraPanes.value.length > 0 );
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
+
+// The panes share one scroller, so each keeps its own place in it here while another is on screen. One that is not
+// open any more, after a session has started over, has no place to keep.
+const formScroller = ref<HTMLElement | null>( null );
+const scrollPositions = new Map<string, number>();
+
+// Read before the switch renders, and restored once it has: `v-show` swaps the panes after post-flush watchers have
+// run, and a position set before the pane it belongs to shows is cut to the height of the one it replaces.
+watch( activePaneId, async ( shownId, hiddenId ) => {
+	const scroller = formScroller.value;
+
+	if ( scroller === null ) {
+		return;
+	}
+
+	if ( openIds.value.includes( hiddenId ) ) {
+		scrollPositions.set( hiddenId, scroller.scrollTop );
+	}
+
+	await nextTick();
+	scroller.scrollTop = scrollPositions.get( shownId ) ?? 0;
+} );
 
 // Tells one opening of the dialog from the next. The watcher further down bumps it, for an
 // opening and a replaced root alike, and so does unmounting. A fetch that outlives its opening is
@@ -670,6 +688,8 @@ function onDialogUpdateOpen( value: boolean ): void {
 // earlier session opened or reported carries into the next.
 function startSession(): void {
 	openEpoch.value += 1;
+	grownHeight.reset();
+	scrollPositions.clear();
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
@@ -698,13 +718,8 @@ async function loadRoot(): Promise<void> {
 			return;
 		}
 
-		clearTimeout( pendingTimer );
 		dependentSubjectEditing.startFrom( loaded.dependentSubjects, rootIsNew );
 		loadedRoot.value = loaded.subject;
-		// A task later: Codex focuses the dialog's first focusable element one or two ticks
-		// after it opens, depending on its version, and would otherwise win. Without scrolling:
-		// the form is at its top already, and focusing the pane itself would shift it by its padding.
-		focusTimer = setTimeout( () => focusPane( rootPaneId.value, { preventScroll: true } ) );
 	} catch ( error ) {
 		if ( epoch !== openEpoch.value ) {
 			return;
@@ -716,6 +731,16 @@ async function loadRoot(): Promise<void> {
 		close();
 	}
 }
+
+// A task later: Codex focuses the dialog's first focusable element one or two ticks after it opens, depending on its
+// version, and would otherwise win. Without scrolling: the form is at its top already, and focusing the pane itself
+// would shift it by its padding.
+watch( shown, ( isShown ) => {
+	if ( isShown ) {
+		clearTimeout( focusTimer );
+		focusTimer = setTimeout( () => focusPane( rootPaneId.value, { preventScroll: true } ) );
+	}
+} );
 
 // Fetched per opening: approval state and the viewer's permissions both change
 // without an edit. Keyed on the page being viewed and on the root Subject's Schema.
@@ -743,8 +768,6 @@ onBeforeUnmount( () => {
 } );
 
 // When no field can take the focus, the pane holds it: that is what its tabindex="-1" is for.
-// Panes share one scroller, so it is the focus's own scrolling that shows a pane opened from
-// further down a form from its top.
 async function focusPane( paneId: string, options?: { preventScroll: boolean } ): Promise<void> {
 	await nextTick();
 
@@ -1008,15 +1031,20 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-editor-dialog {
-	/* Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex,
-		and `align-items: baseline` comes from `--default`, which this header now carries again.
-		Both are deliberate departures — the header is static text beside a 32px close button,
-		so on one line the button sets the height and baseline sits the title high in it. */
-	.cdx-dialog__header {
-		align-items: center;
-		padding-block: @spacing-50;
+	/* Fixed: the form beside it keeps its width, so resizing the navigator would resize the
+		dialog. In a window too narrow for both, the form gives up width first, and the navigator
+		only once the form would have less than 60% of the dialog.
+		A literal because Codex's size scale has no step between `@size-1600` and `@size-2400`. */
+	@navigator-width: 20rem;
+	/* The form's width plus the navigator and the divider beside it. */
+	@wide-width: calc( @size-3200 + @navigator-width + @spacing-75 );
+
+	&.cdx-dialog {
+		.ext-neowiki-subject-dialog-header();
+		min-height: min( var( --ext-neowiki-dialog-grown-height, 0px ), calc( @size-viewport-height-full - @size-250 ) );
 	}
 
 	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
@@ -1044,12 +1072,13 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		}
 	}
 
+	/* Widened by the navigator alone, so the form keeps the width it had.
+
+		Compounds `.cdx-dialog` because Codex sets `max-width: 32rem` on it, in a sheet the
+		component injects at runtime, after our own linked one — so an equal-specificity tie goes
+		to Codex. Drop the compound and the dialog silently narrows to 512px, which no test sees. */
 	&--wide.cdx-dialog {
-		/* Compounds `.cdx-dialog` because Codex sets `max-width: 32rem` on it, in a sheet the
-			component injects at runtime, after our own linked one — so an equal-specificity tie goes
-			to Codex. Drop the compound and the dialog silently narrows to 512px, which no test sees.
-			A literal because the scale stops short: Codex's largest size token is `@size-5600`. */
-		max-width: 80rem;
+		max-width: @wide-width;
 	}
 
 	/* `display: grid` hands the bounded height down: the body holds one child, which as a
@@ -1059,10 +1088,15 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 
 		Codex's own 16px/24px padding is dropped here and handed to the regions inside, because
 		the border between the two surfaces is the only rule between the navigator and the form
-		and that padding would hold it short of the header's and the footer's rules. */
-	.cdx-dialog__body {
+		and that padding would hold it short of the header's and the footer's rules.
+
+		`flex-grow`, because Codex 2 leaves the body at its content's height, which in a dialog
+		held taller than its content leaves a gap above the footer. Compounded, as the Schema
+		dialogs' is, to outrank Codex's dialog rules however it scopes them. */
+	&.cdx-dialog .cdx-dialog__body {
 		padding: 0;
 		display: grid;
+		flex-grow: 1;
 	}
 
 	/* Scoped to this dialog: the same list appears in the subject creator, whose body keeps
@@ -1099,11 +1133,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	/* `--wide` is bound to the same condition as the navigator's own `v-if`. Declaring both
 		columns unconditionally would leave a navigator-wide void beside a form with no
 		navigator to fill it. */
-	/* The reader's width, bounded in script rather than here: the observed width this is
-		divided against is a border box, which `100%` in a track is not. This grid takes no
-		inline padding or border of its own, for the same reason. */
 	&--wide &__content {
-		grid-template-columns: var( --ext-neowiki-pane-size, @size-2400 ) @spacing-75 minmax( 0, 1fr );
+		grid-template-columns: min( @navigator-width, 40% ) @spacing-75 minmax( 0, 1fr );
 	}
 
 	/* Both columns of the second row: a scroll container holding one inner element that
@@ -1121,9 +1152,21 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		min-width: 0;
 		min-height: 0;
 		overflow-y: auto;
-		/* Held whether or not it scrolls, so the width the divider's bound was worked out
-			against is the width the content actually gets. */
+		/* Held whether or not it scrolls, so a Subject long enough to scroll lays its fields
+			out as wide as one that is not. */
 		scrollbar-gutter: stable;
+	}
+
+	/* The rule between the navigator and the form, centred in a track of its own. A border
+		rather than a painted box, which forced-colors mode would replace with the canvas. */
+	&__divider {
+		display: flex;
+		justify-content: center;
+
+		&::before {
+			content: '';
+			border-inline-start: @border-subtle;
+		}
 	}
 
 	/* The list carries no inset of its own; this dialog gives it the form's, on its padded
@@ -1146,5 +1189,14 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	&__partial-save {
 		margin: 0 0 @spacing-50;
 	}
+}
+
+/* A new root is what the creator opens this dialog on, in place of its Schema step, whose backdrop
+	already dims the page. Codex fades every dialog's backdrop in, the dialog with it, which would
+	take the dimming away and bring it back; it offers no dialog that opens without the fade. Where
+	the creator is opened on a Schema, the step is on screen only while the Schema loads, so this
+	dialog appears without the fade the step had barely begun. */
+.cdx-dialog-backdrop.cdx-dialog-fade-enter-from:has( > .ext-neowiki-subject-editor-dialog--new-root ) {
+	opacity: 1;
 }
 </style>

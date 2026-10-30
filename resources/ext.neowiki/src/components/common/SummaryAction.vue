@@ -35,7 +35,7 @@
 
 		<div
 			class="ext-neowiki-summary-action__actions"
-			:class="{ 'ext-neowiki-summary-action__actions--with-text': props.footerText !== '' }"
+			:class="{ 'ext-neowiki-summary-action__actions--compact': props.footerText !== undefined }"
 		>
 			<p
 				v-if="props.footerText"
@@ -73,8 +73,9 @@ const props = withDefaults(
 		helpText: string;
 		saveButtonLabel: string;
 		saveDisabled: boolean;
-		// A note about what the save does, shown in the button row. With one, the button
-		// sizes to its label rather than spanning the row.
+		// A note about what the save does, shown in the button row. A caller that passes one, even
+		// an empty one, gets the button sized to its label at the row's end, so a note that comes
+		// and goes does not move it.
 		footerText?: string;
 		saveButtonAction?: 'progressive' | 'destructive';
 		saveButtonIcon?: Icon;
@@ -82,7 +83,7 @@ const props = withDefaults(
 		placeholder?: string;
 	}>(),
 	{
-		footerText: '',
+		footerText: undefined,
 		saveButtonAction: 'progressive',
 		saveButtonIcon: () => cdxIconCheck,
 		// Default to the edit-summary wording; callers such as the delete dialog override these
@@ -197,9 +198,9 @@ defineExpose( { submit: onSaveClick } );
 			max-width: @max-width-base;
 		}
 
-		&--with-text {
+		&--compact {
 			align-items: center;
-			justify-content: space-between;
+			justify-content: flex-end;
 
 			.cdx-button {
 				width: auto;
