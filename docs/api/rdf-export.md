@@ -54,8 +54,10 @@ an `xsd:anyURI` literal, so nothing is lost. The other value types map to `xsd` 
 `xsd:string`, `number` → `xsd:decimal` (or `xsd:integer` when fractionless), `boolean` → `xsd:boolean`, `date` →
 `xsd:date`, `xsd:gYearMonth` or `xsd:gYear` by the value's precision, `dateTime` → `xsd:dateTime`. Oxigraph leaves
 `xsd:gYear` and `xsd:gYearMonth` values out of a `<` or `>` comparison with an `xsd:date`; `YEAR()` covers all three
-on Oxigraph and QLever. A `monolingualText` value projects instead as one **language-tagged literal** per part
-(`"Zinema"@eu`, datatype `rdf:langString`). Extensions map their own property types via
+on Oxigraph and QLever. An `edtf` value projects as its raw string (`xsd:edtf`) plus the simplified values it
+contains, each in the `xsd` datatype of its precision. A `monolingualText` value projects instead as one
+**language-tagged literal** per part (`"Zinema"@eu`, datatype `rdf:langString`). Extensions map their own property
+types via
 [`addRdfValueMapper`](../extending/property-types.md#projection). A Statement whose property type has no
 registered mapper — including an unregistered type — is omitted from the projection.
 

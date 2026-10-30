@@ -13,6 +13,7 @@ import SelectDisplay from '@/components/Value/SelectDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { DateType } from '@/domain/propertyTypes/Date.ts';
+import { EdtfType } from '@/domain/propertyTypes/Edtf.ts';
 import { BooleanType } from '@/domain/propertyTypes/Boolean.ts';
 import BooleanDisplay from '@/components/Value/BooleanDisplay.vue';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText.ts';
@@ -151,6 +152,14 @@ export class NeoWikiExtension {
 			valueEditor: DateInput,
 			attributesEditor: DateAttributesEditor,
 			label: 'neowiki-property-type-date',
+			icon: cdxIconCalendar,
+		} );
+
+		registry.registerType( EdtfType.typeName, {
+			valueDisplayComponent: TextDisplay,
+			valueEditor: TextInput,
+			attributesEditor: BooleanAttributesEditor,
+			label: 'neowiki-property-type-edtf',
 			icon: cdxIconCalendar,
 		} );
 

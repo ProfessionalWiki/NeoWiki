@@ -62,6 +62,7 @@ export * from './domain/propertyTypes/Boolean';
 export * from './domain/propertyTypes/DateTime';
 export * from './domain/propertyTypes/dateTimeConversion';
 export * from './domain/propertyTypes/Date';
+export * from './domain/propertyTypes/Edtf';
 export * from './domain/propertyTypes/MonolingualText';
 export * from './domain/propertyTypes/Number';
 export * from './domain/propertyTypes/Relation';
