@@ -21,9 +21,13 @@ fi
 # bind mount is up, which is after the build-time composer install in the
 # Dockerfile. Run composer update at MW root once so the lock file regenerates
 # with NeoWiki's merged deps. The vendor directory is bind-mounted back to
-# the host so the merged state is also visible to IDEs and AI tooling. Marker
-# file makes this idempotent across container restarts.
-if [ -d "$NW_DIR" ] && [ ! -f "$NW_MERGED_MARKER" ]; then
+# the host so the merged state is also visible to IDEs and AI tooling. The
+# marker file alone is not enough: it lives in the bind-mounted vendor, so it
+# survives a dev image rebuild while the container's own composer.lock (MW
+# REL1_43 ships none and dev-mw does not run composer at build) does not —
+# without the lock check, maintenance/update.php refuses to run. So re-run
+# whenever either is missing.
+if [ -d "$NW_DIR" ] && { [ ! -f "$NW_MERGED_MARKER" ] || [ ! -f "$MW_ROOT/composer.lock" ]; }; then
     echo "[dev-entrypoint] merging NeoWiki composer deps into MW root vendor..."
     (cd "$MW_ROOT" && composer update --no-interaction --optimize-autoloader)
     # vendor/ is bind-mounted back to host. Make it host-deletable.
