@@ -97,13 +97,12 @@ const emit = defineEmits<{
 
 const root = ref<HTMLElement | null>( null );
 
-// Named for the divider to point at. Generated rather than fixed: a schema editor opens
-// inside the subject editor's dialog, so two of these can be on the page at once.
+// Named for the divider to point at. Generated rather than fixed: a Schema dialog can open
+// over another, so two of these can be on the page at once.
 const propertyListId = useGeneratedId( 'ext-neowiki-property-list' );
 
 // One preference across all five dialogs this editor appears in: same two columns, and
-// every one of those dialogs is the same width. Its own key, not the subject editor's,
-// whose dialog is wider — sharing one would let a nudge here overwrite a choice there.
+// every one of those dialogs is the same width.
 const paneSize = usePaneSize( root, {
 	defaultSize: 320,
 	minSize: 192,
