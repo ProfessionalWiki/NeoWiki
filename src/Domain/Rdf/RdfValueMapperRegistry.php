@@ -4,9 +4,18 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Rdf;
 
+use EDTF\EdtfFactory;
+use EDTF\EdtfValue;
+use EDTF\Model\ExtDate;
+use EDTF\Model\ExtDateTime;
+use EDTF\Model\Interval;
+use EDTF\Model\Season;
+use EDTF\Model\Set;
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -68,6 +77,7 @@ class RdfValueMapperRegistry {
 		$registry->registerMapper( BooleanType::NAME, self::mapBoolean( ... ) );
 		$registry->registerMapper( DateType::NAME, self::mapDate( ... ) );
 		$registry->registerMapper( DateTimeType::NAME, self::mapDateTime( ... ) );
+		$registry->registerMapper( EdtfType::NAME, self::mapEdtf( ... ) );
 		$registry->registerMapper( MonolingualTextType::NAME, self::mapMonolingualText( ... ) );
 
 		return $registry;
@@ -191,6 +201,127 @@ class RdfValueMapperRegistry {
 			DatePrecision::Day => 'date',
 			null => null,
 		};
+	}
+
+	/**
+	 * @return RdfTerm[]
+	 */
+	private static function mapEdtf( NeoValue $value ): array {
+		$scalars = $value->toScalars();
+
+		if ( !is_array( $scalars ) ) {
+			return [];
+		}
+
+		$terms = [];
+
+		foreach ( $scalars as $part ) {
+			if ( !is_string( $part ) || trim( $part ) === '' ) {
+				continue;
+			}
+
+			$terms[] = RdfLiteralFactory::typed( $part, 'edtf' );
+
+			foreach ( self::edtfToIsoStrings( $part ) as [ $lexicalForm, $xsdType ] ) {
+				$terms[] = RdfLiteralFactory::typed( $lexicalForm, $xsdType );
+			}
+		}
+
+		return $terms;
+	}
+
+	/**
+	 * @return array<int, array{string, string}>
+	 */
+	private static function edtfToIsoStrings( string $edtf ): array {
+		$parsingResult = EdtfFactory::newParser()->parse( $edtf );
+
+		if ( !$parsingResult->isValid() ) {
+			return [];
+		}
+
+		try {
+			$candidates = self::edtfValueToIsoStrings( $parsingResult->getEdtfValue() );
+		} catch ( InvalidArgumentException ) {
+			return [];
+		}
+
+		$isoStrings = [];
+
+		foreach ( $candidates as [ $lexicalForm, $kind ] ) {
+			if ( $kind === 'date' ) {
+				$xsdType = self::xsdDateType( PartialDate::tryParse( $lexicalForm )?->precision );
+
+				if ( $xsdType !== null ) {
+					$isoStrings[] = [ $lexicalForm, $xsdType ];
+				}
+			} elseif ( $kind === 'dateTime' && DateTimeProperty::parseStrictDateTime( $lexicalForm ) !== null ) {
+				$isoStrings[] = [ $lexicalForm, 'dateTime' ];
+			}
+		}
+
+		return $isoStrings;
+	}
+
+	/**
+	 * @return array<int, array{string, string}>
+	 */
+	private static function edtfValueToIsoStrings( EdtfValue $edtf ): array {
+		if ( $edtf instanceof Set ) {
+			$isoStrings = [];
+
+			foreach ( $edtf->getDates() as $date ) {
+				array_push( $isoStrings, ...self::edtfValueToIsoStrings( $date ) );
+			}
+
+			return $isoStrings;
+		}
+
+		if ( $edtf instanceof Interval ) {
+			return [];
+		}
+
+		if ( $edtf instanceof Season ) {
+			return array_map(
+				static fn( int $month ): array => [ self::buildDateString( new ExtDate( $edtf->getYear(), $month ) ), 'date' ],
+				$edtf->getMonths()
+			);
+		}
+
+		if ( $edtf instanceof ExtDateTime ) {
+			return [ [ self::buildDateString( $edtf->getDate() ) . self::buildTimeString( $edtf ), 'dateTime' ] ];
+		}
+
+		if ( $edtf instanceof ExtDate ) {
+			return [ [ self::buildDateString( $edtf ), 'date' ] ];
+		}
+
+		throw new InvalidArgumentException( 'Unsupported EdtfValue' );
+	}
+
+	private static function buildDateString( ExtDate $edtf ): string {
+		if ( $edtf->getYear() === null ) {
+			throw new InvalidArgumentException( 'Null years have no xsd equivalent' );
+		}
+
+		if ( $edtf->getDay() !== null ) {
+			return sprintf( '%04d-%02d-%02d', $edtf->getYear(), $edtf->getMonth() ?? 1, $edtf->getDay() );
+		}
+
+		if ( $edtf->getMonth() !== null ) {
+			return sprintf( '%04d-%02d', $edtf->getYear(), $edtf->getMonth() );
+		}
+
+		return sprintf( '%04d', $edtf->getYear() );
+	}
+
+	private static function buildTimeString( ExtDateTime $edtf ): string {
+		return sprintf(
+			'T%02d:%02d:%02dZ',
+			$edtf->getHour(),
+			$edtf->getMinute(),
+			$edtf->getSecond()
+		);
 	}
 
 	/**

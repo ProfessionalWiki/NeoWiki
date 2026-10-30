@@ -177,6 +177,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetRecentlyEditedSubjectsApi;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryHostSubjects;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\HumanizeEdtfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\MintSubjectIdsApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\CypherQueryApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\REST\Neo4jRouteRegistration;
@@ -2471,6 +2472,10 @@ class NeoWikiExtension {
 
 	public static function newGetSubjectLabelsApi(): GetSubjectLabelsApi {
 		return new GetSubjectLabelsApi();
+	}
+
+	public static function newHumanizeEdtfApi(): HumanizeEdtfApi {
+		return new HumanizeEdtfApi();
 	}
 
 	public static function newGetReferencingSubjectsApi(): GetReferencingSubjectsApi {

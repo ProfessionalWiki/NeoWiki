@@ -8,6 +8,7 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\RelationType;
@@ -36,6 +37,7 @@ class PropertyTypeRegistry implements PropertyTypeLookup {
 		$registry->registerType( new RelationType( $schemaReferenceParser ) );
 		$registry->registerType( new DateTimeType() );
 		$registry->registerType( new DateType() );
+		$registry->registerType( new EdtfType() );
 		$registry->registerType( new MonolingualTextType() );
 		return $registry;
 	}

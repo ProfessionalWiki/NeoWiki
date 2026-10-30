@@ -52,7 +52,7 @@ The first value of the property, type-converted for Lua:
 
 | Property type | Returned type |
 |---------------|---------------|
-| `text`, `url`, `date`, `dateTime` | string |
+| `text`, `url`, `date`, `dateTime`, `edtf` | string |
 | `select` | string (the option's label, or the stored value when the option cannot be looked up) |
 | `number` | number |
 | `boolean` | boolean |
@@ -320,6 +320,7 @@ those are set. Beyond that core, the fields depend on `type`:
 | `number` | — | `precision`, `minimum`, `maximum` |
 | `date` | — | `minimum`, `maximum`, `minPrecision` (absent means `"day"`) |
 | `dateTime` | — | `minimum`, `maximum` |
+| `edtf` | — | — |
 | `select` | `multiple`, `options` (1-indexed list of `{ id, label }` entries) | — |
 | `relation` | `multiple`, `targetSchemas` (1-indexed list, each entry like a Subject's [`schema`](#subject-table-format)) | — |
 | `boolean` | — | — |

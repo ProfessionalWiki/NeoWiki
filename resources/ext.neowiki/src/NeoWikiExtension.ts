@@ -4,6 +4,7 @@ import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts'
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
+import EdtfDisplay from '@/components/Value/EdtfDisplay.vue';
 import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
@@ -13,6 +14,7 @@ import SelectDisplay from '@/components/Value/SelectDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { DateType } from '@/domain/propertyTypes/Date.ts';
+import { EdtfType } from '@/domain/propertyTypes/Edtf.ts';
 import { BooleanType } from '@/domain/propertyTypes/Boolean.ts';
 import BooleanDisplay from '@/components/Value/BooleanDisplay.vue';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText.ts';
@@ -50,6 +52,8 @@ import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { isSeverity, type Severity } from '@/domain/Severity.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import { EdtfHumanizer } from '@/domain/EdtfHumanizer.ts';
+import { RestEdtfHumanizer } from '@/persistence/RestEdtfHumanizer.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
@@ -157,6 +161,14 @@ export class NeoWikiExtension {
 			valueEditor: DateInput,
 			attributesEditor: DateAttributesEditor,
 			label: 'neowiki-property-type-date',
+			icon: cdxIconCalendar,
+		} );
+
+		registry.registerType( EdtfType.typeName, {
+			valueDisplayComponent: EdtfDisplay,
+			valueEditor: TextInput,
+			attributesEditor: BooleanAttributesEditor,
+			label: 'neowiki-property-type-edtf',
 			icon: cdxIconCalendar,
 		} );
 
@@ -310,6 +322,13 @@ export class NeoWikiExtension {
 
 	public getSubjectCountLookup(): SubjectCountLookup {
 		return new RestSubjectCountLookup(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+		);
+	}
+
+	public getEdtfHumanizer(): EdtfHumanizer {
+		return new RestEdtfHumanizer(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);

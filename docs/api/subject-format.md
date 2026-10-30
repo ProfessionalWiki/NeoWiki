@@ -69,7 +69,7 @@ A property mapped to `null` instead of a Statement object is skipped when the JS
 
 | `propertyType` | `value` |
 |----------------|---------|
-| `text`, `url`, `select`, `date`, `dateTime` | Array of strings, one per value part. |
+| `text`, `url`, `select`, `date`, `dateTime`, `edtf` | Array of strings, one per value part. |
 | `number` | A single number (integer or float). |
 | `boolean` | A single boolean. |
 | `relation` | Array of [relation objects](#relations). |
