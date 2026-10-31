@@ -64,14 +64,13 @@ function mountNeoWikiApp( app: App, element: Element ): void {
 	app.mount( element );
 }
 
-function fireRegistrationHook(): void {
+function newFrontendRegistrar(): FrontendRegistrar {
 	const ext = NeoWikiExtension.getInstance();
-	mw.hook( 'neowiki.registration' ).fire(
-		new FrontendRegistrar(
-			ext.getTypeSpecificComponentRegistry(),
-			ext.getPropertyTypeRegistry(),
-			ext.getViewTypeRegistry(),
-		),
+
+	return new FrontendRegistrar(
+		ext.getTypeSpecificComponentRegistry(),
+		ext.getPropertyTypeRegistry(),
+		ext.getViewTypeRegistry(),
 	);
 }
 
@@ -336,11 +335,16 @@ function initializeUi(): void {
 
 if ( !isTestEnvironment ) {
 	keepMenuEscapesFromDialogs();
-	fireRegistrationHook();
+
+	const registrar = newFrontendRegistrar();
+	mw.hook( 'neowiki.registration' ).fire( registrar );
 
 	// A value is deserialized once, against the Property Types registered at that moment, so the UI has
 	// to start after extension modules have registered theirs. Each module gets its own wait because
 	// mw.loader.using settles on the first failure in its list, with the rest possibly still loading.
 	const frontendModules = ( mw.config.get( 'wgNeoWikiFrontendModules' ) ?? [] ) as string[];
-	Promise.allSettled( frontendModules.map( ( moduleName ) => mw.loader.using( moduleName ) ) ).then( initializeUi );
+	Promise.allSettled( frontendModules.map( ( moduleName ) => mw.loader.using( moduleName ) ) ).then( () => {
+		registrar.markUiStarted();
+		initializeUi();
+	} );
 }
