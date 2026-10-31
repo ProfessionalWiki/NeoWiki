@@ -60,6 +60,22 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( [ 'ext.neowiki', 'ext.redherb-test' ], $this->addedModules );
 	}
 
+	public function testTellsTheFrontendWhichContributedModulesToWaitForAsAList(): void {
+		$this->setTemporaryHook(
+			'NeoWikiGetFrontendModules',
+			static function ( array &$modules ): void {
+				$modules[] = 'ext.first';
+				$modules[] = 'ext.withdrawn';
+				$modules[] = 'ext.second';
+				unset( $modules[1] );
+			}
+		);
+
+		$this->newLoader()->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertSame( [ 'ext.first', 'ext.second' ], $this->addedJsConfigVars['wgNeoWikiFrontendModules'] );
+	}
+
 	public function testPassesOutputAndSkinToHookHandlers(): void {
 		$out = $this->newCapturingOutputPage();
 		$skin = $this->createMock( Skin::class );

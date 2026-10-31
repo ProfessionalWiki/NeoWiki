@@ -341,9 +341,7 @@ function initializeConfigEditor(): void {
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
-if ( !isTestEnvironment ) {
-	keepMenuEscapesFromDialogs();
-	fireRegistrationHook();
+function initializeUi(): void {
 	initializeNeoWikiApp();
 	initializeSchemaView();
 	initializeLayoutView();
@@ -357,4 +355,15 @@ if ( !isTestEnvironment ) {
 	initializeSubjectCreatorButtons();
 	initializeOverviewPage();
 	initializeConfigEditor();
+}
+
+if ( !isTestEnvironment ) {
+	keepMenuEscapesFromDialogs();
+	fireRegistrationHook();
+
+	// A value is deserialized once, against the Property Types registered at that moment, so the UI has
+	// to start after extension modules have registered theirs. Each module gets its own wait because
+	// mw.loader.using settles on the first failure in its list, with the rest possibly still loading.
+	const frontendModules = ( mw.config.get( 'wgNeoWikiFrontendModules' ) ?? [] ) as string[];
+	Promise.allSettled( frontendModules.map( ( moduleName ) => mw.loader.using( moduleName ) ) ).then( initializeUi );
 }
