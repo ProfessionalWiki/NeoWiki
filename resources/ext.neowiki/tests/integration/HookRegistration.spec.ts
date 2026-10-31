@@ -14,7 +14,7 @@ import { ValueType, newStringValue } from '@/domain/Value';
 function setupMwHook(): void {
 	const hooks: Record<string, { args: unknown[] | null; handlers: ( ( ...a: unknown[] ) => void )[] }> = {};
 	( globalThis as any ).mw = {
-		config: { get: (): null => null },
+		config: { get: ( _name: string, fallback: unknown = null ): unknown => fallback },
 		log: { warn: vi.fn() },
 		hook: ( name: string ) => {
 			hooks[ name ] ??= { args: null, handlers: [] };
