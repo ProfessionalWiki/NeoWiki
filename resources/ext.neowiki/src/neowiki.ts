@@ -76,285 +76,262 @@ function fireRegistrationHook(): void {
 }
 
 function initializeNeoWikiApp(): void {
-	queueMicrotask( () => {
-		const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
+	const neowikiApp = document.querySelector( '#mw-content-text > #ext-neowiki-app' );
 
-		if ( neowikiApp !== null ) {
-			showPendingNotification( 'neowiki-subject-creator-success' );
-			showPendingNotification( 'neowiki-managesubjects-delete-success' );
+	if ( neowikiApp !== null ) {
+		showPendingNotification( 'neowiki-subject-creator-success' );
+		showPendingNotification( 'neowiki-managesubjects-delete-success' );
 
-			const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
-			const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
+		const showSubjectCreator = ( neowikiApp as HTMLElement ).dataset.mwNeowikiCreateSubject === 'true';
+		const pageHasMainSubject = ( neowikiApp as HTMLElement ).dataset.mwNeowikiPageHasMainSubject === 'true';
 
-			const ext = NeoWikiExtension.getInstance();
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( NeoWikiApp, {
-				showSubjectCreator,
-				pageHasMainSubject,
-			} ).directive( 'tooltip', CdxTooltip );
-			const pinia = ext.getPinia();
-			app.use( pinia );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, neowikiApp );
-			registerSubjectCreatorClickHandler( pinia );
-		}
-	} );
+		const app = createMwApp( NeoWikiApp, {
+			showSubjectCreator,
+			pageHasMainSubject,
+		} ).directive( 'tooltip', CdxTooltip );
+		const pinia = ext.getPinia();
+		app.use( pinia );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, neowikiApp );
+		registerSubjectCreatorClickHandler( pinia );
+	}
 }
 
-function initializeSchemaView(): void {
-	queueMicrotask( async () => {
-		const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
+async function initializeSchemaView(): Promise<void> {
+	const viewSchema = document.querySelector( '#ext-neowiki-view-schema' );
 
-		if ( viewSchema !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( viewSchema !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const revisionId = mw.config.get( 'wgRevisionId' );
-			const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
+		const revisionId = mw.config.get( 'wgRevisionId' );
+		const schemaName = mw.config.get( 'wgTitle' ) as SchemaName;
 
-			const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
-			const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+		const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
+		const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
 
-			if ( !response.ok ) {
-				throw new Error( 'Error fetching schema revision' );
-			}
-
-			const data = await response.json();
-			const schemaJson = JSON.parse( data.source );
-
-			if ( schemaJson.propertyDefinitions === undefined ) {
-				throw new Error( 'Schema propertyDefinitions is undefined' );
-			}
-
-			const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
-
-			// The Subject creator the Schema page can open reaches value inputs that use v-tooltip.
-			const app = createMwApp( SchemaDisplay, { schema } ).directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, viewSchema );
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching schema revision' );
 		}
-	} );
+
+		const data = await response.json();
+		const schemaJson = JSON.parse( data.source );
+
+		if ( schemaJson.propertyDefinitions === undefined ) {
+			throw new Error( 'Schema propertyDefinitions is undefined' );
+		}
+
+		const schema = new SchemaDeserializer().deserialize( schemaName, schemaJson );
+
+		// The Subject creator the Schema page can open reaches value inputs that use v-tooltip.
+		const app = createMwApp( SchemaDisplay, { schema } ).directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, viewSchema );
+	}
 }
 
 function initializeSchemasPage(): void {
-	queueMicrotask( () => {
-		const schemasPage = document.getElementById( 'ext-neowiki-schemas' );
+	const schemasPage = document.getElementById( 'ext-neowiki-schemas' );
 
-		if ( schemasPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( schemasPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( SchemasPage ).directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, schemasPage );
-		}
-	} );
+		const app = createMwApp( SchemasPage ).directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, schemasPage );
+	}
 }
 
 function initializeSubjectsPage(): void {
-	queueMicrotask( () => {
-		const subjectsPage = document.getElementById( 'ext-neowiki-subjects' );
+	const subjectsPage = document.getElementById( 'ext-neowiki-subjects' );
 
-		if ( subjectsPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
-			const initialSchema = subjectsPage.dataset.mwNeowikiSchema ?? null;
+	if ( subjectsPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
+		const initialSchema = subjectsPage.dataset.mwNeowikiSchema ?? null;
 
-			// The Subject creator this page opens reaches value inputs that use v-tooltip.
-			const app = createMwApp( SubjectsPage, { initialSchema } ).directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, subjectsPage );
-		}
-	} );
+		// The Subject creator this page opens reaches value inputs that use v-tooltip.
+		const app = createMwApp( SubjectsPage, { initialSchema } ).directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, subjectsPage );
+	}
 }
 
-function initializeLayoutView(): void {
-	queueMicrotask( async () => {
-		const viewLayout = document.querySelector( '#ext-neowiki-view-layout' );
+async function initializeLayoutView(): Promise<void> {
+	const viewLayout = document.querySelector( '#ext-neowiki-view-layout' );
 
-		if ( viewLayout !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( viewLayout !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const revisionId = mw.config.get( 'wgRevisionId' );
-			const layoutName = mw.config.get( 'wgTitle' ) as LayoutName;
+		const revisionId = mw.config.get( 'wgRevisionId' );
+		const layoutName = mw.config.get( 'wgTitle' ) as LayoutName;
 
-			const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
-			const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
+		const restApiUrl = ext.getMediaWiki().util.wikiScript( 'rest' );
+		const response = await ext.newHttpClient().get( `${ restApiUrl }/v1/revision/${ revisionId }` );
 
-			if ( !response.ok ) {
-				throw new Error( 'Error fetching layout revision' );
-			}
-
-			const data = await response.json();
-			const layoutJson = JSON.parse( data.source );
-
-			const layout = new LayoutDeserializer().deserialize( layoutName, layoutJson );
-
-			const app = createMwApp( LayoutDisplay, { layout } );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, viewLayout );
+		if ( !response.ok ) {
+			throw new Error( 'Error fetching layout revision' );
 		}
-	} );
+
+		const data = await response.json();
+		const layoutJson = JSON.parse( data.source );
+
+		const layout = new LayoutDeserializer().deserialize( layoutName, layoutJson );
+
+		const app = createMwApp( LayoutDisplay, { layout } );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, viewLayout );
+	}
 }
 
 function initializeLayoutsPage(): void {
-	queueMicrotask( () => {
-		const layoutsPage = document.getElementById( 'ext-neowiki-layouts' );
+	const layoutsPage = document.getElementById( 'ext-neowiki-layouts' );
 
-		if ( layoutsPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( layoutsPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( LayoutsPage );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, layoutsPage );
-		}
-	} );
+		const app = createMwApp( LayoutsPage );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, layoutsPage );
+	}
 }
 
 function initializeMappingsPage(): void {
-	queueMicrotask( () => {
-		const mappingsPage = document.getElementById( 'ext-neowiki-mappings' );
+	const mappingsPage = document.getElementById( 'ext-neowiki-mappings' );
 
-		if ( mappingsPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( mappingsPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( MappingsPage );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, mappingsPage );
-		}
-	} );
+		const app = createMwApp( MappingsPage );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, mappingsPage );
+	}
 }
 
 function initializeSubjectsManagerPage(): void {
-	queueMicrotask( () => {
-		const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
+	const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
 
-		if ( subjectsManager !== null ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( subjectsManager !== null ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
-			const pinia = ext.getPinia();
-			app.use( pinia );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, subjectsManager );
-			registerSubjectCreatorClickHandler( pinia );
-		}
-	} );
+		const app = createMwApp( SubjectsManagerPage ).directive( 'tooltip', CdxTooltip );
+		const pinia = ext.getPinia();
+		app.use( pinia );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, subjectsManager );
+		registerSubjectCreatorClickHandler( pinia );
+	}
 }
 
 function initializeCreateSubjectPage(): void {
-	queueMicrotask( () => {
-		const createSubjectPage = document.getElementById( 'ext-neowiki-create-subject' );
+	const createSubjectPage = document.getElementById( 'ext-neowiki-create-subject' );
 
-		if ( createSubjectPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
-			const schemaName = createSubjectPage.dataset.mwNeowikiSchema;
+	if ( createSubjectPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
+		const schemaName = createSubjectPage.dataset.mwNeowikiSchema;
 
-			const app = createMwApp( CreateSubjectPage, { schemaName } ).directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, createSubjectPage );
-		}
-	} );
+		const app = createMwApp( CreateSubjectPage, { schemaName } ).directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, createSubjectPage );
+	}
 }
 
 function initializeSubjectPage(): void {
-	queueMicrotask( () => {
-		const subjectPage = document.getElementById( 'ext-neowiki-subject' );
+	const subjectPage = document.getElementById( 'ext-neowiki-subject' );
 
-		const subjectId = subjectPage?.dataset.mwNeowikiSubjectId;
+	const subjectId = subjectPage?.dataset.mwNeowikiSubjectId;
 
-		if ( subjectPage !== null && subjectId !== undefined ) {
-			const ext = NeoWikiExtension.getInstance();
+	if ( subjectPage !== null && subjectId !== undefined ) {
+		const ext = NeoWikiExtension.getInstance();
 
-			const app = createMwApp( SubjectPage, { subjectId } );
+		const app = createMwApp( SubjectPage, { subjectId } );
 
-			app.directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, subjectPage );
-		}
-	} );
+		app.directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, subjectPage );
+	}
 }
 
 /**
  * Mounts a button, with a creator dialog of its own, on every `{{#create_subject}}` placeholder.
  */
 function initializeSubjectCreatorButtons(): void {
-	queueMicrotask( () => {
-		const ext = NeoWikiExtension.getInstance();
+	const ext = NeoWikiExtension.getInstance();
 
-		document.querySelectorAll( SUBJECT_CREATOR_BUTTON_SELECTOR ).forEach( ( element ) => {
-			const app = createMwApp(
-				SubjectCreatorButton,
-				subjectCreatorButtonProps( ( element as HTMLElement ).dataset ),
-			).directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, element );
-		} );
+	document.querySelectorAll( SUBJECT_CREATOR_BUTTON_SELECTOR ).forEach( ( element ) => {
+		const app = createMwApp(
+			SubjectCreatorButton,
+			subjectCreatorButtonProps( ( element as HTMLElement ).dataset ),
+		).directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, element );
 	} );
 }
 
 function initializeOverviewPage(): void {
-	queueMicrotask( () => {
-		const overviewPage = document.getElementById( 'ext-neowiki-overview' );
+	const overviewPage = document.getElementById( 'ext-neowiki-overview' );
 
-		if ( overviewPage !== null ) {
-			const ext = NeoWikiExtension.getInstance();
-			const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
-			const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
-			const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
+	if ( overviewPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
+		const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
+		const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
+		const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
 
-			// The Subject creator this page opens reaches value inputs that use v-tooltip.
-			const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects } )
-				.directive( 'tooltip', CdxTooltip );
-			app.use( ext.getPinia() );
-			NeoWikiServices.registerServices( app );
-			mountNeoWikiApp( app, overviewPage );
-		}
-	} );
+		// The Subject creator this page opens reaches value inputs that use v-tooltip.
+		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects } )
+			.directive( 'tooltip', CdxTooltip );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, overviewPage );
+	}
 }
 
 function initializeConfigEditor(): void {
-	queueMicrotask( () => {
-		const configEditor = document.getElementById( 'ext-neowiki-config-editor' );
+	const configEditor = document.getElementById( 'ext-neowiki-config-editor' );
 
-		if ( configEditor === null ) {
-			return;
-		}
+	if ( configEditor === null ) {
+		return;
+	}
 
-		const config = mw.config.get( 'wgNeoWikiConfigEditor' ) as ConfigEditorJsConfig;
-		const app = createMwApp( ConfigEditor, {
-			...config,
-			canEdit: mw.config.get( 'wgIsProbablyEditable' ) === true,
-			pageName: mw.config.get( 'wgPageName' ),
-			pageSaver: new MediaWikiPageSaver( NeoWikiExtension.getInstance().getMediaWiki() ),
-		} );
-		mountNeoWikiApp( app, configEditor );
+	const config = mw.config.get( 'wgNeoWikiConfigEditor' ) as ConfigEditorJsConfig;
+	const app = createMwApp( ConfigEditor, {
+		...config,
+		canEdit: mw.config.get( 'wgIsProbablyEditable' ) === true,
+		pageName: mw.config.get( 'wgPageName' ),
+		pageSaver: new MediaWikiPageSaver( NeoWikiExtension.getInstance().getMediaWiki() ),
 	} );
+	mountNeoWikiApp( app, configEditor );
 }
 
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
 function initializeUi(): void {
-	initializeNeoWikiApp();
-	initializeSchemaView();
-	initializeLayoutView();
-	initializeSchemasPage();
-	initializeSubjectsPage();
-	initializeLayoutsPage();
-	initializeMappingsPage();
-	initializeSubjectsManagerPage();
-	initializeCreateSubjectPage();
-	initializeSubjectPage();
-	initializeSubjectCreatorButtons();
-	initializeOverviewPage();
-	initializeConfigEditor();
+	// Each in its own microtask, so that one that throws leaves the others running.
+	[
+		initializeNeoWikiApp,
+		initializeSchemaView,
+		initializeLayoutView,
+		initializeSchemasPage,
+		initializeSubjectsPage,
+		initializeLayoutsPage,
+		initializeMappingsPage,
+		initializeSubjectsManagerPage,
+		initializeCreateSubjectPage,
+		initializeSubjectPage,
+		initializeSubjectCreatorButtons,
+		initializeOverviewPage,
+		initializeConfigEditor,
+	].forEach( ( initialize ) => queueMicrotask( initialize ) );
 }
 
 if ( !isTestEnvironment ) {
