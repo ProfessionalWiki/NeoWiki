@@ -10,6 +10,7 @@ use MediaWiki\User\User;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
 
 /**
  * Hiding a user hides their name on every revision they made, by a write straight to the revision
@@ -21,7 +22,6 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onBlockIpComplete
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onUnblockUserComplete
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob
- * @covers \ProfessionalWiki\NeoWiki\Application\LastEditorPagesRebuilder
  * @group Database
  */
 class HiddenUserGraphProjectionTest extends NeoWikiIntegrationTestCase {
@@ -104,6 +104,22 @@ class HiddenUserGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ $stillTheirs ], self::savedPageIds( $store ) );
 	}
 
+	/**
+	 * A store that missed the reprojection would go on serving the name the block hid.
+	 */
+	public function testAStoreFailingToTakeTheNameOutFailsTheReprojectionSoTheQueueRunsItAgain(): void {
+		$author = $this->getTestUser()->getUser();
+		$this->editPageAs( 'Page of a user hidden during an outage', $author );
+		$this->registerGraphDatabasePlugins( new ThrowingGraphDatabasePlugin() );
+
+		$this->blockUser( $author, hidden: true );
+
+		$this->assertStringContainsString(
+			ThrowingGraphDatabasePlugin::FAILURE_MESSAGE,
+			implode( "\n", $this->runQueuedJobsReportingTheirFailures() )
+		);
+	}
+
 	private function editPageAs( string $pageName, User $author ): int {
 		return $this->editPage( $pageName, 'Edited by ' . $author->getName(), '', NS_MAIN, $author )
 			->getNewRevision()
@@ -146,6 +162,15 @@ class HiddenUserGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	private function runQueuedReprojections(): void {
 		// minJobs 0: a block that hides nobody queues nothing, and that case is one of the assertions.
 		$this->runJobs( [ 'minJobs' => 0 ] );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function runQueuedJobsReportingTheirFailures(): array {
+		$run = $this->getServiceContainer()->getJobRunner()->run( [ 'type' => false, 'maxJobs' => 100, 'maxTime' => 30 ] );
+
+		return array_values( array_filter( array_column( $run['jobs'], 'error' ) ) );
 	}
 
 	private function queuedReprojections(): int {

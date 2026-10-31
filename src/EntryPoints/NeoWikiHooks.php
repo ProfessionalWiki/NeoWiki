@@ -12,7 +12,9 @@ use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Deferred\DeferrableUpdate;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\Installer\DatabaseUpdater;
@@ -28,6 +30,7 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Revision\SlotRoleRegistry;
@@ -74,6 +77,7 @@ use Skin;
 use SkinTemplate;
 use stdClass;
 use Throwable;
+use File;
 use WikiPage;
 
 class NeoWikiHooks {
@@ -633,6 +637,9 @@ class NeoWikiHooks {
 	}
 
 	/**
+	 * The secondary data updates MediaWiki runs for the revision project the page, see
+	 * {@see self::onRevisionDataUpdates()}.
+	 *
 	 * @see RevisionFromEditCompleteHook
 	 */
 	public static function onRevisionFromEditComplete(
@@ -642,8 +649,7 @@ class NeoWikiHooks {
 		UserIdentity $user,
 		array &$tags
 	): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onRevisionCreated( $revision );
-		$wikiPage->doPurge(); // clear cache
+		NeoWikiExtension::getInstance()->newSubjectIndexer()->indexRevision( $revision );
 
 		// A save from the Subject editor inherits the main slot, and MediaWiki both indexes a page for
 		// search and purges the pages using it as a template only when its main slot changed.
@@ -654,6 +660,80 @@ class NeoWikiHooks {
 
 		if ( self::changedTheContent( $revision ) ) {
 			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+		}
+	}
+
+	/**
+	 * Projects every revision MediaWiki runs secondary data updates for: a saved one, and the current one when a
+	 * refresh of the page's links changes its categories or page properties, as an edit to a template or
+	 * module the page uses can. Those updates run once the operation has committed.
+	 *
+	 * @see RevisionDataUpdatesHook
+	 *
+	 * @param DeferrableUpdate[] &$updates
+	 */
+	public static function onRevisionDataUpdates( Title $title, RenderedRevision $renderedRevision, array &$updates ): void {
+		$updates[] = ProjectPageUpdate::amongSecondaryDataUpdates( $renderedRevision, self::linksUpdateAmong( $updates ) );
+	}
+
+	/**
+	 * @param DeferrableUpdate[] $updates
+	 */
+	private static function linksUpdateAmong( array $updates ): ?LinksUpdate {
+		foreach ( $updates as $update ) {
+			if ( $update instanceof LinksUpdate ) {
+				return $update;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * A protection writes a revision without the secondary data updates that project the others, as it does
+	 * on MediaWiki 1.43.
+	 *
+	 * @see ArticleProtectCompleteHook
+	 */
+	public static function onArticleProtectComplete( WikiPage $wikiPage, UserIdentity $user, array $protect, string $reason ): void {
+		if ( $wikiPage->getId() !== 0 ) {
+			ProjectPageUpdate::schedule( new PageId( $wikiPage->getId() ) );
+		}
+	}
+
+	/**
+	 * From MediaWiki 1.44, the secondary data updates of a move cannot be told from those of a null edit, so
+	 * they project the page only when the move changed its categories or page properties.
+	 *
+	 * @see PageMoveCompleteHook
+	 */
+	public static function onPageMoveComplete(
+		LinkTarget $old,
+		LinkTarget $new,
+		UserIdentity $user,
+		int $pageId,
+		int $redirectId,
+		string $reason,
+		RevisionRecord $revision
+	): void {
+		ProjectPageUpdate::schedule( new PageId( $pageId ) );
+	}
+
+	/**
+	 * Uploading a new version of a file writes a revision of its description page without the secondary data
+	 * updates that project the others.
+	 *
+	 * @see FileUploadHook
+	 */
+	public static function onFileUpload( File $file, bool $reupload, bool $hasDescription ): void {
+		if ( !$reupload ) {
+			return;
+		}
+
+		$pageId = $file->getTitle()?->getArticleID( IDBAccessObject::READ_LATEST ) ?? 0;
+
+		if ( $pageId !== 0 ) {
+			ProjectPageUpdate::schedule( new PageId( $pageId ) );
 		}
 	}
 
@@ -931,12 +1011,9 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * Projects imported pages, which RevisionFromEditComplete does not cover, as imported revisions do
-	 * not go through the edit path. WikiImporter fires this hook for every import path, once per page and
-	 * only once all of the page's revisions are in, so one handler replaces what would otherwise be a
-	 * special case per import path. Special:Import and the import API additionally project through
-	 * RevisionFromEditComplete, because ImportReporter creates a null revision on top of the import; that
-	 * reprojects the same content, making it redundant rather than harmful.
+	 * Projects imported pages once each, where MediaWiki runs secondary data updates for every imported
+	 * revision that becomes current, and for none when importing without updates. WikiImporter fires this hook
+	 * for every import path, once per page and only once all of the page's revisions are in.
 	 *
 	 * @see AfterImportPageHook
 	 *
@@ -949,7 +1026,7 @@ class NeoWikiHooks {
 		int $sRevCount,
 		array $pageInfo
 	): void {
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
+		NeoWikiExtension::getInstance()->newPageRebuilder()->rebuild( $title );
 
 		self::scheduleSearchUpdateOfCurrentRevision( $title );
 	}
@@ -961,7 +1038,10 @@ class NeoWikiHooks {
 	}
 
 	public static function onPageDeleteComplete( ProperPageIdentity $page, Authority $deleter, string $reason, int $pageId, RevisionRecord $deletedRev ): void {
-		NeoWikiExtension::getInstance()->getStoreContentUC()->onPageDelete( $pageId );
+		// Queued first: where the deletion has already committed, as under a maintenance script, a failing
+		// index write must not keep the deleted page in the graph stores.
+		ProjectPageUpdate::schedule( new PageId( $pageId ) );
+		NeoWikiExtension::getInstance()->newSubjectIndexer()->unindexPage( new PageId( $pageId ) );
 
 		$title = Title::newFromPageIdentity( $page );
 		self::rebuildStoresHoldingChangedMapping( $title );
@@ -993,7 +1073,7 @@ class NeoWikiHooks {
 	): void {
 		$title = Title::newFromPageIdentity( $page );
 
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
+		NeoWikiExtension::getInstance()->newPageRebuilder()->rebuild( $title );
 
 		self::scheduleSearchUpdateOfCurrentRevision( $title );
 
@@ -1018,7 +1098,7 @@ class NeoWikiHooks {
 	 * @param array<int, array{oldBits: int, newBits: int}> $visibilityChangeMap
 	 */
 	public static function onArticleRevisionVisibilitySet( Title $title, array $ids, array $visibilityChangeMap ): void {
-		NeoWikiExtension::getInstance()->newHookPageRebuilder()->rebuild( $title );
+		NeoWikiExtension::getInstance()->newPageRebuilder()->rebuild( $title );
 	}
 
 	/**

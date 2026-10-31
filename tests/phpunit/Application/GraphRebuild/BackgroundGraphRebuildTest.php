@@ -432,7 +432,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 			startLock: $extension->newRebuildStartLock(),
 			executor: $extension->newGraphRebuildExecutor(),
 			jobQueue: $jobQueue,
-			newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newPageRebuilderFor( $store ),
+			newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newGraphStorePageRebuilder( $store ),
 			logger: new NullLogger(),
 		);
 	}
@@ -450,7 +450,7 @@ class BackgroundGraphRebuildTest extends NeoWikiIntegrationTestCase {
 			startLock: $extension->newRebuildStartLock(),
 			executor: $extension->newGraphRebuildExecutor(),
 			jobQueue: new SpyRebuildJobQueue(),
-			newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newPageRebuilderFor( $store ),
+			newPageRebuilder: static fn ( GraphDatabasePlugin $store ) => $extension->newGraphStorePageRebuilder( $store ),
 			logger: $logger,
 		);
 	}

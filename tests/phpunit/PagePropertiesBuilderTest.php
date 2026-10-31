@@ -73,7 +73,7 @@ class PagePropertiesBuilderTest extends NeoWikiIntegrationTestCase {
 	private function getContextFor( RevisionRecord $revision ): PagePropertyProviderContext {
 		$spy = new SpyPagePropertyProvider();
 
-		$this->newPagePropertiesBuilder( $spy )->getPagePropertiesFor( $revision );
+		$this->newPagePropertiesBuilder( $spy )->getPagePropertiesFor( $revision, null );
 
 		return $spy->getReceivedContext();
 	}

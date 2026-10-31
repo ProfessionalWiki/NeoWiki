@@ -32,7 +32,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * Needs the database, which holds the index, and the integration base class, whose hooks write it.
  *
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SubjectIndexer
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  * @group Database
  */
@@ -366,8 +366,8 @@ class PublishedSubjectIndexTest extends NeoWikiIntegrationTestCase {
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
 
 		NeoWikiExtension::getInstance()
-			->newPageRebuilderFor( new SpyGraphDatabasePlugin() )
-			->rebuild( Title::newFromText( self::PAGE ) );
+			->newGraphStorePageRebuilder( new SpyGraphDatabasePlugin() )
+			->rebuildFromReplica( Title::newFromText( self::PAGE ) );
 
 		$this->assertSame( [ self::ADA => 'Draft name' ], $this->displayNamesOf( $approved->getPageId() ) );
 	}
