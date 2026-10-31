@@ -15,6 +15,9 @@ on:
       - 'Docker/**'
       - 'scripts/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: "Tests"

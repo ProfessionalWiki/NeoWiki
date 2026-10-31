@@ -377,6 +377,8 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-services.sh
 	@./Docker/tests/test-image-tag.sh
 	@./scripts/tests/test-tag-release.sh
+	@./scripts/tests/test-publish-simplifications.sh
+	@./scripts/tests/test-simplification-history.sh
 
 # ---- Browser tests -----------------------------------------------------------
 
