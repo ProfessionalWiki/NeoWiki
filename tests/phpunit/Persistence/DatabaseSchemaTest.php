@@ -57,10 +57,10 @@ class DatabaseSchemaTest extends MediaWikiIntegrationTestCase {
 		$script->execute();
 
 		$this->assertSame(
-			self::withoutSourcePath( (string)file_get_contents(
+			self::comparable( (string)file_get_contents(
 				$extensionPath . '/sql/' . $databaseType . '/' . $table . '.sql'
 			) ),
-			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
+			self::comparable( (string)file_get_contents( $generatedPath ) ),
 			'run `make dbschema` to regenerate the ' . $databaseType . ' schema of ' . $table
 		);
 	}
@@ -85,10 +85,10 @@ class DatabaseSchemaTest extends MediaWikiIntegrationTestCase {
 		$script->execute();
 
 		$this->assertSame(
-			self::withoutSourcePath( (string)file_get_contents(
+			self::comparable( (string)file_get_contents(
 				$extensionPath . '/sql/' . $databaseType . '/patch-neowiki_rebuild_runs-nwrr_phase.sql'
 			) ),
-			self::withoutSourcePath( (string)file_get_contents( $generatedPath ) ),
+			self::comparable( (string)file_get_contents( $generatedPath ) ),
 			'run `make dbschema` to regenerate the ' . $databaseType . ' schema change'
 		);
 	}
@@ -115,11 +115,14 @@ class DatabaseSchemaTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * The generator writes the JSON's path into a header comment, and that path depends on the working
-	 * directory it ran from. Only the schema itself is being compared.
+	 * Only the schema itself is being compared. The generator's header comment names the JSON's path, which
+	 * depends on the working directory it ran from, and its wording changes between MediaWiki versions, as
+	 * does the whitespace of the SQL: master writes `PRIMARY KEY (` and indents continuation lines less.
 	 */
-	private static function withoutSourcePath( string $sql ): string {
-		return (string)preg_replace( '/^-- Source: .*$/m', '-- Source:', $sql );
+	private static function comparable( string $sql ): string {
+		$sql = (string)preg_replace( '/^--.*\R/m', '', $sql );
+		$sql = (string)preg_replace( '/^[ \t]+/m', '', $sql );
+		return (string)preg_replace( '/[ \t]+\(/', '(', $sql );
 	}
 
 }
