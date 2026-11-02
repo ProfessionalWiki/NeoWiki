@@ -52,6 +52,30 @@ class Neo4jConstraintUpdaterTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testPageTitleIndexIsCreated(): void {
+		$updater = $this->newConstraintUpdater();
+
+		$updater->createDefaultIndexes();
+
+		$result = $this->readGraph(
+			'SHOW INDEXES YIELD name, entityType, labelsOrTypes, properties, owningConstraint
+				WHERE name = "Page namespaceId dbKey" AND owningConstraint IS NULL
+				RETURN name, entityType, labelsOrTypes, properties'
+		);
+
+		$this->assertSame(
+			[
+				[
+					'name' => 'Page namespaceId dbKey',
+					'entityType' => 'NODE',
+					'labelsOrTypes' => [ 'Page' ],
+					'properties' => [ 'namespaceId', 'dbKey' ],
+				]
+			],
+			$result->toRecursiveArray()
+		);
+	}
+
 	private function newConstraintUpdater(): Neo4jConstraintUpdater {
 		return new Neo4jConstraintUpdater(
 			NeoWikiExtension::getInstance()->getWriteQueryEngine()

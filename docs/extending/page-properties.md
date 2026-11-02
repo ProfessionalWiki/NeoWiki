@@ -23,11 +23,12 @@ last-registered provider winning a collision, so prefix keys with your extension
 
 ## Context
 
-[`PagePropertyProviderContext`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/Page/PagePropertyProviderContext.php) exposes the page id, title and
-namespace, creation and modification times, `categories`, `lastEditor`, and `parserProperties`: the MediaWiki page
-properties recorded during parsing, such as those a parser hook sets via `ParserOutput::setPageProperty`.
-`parserProperties` are an input from MediaWiki's parse, not the Page Properties the provider returns. The raw
-main-slot `content` and its `contentModel` are exposed for content models the parse products do not cover.
+[`PagePropertyProviderContext`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/src/Domain/Page/PagePropertyProviderContext.php) exposes the page id, title,
+DB key and namespace, creation and modification times, `categories`, `lastEditor`, and `parserProperties`: the
+MediaWiki page properties recorded during parsing, such as those a parser hook sets via
+`ParserOutput::setPageProperty`. `parserProperties` are an input from MediaWiki's parse, not the Page Properties the
+provider returns. The raw main-slot `content` and its `contentModel` are exposed for content models the parse
+products do not cover.
 
 ## Refreshing a page's data without an edit
 

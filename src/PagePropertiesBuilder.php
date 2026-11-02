@@ -48,6 +48,7 @@ readonly class PagePropertiesBuilder implements PagePropertiesSource {
 			pageId: new PageId( $revision->getPageId() ),
 			pageTitle: $this->titleFormatter->getPrefixedText( $linkTarget ),
 			namespaceId: $linkTarget->getNamespace(),
+			pageDbKey: $linkTarget->getDBkey(),
 			creationTime: $this->getCreationTime( $revision ),
 			modificationTime: $this->getModificationTime( $revision ),
 			categories: $parserOutput === null ? [] : $parserOutput->getCategoryNames(),

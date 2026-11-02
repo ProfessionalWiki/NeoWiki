@@ -4,6 +4,9 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+* Neo4j Page nodes carry `dbKey`, the page title without its namespace, so you can find a page by `namespaceId` and
+  `dbKey` whatever its wiki's language
+
 ## NeoWiki 0.1.0
 
 The first release, a beta. Highlights:

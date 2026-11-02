@@ -217,8 +217,8 @@ and defines one ontology projection; the Mapping page's title is the projection 
 A key-value pair stored on the Page node in graph Projections. Page Properties are metadata about the wiki page
 itself, as opposed to Subject Statements, which are structured data about the entities described on the page.
 
-Built-in Page Properties include `name`, `namespaceId`, `creationTime`, `lastUpdated`, `categories`, and `lastEditor`.
-Extensions can contribute additional Page Properties (see [Extending NeoWiki](extending/extending.md)).
+Built-in Page Properties include `name`, `namespaceId`, `dbKey`, `creationTime`, `lastUpdated`, `categories`, and
+`lastEditor`. Extensions can contribute additional Page Properties (see [Extending NeoWiki](extending/extending.md)).
 
 ## Extending
 

@@ -26,4 +26,12 @@ class Neo4jConstraintUpdater {
 		);
 	}
 
+	public function createDefaultIndexes(): void {
+		// Not a uniqueness constraint: a failed projection can leave a node holding a title its page no
+		// longer has, and a constraint would then reject the projection of the page that took that title.
+		$this->queryEngine->runWriteQuery(
+			'CREATE INDEX `Page namespaceId dbKey` IF NOT EXISTS FOR (node:Page) ON (node.namespaceId, node.dbKey)'
+		);
+	}
+
 }

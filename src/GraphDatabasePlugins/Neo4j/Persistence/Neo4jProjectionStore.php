@@ -27,6 +27,7 @@ readonly class Neo4jProjectionStore implements GraphDatabasePlugin {
 
 	public function initialize(): void {
 		$this->constraintUpdater->createDefaultConstraints();
+		$this->constraintUpdater->createDefaultIndexes();
 	}
 
 	public function savePage( Page $page ): void {
