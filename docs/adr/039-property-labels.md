@@ -2,13 +2,13 @@
 
 Date: 2026-11-02
 
-Status: Draft. Amends [ADR 17](017-names-as-identifiers.md): the UIs show new property labels that are editable
-so property names can remain stable.
+Status: Draft. Amends [ADR 17](017-names-as-identifiers.md): the UI shows new Property labels that are editable
+so Property names can remain stable.
 
 ## Context
 
-A Property name is both what users see in the UIs and the identifier that everything else uses to refer to the Property Definition
-([ADR 17](017-names-as-identifiers.md)).
+A Property name is both what users see in the UI and the identifier that everything else uses to refer to the
+Property Definition ([ADR 17](017-names-as-identifiers.md)).
 
 Take a Person Schema with a Property Definition "Birth date". Renaming it to "Date of birth" leaves every Person's date
 stored under "Birth date". The Schema no longer has that name, so the dates stop showing until the name changes back,
@@ -20,8 +20,8 @@ using one name.
 
 ## Decision
 
-A Property's name identifies its Property Definition and does not change once its Schema is saved with it, as a
-Schema's name does not.
+A Property's name identifies its Property Definition. Saving a Schema with a changed name, through any editor or API,
+removes one Property and adds another. Values stored under the old name stay, unshown.
 
 What people see is the Property's label. A Property Definition can have one label per language, keyed by language tag
 as [Text with language](034-monolingual-text-value-type.md) values are:
@@ -44,13 +44,11 @@ Property by its name, and Neo4j keys and RDF predicates are made from it.
 
 ## Consequences
 
-- Renaming a Property in the Schema editor changes its label, not its name. Nothing that refers to the Property
-  breaks, and Subject JSON keeps descriptive keys.
+- Changing a label breaks nothing that refers to the Property, and Subject JSON keeps descriptive keys.
+- The Schema editor renames a Property only while no Subject uses the Schema; after that, renaming changes the label.
 - Labels are optional, so a Schema without them works as before.
-- A name keeps a typo or an outdated term for good. Readers see the label, but people writing wikitext, Lua, Layouts,
-  Mappings or queries use the name, so the Schema page shows both.
-- Changing a name means removing the Property and adding another. Values stored under the old name stay, unshown, as
-  for any removed Property.
+- Once Subjects use a Schema, its names keep their typos and outdated terms. Readers see the label, but people writing
+  wikitext, Lua, Layouts, Mappings or queries use the name, so the Schema page shows both.
 
 ## Out of Scope
 
@@ -100,9 +98,3 @@ interface text.
 
 Not chosen because the labels would live outside the Schema: they would not travel with it through export, import and
 Sources, and editing one would take the right to edit the interface rather than the Schema.
-
-### Names that can change until used
-
-Let a name change until some Subject has a value for the Property.
-
-Not chosen because Layouts, Mappings and wikitext can refer to a Property before any Subject does.
