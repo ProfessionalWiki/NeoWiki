@@ -152,8 +152,8 @@ Denial of `read` answers `404` instead, so that a page you may not read stays in
 The write endpoints keyed by page id ([Pages and Subjects](#pages-and-subjects)) return that `404` for a page you may
 not read and for a page id that does not exist; the write endpoints keyed by Subject id return it for a Subject on a
 page you may not read and for a Subject id that does not exist. `POST /neowiki/v0/subjects` is keyed by a title you
-supply rather than by an existing page: it answers `403` for a title you may not create, and `409` for one already
-taken, carrying that title and nothing about the page holding it.
+supply rather than by an existing page: it answers `403` for a title you may not create, whether or not a page holds
+it, and `409` for one already taken, carrying that title and nothing about the page holding it.
 
 The Schema write endpoints need the same permissions as creating, editing, or deleting the Schema's page in the wiki.
 They answer `403` when you may read that page but not make the change, and `404` when you may not read it.

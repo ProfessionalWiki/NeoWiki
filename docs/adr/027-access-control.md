@@ -2,10 +2,7 @@
 
 Date: 2026-07-22
 
-Status: Accepted (2026-09-02). Amended 2026-09-11, resolving the "Cross-wiki subject display" open decision with a
-fifth read class, source-attested; amended 2026-09-12, on what creating a page by title reveals; amended 2026-09-16,
-resolving the "Default grant of `neowiki-query`" open decision (see Decision); amended 2026-10-27, on which Parsoid
-renders run as the anonymous user.
+Status: Accepted (2026-09-02)
 
 ## Context
 
@@ -15,7 +12,7 @@ projection into graph and SPARQL stores and RDF dumps.
 Earlier ADRs settled individual pieces: Neo4j is reachable only through the backend ([ADR 13](013-restrict-neo4j-access.md)),
 SPARQL stores may be exposed directly ([ADR 19](019-graph-database-architecture.md)), and graph nodes carry per-wiki
 identity ([ADR 22](022-multi-wiki-node-identity.md)). This ADR
-records the overall access-control model those pieces belong to, and lists the decisions that are still open.
+records the overall access-control model those pieces belong to.
 
 Constraints the model rests on:
 
@@ -43,8 +40,9 @@ Constraints the model rests on:
   with a `null`, an empty list, or a `404` — never a `403` — and must not reveal existence through side channels such
   as counts ([#1062](https://github.com/ProfessionalWiki/NeoWiki/issues/1062)). Write denials answer `403`, and must
   equally not reveal whether an unreadable page exists
-  ([#1061](https://github.com/ProfessionalWiki/NeoWiki/issues/1061)). [rest-api.md](../api/rest-api.md) documents this
-  per endpoint.
+  ([#1061](https://github.com/ProfessionalWiki/NeoWiki/issues/1061)), except that creating a page by title tells a
+  caller who may write there whether that title is free. [rest-api.md](../api/rest-api.md) documents this per
+  endpoint.
 - **Page-attributable results are filtered per row.** Read surfaces whose results are traceable to an owning page
   resolve each row's page and drop rows the caller may not read. Because this costs one permission check per row,
   such surfaces must bound their result sizes.
@@ -59,16 +57,12 @@ Constraints the model rests on:
   ([restricted content](../operations/restricted-content.md#narrowing-neowiki-query)). Exposing a store directly
   (which ADR 19 allows for SPARQL) is a different surface: see the projection decision below.
 - **Parse-time reads run as the user the page is parsed for, and their output is cached per access class.**
-  The parser functions and the Lua library read as the user recorded in the parser options: the viewer on a
-  page view, or the anonymous user for the save-time parse, the job queue, and Parsoid's REST renders. They are gated
-  like the REST endpoints: page `read` for page-attributable reads, `neowiki-query` for raw queries. Query
-  limits use the default tier regardless of user. Output that depends on such a read is parser-cached under
-  the parsing user's access class, derived from the user's effective groups and the wiki-level `read` and
-  `neowiki-query` grants, so a cached copy is shared only within one class. The class is a proxy for the
-  permission hooks: exact wherever page access follows group membership, wrong for hooks that grant per
-  user (the revision-deletion rights included), so wikis with such hooks must run without a parser cache.
-  `{{#view}}` needs no class: it emits a marker at parse time, and the Subject behind it is fetched per
-  viewer over REST, under that viewer's permissions.
+  The parser functions and the Lua library read as the user recorded in the parser options, gated like the REST
+  endpoints: page `read` for page-attributable reads, `neowiki-query` for raw queries. Output that depends on such a
+  read is parser-cached under the parsing user's access class, derived from the user's effective groups and the
+  wiki-level `read` and `neowiki-query` grants, so a cached copy is shared only within one class. The class is a
+  proxy for the permission hooks: exact wherever page access follows group membership, wrong for hooks that grant
+  per user (the revision-deletion rights included), so wikis with such hooks must run without a parser cache.
 - **Raw queries will support server-side filter injection.** A deployment can register scoping predicates (such as
   restricting to the current wiki) that core applies to every caller-supplied query, so scoping is enforced rather
   than left to each caller.
@@ -78,15 +72,9 @@ Constraints the model rests on:
 - **Source-attested reads are not gated per user.** A Subject or Schema supplied by a registered Source
   ([ADR 23](023-subject-sources.md)) has no page on this wiki to authorize against. The Source vouches instead:
   everything it returns is readable by everyone who may read this wiki at all, so the read surfaces serve it without
-  a per-row check, and a Source over data with restrictions of its own serves only the unrestricted part — a
-  question it answers without knowing who is asking. Read surfaces decide by the id's Source, never by whether a
-  page was found; local Subjects keep the page-attributable gate. Denied and absent are the same thing by
-  construction: what a Source does not vouch, it does not return. Sourced data therefore has no per-user
-  granularity; if that is ever demanded, it is an additive optional context on the Source contract, not a redesign.
-- **Creating a page by title reveals whether that title is free** (amended 2026-09-12). `POST
-  /neowiki/v0/subjects` authorizes the caller-supplied title before looking for a page there, as MediaWiki's own page
-  creation does: a title they may not create answers `403` whether or not a page holds it. The `409` that says a
-  title is taken therefore reaches only a caller who may write there.
+  a per-row check. Read surfaces decide by the id's Source, never by whether a page was found; local Subjects keep
+  the page-attributable gate. Denied and absent are the same thing by construction: what a Source does not vouch, it
+  does not return.
 
 ## Out of scope
 
