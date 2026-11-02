@@ -23,7 +23,7 @@ using one name.
 You continue to identify and reference Property Definitions by their name. We change what people see in the UI
 to a multilingual property label, allowing the property name to stay stable when UI display needs change.
 
-Property Definition can now have one label per language, keyed by language tag
+A Property Definition can now have one label per language, keyed by language tag
 like [Text with language](034-monolingual-text-value-type.md) values are:
 
 ```json
@@ -48,7 +48,7 @@ and adding another. The existing behavior is retained: values under the old name
 ## Consequences
 
 - Changing a label breaks nothing that refers to the Property, and Subject JSON keeps descriptive keys.
-- The Schema editor lets users rename a Property only while no Subject uses the Schema; after that, renaming changes the label.
+- The Schema editor lets users rename a Property only while no Subject uses the Schema. Labels stay editable.
 - Labels are optional, so a Schema without them works as before.
 - Once Subjects use a Schema, its names keep their typos and outdated terms. Readers see the label, but people writing
   wikitext, Lua, Layouts, Mappings or queries use the name, so the Schema page shows both.
