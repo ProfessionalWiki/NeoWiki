@@ -67,7 +67,9 @@ const loadFailed = ref( false );
 
 const columns = subjectColumns( { showSchema: true, showPage: !isSubjectFirst(), sortable: false } );
 const listUrl = mw.util.getUrl( 'Special:Subjects' );
-const emptyText = computed( () => mw.msg( loadFailed.value ? 'neowiki-subjects-load-error' : 'neowiki-subjects-empty' ) );
+const emptyText = computed( () => mw.msg(
+	loadFailed.value ? 'neowiki-subjects-load-error' : 'neowiki-subjects-empty-recent'
+) );
 
 onMounted( async () => {
 	try {

@@ -26,6 +26,7 @@
 	"neowiki-subjects-column-edited": "Edited",
 	"neowiki-subjects-empty": "No subjects yet.",
 	"neowiki-subjects-empty-schema": "No $1 subjects yet.",
+	"neowiki-subjects-empty-recent": "No recently edited subjects.",
 	"neowiki-subjects-no-match": "No subjects match “$1”.",
 	"neowiki-subjects-all-schemas": "All schemas",
 	"neowiki-subjects-schema-label": "Schema",

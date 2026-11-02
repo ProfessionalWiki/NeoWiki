@@ -23,6 +23,7 @@
 	"neowiki-subjects-column-edited": "Header of the column showing when each subject was last edited.",
 	"neowiki-subjects-empty": "Shown in a subject table when the wiki has no subjects.",
 	"neowiki-subjects-empty-schema": "Shown in a subject table, and on a Schema card on [[Special:Schemas]], when a schema has no subjects.\n\nParameters:\n* $1 - the schema name",
+	"neowiki-subjects-empty-recent": "Shown in place of the rows of the [[Special:NeoWiki]] table of recently edited subjects when the latest edits on the wiki changed no subject. It says nothing about whether the wiki has subjects.",
 	"neowiki-subjects-no-match": "Shown in a subject table when no subject matches the search.\n\nParameters:\n* $1 - the search text",
 	"neowiki-subjects-all-schemas": "Item of the schema menu above the subject table on [[Special:Subjects]]; choosing it shows the subjects of every schema.",
 	"neowiki-subjects-schema-label": "Accessible name of the schema menu above the subject table on [[Special:Subjects]].\n{{Identical|Schema}}",
