@@ -15,7 +15,8 @@ stored under "Birth date". The Schema no longer has that name, so the dates stop
 and every Layout, Mapping and template that names the Property has to change with it. ADR 17 accepted this for the
 first version.
 
-For multilingual wikis, we also want the UI to show the property in the user's language: a German reader should see "Geburtsdatum".
+For multilingual wikis, we also want the UI to show the Property in the user's language: a German reader should see
+"Geburtsdatum".
 
 ## Decision
 
@@ -41,15 +42,16 @@ fallback chain, then to the label in the content language, and then to the name.
 Labels are for display only. Statements, Layouts, Mappings, wikitext, Lua, queries and API requests refer to a
 Property by its name, and Neo4j keys and RDF predicates continue to be based on the name.
 
-Property definitions can still be renamed via the API, as we cannot differentiate renames from removing one property definition
-and adding another. The existing behavior is retained: values under the old name stop showing in the UIs but are not removed.
+Property definitions can still be renamed via the API, as we cannot differentiate renames from removing one property
+definition and adding another. The existing behavior is retained: values under the old name stop showing in the UIs but
+are not removed.
 
 ## Consequences
 
 - Changing a label breaks nothing that refers to the Property.
 - We keep descriptive keys in Subject JSON and in references to the Property Definition, such as in wikitext, Lua and
   Cypher.
-- The multilingual use case is supported: users see the property in their language when a translation is available
+- The multilingual use case is supported: users see the Property in their language when a translation is available.
 - The name people write in wikitext, Lua, Layouts, Mappings and queries can differ from the label they see, such as
   "Birth date" shown as "Date of birth".
 
@@ -72,7 +74,7 @@ with ids such as P569. We expected this approach when we wrote ADR 17.
 
 Not chosen because references become opaque: Subject JSON, API requests, Layouts, Mappings, wikitext, Lua, Cypher and
 SPARQL would carry ids that people have to look up. Every stored Subject, Schema, Layout and Mapping would also need
-rewriting. We'd also need to generate the IDs. Our chosen approach avoids both those downsides without introducing new ones.
+rewriting. We'd also need to generate the IDs. Our chosen approach avoids these downsides.
 
 ### Ids next to names
 
