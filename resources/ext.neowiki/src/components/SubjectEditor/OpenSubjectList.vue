@@ -123,16 +123,19 @@ function optionAt( index: number ): HTMLElement | undefined {
 	padding: 0;
 	list-style: none;
 
-	/* The unsaved dot ends the row, in a column every row keeps: in line with the other dots, and
-		moving nothing when it appears. */
+	/* The row reaches the dialog's edge, so the space before its name is the dialog's own gutter.
+		The unsaved dot hangs in that space, in line with the other dots and moving nothing when it
+		appears. */
 	&__item {
 		box-sizing: @box-sizing-base;
+		position: relative;
 		display: grid;
-		grid-template-columns: minmax( 0, 1fr ) @size-50;
+		grid-template-columns: minmax( 0, 1fr );
 		align-items: center;
-		gap: @spacing-12 @spacing-50;
-		padding: @spacing-50 @spacing-100;
-		border-radius: @border-radius-base;
+		gap: @spacing-12;
+		padding: @spacing-50 @spacing-100 @spacing-50 @spacing-150;
+		border-start-end-radius: @border-radius-base;
+		border-end-end-radius: @border-radius-base;
 		cursor: pointer;
 		transition-property: @transition-property-base;
 		transition-duration: @transition-duration-base;
@@ -146,8 +149,10 @@ function optionAt( index: number ): HTMLElement | undefined {
 			color: @color-emphasized;
 		}
 
+		/* Inside the row: the scroller around the list clips at the dialog's edge. */
 		&:focus-visible {
 			outline: @border-width-thick solid @outline-color-progressive--focus;
+			outline-offset: -@border-width-thick;
 		}
 
 		/* Codex's selected-menu-item state: background and colour, and no weight — a weight
@@ -157,11 +162,6 @@ function optionAt( index: number ): HTMLElement | undefined {
 			background-color: @background-color-progressive-subtle;
 			color: @color-progressive;
 		}
-	}
-
-	&__name,
-	&__schema {
-		grid-column: 1;
 	}
 
 	/* A long name wraps rather than giving way at its end: the rows are few, so there is room.
@@ -184,9 +184,9 @@ function optionAt( index: number ): HTMLElement | undefined {
 
 	/* On the name's first line, however many it wraps to. */
 	&__unsaved {
-		grid-area: 1 / 2;
-		align-self: start;
-		margin-block-start: calc( ( 1lh - @size-50 ) / 2 );
+		position: absolute;
+		inset-inline-start: @spacing-50;
+		inset-block-start: calc( @spacing-50 + ( 1lh - @size-50 ) / 2 );
 	}
 }
 </style>
