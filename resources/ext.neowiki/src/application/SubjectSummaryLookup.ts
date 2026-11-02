@@ -41,7 +41,7 @@ export interface SubjectSummaryLookup {
 
 	/**
 	 * The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it.
-	 * Looks only at the newest edits, so the list can be short or empty on a wiki with Subjects.
+	 * Looks only at the newest edits, so the list can be short or empty if the newest edits are to non-Subjects.
 	 */
 	getRecentlyEditedSubjects( limit: number ): Promise<SubjectSummary[]>;
 }
