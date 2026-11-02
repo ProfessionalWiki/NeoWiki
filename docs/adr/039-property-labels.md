@@ -20,11 +20,11 @@ using one name.
 
 ## Decision
 
-A Property's name identifies its Property Definition. Saving a Schema with a changed name, through any editor or API,
-removes one Property and adds another. Values stored under the old name stay, unshown.
+You continue to identify and reference Property Definitions by their name. We change what people see in the UI
+to a multilingual property label, allowing the property name to stay stable when UI display needs change.
 
-What people see is the Property's label. A Property Definition can have one label per language, keyed by language tag
-as [Text with language](034-monolingual-text-value-type.md) values are:
+Property Definition can now have one label per language, keyed by language tag
+like [Text with language](034-monolingual-text-value-type.md) values are:
 
 ```json
 "Birth date": {
@@ -36,16 +36,19 @@ as [Text with language](034-monolingual-text-value-type.md) values are:
 }
 ```
 
-NeoWiki shows a Property under its label in the reader's interface language, falling back along MediaWiki's language
+The UI shows the property using its label in the reader's interface language, falling back along MediaWiki's language
 fallback chain, then to the label in the content language, and then to the name.
 
-Labels are for people only. Statements, Layouts, Mappings, wikitext, Lua, queries and API requests refer to a
-Property by its name, and Neo4j keys and RDF predicates are made from it.
+Labels are for display only. Statements, Layouts, Mappings, wikitext, Lua, queries and API requests refer to a
+Property by its name, and Neo4j keys and RDF predicates continue to be based on the name.
+
+Property definitions can still be renamed via the API, as we cannot differentiate renames from removing one property definition
+and adding another. The existing behavior is retained: values under the old name stop showing in the UIs but are not removed.
 
 ## Consequences
 
 - Changing a label breaks nothing that refers to the Property, and Subject JSON keeps descriptive keys.
-- The Schema editor renames a Property only while no Subject uses the Schema; after that, renaming changes the label.
+- The Schema editor lets users rename a Property only while no Subject uses the Schema; after that, renaming changes the label.
 - Labels are optional, so a Schema without them works as before.
 - Once Subjects use a Schema, its names keep their typos and outdated terms. Readers see the label, but people writing
   wikitext, Lua, Layouts, Mappings or queries use the name, so the Schema page shows both.
