@@ -2,12 +2,12 @@
 
 Date: 2026-11-02
 
-Status: Draft. Amends [ADR 17](017-names-as-identifiers.md): Property names no longer change, and labels take over
-what people see.
+Status: Draft. Amends [ADR 17](017-names-as-identifiers.md): the UIs show new property labels that are editable
+so property names can remain stable.
 
 ## Context
 
-A Property name is both what people see and what everything else uses to refer to the Property Definition
+A Property name is both what users see in the UIs and the identifier that everything else uses to refer to the Property Definition
 ([ADR 17](017-names-as-identifiers.md)).
 
 Take a Person Schema with a Property Definition "Birth date". Renaming it to "Date of birth" leaves every Person's date
