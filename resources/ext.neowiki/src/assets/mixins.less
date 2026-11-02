@@ -58,3 +58,18 @@
 		height: calc( 60rem - @stack-shrink );
 	}
 }
+
+/**
+ * The header of the Subject editor and of the Subject creator's Schema step: the same in both, so that the creator's
+ * hand-over from one to the other keeps it.
+ *
+ * Overrides, not replications: `.cdx-dialog__header`'s padding is unconditional in Codex, and `align-items: baseline`
+ * comes from `--default`. Both are deliberate departures — the header is static text beside a 32px close button, so on
+ * one line the button sets the height and baseline sits the title high in it.
+ */
+.ext-neowiki-subject-dialog-header() {
+	.cdx-dialog__header {
+		align-items: center;
+		padding-block: @spacing-50;
+	}
+}

@@ -23,7 +23,6 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectEditor.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
-import PaneDivider from '@/components/common/PaneDivider.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
@@ -31,6 +30,7 @@ import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
+import type { EditNotice } from '@/domain/EditNotice';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { newSubject, unresolvedPage, newSchema } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
@@ -1237,6 +1237,23 @@ describe( 'SubjectEditorDialog', () => {
 			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
 		} );
 
+		it( 'opens on the first field once the notices it waited for are in', async () => {
+			let releaseNotices!: ( notices: EditNotice[] ) => void;
+			const repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
+				getNotices: () => new Promise<EditNotice[]>( ( resolve ) => {
+					releaseNotices = resolve;
+				} ),
+			} );
+			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ) );
+			await flushPromises();
+			await openingFocusPlaced();
+
+			releaseNotices( [] );
+
+			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+			repository.mockRestore();
+		} );
+
 		it( 'opens on a select field, whose menu waits to be asked for', async () => {
 			const wrapper = mountOpenOn( schemaStartingWith( {
 				type: 'select',
@@ -1611,6 +1628,87 @@ describe( 'SubjectEditorDialog', () => {
 			expect( ( wrapper.findAllComponents( SubjectEditPane )[ 1 ].vm as any ).label )
 				.toBe( 'Edited child' );
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
+		} );
+
+		// The panes share one scroller, so a switch would otherwise show each Subject wherever the
+		// one before it was scrolled to. The real Teleport, as the stub remounts every pane, and
+		// the scroller with them, when the dialog's header changes.
+		describe( 'Scroll position', () => {
+			function formScroller( wrapper: VueWrapper ): Element {
+				return wrapper.findComponent( SubjectEditPane ).element
+					.closest( '.ext-neowiki-subject-editor-dialog__surface' ) as Element;
+			}
+
+			async function mountOnRootScrolledTo( scrollTop: number ): Promise<VueWrapper> {
+				const { wrapper } = await mountWithSecondPaneOpen( {
+					rootSchema: relationRootSchema,
+					rootSubject: relationRootSubject,
+					stubs: { teleport: false },
+				} );
+				await selectInList( wrapper, rootSubjectId );
+				formScroller( wrapper ).scrollTop = scrollTop;
+
+				return wrapper;
+			}
+
+			it( 'opens a Subject at its top, wherever the one before it was scrolled to', async () => {
+				const wrapper = await mountOnRootScrolledTo( 300 );
+
+				wrapper.findAllComponents( SubjectEditPane )[ 0 ]
+					.vm.$emit( 'edit-relation-target', new SubjectId( 's33333333333333' ) );
+				await flushPromises();
+
+				expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
+				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+			} );
+
+			it( 'shows a Subject chosen from the list where it was left', async () => {
+				const wrapper = await mountOnRootScrolledTo( 300 );
+
+				await selectInList( wrapper, 's22222222222222' );
+
+				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+			} );
+
+			it( 'returns to a Subject at the scroll position it was left at', async () => {
+				const wrapper = await mountOnRootScrolledTo( 300 );
+				await selectInList( wrapper, 's22222222222222' );
+				formScroller( wrapper ).scrollTop = 100;
+
+				await selectInList( wrapper, rootSubjectId );
+
+				expect( formScroller( wrapper ).scrollTop ).toBe( 300 );
+			} );
+
+			it( 'forgets where a Subject was left once the dialog opens again', async () => {
+				const wrapper = await mountOnRootScrolledTo( 0 );
+				await selectInList( wrapper, 's22222222222222' );
+				formScroller( wrapper ).scrollTop = 200;
+				await selectInList( wrapper, rootSubjectId );
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
+
+				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+			} );
+
+			it( 'forgets where a Subject was left once the host replaces the root', async () => {
+				const wrapper = await mountOnRootScrolledTo( 0 );
+				await selectInList( wrapper, 's22222222222222' );
+				formScroller( wrapper ).scrollTop = 200;
+
+				await wrapper.setProps( { subject: labellessSubject } );
+				await flushPromises();
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
+
+				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+			} );
 		} );
 
 		it( 'shows the unsaved dot on a dirty subject and not on a clean one', async () => {
@@ -2540,7 +2638,7 @@ describe( 'SubjectEditorDialog', () => {
 				expect( Array.from( content.element.children ).map( ( child ) => child.className ) )
 					.toEqual( [
 						'ext-neowiki-subject-editor-dialog__surface',
-						'ext-neowiki-pane-divider ext-neowiki-subject-editor-dialog__divider',
+						'ext-neowiki-subject-editor-dialog__divider',
 						'ext-neowiki-subject-editor-dialog__surface',
 					] );
 			} );
@@ -2565,71 +2663,17 @@ describe( 'SubjectEditorDialog', () => {
 				const wrapper = mountComponent( false, {} );
 				await flushPromises();
 
-				expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
+				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__divider' ).exists() ).toBe( false );
 			} );
 
-			it( 'gives the navigator the width the divider asks for', async () => {
+			// The form keeps its width while the list shows, so a wider list would widen the dialog.
+			it( 'offers no handle to resize the navigator', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
 
-				wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
-				await nextTick();
-
-				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__content' ).attributes( 'style' ) )
-					.toContain( '--ext-neowiki-pane-size: 500px' );
-				expect( wrapper.findComponent( PaneDivider ).props( 'size' ) ).toBe( 500 );
-			} );
-
-			it( 'tells the divider the bounds it may move between', async () => {
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-
-				const divider = wrapper.findComponent( PaneDivider );
-
-				expect( divider.props( 'min' ) ).toBe( 256 );
-				// jsdom measures nothing, so the bound is the current width and the divider still moves.
-				expect( divider.props( 'max' ) ).toBe( 384 );
-				expect( divider.props( 'disabled' ) ).toBe( false );
-			} );
-
-			it( 'remembers the navigator width once the gesture ends, under its own key', async () => {
-				const global = globalThis as unknown as { mw?: Record<string, unknown> };
-				const before = global.mw;
-				const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
-				global.mw = { ...before, storage };
-
-				try {
-					const { wrapper } = await mountWithSecondPaneOpen( {
-						rootSchema: relationRootSchema,
-						rootSubject: relationRootSubject,
-					} );
-					wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 500 );
-					wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
-					await nextTick();
-
-					expect( storage.set ).toHaveBeenCalledWith( 'neowiki-subject-editor-pane-size', '500' );
-				} finally {
-					global.mw = before;
-				}
-			} );
-
-			it( 'points the divider at the navigator it sizes', async () => {
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-
-				const navigator = wrapper.find(
-					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
-				);
-
-				expect( navigator.attributes( 'id' ) ).toBeTruthy();
-				expect( wrapper.findComponent( PaneDivider ).props( 'controls' ) )
-					.toBe( navigator.attributes( 'id' ) );
+				expect( wrapper.find( '[role="separator"]' ).exists() ).toBe( false );
 			} );
 
 			it( 'renders only the form surface when there is no navigator', async () => {
@@ -3653,6 +3697,68 @@ describe( 'SubjectEditorDialog', () => {
 			] );
 
 			repository.mockRestore();
+		} );
+
+		// So the form does not jump down when a notice lands above it, while a slow request still
+		// holds the editor up no longer than reading it does before it says so.
+		describe( 'while they take a while', () => {
+			const NOTICE = { key: 'editnotice-0', html: '<p>Heads up</p>' };
+			let releaseNotices!: ( notices: EditNotice[] ) => void;
+			let repository: { mockRestore: () => void };
+
+			beforeEach( () => {
+				vi.useFakeTimers();
+				repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
+					getNotices: () => new Promise<EditNotice[]>( ( resolve ) => {
+						releaseNotices = resolve;
+					} ),
+				} );
+			} );
+
+			afterEach( () => {
+				repository.mockRestore();
+				vi.useRealTimers();
+			} );
+
+			it( 'waits for them before it opens', async () => {
+				const wrapper = mountComponent( false, saveButtonTestStubs );
+				await flushPromises();
+
+				expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
+			} );
+
+			it( 'opens with the notices once they arrive', async () => {
+				const wrapper = mountComponent( false, saveButtonTestStubs );
+				await flushPromises();
+
+				releaseNotices( [ NOTICE ] );
+				await flushPromises();
+
+				expect( exposedToHost( wrapper ).shown ).toBe( true );
+				expect( wrapper.find( '.ext-neowiki-edit-notice' ).text() ).toBe( 'Heads up' );
+			} );
+
+			it( 'opens without them once it has waited as long as it waits before saying it is reading', async () => {
+				const wrapper = mountComponent( false, saveButtonTestStubs );
+				await flushPromises();
+
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				expect( exposedToHost( wrapper ).shown ).toBe( true );
+				expect( wrapper.find( '[role="progressbar"]' ).exists() ).toBe( false );
+				expect( wrapper.find( '.ext-neowiki-edit-notices' ).exists() ).toBe( false );
+			} );
+
+			it( 'shows notices that arrive once it has opened without them', async () => {
+				const wrapper = mountComponent( false, saveButtonTestStubs );
+				await flushPromises();
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				releaseNotices( [ NOTICE ] );
+				await flushPromises();
+
+				expect( wrapper.find( '.ext-neowiki-edit-notice' ).text() ).toBe( 'Heads up' );
+			} );
 		} );
 	} );
 	describe( 'Dependent Subjects', () => {

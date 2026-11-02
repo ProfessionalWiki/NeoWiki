@@ -71,4 +71,54 @@ describe( 'useEditNotices', () => {
 		expect( notices.value ).toStrictEqual( [ fast ] );
 	} );
 
+	describe( 'loading', () => {
+		function repositoryOnRelease(): { repository: EditNoticeRepository; release: () => void } {
+			let release!: () => void;
+			const answered = new Promise<EditNotice[]>( ( resolve ) => {
+				release = () => resolve( [] );
+			} );
+
+			return { repository: { getNotices: () => answered }, release };
+		}
+
+		it( 'is loading while a request is in flight', () => {
+			const { loading, loadNotices } = useEditNotices( () => repositoryOnRelease().repository );
+
+			loadNotices( PAGE_ID );
+
+			expect( loading.value ).toBe( true );
+		} );
+
+		it( 'stops loading once the notices arrive', async () => {
+			const { loading, loadNotices } = useEditNotices( () => repositoryReturning( [] ) );
+
+			await loadNotices( PAGE_ID );
+
+			expect( loading.value ).toBe( false );
+		} );
+
+		it( 'stops loading once a request fails', async () => {
+			const failing: EditNoticeRepository = { getNotices: () => Promise.reject( new Error( 'network down' ) ) };
+			const { loading, loadNotices } = useEditNotices( () => failing );
+
+			await loadNotices( PAGE_ID );
+
+			expect( loading.value ).toBe( false );
+		} );
+
+		it( 'keeps loading while a newer request is in flight after an earlier one settles', async () => {
+			const earlier = repositoryOnRelease();
+			const newer = repositoryOnRelease();
+			const repositories = [ earlier.repository, newer.repository ];
+			const { loading, loadNotices } = useEditNotices( () => repositories.shift() as EditNoticeRepository );
+
+			const first = loadNotices( PAGE_ID );
+			loadNotices( PAGE_ID, 'Person' );
+			earlier.release();
+			await first;
+
+			expect( loading.value ).toBe( true );
+		} );
+	} );
+
 } );

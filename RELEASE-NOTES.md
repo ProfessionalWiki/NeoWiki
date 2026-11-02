@@ -2,6 +2,8 @@
 
 To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/operations/upgrading).
 
+## Unreleased
+
 ## NeoWiki 0.1.0
 
 The first release, a beta. Highlights:

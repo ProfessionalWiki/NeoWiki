@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises } from '@vue/test-utils';
 import { markRaw } from 'vue';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
@@ -13,6 +14,8 @@ import { ValueType, newStringValue } from '@/domain/Value';
 function setupMwHook(): void {
 	const hooks: Record<string, { args: unknown[] | null; handlers: ( ( ...a: unknown[] ) => void )[] }> = {};
 	( globalThis as any ).mw = {
+		config: { get: ( _name: string, fallback: unknown = null ): unknown => fallback },
+		log: { warn: vi.fn() },
 		hook: ( name: string ) => {
 			hooks[ name ] ??= { args: null, handlers: [] };
 			const h = hooks[ name ];
@@ -109,5 +112,33 @@ describe( 'ext.neowiki module load', () => {
 		expect( ext.getPropertyTypeRegistry().getTypeNames() ).toContain( 'boot-fake' );
 		expect( ext.getTypeSpecificComponentRegistry().getPropertyTypes() ).toContain( 'boot-fake' );
 		expect( ext.getViewTypeRegistry().hasType( 'boot-fake-view' ) ).toBe( true );
+	} );
+
+	async function loadNeoWikiAndLetItsUiStart(): Promise<void> {
+		( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode = false;
+
+		vi.resetModules();
+		await import( '@/neowiki' );
+		await flushPromises();
+	}
+
+	it( 'does not warn about a Property Type registered as the hook fires', async () => {
+		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
+			r.registerPropertyType( fakeRegistration( 'on-time' ) );
+		} );
+
+		await loadNeoWikiAndLetItsUiStart();
+
+		expect( ( globalThis as any ).mw.log.warn ).not.toHaveBeenCalled();
+	} );
+
+	it( 'warns about a Property Type registered once the UI has started', async () => {
+		await loadNeoWikiAndLetItsUiStart();
+
+		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
+			r.registerPropertyType( fakeRegistration( 'too-late' ) );
+		} );
+
+		expect( ( globalThis as any ).mw.log.warn ).toHaveBeenCalledWith( expect.stringContaining( '"too-late"' ) );
 	} );
 } );

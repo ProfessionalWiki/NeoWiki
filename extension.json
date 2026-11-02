@@ -54,7 +54,7 @@
 		"ParserOptionsRegister": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserOptionsRegister",
 		"PageRenderingHash": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageRenderingHash",
 		"ParserFirstCallInit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserFirstCallInit",
-		"ParserAfterTidy": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onParserAfterTidy",
+		"ContentAlterParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentAlterParserOutput",
 		"OutputPageParserOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onOutputPageParserOutput",
 
 		"RevisionFromEditComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionFromEditComplete",
@@ -835,7 +835,6 @@
 				"neowiki-subject-editor-save-scope",
 				"neowiki-subject-editor-save-scope-subject-first",
 				"neowiki-subject-editor-open-subjects",
-				"neowiki-subject-editor-resize-navigator",
 				"neowiki-dependent-subject-add",
 				"neowiki-dependent-subject-add-choose",
 				"neowiki-dependent-subject-remove",

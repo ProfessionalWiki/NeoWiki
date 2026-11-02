@@ -96,6 +96,9 @@ jobs:
         with:
           path: mediawiki/extensions/NeoWiki
 
+      - name: Load RedHerb test extension
+        run: echo 'wfLoadExtension( "RedHerb", "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );' >> LocalSettings.php
+
       - run: composer update
 
       - name: Point the wiki at the test server

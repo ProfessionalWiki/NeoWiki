@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markRaw } from 'vue';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
@@ -63,5 +63,59 @@ describe( 'FrontendRegistrar', () => {
 		registrar.registerViewType( { typeName: 'card', component } );
 
 		expect( viewTypeRegistry.getComponent( 'card' ) ).toBe( component );
+	} );
+} );
+
+describe( 'FrontendRegistrar after the UI has started', () => {
+	const warn = vi.fn();
+
+	function newRegistrar( typeRegistry = new PropertyTypeRegistry() ): FrontendRegistrar {
+		return new FrontendRegistrar( new TypeSpecificComponentRegistry(), typeRegistry, new ViewTypeRegistry() );
+	}
+
+	beforeEach( () => {
+		warn.mockClear();
+		vi.stubGlobal( 'mw', { log: { warn } } );
+	} );
+
+	afterEach( () => {
+		vi.unstubAllGlobals();
+	} );
+
+	it( 'warns about a Property Type registered late, by name', () => {
+		const registrar = newRegistrar();
+		registrar.markUiStarted();
+
+		registrar.registerPropertyType( registration( 'late' ) );
+
+		expect( warn ).toHaveBeenCalledWith( expect.stringContaining( '"late"' ) );
+	} );
+
+	it( 'does not warn about a Property Type registered before the UI starts', () => {
+		const registrar = newRegistrar();
+
+		registrar.registerPropertyType( registration( 'early' ) );
+		registrar.markUiStarted();
+
+		expect( warn ).not.toHaveBeenCalled();
+	} );
+
+	it( 'still registers a Property Type registered late', () => {
+		const typeRegistry = new PropertyTypeRegistry();
+		const registrar = newRegistrar( typeRegistry );
+		registrar.markUiStarted();
+
+		registrar.registerPropertyType( registration( 'late' ) );
+
+		expect( typeRegistry.getTypeNames() ).toContain( 'late' );
+	} );
+
+	it( 'does not warn about a View Type registered late, which a mounted View picks up', () => {
+		const registrar = newRegistrar();
+		registrar.markUiStarted();
+
+		registrar.registerViewType( { typeName: 'card', component: markRaw( { render: (): null => null } ) } );
+
+		expect( warn ).not.toHaveBeenCalled();
 	} );
 } );

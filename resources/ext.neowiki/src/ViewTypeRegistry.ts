@@ -4,9 +4,9 @@ import type { Component } from 'vue';
 export class ViewTypeRegistry {
 
 	// Reactive so a view type registered after a consumer (e.g. NeoWikiApp) has
-	// already resolved its views re-triggers that resolution. Extensions register
-	// through the neowiki.registration hook and their frontend module may load
-	// after the app has mounted, so registration can race view rendering.
+	// already resolved its views re-triggers that resolution. A frontend module
+	// that NeoWikiGetFrontendModules does not name may run after the app has mounted,
+	// so its registration can race view rendering.
 	// Components are markRaw'd so Vue does not wrap them in a reactive proxy.
 	private types: Map<string, Component> = reactive( new Map<string, Component>() );
 
