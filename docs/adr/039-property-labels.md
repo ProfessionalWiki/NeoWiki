@@ -15,8 +15,7 @@ stored under "Birth date". The Schema no longer has that name, so the dates stop
 and every Layout, Mapping and template that names the Property has to change with it. ADR 17 accepted this for the
 first version.
 
-Wikis in several languages need more: a German reader should see "Geburtsdatum", while queries and templates keep
-using one name.
+For multilingual wikis, we also want the UI to show the property in the user's language: a German reader should see "Geburtsdatum".
 
 ## Decision
 
@@ -50,15 +49,14 @@ and adding another. The existing behavior is retained: values under the old name
 - Changing a label breaks nothing that refers to the Property.
 - We keep descriptive keys in Subject JSON and in references to the Property Definition, such as in wikitext, Lua and
   Cypher.
+- The multilingual use case is supported: users see the property in their language when a translation is available
 - The name people write in wikitext, Lua, Layouts, Mappings and queries can differ from the label they see, such as
   "Birth date" shown as "Date of birth".
 
-## Implementation Notes
+## Implementation Thoughts
 
-Not part of the decision:
-
-- The Schema editor lets users rename a Property only while no Subject uses the Schema. Labels stay editable.
-- The Schema page shows each Property's name beside its label, for people writing references.
+- The Schema editor could let users rename a Property only while no Subject uses the Schema.
+- The Schema page likely should show each Property's name beside its label, for people writing references.
 
 ## Out of Scope
 
@@ -70,11 +68,11 @@ moves values from one Property to another.
 ### Generated identifiers
 
 Give each Property a generated id that Statements and references use, and turn its name into a label, as Wikibase does
-with ids such as P569. ADR 17 expected this step.
+with ids such as P569. We expected this approach when we wrote ADR 17.
 
 Not chosen because references become opaque: Subject JSON, API requests, Layouts, Mappings, wikitext, Lua, Cypher and
 SPARQL would carry ids that people have to look up. Every stored Subject, Schema, Layout and Mapping would also need
-rewriting. Labels already let what people see change, which is what the ids were for.
+rewriting. We'd also need to generate the IDs. Our chosen approach avoids both those downsides without introducing new ones.
 
 ### Ids next to names
 
@@ -91,7 +89,8 @@ Layouts, Mappings, wikitext, Lua and the graph, still break.
 Keep names editable, and on a rename rewrite every Subject, Layout and Mapping that uses the old name.
 
 Not chosen because it adds a revision to every page holding a Subject of the Schema, can take long and fail halfway on
-a large wiki, and cannot reach wikitext, Lua, saved queries or Subjects from other Sources.
+a large wiki, and cannot reach wikitext, Lua, saved queries or Subjects from other Sources. Old revisions would
+also stop showing their data when viewing them via the history page.
 
 ### Old names as aliases
 
