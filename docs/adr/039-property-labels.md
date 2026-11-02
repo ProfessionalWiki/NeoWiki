@@ -47,7 +47,8 @@ and adding another. The existing behavior is retained: values under the old name
 
 ## Consequences
 
-- Changing a label breaks nothing that refers to the Property, and Subject JSON keeps descriptive keys.
+- Changing a label breaks nothing that refers to the Property
+- We keep descriptive keys in Subject JSON and references to the property definition like in wikitext, lua, and Cypher
 - The Schema editor lets users rename a Property only while no Subject uses the Schema. Labels stay editable.
 - Labels are optional, so a Schema without them works as before.
 - Once Subjects use a Schema, its names keep their typos and outdated terms. Readers see the label, but people writing
