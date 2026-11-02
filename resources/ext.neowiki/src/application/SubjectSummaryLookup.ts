@@ -39,6 +39,9 @@ export interface SubjectSummaryLookup {
 	/** Throws SubjectSummarySearchTimeoutError when the wiki stops a search that runs too long. */
 	getSubjectSummaries( query: SubjectSummaryQuery ): Promise<SubjectSummaries>;
 
-	/** The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it. */
+	/**
+	 * The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it.
+	 * Looks only at the newest edits, so the list can be short or empty on a wiki with Subjects.
+	 */
 	getRecentlyEditedSubjects( limit: number ): Promise<SubjectSummary[]>;
 }

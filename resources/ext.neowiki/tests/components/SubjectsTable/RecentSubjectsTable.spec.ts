@@ -65,12 +65,12 @@ describe( 'RecentSubjectsTable', () => {
 		expect( link.element.closest( '.cdx-table__footer' ) ).not.toBeNull();
 	} );
 
-	it( 'says the wiki has no Subjects yet when there are none', async () => {
+	it( 'says no Subjects were edited recently rather than that the wiki has none', async () => {
 		getRecentlyEditedSubjects.mockResolvedValue( [] );
 		const wrapper = mountTable();
 		await flushPromises();
 
-		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty' );
+		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-recent' );
 	} );
 
 	it( 'says nothing about an empty list while it loads', async () => {
@@ -80,7 +80,7 @@ describe( 'RecentSubjectsTable', () => {
 		const wrapper = mountTable();
 		await flushPromises();
 
-		expect( wrapper.text() ).not.toContain( 'neowiki-subjects-empty' );
+		expect( wrapper.text() ).not.toContain( 'neowiki-subjects-empty-recent' );
 	} );
 
 	it( 'says the list could not be loaded when the request fails', async () => {
