@@ -47,12 +47,18 @@ and adding another. The existing behavior is retained: values under the old name
 
 ## Consequences
 
-- Changing a label breaks nothing that refers to the Property
-- We keep descriptive keys in Subject JSON and references to the property definition like in wikitext, lua, and Cypher
+- Changing a label breaks nothing that refers to the Property.
+- We keep descriptive keys in Subject JSON and in references to the Property Definition, such as in wikitext, Lua and
+  Cypher.
+- The name people write in wikitext, Lua, Layouts, Mappings and queries can differ from the label they see, such as
+  "Birth date" shown as "Date of birth".
+
+## Implementation Notes
+
+Not part of the decision:
+
 - The Schema editor lets users rename a Property only while no Subject uses the Schema. Labels stay editable.
-- Labels are optional, so a Schema without them works as before.
-- Once Subjects use a Schema, its names keep their typos and outdated terms. Readers see the label, but people writing
-  wikitext, Lua, Layouts, Mappings or queries use the name, so the Schema page shows both.
+- The Schema page shows each Property's name beside its label, for people writing references.
 
 ## Out of Scope
 
