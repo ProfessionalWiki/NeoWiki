@@ -4,7 +4,8 @@ Date: 2026-07-22
 
 Status: Accepted (2026-09-02). Amended 2026-09-11, resolving the "Cross-wiki subject display" open decision with a
 fifth read class, source-attested; amended 2026-09-12, on what creating a page by title reveals; amended 2026-09-16,
-resolving the "Default grant of `neowiki-query`" open decision (see Decision).
+resolving the "Default grant of `neowiki-query`" open decision (see Decision); amended 2026-10-27, on which Parsoid
+renders run as the anonymous user.
 
 ## Context
 
@@ -59,7 +60,7 @@ Constraints the model rests on:
   (which ADR 19 allows for SPARQL) is a different surface: see the projection decision below.
 - **Parse-time reads run as the user the page is parsed for, and their output is cached per access class.**
   The parser functions and the Lua library read as the user recorded in the parser options: the viewer on a
-  page view, or the anonymous user for the save-time parse, the job queue, and Parsoid renders. They are gated
+  page view, or the anonymous user for the save-time parse, the job queue, and Parsoid's REST renders. They are gated
   like the REST endpoints: page `read` for page-attributable reads, `neowiki-query` for raw queries. Query
   limits use the default tier regardless of user. Output that depends on such a read is parser-cached under
   the parsing user's access class, derived from the user's effective groups and the wiki-level `read` and

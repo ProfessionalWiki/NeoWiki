@@ -222,13 +222,21 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 }
 
 // TODO: This is a temporary fix until we implement Views.
+// Parsoid wraps each section in a <section>, so later headings need not be siblings of the View.
 @media ( min-width: @min-width-breakpoint-tablet ) {
 	.ext-neowiki-view ~ h2,
 	.ext-neowiki-view ~ h3,
 	.ext-neowiki-view ~ h4,
 	.ext-neowiki-view ~ h5,
 	.ext-neowiki-view ~ h6,
-	.ext-neowiki-view ~ .mw-heading {
+	.ext-neowiki-view ~ .mw-heading,
+	.ext-neowiki-view ~ section > .mw-heading {
+		clear: both;
+	}
+
+	// A rule of its own: a browser without :has() drops every selector in a list that holds one.
+	// Like the rules above, it skips a View inside a wrapper.
+	section:has( > .ext-neowiki-view, section > .ext-neowiki-view ) ~ section > .mw-heading {
 		clear: both;
 	}
 }

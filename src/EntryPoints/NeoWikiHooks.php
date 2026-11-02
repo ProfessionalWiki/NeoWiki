@@ -9,6 +9,7 @@ use HTMLCacheUpdateJob;
 use HtmlArmor;
 use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
+use MediaWiki\Content\Content;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\RequestContext;
@@ -620,9 +621,13 @@ class NeoWikiHooks {
 	 * Only a mount that reached the HTML counts: a condition or a Lua module can discard what the parser
 	 * function returned.
 	 */
-	public static function onParserAfterTidy( Parser $parser, string &$text ): void {
-		if ( ViewHtmlBuilder::containsMainSubjectInFull( $text ) ) {
-			$parser->getOutput()->setExtensionData( self::PLACES_MAIN_SUBJECT, true );
+	public static function onContentAlterParserOutput( Content $content, Title $title, ParserOutput $parserOutput ): void {
+		if ( !$parserOutput->hasText() ) {
+			return;
+		}
+
+		if ( ViewHtmlBuilder::containsMainSubjectInFull( $parserOutput->getContentHolderText() ) ) {
+			$parserOutput->setExtensionData( self::PLACES_MAIN_SUBJECT, true );
 		}
 	}
 
