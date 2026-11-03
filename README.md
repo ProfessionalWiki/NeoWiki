@@ -2,7 +2,7 @@
 
 [NeoWiki](https://neowiki.ai) is a collaborative knowledge management system on top of MediaWiki and graph databases.
 
-[Website](https://neowiki.ai) · [Documentation](https://neowiki.ai/docs/) · [Try it at neowiki.dev](https://neowiki.dev) · [Get a demo](https://neowiki.ai/demo)
+[Website](https://neowiki.ai) · [Documentation](https://neowiki.ai/docs/) · [Try it at neowiki.dev](https://neowiki.dev) · [Get a demo](https://neowiki.ai/demo) · [NeoWiki hosting](https://professional.wiki/en/hosting/neowiki)
 
 [![Mastodon](https://img.shields.io/mastodon/follow/116122313808578574)](https://mastodon.social/@NeoWiki)
 [![Bluesky](https://img.shields.io/bluesky/followers/neowiki.ai)](https://bsky.app/profile/neowiki.ai)
