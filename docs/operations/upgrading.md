@@ -11,7 +11,29 @@ they list any step an upgrade needs beyond the ones below.
 
 ## Upgrading a Docker install
 
-### 1. Get the new release
+On 0.1.0 or 0.1.1, follow "Upgrading from 0.1.0 or 0.1.1" below. Otherwise, run this from the directory the stack
+runs from:
+
+```sh
+make upgrade version=latest
+```
+
+This moves the directory to the newest release, pulls that release's demo image, restarts the stack on it, runs
+MediaWiki's updater, and [rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection. To pick
+a release, name it, as in `version=0.2.0`; a release older than yours is refused.
+
+In a clone of the repository, this checks out the release's tag, and stops if that would overwrite a change of yours.
+Otherwise it unpacks the release over the directory: files of your own, such as `Docker/.env`, stay, and changes to the
+release's files, such as uncommenting the `LocalSettings.php` mount in `Docker/docker-compose.yml`, are overwritten.
+
+`make upgrade` keeps the optional services the stack last started with.
+
+If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
+
+### Upgrading from 0.1.0 or 0.1.1
+
+Their `make upgrade` ignores `version` and stays on the version you have, so move to the new release yourself this
+once:
 
 - **From an unpacked release:** download and unpack the newest
   [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest). Copy your `Docker/.env` into it, and carry
@@ -19,20 +41,7 @@ they list any step an upgrade needs beyond the ones below.
   directory; running `make remove` in it would delete your data.
 - **From a clone of the repository:** check out the release's tag, as in `git fetch --tags && git checkout 0.2.0`.
 
-### 2. Upgrade the stack
-
-Run this from the release's root:
-
-```sh
-make upgrade
-```
-
-This pulls the demo image of that version, restarts the stack on it, runs MediaWiki's updater, and
-[rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection.
-
-`make upgrade` keeps the optional services the stack last started with.
-
-If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
+Then run `make upgrade` from the release's root.
 
 ### Optional: refresh the demo content
 
@@ -80,8 +89,7 @@ If your wiki runs CirrusSearch, [update its search index](maintenance.md#making-
 
 To follow master instead of releases:
 
-- **Docker:** in your clone of the repository, run `git checkout master && git pull`, then continue with step 2 of
-  [Upgrading a Docker install](#upgrading-a-docker-install).
+- **Docker:** in your clone of the repository, run `git checkout master && git pull`, then `make upgrade`.
 - **An existing wiki:** update the code, its dependencies, and the frontend bundle from the MediaWiki root:
 
   ```sh
