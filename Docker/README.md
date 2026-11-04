@@ -67,24 +67,24 @@ The core of both stacks is `mediawiki` and `db`; everything else is optional. Th
 stack (`make dev`, `make dev-tools`, `make up`, `make demo` and `make upgrade`) accept a `services=`
 comma-list naming the optional services to run:
 
-| Service       | Needed for                                                              |
-|---------------|-------------------------------------------------------------------------|
-| `qlever`      | SPARQL queries: the wiki projects RDF into it on every save             |
-| `neo`         | Cypher queries: the wiki projects into Neo4j on every save              |
-| `oxigraph`    | A second SPARQL store, kept in sync the same way                        |
-| `node`        | Frontend work: watches and rebuilds the TS bundle (`dist/`); dev only   |
-| `mailcatcher` | Testing outgoing email (web UI on `MAILCATCHER_PORT`); dev only         |
+| Service       | Default | Needed for                                                              |
+|---------------|---------|-------------------------------------------------------------------------|
+| `qlever`      | yes     | SPARQL queries: the wiki projects RDF into it on every save             |
+| `neo`         |         | Cypher queries: the wiki projects into Neo4j on every save              |
+| `oxigraph`    |         | A second SPARQL store, kept in sync the same way                        |
+| `node`        | yes     | Frontend work: watches and rebuilds the TS bundle (`dist/`); dev only   |
+| `mailcatcher` | yes     | Testing outgoing email (web UI on `MAILCATCHER_PORT`); dev only         |
 
-Without the flag, `qlever`, `node` and `mailcatcher` run. `services=none` runs core only, a wiki
-without query surfaces. The selection is not persisted, so pass it whenever you start the stack.
+A new stack runs the defaults. Once you pass `services=`, the stack keeps that selection, even across
+`make down` and upgrades, until you pass another. `make print-services` shows the current selection.
 Examples:
 
 ```sh
-make dev                             # default set
+make dev                             # the current selection
 make dev services=node               # frontend work: watcher only
 make dev services=none               # core only
 make dev services=node,qlever,neo    # SPARQL and Cypher, plus frontend
-make upgrade services=qlever,neo     # a demo stack that keeps Neo4j
+make dev services=default            # back to the default set
 ```
 
 Rerunning `make dev` with a different selection stops newly deselected services, keeping their
@@ -96,8 +96,9 @@ running, so run `make down` before deselecting a service there. Details:
   stale by a later `git pull`.
 - The test-only backends (`test_neo`, `test_qlever`, `test_oxigraph`) are independent of this selection:
   `make phpunit` starts them on demand, and `make test-backends-stop` stops them again.
-- Setting `COMPOSE_PROFILES` directly still works and is unioned with the selection; the profile names
-  equal the service names.
+- `COMPOSE_PROFILES` adds profiles to the selection; the profile names equal the service names. The
+  stack keeps those profiles, such as `server`, with any selection until you set `COMPOSE_PROFILES`
+  again: `COMPOSE_PROFILES= make dev` clears them.
 
 ## QLever SPARQL store
 

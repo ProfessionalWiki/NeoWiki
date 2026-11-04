@@ -23,22 +23,8 @@ is_port_free() {
     ! (echo > /dev/tcp/127.0.0.1/"$p") 2>/dev/null
 }
 
-# Update or append a KEY=VALUE entry in $ENV_FILE.
-set_env_var() {
-    local key=$1 value=$2
-    if grep -qE "^$key=" "$ENV_FILE"; then
-        sed -i.bak -E "s|^$key=.*|$key=$value|" "$ENV_FILE"
-        rm -f "$ENV_FILE.bak"
-    else
-        echo "$key=$value" >> "$ENV_FILE"
-    fi
-}
-
-# Read current value of a key from $ENV_FILE, empty if unset.
-get_env_var() {
-    local key=$1
-    grep -E "^$key=" "$ENV_FILE" | head -1 | cut -d= -f2- || true
-}
+# shellcheck source-path=SCRIPTDIR source=env-file.sh
+. "$(dirname "$0")/env-file.sh"
 
 # Allocate or reuse a port for $key in [$start..$end]. If the existing value
 # in .env is still free on the host, reuse it; otherwise pick the first free.
