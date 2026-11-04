@@ -76,6 +76,17 @@ class InWikiConfigSubjectFirstTest extends NeoWikiIntegrationTestCase {
 		NeoWikiExtension::resetInstance();
 	}
 
+	/**
+	 * Saving refuses an invalid value; an import does not.
+	 */
+	private function importConfigPage( string $json ): void {
+		$this->editPage( Title::makeTitle( NS_MEDIAWIKI, 'NeoWikiImportSource' ), new JsonContent( $json ) );
+		$xml = $this->exportPageToXml( 'MediaWiki:NeoWikiImportSource' );
+
+		$this->importXml( str_replace( 'NeoWikiImportSource', NeoWikiExtension::CONFIG_PAGE_TITLE, $xml ) );
+		NeoWikiExtension::resetInstance();
+	}
+
 	private function htmlDereferenceLocation(): string {
 		$response = $this->executeHandler(
 			new ResolveSubjectIriApi(),
@@ -113,7 +124,7 @@ class InWikiConfigSubjectFirstTest extends NeoWikiIntegrationTestCase {
 		$logger = new TestLogger( true );
 		$this->setLogger( 'NeoWiki', $logger );
 
-		$this->saveConfigPage( '{ "subjectFirst": "yes" }' );
+		$this->importConfigPage( '{ "subjectFirst": "yes" }' );
 
 		$this->assertLandsOnHostingPage(
 			$this->htmlDereferenceLocation(),

@@ -4,6 +4,8 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+* `MediaWiki:NeoWiki` refuses invalid settings on MediaWiki 1.47 too, and Action and REST API errors now name them
+
 ## NeoWiki 0.1.1
 
 * On MediaWiki 1.47, pages no longer show their Main Subject twice

@@ -11,6 +11,7 @@ use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\JsonContent;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
@@ -22,6 +23,7 @@ use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
@@ -39,10 +41,11 @@ use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\Message\ListType;
 use Wikimedia\Message\MessageSpecifier;
+use Wikimedia\Message\MessageValue;
 use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\IResultWrapper;
-use MessageLocalizer;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
@@ -73,6 +76,7 @@ use SearchIndexField;
 use SearchResult;
 use Skin;
 use SkinTemplate;
+use StatusValue;
 use stdClass;
 use Throwable;
 use WikiPage;
@@ -1302,37 +1306,27 @@ class NeoWikiHooks {
 		}
 	}
 
-	/**
-	 * Validates the on-wiki configuration page on save, blocking the edit with precise per-field errors
-	 * when the configuration is invalid. A JSON syntax error is left to the JSON content model itself.
-	 */
-	public static function onEditFilter( EditPage $editor, string $text, string $section, string &$error, string $summary ): void {
+	public static function onJsonValidateSave( JsonContent $content, PageIdentity $page, StatusValue $status ): void {
 		$extension = NeoWikiExtension::getInstance();
 
-		if ( !$extension->isConfigPage( $editor->getTitle() ) ) {
+		if ( !$extension->isConfigPage( Title::newFromPageIdentity( $page ) ) ) {
 			return;
 		}
 
-		$errors = $extension->getConfigValidator()->validate( $text );
+		$errors = $extension->getConfigValidator()->validate( $content->getText() );
 
 		if ( $errors !== [] ) {
-			$error = self::formatConfigErrors( $errors, $editor->getContext() );
+			$errorMessages = array_map(
+				static fn ( array $error ) => MessageValue::new( $error[0] )->plaintextParams( ...array_slice( $error, 1 ) ),
+				$errors
+			);
+
+			$status->fatal(
+				'neowiki-config-invalid',
+				count( $errors ),
+				Message::listParam( $errorMessages, ListType::SEMICOLON )
+			);
 		}
-	}
-
-	/**
-	 * @param array[] $errors A list of message specs, each [ messageKey, ...params ].
-	 */
-	private static function formatConfigErrors( array $errors, MessageLocalizer $localizer ): string {
-		$items = '';
-
-		foreach ( $errors as $errorSpec ) {
-			$items .= Html::rawElement( 'li', [], $localizer->msg( ...$errorSpec )->escaped() );
-		}
-
-		return Html::errorBox(
-			$localizer->msg( 'neowiki-config-invalid' )->escaped() . Html::rawElement( 'ul', [], $items )
-		);
 	}
 
 	public static function onAlternateEdit( EditPage $editPage ): void {

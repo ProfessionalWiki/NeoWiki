@@ -84,7 +84,7 @@
 		"ContentModelCanBeUsedOn": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentModelCanBeUsedOn",
 
 		"ContentHandlerDefaultModelFor": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onContentHandlerDefaultModelFor",
-		"EditFilter": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onEditFilter",
+		"JsonValidateSave": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onJsonValidateSave",
 		"AlternateEdit": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAlternateEdit",
 
 		"SidebarBeforeOutput": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onSidebarBeforeOutput",
