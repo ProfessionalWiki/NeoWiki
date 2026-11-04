@@ -34,7 +34,7 @@ describe( 'PropertyDefinitionEditor', () => {
 	beforeEach( () => {
 		// The relation attributes editor reaches TargetSchemasInput, which calls useSchemaStore() at setup.
 		setActivePinia( createPinia() );
-		setupMwMock();
+		setupMwMock( { config: { wgUserLanguage: 'en' } } );
 	} );
 
 	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean; otherPropertyNames?: string[] } = {} ): VueWrapper {
@@ -259,15 +259,20 @@ describe( 'PropertyDefinitionEditor', () => {
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 		} );
 
-		it.each( [
-			[ 'date', DateInput, newDateProperty( { name: 'Founded' } ), 'neowiki-field-invalid-date' ],
-			[ 'date and time', DateTimeInput, newDateTimeProperty( { name: 'Opened' } ), 'neowiki-field-invalid-datetime' ],
-		] as const )( 'reports the field message when a %s initial value is partly cleared', async ( _, input, property, message ) => {
-			const wrapper = newWrapper( property );
+		it( 'reports the field message when a date initial value does not read as a date', async () => {
+			const wrapper = newWrapper( newDateProperty( { name: 'Founded' } ) );
 
-			await reportPartlyClearedDate( wrapper.findComponent( input ).find( 'input' ) );
+			await wrapper.findComponent( DateInput ).find( 'input' ).setValue( '198x' );
 
-			expect( unparseableInputMessage( wrapper ) ).toBe( message );
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-unreadable-date198x' );
+		} );
+
+		it( 'reports the field message when a date and time initial value is partly cleared', async () => {
+			const wrapper = newWrapper( newDateTimeProperty( { name: 'Opened' } ) );
+
+			await reportPartlyClearedDate( wrapper.findComponent( DateTimeInput ).find( 'input' ) );
+
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-invalid-datetime' );
 		} );
 
 		it( 'reports nothing while no field holds text it cannot read', () => {

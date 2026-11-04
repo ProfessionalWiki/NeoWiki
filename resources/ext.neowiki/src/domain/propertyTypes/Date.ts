@@ -2,6 +2,9 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
+import { formatDateForDisplay } from '@/domain/propertyTypes/dateText';
+
+export { formatDateForDisplay };
 
 export interface DateProperty extends PropertyDefinition {
 
@@ -103,30 +106,6 @@ export class DateType extends BasePropertyType<DateProperty, StringValue> {
 		} as DateProperty;
 	}
 
-}
-
-/**
- * Formats a `YYYY-MM-DD` string as a human-readable date using the user's
- * browser locale, with no time component.
- *
- * The date is interpreted in UTC and rendered with `timeZone: 'UTC'` so the
- * displayed calendar day always matches the stored day regardless of the host
- * timezone. Falls back to the raw input when it cannot be parsed, so malformed
- * values surface verbatim in the UI rather than as `Invalid Date`.
- */
-export function formatDateForDisplay( iso: string ): string {
-	if ( parseStrictDate( iso ) === null ) {
-		return iso;
-	}
-
-	const date = new Date( `${ iso }T00:00:00Z` );
-
-	return date.toLocaleDateString( undefined, {
-		year: 'numeric',
-		month: 'short',
-		day: 'numeric',
-		timeZone: 'UTC',
-	} );
 }
 
 type DatePropertyAttributes = Omit<Partial<DateProperty>, 'name'> & {
