@@ -16,8 +16,20 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 * A SPARQL store that stops responding now delays a save by at most 10 seconds instead of 25; to change the limit, set
   `updateTimeoutSeconds` for the store in `$wgNeoWikiSparqlStores`
 * In the Docker demo, `make upgrade` rebuilds QLever's data from the wiki when a newer QLever cannot read it
+* The Docker demo remembers extras such as Neo4j and HTTPS for sharing, so `make up` and `make upgrade` need no extra
+  options, even after `make down`; if you ran `make down` before this upgrade, see below
 * Cypher queries can find a page by namespace and title (`namespaceId` and `dbKey`) without depending on the wiki's
   language
+
+### If you ran `make down` before upgrading the Docker demo
+
+A plain `make upgrade` then starts only the default services. If your demo ran more, add it once:
+
+* Neo4j, for Cypher queries: `make upgrade services=qlever,neo`
+* Sharing it with others over HTTPS: `COMPOSE_PROFILES=server make upgrade`
+* Both: `COMPOSE_PROFILES=server make upgrade services=qlever,neo`
+
+From then on, a plain `make upgrade` keeps them. If you already upgraded without them, run the upgrade again this way.
 
 ## NeoWiki 0.1.0
 

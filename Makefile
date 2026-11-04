@@ -37,31 +37,66 @@ PORT_RANGE_END := 8499
 
 # ---- Optional-service selection (services=) ----------------------------------
 
-# `make dev services=node,neo` runs only the named optional services;
-# `services=none` runs core only (mediawiki, db). Absent = the default set
-# below. Values are compose service names; see Docker/README.md. A
-# COMPOSE_PROFILES value from the environment is unioned in.
+# `make dev services=node,neo` runs only the named optional services, `services=none` none and
+# `services=default` the default set below; see Docker/README.md. COMPOSE_PROFILES is unioned in.
+# The goals that start a stack save both in Docker/.env for later runs, and a stack with nothing
+# saved keeps what its containers run.
 OPTIONAL_SERVICES := node qlever neo oxigraph mailcatcher
 DEFAULT_SERVICES := node qlever mailcatcher
+STARTING_GOALS := up demo upgrade dev dev-tools
 
 comma := ,
 empty :=
 space := $(empty) $(empty)
 
-# Captured before COMPOSE_PROFILES is overridden below.
-USER_PROFILES := $(strip $(subst $(comma),$(space),$(COMPOSE_PROFILES)))
+SERVICES_GIVEN := $(filter-out undefined,$(origin services))$(strip $(NEOWIKI_SERVICES))
+PROFILES_GIVEN := $(filter-out undefined,$(origin COMPOSE_PROFILES))$(strip $(NEOWIKI_PROFILES))
 
-ifeq ($(origin services),undefined)
-SELECTED_SERVICES := $(DEFAULT_SERVICES)
-else ifeq ($(services),none)
-SELECTED_SERVICES :=
+# Only for the goals that need it, so the others run no docker command.
+ifneq ($(filter $(STARTING_GOALS) print-services,$(MAKECMDGOALS)),)
+ifeq ($(and $(SERVICES_GIVEN),$(PROFILES_GIVEN)),)
+STACK_SERVICES := $(shell docker ps -a --filter label=com.docker.compose.project=$(PROJECT_NAME) \
+	--filter label=com.docker.compose.oneoff=False --format '{{.Label "com.docker.compose.service"}}' 2>/dev/null)
+endif
+endif
+
+ifneq ($(origin services),undefined)
+REQUESTED_SERVICES := $(strip $(services))
+else ifneq ($(strip $(NEOWIKI_SERVICES)),)
+REQUESTED_SERVICES := $(strip $(NEOWIKI_SERVICES))
+else ifneq ($(STACK_SERVICES),)
+REQUESTED_SERVICES := $(or $(subst $(space),$(comma),$(sort $(filter $(OPTIONAL_SERVICES),$(STACK_SERVICES)))),none)
 else
-SELECTED_SERVICES := $(strip $(subst $(comma),$(space),$(services)))
+REQUESTED_SERVICES := default
+endif
+
+ifeq ($(REQUESTED_SERVICES),default)
+SELECTED_SERVICES := $(DEFAULT_SERVICES)
+SAVED_SERVICES := default
+else ifeq ($(REQUESTED_SERVICES),none)
+SELECTED_SERVICES :=
+SAVED_SERVICES := none
+else
+SELECTED_SERVICES := $(strip $(subst $(comma),$(space),$(REQUESTED_SERVICES)))
+SAVED_SERVICES := $(or $(subst $(space),$(comma),$(SELECTED_SERVICES)),none)
 UNKNOWN_SERVICES := $(filter-out $(OPTIONAL_SERVICES),$(SELECTED_SERVICES))
 ifneq ($(UNKNOWN_SERVICES),)
-$(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma),$(OPTIONAL_SERVICES)), or none)
+$(error Unknown services '$(UNKNOWN_SERVICES)'. Valid: $(subst $(space),$(comma),$(OPTIONAL_SERVICES)), none, or default)
 endif
 endif
+
+# The caddy service only runs under the server profile.
+ifneq ($(origin COMPOSE_PROFILES),undefined)
+REQUESTED_PROFILES := $(COMPOSE_PROFILES)
+else ifneq ($(strip $(NEOWIKI_PROFILES)),)
+REQUESTED_PROFILES := $(NEOWIKI_PROFILES)
+else ifneq ($(filter caddy,$(STACK_SERVICES)),)
+REQUESTED_PROFILES := server
+endif
+
+# Captured before COMPOSE_PROFILES is overridden below.
+USER_PROFILES := $(filter-out none,$(strip $(subst $(comma),$(space),$(REQUESTED_PROFILES))))
+SAVED_PROFILES := $(or $(subst $(space),$(comma),$(USER_PROFILES)),none)
 
 # The union drives every compose invocation via the global `export` above. Defined before the
 # derived values below, which filter against it.
@@ -176,7 +211,7 @@ help:
 # ---- Lifecycle (host only) ---------------------------------------------------
 
 .PHONY: up pull demo upgrade dev dev-tools _dev-tools-impl down remove logs ps print-services bash _preflight doctor
-.PHONY: _require-image-tag _require-matching-image
+.PHONY: _require-image-tag _require-matching-image _save-selection
 
 # Fail fast on a broken Docker runtime (Docker or Compose missing, daemon down or
 # denied) before the lifecycle targets do expensive work. Source: Docker/scripts/preflight.sh.
@@ -206,13 +241,13 @@ _require-matching-image:
 		exit 1; \
 	fi
 
-up: _require-image-tag _preflight _require-matching-image ## Bring up try-it-out stack (prebuilt image)
+up: _require-image-tag _preflight _require-matching-image _save-selection ## Bring up try-it-out stack (prebuilt image)
 	$(DC) up -d
 
 pull: _require-image-tag _preflight ## Pull this checkout's prebuilt demo image
 	$(DC) pull
 
-demo: _require-image-tag _preflight ## One-command demo: pull image, start stack, install + seed (idempotent)
+demo: _require-image-tag _preflight _save-selection ## One-command demo: pull image, start stack, install + seed (idempotent)
 	$(DC) pull
 	@$(MAKE) --no-print-directory _require-matching-image
 	$(DC) up -d
@@ -222,7 +257,7 @@ demo: _require-image-tag _preflight ## One-command demo: pull image, start stack
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
+upgrade: _require-image-tag _preflight _save-selection ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -232,10 +267,10 @@ upgrade: _require-image-tag _preflight ## Move the demo stack to this checkout's
 	@echo ""
 	@echo "Upgrade complete: http://localhost:$$MW_SERVER_PORT"
 
-dev: _preflight bootstrap ensure-port ## Bring up dev stack (build image, install, seed, wait for health)
+dev: _preflight bootstrap ensure-port _save-selection ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
 
-dev-tools: _preflight bootstrap ensure-port ## Like 'dev' but also exposes the graph store ports to host
+dev-tools: _preflight bootstrap ensure-port _save-selection ## Like 'dev' but also exposes the graph store ports to host
 	@$(MAKE) --no-print-directory _dev-tools-impl
 
 _dev-tools-impl:
@@ -306,6 +341,9 @@ _dev-impl:
 	@echo ""
 	@echo "Dev wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Project:           $(PROJECT_NAME)"
+
+_save-selection:
+	@./Docker/scripts/save-selection.sh "$(SAVED_SERVICES)" "$(SAVED_PROFILES)"
 
 # Downgrade a running stack to the current selection. `stop`, not `down`: the
 # containers and volumes stay for a cheap restart when reselected.
@@ -378,6 +416,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-set-port.sh
 	@./Docker/tests/test-preflight.sh
 	@./Docker/tests/test-services.sh
+	@./Docker/tests/test-saved-selection.sh
 	@./Docker/tests/test-image-tag.sh
 	@./Docker/tests/test-qlever-index.sh
 	@./scripts/tests/test-tag-release.sh

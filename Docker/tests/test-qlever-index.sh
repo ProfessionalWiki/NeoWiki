@@ -79,10 +79,14 @@ cp -R "$ROOT/Docker/scripts" "$dir/Docker/"
 printf '0.1.0\n' > "$dir/Docker/image-tag"
 
 # Runs make in the copy, with the qlever container in state $1, the further arguments going to make.
-# Leaves the output in OUT, the exit code in RC and docker's calls in DOCKER_LOG.
+# Leaves the output in OUT, the exit code in RC and docker's calls in DOCKER_LOG. Each run starts with
+# no saved selection, since the goals that start a stack save theirs in Docker/.env.
 run_make() {
     local qlever=$1; shift
     : > "$DOCKER_LOG"
+    if [ -f "$dir/Docker/.env" ]; then
+        sed -i.bak -E '/^NEOWIKI_(SERVICES|PROFILES)=/d' "$dir/Docker/.env" && rm -f "$dir/Docker/.env.bak"
+    fi
     OUT="$(export STUB_QLEVER="$qlever"; make -s --no-print-directory -C "$dir" "$@" 2>&1)"
     RC=$?
 }
