@@ -4,8 +4,18 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
-* Neo4j Page nodes carry `dbKey`, the page title without its namespace, so you can find a page by `namespaceId` and
-  `dbKey` whatever its wiki's language
+* On MediaWiki 1.47, pages no longer show their Main Subject twice
+* The Subject editor lists each Subject you are editing with its Schema, and stays still as you switch between them
+* The Data tab opens with the page's Main Subject expanded
+* Special:NeoWiki no longer says "No subjects yet." on a wiki that has Subjects
+* Properties whose type comes from another extension no longer show as "Unavailable type" when that extension loads
+  late
+* The interface is available in German (by Klaus Feldmann)
+* A SPARQL store that stops responding now delays a save by at most 10 seconds instead of 25; to change the limit, set
+  `updateTimeoutSeconds` for the store in `$wgNeoWikiSparqlStores`
+* In the Docker demo, `make upgrade` rebuilds QLever's data from the wiki when a newer QLever cannot read it
+* Cypher queries can find a page by namespace and title (`namespaceId` and `dbKey`) without depending on the wiki's
+  language
 
 ## NeoWiki 0.1.0
 
