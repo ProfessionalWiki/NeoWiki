@@ -4,6 +4,8 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+## NeoWiki 0.1.1
+
 * On MediaWiki 1.47, pages no longer show their Main Subject twice
 * The Subject editor lists each Subject you are editing with its Schema, and stays still as you switch between them
 * The Data tab opens with the page's Main Subject expanded
