@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
@@ -51,10 +52,23 @@ class NumberProperty extends PropertyDefinition {
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
 		return new self(
 			core: $core,
-			precision: $property['precision'] ?? null,
-			minimum: $property['minimum'] ?? null,
-			maximum: $property['maximum'] ?? null,
+			precision: self::numberOrNull( $property, 'precision' ),
+			minimum: self::numberOrNull( $property, 'minimum' ),
+			maximum: self::numberOrNull( $property, 'maximum' ),
 		);
+	}
+
+	/**
+	 * @throws InvalidFieldException
+	 */
+	private static function numberOrNull( array $json, string $field ): int|float|null {
+		$value = $json[$field] ?? null;
+
+		if ( $value === null || is_int( $value ) || is_float( $value ) ) {
+			return $value;
+		}
+
+		throw InvalidFieldException::mustBe( $field, 'a number', $value );
 	}
 
 	public function nonCoreToJson(): array {

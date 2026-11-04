@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -53,19 +54,27 @@ class SelectProperty extends PropertyDefinition {
 		$rawOptions = $property['options'] ?? [];
 
 		if ( !is_array( $rawOptions ) ) {
-			throw new InvalidArgumentException( 'Select options must be an array' );
+			throw InvalidFieldException::mustBe( 'options', 'a list of options', $rawOptions );
 		}
 
-		$options = array_map(
-			fn( mixed $raw ): SelectOption => SelectOption::fromJson( $raw ),
-			array_values( $rawOptions )
-		);
+		$options = array_map( self::optionFromJson( ... ), array_values( $rawOptions ) );
 
 		return new self(
 			core: $core,
 			options: $options,
 			multiple: $property['multiple'] ?? false,
 		);
+	}
+
+	private static function optionFromJson( mixed $json ): SelectOption {
+		try {
+			return SelectOption::fromJson( $json );
+		} catch ( InvalidArgumentException ) {
+			throw new InvalidFieldException(
+				'options',
+				'each option needs an ID and a label, both non-empty text, not ' . InvalidFieldException::asJson( $json )
+			);
+		}
 	}
 
 	public function nonCoreToJson(): array {
@@ -83,19 +92,33 @@ class SelectProperty extends PropertyDefinition {
 	}
 
 	private function assertUniqueIds(): void {
-		$ids = $this->getOptionIds();
+		$repeat = self::keyOfFirstRepeat( $this->getOptionIds() );
 
-		if ( count( $ids ) !== count( array_unique( $ids ) ) ) {
-			throw new InvalidArgumentException( 'Select option ids must be unique' );
+		if ( $repeat !== null ) {
+			throw new InvalidFieldException(
+				'options',
+				'the option ID ' . InvalidFieldException::asJson( $this->options[$repeat]->getId() ) . ' is used more than once'
+			);
 		}
 	}
 
 	private function assertUniqueLabels(): void {
-		$labels = array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $this->options );
+		$repeat = self::keyOfFirstRepeat( array_map( fn( SelectOption $o ): string => $o->normalizedLabel(), $this->options ) );
 
-		if ( count( $labels ) !== count( array_unique( $labels ) ) ) {
-			throw new InvalidArgumentException( 'Select option labels must be unique' );
+		if ( $repeat !== null ) {
+			throw new InvalidFieldException(
+				'options',
+				'the option label ' . InvalidFieldException::asJson( $this->options[$repeat]->getLabel() )
+					. ' is used more than once, ignoring letter case and surrounding spaces'
+			);
 		}
+	}
+
+	/**
+	 * @param string[] $values
+	 */
+	private static function keyOfFirstRepeat( array $values ): int|string|null {
+		return array_key_first( array_diff_key( $values, array_unique( $values ) ) );
 	}
 
 }

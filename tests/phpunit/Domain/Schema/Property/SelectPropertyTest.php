@@ -92,57 +92,53 @@ JSON
 		);
 	}
 
-	public function testExceptionOnLegacyStringOption(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "select",
-	"options": ["Draft", "Review"]
-}
-JSON
+	public function testOptionThatIsNotAnObjectIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "select", "options": [ "Draft", "Review" ] }',
+			'options',
+			'each option needs an ID and a label, both non-empty text, not "Draft"'
 		);
 	}
 
-	public function testExceptionOnNonArrayOptions(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "select",
-	"options": "not-an-array"
-}
-JSON
+	public function testOptionLabelThatIsNotTextIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "select", "options": [ { "id": "opt_draft", "label": 5 } ] }',
+			'options',
+			'each option needs an ID and a label, both non-empty text, not {"id":"opt_draft","label":5}'
 		);
 	}
 
-	public function testExceptionOnDuplicateOptionId(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "select",
-	"options": [
-		{ "id": "dup", "label": "A" },
-		{ "id": "dup", "label": "B" }
-	]
-}
-JSON
+	public function testOptionsThatAreNotAListAreNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "select", "options": "not-an-array" }',
+			'options',
+			'must be a list of options, not "not-an-array"'
 		);
 	}
 
-	public function testExceptionOnDuplicateLabelCaseInsensitive(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "select",
-	"options": [
-		{ "id": "a", "label": "Draft" },
-		{ "id": "b", "label": "draft" }
-	]
-}
-JSON
+	public function testRepeatedOptionIdIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "select", "options": [
+				{ "id": "a", "label": "A" },
+				{ "id": "dup", "label": "B" },
+				{ "id": "dup", "label": "C" },
+				{ "id": "d", "label": "D" }
+			] }',
+			'options',
+			'the option ID "dup" is used more than once'
+		);
+	}
+
+	public function testOptionLabelRepeatedInAnotherLetterCaseIsNamedAsWritten(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "select", "options": [
+				{ "id": "a", "label": "Draft" },
+				{ "id": "b", "label": "Final" },
+				{ "id": "c", "label": " DRAFT " },
+				{ "id": "d", "label": "Review" }
+			] }',
+			'options',
+			'the option label " DRAFT " is used more than once, ignoring letter case and surrounding spaces'
 		);
 	}
 

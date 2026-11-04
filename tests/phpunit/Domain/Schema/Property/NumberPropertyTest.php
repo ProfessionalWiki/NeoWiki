@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\NumberProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
@@ -68,40 +67,37 @@ JSON
 		);
 	}
 
-	public function testExceptionOnInvalidPrecision(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
+	public function testFractionalBoundsAreKept(): void {
+		$this->assertSerializationDoesNotChange(
 			<<<JSON
 {
 	"type": "number",
-	"precision": "yes"
+	"description": "",
+	"required": false,
+	"default": null,
+	"precision": null,
+	"minimum": 0.5,
+	"maximum": 99.5
 }
 JSON
 		);
 	}
 
-	public function testExceptionOnInvalidMax(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "number",
-	"maximum": "yes"
-}
-JSON
+	/**
+	 * @dataProvider numberFieldProvider
+	 */
+	public function testFieldThatIsNotANumberIsNamed( string $field ): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "number", "' . $field . '": "yes" }',
+			$field,
+			'must be a number, not "yes"'
 		);
 	}
 
-	public function testExceptionOnInvalidMin(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "number",
-	"minimum": "yes"
-}
-JSON
-		);
+	public static function numberFieldProvider(): iterable {
+		yield 'precision' => [ 'precision' ];
+		yield 'minimum' => [ 'minimum' ];
+		yield 'maximum' => [ 'maximum' ];
 	}
 
 	public function testMaximumWithErrorSeverityRoundTrips(): void {

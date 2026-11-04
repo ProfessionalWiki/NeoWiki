@@ -4,6 +4,8 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+* Saving a Schema with a value NeoWiki cannot use, such as `"minLength": "five"`, now fails and names the value to fix
+
 ## NeoWiki 0.1.1
 
 * On MediaWiki 1.47, pages no longer show their Main Subject twice

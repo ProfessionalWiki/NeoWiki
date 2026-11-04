@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\RedHerb;
 
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
@@ -81,12 +82,13 @@ class ColorPropertyTest extends TestCase {
 	/**
 	 * @dataProvider malformedAllowedColorsProvider
 	 */
-	public function testConstructorRejectsMalformedAllowedColors( array $malformed ): void {
-		$this->expectException( \InvalidArgumentException::class );
-
-		new ColorProperty(
-			core: new PropertyCore( description: '', required: false, default: null ),
-			allowedColors: $malformed,
+	public function testMalformedAllowedColorsAreNamed( array $malformed ): void {
+		$this->assertSame(
+			'allowedColors',
+			$this->refusedField( fn () => new ColorProperty(
+				core: new PropertyCore( description: '', required: false, default: null ),
+				allowedColors: $malformed,
+			) )
 		);
 	}
 
@@ -98,6 +100,16 @@ class ColorPropertyTest extends TestCase {
 		yield 'uppercase mixed' => [ [ '#FF00zz' ] ];
 		yield 'empty string' => [ [ '' ] ];
 		yield 'not a string' => [ [ 123 ] ];
+	}
+
+	public function testAllowedColorsThatAreNotAListAreNamed(): void {
+		$this->assertSame(
+			'allowedColors',
+			$this->refusedField( fn () => ColorProperty::fromPartialJson(
+				new PropertyCore( description: '', required: false, default: null ),
+				[ 'allowedColors' => '#ff0000' ]
+			) )
+		);
 	}
 
 	public function testConstructorAcceptsUppercaseHex(): void {
@@ -121,13 +133,24 @@ class ColorPropertyTest extends TestCase {
 	/**
 	 * @dataProvider malformedDefaultProvider
 	 */
-	public function testConstructorRejectsMalformedDefault( mixed $malformed ): void {
-		$this->expectException( \InvalidArgumentException::class );
-
-		new ColorProperty(
-			core: new PropertyCore( description: '', required: false, default: $malformed ),
-			allowedColors: [],
+	public function testMalformedDefaultIsNamed( mixed $malformed ): void {
+		$this->assertSame(
+			'default',
+			$this->refusedField( fn () => new ColorProperty(
+				core: new PropertyCore( description: '', required: false, default: $malformed ),
+				allowedColors: [],
+			) )
 		);
+	}
+
+	private function refusedField( callable $build ): ?string {
+		try {
+			$build();
+		} catch ( InvalidFieldException $exception ) {
+			return $exception->field;
+		}
+
+		return null;
 	}
 
 	public static function malformedDefaultProvider(): iterable {
