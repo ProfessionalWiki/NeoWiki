@@ -343,7 +343,7 @@ describe( 'DateInput', () => {
 			expect( exposed( wrapper ).unparseableInputMessage!() ).not.toBeNull();
 		} );
 
-		it( 'says so at the field once the field is left, and emits undefined', async () => {
+		it( 'says so at the field once the field is left', async () => {
 			const wrapper = newWrapper( { modelValue: newStringValue( '1984' ) } );
 
 			await edit( wrapper );
@@ -352,7 +352,15 @@ describe( 'DateInput', () => {
 
 			expect( wrapper.findComponent( CdxField ).props( 'status' ) ).toBe( 'error' );
 			expect( fieldMessages( wrapper ) ).toEqual( { error: 'not a date: next tuesday' } );
-			expect( lastEmittedValue( wrapper ) ).toBeUndefined();
+		} );
+
+		// Any report counts as an edit, which enables the save.
+		it( 'reports no value for it', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '1984' ) } );
+
+			await textInput( wrapper ).setValue( '198x' );
+
+			expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 		} );
 
 		it.each( [
@@ -376,15 +384,6 @@ describe( 'DateInput', () => {
 			await leave( wrapper );
 
 			expect( fieldMessages( wrapper ) ).toEqual( { error: 'no such day, the month has 28' } );
-		} );
-
-		it( 'keeps the text on screen when the parent echoes the undefined back', async () => {
-			const wrapper = newWrapper( { modelValue: newStringValue( '1984' ) } );
-
-			await textInput( wrapper ).setValue( '198x' );
-			await wrapper.setProps( { modelValue: undefined } );
-
-			expect( textInput( wrapper ).element.value ).toBe( '198x' );
 		} );
 
 		it( 'reports the message it shows, so the save is held', async () => {
@@ -480,6 +479,15 @@ describe( 'DateInput', () => {
 			const wrapper = newWrapper();
 
 			await textInput( wrapper ).setValue( 'March 2030' );
+
+			expect( exposed( wrapper ).getCurrentValue() ).toEqual( newStringValue( '2030-03' ) );
+		} );
+
+		it( 'returns the last date the text read as while the text reads as none', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15' ) } );
+			await textInput( wrapper ).setValue( 'March 2030' );
+
+			await textInput( wrapper ).setValue( 'March 2030x' );
 
 			expect( exposed( wrapper ).getCurrentValue() ).toEqual( newStringValue( '2030-03' ) );
 		} );

@@ -71,8 +71,9 @@ import { userLanguageTag } from '@/presentation/languages.ts';
 
 /**
  * A text field that reads a date the way people write it and holds it as the EDTF form of
- * year, month or day precision. `modelValue` is that form, undefined while the text is empty
- * or cannot be read; `unreadableMessage` says why it cannot. What was read is echoed under
+ * year, month or day precision. `modelValue` is that form, undefined while the text is empty.
+ * Text that cannot be read changes no value, and `unreadableMessage` says why it cannot be
+ * read; `lastReadIso` is the last date the field could read. What was read is echoed under
  * the field, with the other reading of an ambiguous date one click away. Where the browser
  * can show its own calendar and `picker` is set, a button opens it: the browser's picker
  * gives full dates only, so the button is for properties that take nothing less. `hint` is
@@ -132,9 +133,13 @@ const otherIso = computed<string | undefined>( () => {
 	return swapped.value ? reading.value.iso : reading.value.alternative;
 } );
 
+const lastReadIso = ref<string | undefined>( undefined );
+
 // An incoming date the text already reads as leaves the text alone, so what the user typed
-// is kept, and text that does not read as a date survives the undefined it emits.
+// is kept.
 const initializeText = ( iso: string | undefined ): void => {
+	lastReadIso.value = iso;
+
 	if ( iso !== currentIso.value ) {
 		text.value = iso === undefined ? '' : dateTextOf( iso, language );
 		swapped.value = false;
@@ -148,11 +153,21 @@ watch( () => props.modelValue, initializeText );
 function onText( value: string ): void {
 	text.value = value;
 	swapped.value = false;
-	emit( 'update:modelValue', currentIso.value );
+	report();
 }
 
 function swap(): void {
 	swapped.value = !swapped.value;
+	report();
+}
+
+// Reporting text that does not read as a date as empty would erase the stored date.
+function report(): void {
+	if ( reading.value.kind === 'unreadable' ) {
+		return;
+	}
+
+	lastReadIso.value = currentIso.value;
 	emit( 'update:modelValue', currentIso.value );
 }
 
@@ -214,7 +229,7 @@ function onPicked( event: Event ): void {
 }
 
 defineExpose( {
-	currentIso: (): string | undefined => currentIso.value,
+	lastReadIso: (): string | undefined => lastReadIso.value,
 	unreadableMessage: (): string | null => unreadableMessage.value,
 	errorMessage: (): string | null => editing.value ? null : unreadableMessage.value
 } );

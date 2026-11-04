@@ -100,7 +100,7 @@ const hint = computed<string>( () => {
 } );
 
 defineExpose<ValueInputExposes>( {
-	getCurrentValue: (): Value | undefined => valueOf( textInput.value?.currentIso() ),
+	getCurrentValue: (): Value | undefined => valueOf( textInput.value?.lastReadIso() ),
 	unparseableInputMessage: (): string | null => textInput.value?.unreadableMessage() ?? null
 } );
 </script>
