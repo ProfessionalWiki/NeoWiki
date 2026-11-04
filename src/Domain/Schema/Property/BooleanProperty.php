@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
@@ -13,7 +13,7 @@ class BooleanProperty extends PropertyDefinition {
 
 	public function __construct( PropertyCore $core ) {
 		if ( $core->default !== null && !is_bool( $core->default ) ) {
-			throw new InvalidArgumentException( 'Boolean property default must be a boolean' );
+			throw InvalidFieldException::mustBe( 'default', 'true or false', $core->default );
 		}
 
 		parent::__construct( $core );

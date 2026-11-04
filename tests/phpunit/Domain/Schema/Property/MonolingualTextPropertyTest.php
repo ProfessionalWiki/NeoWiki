@@ -35,6 +35,22 @@ JSON
 		);
 	}
 
+	public function testMinLengthThatIsNotAWholeNumberIsNamedInTheObjectForm(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "monolingualText", "minLength": { "value": "five", "severity": "error" } }',
+			'minLength',
+			'must be a whole number, not "five"'
+		);
+	}
+
+	public function testFractionalMaxLengthIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "monolingualText", "maxLength": 2.5 }',
+			'maxLength',
+			'must be a whole number, not 2.5'
+		);
+	}
+
 	public function testFullSerializationWithChangedValuesIsStable(): void {
 		$this->assertSerializationDoesNotChange(
 			<<<JSON

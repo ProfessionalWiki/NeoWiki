@@ -5,7 +5,6 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -15,7 +14,7 @@ use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty
  */
-class DatePropertyTest extends TestCase {
+class DatePropertyTest extends PropertyTestCase {
 
 	use JsonSchemaAssertions;
 
@@ -44,6 +43,25 @@ class DatePropertyTest extends TestCase {
 		$this->assertTrue( $property->hasMinimum() );
 		$this->assertSame( '2030-12-31', $property->getMaximum() );
 		$this->assertTrue( $property->hasMaximum() );
+	}
+
+	/**
+	 * @dataProvider fieldThatIsNotADateProvider
+	 */
+	public function testFieldThatIsNotADateIsNamed( string $field, string $value ): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "date", "' . $field . '": ' . $value . ' }',
+			$field,
+			'must be a date in the form YYYY-MM-DD, not ' . $value
+		);
+	}
+
+	public static function fieldThatIsNotADateProvider(): iterable {
+		yield 'minimum that is not a date' => [ 'minimum', '"yesterday"' ];
+		yield 'minimum that is not text' => [ 'minimum', '2020' ];
+		yield 'maximum that is not a date' => [ 'maximum', '"tomorrow"' ];
+		yield 'maximum that is not text' => [ 'maximum', '2030' ];
+		yield 'default that is not a date' => [ 'default', '"soon"' ];
 	}
 
 	public function testSerializationRoundTrip(): void {
