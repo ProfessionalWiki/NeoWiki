@@ -43,7 +43,7 @@ For a Composer install, run this from the MediaWiki root:
 composer update neowiki/neowiki --no-dev -o
 ```
 
-This stays on 0.1. To move to 0.2, run this before that command:
+This stays on 0.1. To move to 0.2, run this first, then the command above:
 
 ```sh
 COMPOSER=composer.local.json composer require --no-update --no-plugins neowiki/neowiki:^0.2
