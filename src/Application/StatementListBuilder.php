@@ -37,25 +37,32 @@ readonly class StatementListBuilder {
 	/**
 	 * @param array<string, mixed> $statements
 	 *
-	 * @throws InvalidArgumentException When a property name breaks a rule for writing it, or a value does not fit
-	 *  the property type it declares.
+	 * @throws InvalidArgumentException When an entry is neither null nor a Statement with a property type and a
+	 *  value, a property name breaks a rule for writing it, or a value does not fit the property type it declares.
 	 */
 	public function build( array $statements ): StatementList {
 		$built = [];
 
 		foreach ( $statements as $key => $entry ) {
-			if ( !is_array( $entry ) || !isset( $entry['propertyType'] ) ) {
+			if ( $entry === null ) {
 				continue;
 			}
 
 			$propertyName = (string)$key;
-			$propertyType = $entry['propertyType'];
 
-			if ( !is_string( $propertyType ) ) {
-				throw new InvalidArgumentException( "Property type of \"{$propertyName}\" must be a string" );
+			if ( !is_array( $entry ) ) {
+				throw new InvalidArgumentException(
+					"Statement \"{$propertyName}\" must be an object, or null to remove it"
+				);
 			}
 
-			$value = $this->deserializeValue( $propertyName, $propertyType, $entry['value'] ?? null );
+			$propertyType = $this->getPropertyType( $propertyName, $entry );
+
+			if ( !array_key_exists( 'value', $entry ) ) {
+				throw new InvalidArgumentException( "Statement \"{$propertyName}\" must have a \"value\"" );
+			}
+
+			$value = $this->deserializeValue( $propertyName, $propertyType, $entry['value'] );
 
 			if ( $value->isEmpty() ) {
 				continue;
@@ -71,6 +78,27 @@ readonly class StatementListBuilder {
 		}
 
 		return new StatementList( $built );
+	}
+
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	private function getPropertyType( string $propertyName, array $entry ): string {
+		if ( !isset( $entry['propertyType'] ) ) {
+			throw new InvalidArgumentException(
+				array_key_exists( 'type', $entry )
+					? "Statement \"{$propertyName}\" must give its property type as \"propertyType\", not \"type\""
+					: "Statement \"{$propertyName}\" must have a \"propertyType\""
+			);
+		}
+
+		$propertyType = $entry['propertyType'];
+
+		if ( !is_string( $propertyType ) ) {
+			throw new InvalidArgumentException( "Property type of \"{$propertyName}\" must be a string" );
+		}
+
+		return $propertyType;
 	}
 
 	/**
