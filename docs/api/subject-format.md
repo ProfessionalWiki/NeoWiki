@@ -222,9 +222,16 @@ main-namespace title. A subject-first wiki titles it by the Subject's ID, in the
 | `dependentSubjects` | No | See [Dependent Subjects](#dependent-subjects). |
 | `comment` | No | Edit summary. |
 
-On every endpoint that takes `statements`, an entry without `propertyType`, or whose value is empty for its type, is
-dropped without error. A value whose shape does not match its `propertyType` (see [Value formats](#value-formats)) is
-rejected with `400`, and so is a Statement whose key breaks a [property name rule](schema-format.md#property-names);
+Every endpoint that takes `statements` handles its entries this way:
+
+| Entry | Result |
+|-------|--------|
+| A property mapped to `null` | Dropped without error |
+| A Statement whose value is empty for its type | Dropped without error |
+| Anything else that is not a [Statement object](#statement-object) | Rejected with `400` |
+| A value whose shape does not match its `propertyType` (see [Value formats](#value-formats)) | Rejected with `400` |
+| A key that breaks a [property name rule](schema-format.md#property-names) | Rejected with `400` |
+
 Statement keys are not checked for near-duplicates. For schema/value validation outcomes see
 [Validation Codes](validation-codes.md).
 

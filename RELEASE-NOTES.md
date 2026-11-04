@@ -6,6 +6,8 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 * Neo4j Page nodes carry `dbKey`, the page title without its namespace, so you can find a page by `namespaceId` and
   `dbKey` whatever its wiki's language
+* REST endpoints that take `statements` answer `400` instead of dropping an entry that is neither `null` nor a
+  Statement object with `propertyType` and `value`, such as one still naming its type `type`
 
 ## NeoWiki 0.1.0
 
