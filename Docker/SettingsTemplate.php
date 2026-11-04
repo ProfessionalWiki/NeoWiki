@@ -312,8 +312,8 @@ $wgGroupPermissions['*']['edit'] = false;
 $wgUseRCPatrol = false;
 $wgUseNPPatrol = false;
 
-# Per-worktree opt-in overrides (gitignored). Use to load sister extensions for integration
-# work, set custom debug toggles, or override hooks.
+# The wiki's own settings, from the gitignored Docker/LocalSettings.local.php, loaded last so they
+# override the above: a demo stack's customisations, or a worktree's sister extensions and debug toggles.
 $mwLocal = __DIR__ . '/LocalSettings.local.php';
 if ( file_exists( $mwLocal ) ) {
 	require_once $mwLocal;

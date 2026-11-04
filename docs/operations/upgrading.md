@@ -5,29 +5,49 @@ order: 2
 
 # Upgrading NeoWiki
 
-Before you start, read the [release notes](https://github.com/ProfessionalWiki/NeoWiki/blob/master/RELEASE-NOTES.md)
-of every version after yours: they list any step an upgrade needs beyond the ones below.
+Before you start, [back up](maintenance.md#backups) your wiki and read the
+[release notes](https://github.com/ProfessionalWiki/NeoWiki/blob/master/RELEASE-NOTES.md) of every version after yours:
+they list any step an upgrade needs beyond the ones below.
 
 ## Upgrading a Docker install
 
-Move the copy of the repository the stack runs from to the version you want: check out its release tag, as in
-`git fetch --tags && git checkout 0.2.0`, or follow master with `git checkout master && git pull`. If you took an
-archive, unpack the newest [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest), copy your
-`Docker/.env` into it, and carry over any other change you made to the old copy, such as a mounted `LocalSettings.php`.
-Both copies run the same stack, so delete the old copy's directory rather than running `make remove` in it.
-
-Then, from the repository root:
+On 0.1.0 or 0.1.1, follow "Upgrading from 0.1.0 or 0.1.1" below. Otherwise, run this from the directory the stack
+runs from:
 
 ```sh
-make upgrade
+make upgrade version=latest
 ```
 
-This pulls the demo image of that version, restarts the stack on it, runs MediaWiki's updater, and
-[rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection.
+This moves the directory to the newest release, pulls that release's demo image, restarts the stack on it, runs
+MediaWiki's updater, and [rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection. To pick
+a release, name it, as in `version=0.2.0`; a release older than yours is refused.
+
+In a clone of the repository, this checks out the release's tag, and stops if that would overwrite a change of yours.
+Otherwise it unpacks the release over the directory: your own files, such as `Docker/.env` and your
+[settings](installation.md#change-mediawiki-settings), stay, and changes to the release's files, such as
+`Docker/docker-compose.yml`, are overwritten.
 
 `make upgrade` keeps the optional services the stack last started with.
 
 If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
+
+### Upgrading from 0.1.0 or 0.1.1
+
+Their `make upgrade` ignores `version` and stays on the version you have, so move to the new release yourself this
+once:
+
+- **From an unpacked release:** download and unpack the newest
+  [release](https://github.com/ProfessionalWiki/NeoWiki/releases/latest). Copy your `Docker/.env` into it, and carry
+  over any other change you made to the old copy.
+- **From a clone of the repository:** undo your changes to `Docker/docker-compose.yml`, if any, then check out the
+  release's tag, as in `git fetch --tags && git checkout 0.2.0`.
+
+If you mounted a `LocalSettings.php` of your own by uncommenting its line in `Docker/docker-compose.yml`, copy the
+settings you changed or added into the new release's
+[`Docker/LocalSettings.local.php`](installation.md#change-mediawiki-settings): the new release has no such line.
+
+Then run `make upgrade` from the release's root. Once it has worked, delete an unpacked old copy's directory; running
+`make remove` in it would delete your data.
 
 ### Optional: refresh the demo content
 
@@ -35,9 +55,11 @@ If the new version cannot read your pre-0.1 data, start fresh with `make remove 
 overwrites your edits to those pages (still accessible via page history) and leaves pages you created alone. Then run
 `make rebuild-graph-databases` so pages that predate the refresh reach every configured store.
 
-## Upgrading a manual install
+## Upgrading an existing wiki
 
-For a Composer install, run this from the MediaWiki root:
+### 1. Update the extension
+
+Run this from the MediaWiki root:
 
 ```sh
 composer update neowiki/neowiki --no-dev -o
@@ -49,21 +71,39 @@ This stays on 0.1. To move to 0.2, run this first, then the command above:
 COMPOSER=composer.local.json composer require --no-update --no-plugins neowiki/neowiki:^0.2
 ```
 
-For a branch checkout, update the code, its dependencies, and the frontend bundle from the MediaWiki root:
+### 2. Run the updater
 
-```sh
-git -C extensions/NeoWiki pull
-composer update
-
-cd extensions/NeoWiki/resources/ext.neowiki
-npm ci && npm run build
-```
-
-Then, either way, run this from the MediaWiki root:
+Run this from the MediaWiki root:
 
 ```sh
 php maintenance/run.php update --quick
+```
+
+### 3. Rebuild the graph stores
+
+If you connected a graph store, rebuild it from the MediaWiki root:
+
+```sh
 php maintenance/run.php NeoWiki:RebuildGraphDatabases
 ```
 
-If your wiki runs CirrusSearch, also [update its search index](maintenance.md#making-subjects-searchable).
+### 4. Update the search index
+
+If your wiki runs CirrusSearch, [update its search index](maintenance.md#making-subjects-searchable).
+
+## Upgrading unreleased code
+
+To follow master instead of releases:
+
+- **Docker:** in your clone of the repository, run `git checkout master && git pull`, then `make upgrade`.
+- **An existing wiki:** update the code, its dependencies, and the frontend bundle from the MediaWiki root:
+
+  ```sh
+  git -C extensions/NeoWiki pull
+  composer update
+
+  cd extensions/NeoWiki/resources/ext.neowiki
+  npm ci && npm run build
+  ```
+
+  Then continue with step 2 of [Upgrading an existing wiki](#upgrading-an-existing-wiki).

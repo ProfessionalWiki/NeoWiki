@@ -2,9 +2,19 @@
 # Single entry point for both the Docker dev stack and developer tooling.
 # Issue #120.
 
+# The variables this Makefile derives below, and what the user's environment set them to, captured before .env and
+# the derivations change them: upgrade's handoff passes these values on to a new make.
+DERIVED_VARIABLES := COMPOSE_PROFILES MARIADB_HOST MARIADB_PORT NEO4J_HOST OXIGRAPH_URL QLEVER_URL MW_SMTP_HOST
+USER_ENVIRONMENT := $(foreach v,$(DERIVED_VARIABLES),$(if $(filter environment%,$(origin $(v))),$(v)='$(subst ','\'',$(value $(v)))'))
+
 # Bootstrap a local .env from .env.dist on first run.
 ifeq ($(wildcard Docker/.env),)
 $(shell cp Docker/.env.dist Docker/.env)
+endif
+
+# Docker/docker-compose.yml mounts this file, and Docker would mount a directory in place of a missing one.
+ifeq ($(wildcard Docker/LocalSettings.local.php),)
+$(shell touch Docker/LocalSettings.local.php)
 endif
 
 include Docker/.env
@@ -257,7 +267,13 @@ demo: _require-image-tag _preflight _save-selection ## One-command demo: pull im
 	@echo "Demo wiki ready at: http://localhost:$$MW_SERVER_PORT"
 	@echo "Log in as AdminName (password: $$MW_ADMIN_PASSWORD)."
 
-upgrade: _require-image-tag _preflight _save-selection ## Move the demo stack to this checkout's image: pull, restart, migrate, rebuild the graph
+# version=X first moves this copy to release X (Docker/scripts/move-to-version.sh), then hands the upgrade to a new
+# make, since this one read the old copy's Makefile and Docker/image-tag. The global `export` would hand that make
+# every variable this one defined, as if the user had set it, so the handoff unsets all but make's own and passes on
+# the user's values of the derived ones. It clears version and NEOWIKI_IMAGE_TAG, which MAKEFLAGS would carry along
+# with services=.
+ifeq ($(strip $(version)),)
+upgrade: _require-image-tag _preflight _save-selection ## Move the demo stack to this checkout's image, or with version=X (or latest) to release X: pull, restart, migrate, rebuild the graph
 	$(DC) pull
 	$(DC) up -d
 	@$(MAKE) --no-print-directory _wait-mw
@@ -266,6 +282,13 @@ upgrade: _require-image-tag _preflight _save-selection ## Move the demo stack to
 	@$(MAKE) --no-print-directory rebuild-graph-databases
 	@echo ""
 	@echo "Upgrade complete: http://localhost:$$MW_SERVER_PORT"
+else
+DEFINED_HERE = $(filter-out .% MAKEFLAGS GNUMAKEFLAGS SHELL,$(foreach v,$(.VARIABLES),$(if $(filter file override,$(origin $(v))),$(v))))
+
+upgrade: _preflight
+	@./Docker/scripts/move-to-version.sh "$(version)"
+	@env $(addprefix -u ,$(DEFINED_HERE)) $(USER_ENVIRONMENT) $(MAKE) --no-print-directory upgrade version= NEOWIKI_IMAGE_TAG=
+endif
 
 dev: _preflight bootstrap ensure-port _save-selection ## Bring up dev stack (build image, install, seed, wait for health)
 	@$(MAKE) --no-print-directory _dev-impl
@@ -301,16 +324,15 @@ _dev-tools-impl:
 
 # ---- Bootstrap (one-time, idempotent) ----------------------------------------
 
-# Populates the gitignored prerequisites that the build context needs:
-# Docker/mediawiki/ (a vendored MediaWiki core checkout) and an empty
-# Docker/LocalSettings.local.php for the per-worktree override bind-mount.
+# Populates the gitignored prerequisite that the build context needs:
+# Docker/mediawiki/, a vendored MediaWiki core checkout.
 #
 # Only the bundled extensions/skins that Docker/SettingsTemplate.php loads are
 # fetched as submodules, not MediaWiki's full bundle, to keep the clone fast and
 # small. When you wfLoadExtension/wfLoadSkin something new there, add its
 # submodule to the list below.
 .PHONY: bootstrap
-bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (idempotent)
+bootstrap: ## Clone MW core into Docker/mediawiki/ (idempotent)
 	@if [ ! -d Docker/mediawiki/.git ]; then \
 		echo "Cloning MediaWiki $${MW_BRANCH:-REL1_43} into Docker/mediawiki/..."; \
 		git clone --depth 1 \
@@ -329,7 +351,6 @@ bootstrap: ## Clone MW core into Docker/mediawiki/ and prep gitignored files (id
 			skins/Timeless \
 			skins/Vector; \
 	fi
-	@touch Docker/LocalSettings.local.php
 
 _dev-impl:
 	@$(MAKE) --no-print-directory _stop-deselected
@@ -419,6 +440,7 @@ test-scripts: ## Run shell-script tests (set-port.sh, preflight.sh, etc.)
 	@./Docker/tests/test-saved-selection.sh
 	@./Docker/tests/test-image-tag.sh
 	@./Docker/tests/test-qlever-index.sh
+	@./Docker/tests/test-move-to-version.sh
 	@./scripts/tests/test-tag-release.sh
 
 # ---- Browser tests -----------------------------------------------------------

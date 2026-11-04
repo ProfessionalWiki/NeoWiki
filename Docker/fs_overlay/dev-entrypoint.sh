@@ -32,9 +32,8 @@ if [ -d "$NW_DIR" ] && [ ! -f "$NW_MERGED_MARKER" ]; then
     touch "$NW_MERGED_MARKER"
 fi
 
-# LocalSettings.local.php is bind-mounted from the host (see docker-compose.dev.yml
-# and the bootstrap make target, which guarantees the host file exists). The
-# require_once in SettingsTemplate.php is gated on file_exists, so an empty file
-# is harmless.
+# LocalSettings.local.php is bind-mounted from the host (see docker-compose.yml
+# and the Makefile, which guarantees the host file exists). The require_once in
+# SettingsTemplate.php is gated on file_exists, so an empty file is harmless.
 
 exec "$@"

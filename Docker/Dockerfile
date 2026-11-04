@@ -89,7 +89,7 @@ COPY --chown=www-data:www-data mediawiki /var/www/html/w
 COPY --chown=www-data:www-data composer.local.json /var/www/html/w/composer.local.json
 # LocalSettings.php is the SettingsTemplate; it switches on MW_MODE at runtime.
 # Per-worktree overrides go in LocalSettings.local.php (bind-mounted from the host
-# by docker-compose.dev.yml), which is the file users actually edit.
+# by docker-compose.yml), which is the file users actually edit.
 COPY --chown=www-data:www-data SettingsTemplate.php /var/www/html/w/LocalSettings.php
 
 RUN composer config --global audit.block-insecure false

@@ -4,6 +4,13 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+* In the Docker demo, `make upgrade version=latest` moves the demo to the newest release and upgrades it, and
+  `version=0.2.0` to the release you name. On 0.1.0 and 0.1.1, `make upgrade` ignores `version`, so move to this
+  release as [Upgrading](https://neowiki.ai/docs/operations/upgrading) describes
+* In the Docker demo, your own MediaWiki settings go in `Docker/LocalSettings.local.php` in place of a
+  `LocalSettings.php` mounted through `Docker/docker-compose.yml`, and upgrades keep them. If you mounted one, move
+  your settings as [Upgrading](https://neowiki.ai/docs/operations/upgrading) describes
+
 ## NeoWiki 0.1.1
 
 * On MediaWiki 1.47, pages no longer show their Main Subject twice
