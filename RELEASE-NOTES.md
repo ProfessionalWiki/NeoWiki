@@ -4,7 +4,9 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
-*
+* Schema edits are reflected in Lua and CirrusSearch
+
+Run `php maintenance/run.php refreshLinks` once to cover pages saved before you upgrade.
 
 ## NeoWiki 0.1.1
 

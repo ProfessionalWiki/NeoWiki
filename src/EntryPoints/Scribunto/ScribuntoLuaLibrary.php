@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\Lua\CypherQu
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\Lua\SparqlQueryRunner;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\SparqlErrorMessage;
+use ProfessionalWiki\NeoWiki\Infrastructure\ParserPageDependencyRecorder;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class ScribuntoLuaLibrary extends LibraryBase {
@@ -182,6 +183,8 @@ class ScribuntoLuaLibrary extends LibraryBase {
 		} catch ( InvalidArgumentException ) {
 			return [ null ];
 		}
+
+		ParserPageDependencyRecorder::forParser( $this->getParser() )->recordDependencyOnSchema( $reference );
 
 		$schema = $extension->getSchemaResolverFor( ParserAuthority::of( $this->getParser() ) )->getSchema( $reference );
 
