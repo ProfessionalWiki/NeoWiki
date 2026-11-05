@@ -46,6 +46,7 @@ function mountList( overrides: {
 	subjects?: Subject[];
 	activeId?: string;
 	unsavedIds?: string[];
+	blockingIds?: string[];
 	attachTo?: Element;
 } = {} ): VueWrapper {
 	return mount( OpenSubjectList, {
@@ -53,6 +54,7 @@ function mountList( overrides: {
 			subjects: overrides.subjects ?? [ person, birth, place ],
 			activeId: overrides.activeId ?? PERSON_ID,
 			unsavedIds: overrides.unsavedIds ?? [],
+			blockingIds: overrides.blockingIds ?? [],
 		},
 		attachTo: overrides.attachTo,
 		global: {
@@ -81,6 +83,10 @@ function selectedIds( wrapper: VueWrapper ): string[] {
 
 function hasUnsavedDot( option: DOMWrapper<Element> ): boolean {
 	return option.find( '.ext-neowiki-unsaved-dot' ).exists();
+}
+
+function saysSavingIsBlocked( option: DOMWrapper<Element> ): boolean {
+	return option.find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
 }
 
 describe( 'OpenSubjectList', () => {
@@ -153,6 +159,19 @@ describe( 'OpenSubjectList', () => {
 
 		expect( dot.attributes( 'role' ) ).toBe( 'img' );
 		expect( dot.attributes( 'aria-label' ) ).toBe( 'neowiki-subject-editor-unsaved' );
+	} );
+
+	it( 'says of the subjects whose errors block saving, and no others, that they do', () => {
+		const wrapper = mountList( { unsavedIds: [ PERSON_ID, BIRTH_ID, PLACE_ID ], blockingIds: [ BIRTH_ID ] } );
+
+		expect( options( wrapper ).map( saysSavingIsBlocked ) ).toStrictEqual( [ false, true, false ] );
+	} );
+
+	// Both hang in the same place before the name.
+	it( 'shows a subject whose errors block saving without its unsaved dot', () => {
+		const wrapper = mountList( { unsavedIds: [ PERSON_ID, BIRTH_ID, PLACE_ID ], blockingIds: [ BIRTH_ID ] } );
+
+		expect( options( wrapper ).map( hasUnsavedDot ) ).toStrictEqual( [ true, false, true ] );
 	} );
 
 	it( 'moves down the list with the down arrow', async () => {

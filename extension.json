@@ -827,6 +827,7 @@
 				"neowiki-subject-editor-validation-failed",
 				"neowiki-subject-editor-stored-on",
 				"neowiki-subject-editor-unsaved",
+				"neowiki-subject-editor-save-blocked",
 				"neowiki-subject-editor-load-error",
 				"neowiki-subject-editor-loading",
 				"neowiki-subject-editor-target-load-error",

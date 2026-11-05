@@ -283,6 +283,7 @@
 	"neowiki-subject-editor-validation-failed": "Validation failed for \"$1\". Please fix the highlighted fields.",
 	"neowiki-subject-editor-stored-on": "Stored on $1",
 	"neowiki-subject-editor-unsaved": "Unsaved changes",
+	"neowiki-subject-editor-save-blocked": "Unsaved changes with errors that block saving",
 	"neowiki-subject-editor-load-error": "Could not load the subject.",
 	"neowiki-subject-editor-loading": "Loading the subject",
 	"neowiki-subject-editor-target-load-error": "Could not load the related subject.",

@@ -32,8 +32,18 @@
 				:schema-name="schemaNameToShow( subject )!"
 				link="none"
 			/>
+			<!-- Its own label, as the dot has: the row takes its accessible name from its content. -->
+			<span
+				v-if="blocksSaving( subject )"
+				class="ext-neowiki-open-subject-list__save-blocked"
+				role="img"
+				:aria-label="$i18n( 'neowiki-subject-editor-save-blocked' ).text()"
+				:title="$i18n( 'neowiki-subject-editor-save-blocked' ).text()"
+			>
+				<CdxIcon :icon="cdxIconError" size="x-small" />
+			</span>
 			<UnsavedDot
-				v-if="isUnsaved( subject )"
+				v-else-if="isUnsaved( subject )"
 				class="ext-neowiki-open-subject-list__unsaved"
 			/>
 		</li>
@@ -42,6 +52,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { CdxIcon } from '@wikimedia/codex';
+import { cdxIconError } from '@wikimedia/codex-icons';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
@@ -53,6 +65,8 @@ const props = defineProps<{
 	subjects: readonly Subject[];
 	activeId: string;
 	unsavedIds: readonly string[];
+	// Subjects whose forms show something the save cannot get past. Each is unsaved too, which its mark says as well.
+	blockingIds: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -79,6 +93,10 @@ function isActive( subject: Subject ): boolean {
 
 function isUnsaved( subject: Subject ): boolean {
 	return props.unsavedIds.includes( idOf( subject ) );
+}
+
+function blocksSaving( subject: Subject ): boolean {
+	return props.blockingIds.includes( idOf( subject ) );
 }
 
 function select( subject: Subject ): void {
@@ -187,6 +205,19 @@ function optionAt( index: number ): HTMLElement | undefined {
 		position: absolute;
 		inset-inline-start: @spacing-50;
 		inset-block-start: calc( @spacing-50 + ( 1lh - @size-50 ) / 2 );
+	}
+
+	/* Centred where the dot it replaces would be. */
+	&__save-blocked {
+		position: absolute;
+		inset-inline-start: calc( @spacing-50 + ( @size-50 - @size-icon-x-small ) / 2 );
+		inset-block-start: calc( @spacing-50 + ( 1lh - @size-icon-x-small ) / 2 );
+		display: flex;
+
+		/* Codex gives its icons a colour of their own. */
+		.cdx-icon {
+			color: @color-error;
+		}
 	}
 }
 </style>

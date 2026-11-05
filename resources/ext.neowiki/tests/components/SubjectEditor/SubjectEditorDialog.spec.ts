@@ -79,7 +79,8 @@ const SubjectEditorStub = {
 		};
 		const getDependentSubjects = (): Subject[] =>
 			editorDependentSubjectsBySchema[ props.schema?.getName() ?? '' ] ?? [];
-		return { getSubjectData, getDependentSubjects, saveBlocker };
+		const violationsBlockSaving = (): boolean => false;
+		return { getSubjectData, getDependentSubjects, saveBlocker, violationsBlockSaving };
 	},
 };
 
@@ -88,6 +89,19 @@ const SummaryActionStub = {
 	props: [ 'helpText', 'footerText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
 };
+
+// An `error` the dry-run says the edit introduced, which the wiki refuses a save over under enforcement.
+function introducedError( propertyName: string ): SubjectViolation {
+	return { propertyName, code: 'max-length', args: [ 5 ], severity: 'error', valuePartIndex: null, introduced: true };
+}
+
+function storedError( propertyName: string ): SubjectViolation {
+	return { ...introducedError( propertyName ), introduced: false };
+}
+
+function saveDisabled( wrapper: VueWrapper ): boolean {
+	return wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) as boolean;
+}
 
 const CloseConfirmationDialogStub = {
 	template: '<div class="close-confirmation-stub"></div>',
@@ -995,6 +1009,80 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 	} );
 
+	describe( 'Errors that block saving', () => {
+		beforeEach( () => {
+			wikiConfig.wgNeoWikiEnforceValidation = true;
+		} );
+
+		async function editAndValidate( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+		}
+
+		it( 'disables save while the form shows an error the edit introduces', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ introducedError( 'name' ) ] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await editAndValidate( wrapper );
+
+			expect( saveDisabled( wrapper ) ).toBe( true );
+		} );
+
+		it( 'keeps save enabled for an error the Subject already had', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ storedError( 'name' ) ] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await editAndValidate( wrapper );
+
+			expect( saveDisabled( wrapper ) ).toBe( false );
+		} );
+
+		it( 'keeps save enabled for an error the edit introduces on a wiki that does not enforce validation', async () => {
+			wikiConfig.wgNeoWikiEnforceValidation = false;
+			useSubjectStore().validateSubjectUpdate = vi.fn().mockResolvedValue( [ introducedError( 'name' ) ] );
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+
+			await editAndValidate( wrapper );
+
+			expect( saveDisabled( wrapper ) ).toBe( false );
+		} );
+
+		it( 'disables save while a field holds text that cannot be turned into a value', async () => {
+			const wrapper = mountComponent( true, validationTestStubs );
+			await flushPromises();
+			editorSaveBlocker = { propertyName: 'Score', message: 'neowiki-field-invalid-number' };
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+
+			expect( saveDisabled( wrapper ) ).toBe( true );
+		} );
+
+		// Save is still enabled when the click lands before the edit's validation has come back.
+		it( 'writes nothing when the validation the save waits for finds an error the edit introduces', async () => {
+			useSubjectStore().validateSubjectUpdate = vi.fn()
+				.mockResolvedValueOnce( [] )
+				.mockResolvedValue( [ introducedError( 'name' ) ] );
+			const onSave = vi.fn().mockResolvedValue( undefined );
+			const wrapper = mountComponent( true, validationTestStubs, onSave );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( onSave ).not.toHaveBeenCalled();
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				expect.stringContaining( 'neowiki-subject-editor-validation-failed' ),
+				{ type: 'error' },
+			] );
+		} );
+	} );
+
 	function titleText( wrapper: VueWrapper ): string {
 		return wrapper.find( '.ext-neowiki-editable-text__text' ).text();
 	}
@@ -1348,6 +1436,11 @@ describe( 'SubjectEditorDialog', () => {
 		function listRowHasDot( wrapper: VueWrapper, id: string ): boolean {
 			expect( listHasRow( wrapper, id ) ).toBe( true );
 			return listRow( wrapper, id ).find( '.ext-neowiki-unsaved-dot' ).exists();
+		}
+
+		function listRowBlocksSaving( wrapper: VueWrapper, id: string ): boolean {
+			expect( listHasRow( wrapper, id ) ).toBe( true );
+			return listRow( wrapper, id ).find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
 		}
 
 		function listRowLabel( wrapper: VueWrapper, id: string ): string {
@@ -1736,6 +1829,26 @@ describe( 'SubjectEditorDialog', () => {
 			expect( listRowHasDot( wrapper, rootSubjectId ) ).toBe( true );
 		} );
 
+		// Save is disabled for every open Subject, so the row says which one is holding it.
+		it( 'marks the Subject whose errors block saving in the navigator', async () => {
+			wikiConfig.wgNeoWikiEnforceValidation = true;
+			useSubjectStore().validateSubjectUpdate = vi.fn( ( id: SubjectId ) =>
+				Promise.resolve( id.text === 's22222222222222' ? [ introducedError( 'Name' ) ] : [] ) );
+			useSubjectStore().setSubject( targetSubject( 's22222222222222', 'Target subject' ) );
+			const { wrapper } = await mountWithSecondPaneOpen( {
+				rootSchema: relationRootSchema,
+				rootSubject: relationRootSubject,
+			} );
+			await makePaneDirty( wrapper, 0 );
+			await makePaneDirty( wrapper, 1 );
+
+			wrapper.findAllComponents( SubjectEditPane )[ 1 ].findComponent( SubjectEditor ).vm.$emit( 'focusout' );
+			await flushPromises();
+
+			expect( listRowBlocksSaving( wrapper, 's22222222222222' ) ).toBe( true );
+			expect( listRowBlocksSaving( wrapper, rootSubjectId ) ).toBe( false );
+		} );
+
 		it( 'notifies and adds no pane when the target cannot be loaded', async () => {
 			const { wrapper, mockSubjectRepository } = mountWithTargetRepos();
 			await flushPromises();
@@ -2006,6 +2119,21 @@ describe( 'SubjectEditorDialog', () => {
 				editorSaveBlockerBySchema = {
 					TestSchema: { propertyName: 'Score', message: 'neowiki-field-invalid-number' },
 				};
+				expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
+
+				await triggerSave( wrapper, '' );
+
+				expect( onSave ).not.toHaveBeenCalled();
+				expect( visibleSubjectId( wrapper ) ).toBe( rootSubjectId );
+			} );
+
+			it( 'shows the pane the validation before the save finds an introduced error on when it is off screen', async () => {
+				wikiConfig.wgNeoWikiEnforceValidation = true;
+				const onSave = vi.fn().mockResolvedValue( undefined );
+				const { wrapper } = await mountWithThreePanesOpen( { onSave } );
+				useSubjectStore().validateSubjectUpdate = vi.fn( ( id: SubjectId ) =>
+					Promise.resolve( id.text === rootSubjectId ? [ introducedError( 'name' ) ] : [] ) );
+				await makePaneDirty( wrapper, 0 );
 				expect( visibleSubjectId( wrapper ) ).toBe( 's33333333333333' );
 
 				await triggerSave( wrapper, '' );
@@ -4074,6 +4202,75 @@ describe( 'SubjectEditorDialog', () => {
 
 				const [ written ] = callsTo( onSave, 'save' )[ 0 ].dependentSubjects as Subject[];
 				expect( written.getStatementValue( new PropertyName( 'Date' ) ) ).toEqual( newStringValue( '25 October 1881' ) );
+			} );
+
+			describe( 'showing an error the edit introduces', () => {
+				beforeEach( () => {
+					wikiConfig.wgNeoWikiEnforceValidation = true;
+					useSubjectStore().validateSubjectUpdate = vi.fn( ( id: SubjectId ) =>
+						Promise.resolve( id.text === BIRTH_ID ? [ introducedError( 'Date' ) ] : [] ) );
+				} );
+
+				// Blur-only, as every test here is: the dry-run runs when the field is left.
+				async function editTheBirthDate( wrapper: VueWrapper ): Promise<void> {
+					const field = controlOf( wrapper, 'Date', 'input' );
+					await typeInto( field, '25 October 1881' );
+					await new DOMWrapper( field ).trigger( 'focusout' );
+					await flushPromises();
+				}
+
+				async function mountWithTheFirstOfTwoBirthsShowingTheError(): Promise<VueWrapper> {
+					const wrapper = mountHostOf(
+						[ BIRTH_ID, SECOND_BIRTH_ID ],
+						[ storedBirth( BIRTH_ID, '1881' ), storedBirth( SECOND_BIRTH_ID, '1882' ) ],
+						vi.fn(),
+					);
+					await flushPromises();
+					await editTheBirthDate( wrapper );
+					expect( saveDisabled( wrapper ) ).toBe( true );
+
+					return wrapper;
+				}
+
+				it( 'disables save', async () => {
+					const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881' ) ], vi.fn() );
+					await flushPromises();
+
+					await editTheBirthDate( wrapper );
+
+					expect( saveDisabled( wrapper ) ).toBe( true );
+				} );
+
+				it( 'disables save for an error on a Dependent Subject inside another', async () => {
+					useSubjectStore().validateSubjectUpdate = vi.fn( ( id: SubjectId ) =>
+						Promise.resolve( id.text === RECORD_ID ? [ introducedError( 'Archive' ) ] : [] ) );
+					const wrapper = mountHostOf( [ BIRTH_ID ], [ storedBirth( BIRTH_ID, '1881', RECORD_ID ), storedRecord ], vi.fn() );
+					await flushPromises();
+
+					const archive = controlOf( wrapper, 'Archive', 'input' );
+					await typeInto( archive, 'Archivo Municipal' );
+					await new DOMWrapper( archive ).trigger( 'focusout' );
+					await flushPromises();
+
+					expect( saveDisabled( wrapper ) ).toBe( true );
+				} );
+
+				it( 'enables save once that Dependent Subject is removed', async () => {
+					const wrapper = await mountWithTheFirstOfTwoBirthsShowingTheError();
+
+					await removeBirth( wrapper, 0 );
+
+					expect( saveDisabled( wrapper ) ).toBe( false );
+				} );
+
+				it( 'disables save again once the removal is undone', async () => {
+					const wrapper = await mountWithTheFirstOfTwoBirthsShowingTheError();
+					await removeBirth( wrapper, 0 );
+
+					await undoRemoval( wrapper );
+
+					expect( saveDisabled( wrapper ) ).toBe( true );
+				} );
 			} );
 
 			it( 'writes an edited Dependent Subject once, not again with a later save', async () => {

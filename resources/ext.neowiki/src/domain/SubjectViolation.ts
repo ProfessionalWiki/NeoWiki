@@ -19,6 +19,9 @@ import type { Severity } from '@/domain/Severity';
  *
  * subjectId names the Subject the violation is on, where a write covers several; absent, it is the
  * Subject the request names.
+ *
+ * introduced says whether the edit adds the violation rather than the stored Subject having it
+ * already. Only the dry-run says; a refused save's violations leave it absent.
  */
 export interface SubjectViolation {
 	readonly propertyName: string | null;
@@ -27,6 +30,15 @@ export interface SubjectViolation {
 	readonly severity: Severity;
 	readonly valuePartIndex: number | null;
 	readonly subjectId?: string;
+	readonly introduced?: boolean;
+}
+
+/**
+ * Whether the wiki would refuse a save over this violation. One a refused save reported counts
+ * only once a dry-run has said the edit introduced it: it may be one the Subject already had.
+ */
+export function blocksSaving( violation: SubjectViolation, validationEnforced: boolean ): boolean {
+	return validationEnforced && violation.severity === 'error' && violation.introduced === true;
 }
 
 /**

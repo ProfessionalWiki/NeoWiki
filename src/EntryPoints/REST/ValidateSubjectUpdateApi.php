@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\SimpleHandler;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\ViolationSerializer;
@@ -37,7 +38,11 @@ class ValidateSubjectUpdateApi extends SimpleHandler {
 		}
 
 		return $this->getResponseFactory()->createJson( [
-			'violations' => ViolationSerializer::serializeMany( $violations ),
+			'violations' => array_map(
+				static fn ( Violation $violation ): array =>
+					ViolationSerializer::serializeProposed( $violation, $violations->isIntroduced( $violation ) ),
+				$violations->all
+			),
 		] );
 	}
 

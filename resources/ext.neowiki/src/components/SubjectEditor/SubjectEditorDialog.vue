@@ -35,6 +35,7 @@
 						:subjects="openSubjects"
 						:active-id="activePaneId"
 						:unsaved-ids="unsavedIds"
+						:blocking-ids="blockingIds"
 						@select="showPane"
 					/>
 				</div>
@@ -102,7 +103,7 @@
 					help-text=""
 					:footer-text="saveScopeText"
 					:save-button-label="saveButtonLabel"
-					:save-disabled="!anyChanged || saving || props.saveDisabled === true"
+					:save-disabled="!anyChanged || saving || props.saveDisabled === true || blockingIds.length > 0"
 					@save="handleSave"
 				/>
 			</template>
@@ -400,6 +401,12 @@ const dirtyPanes = computed( (): DirtyPane[] => panes.value
 const unsavedIds = computed( (): string[] => dirtyPanes.value.map( ( { pane } ) => pane.id ) );
 
 const anyChanged = computed( (): boolean => dirtyPanes.value.length > 0 );
+
+// Subjects in the save whose forms show something it cannot get past: text a field cannot read, or a violation the wiki
+// would refuse the save over.
+const blockingIds = computed( (): string[] => dirtyPanes.value
+	.filter( ( { instance } ) => instance.violationsBlockSaving || instance.saveBlocker() !== null )
+	.map( ( { pane } ) => pane.id ) );
 
 // What closing would throw away, which is not the same as what saving would write: an untouched
 // root the save is committed to writing is in the write set, and is nothing the user would be
@@ -897,6 +904,19 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	if ( blocked !== undefined ) {
 		await showSubject( blocked.id );
 		mw.notify( blocked.blocker.message, { title: blocked.blocker.propertyName, type: 'error' } );
+		return;
+	}
+
+	// The panes' own validation just awaited can find what the wiki would refuse the save over, when Save was pressed
+	// before the edit's validation came back. A Dependent Subject's validation still in flight is not waited for.
+	const refused = dirty.find( ( { instance } ) => instance.violationsBlockSaving );
+
+	if ( refused !== undefined ) {
+		await showSubject( refused.pane.id );
+		mw.notify(
+			mw.msg( 'neowiki-subject-editor-validation-failed', subjectDisplayName( withLiveLabel( refused.instance ) ) ),
+			{ type: 'error' }
+		);
 		return;
 	}
 
