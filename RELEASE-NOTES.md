@@ -4,6 +4,8 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
+*
+
 ## NeoWiki 0.1.1
 
 * On MediaWiki 1.47, pages that place their Main Subject with `{{#main_subject}}` no longer show it twice
