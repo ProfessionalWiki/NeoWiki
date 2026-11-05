@@ -17,7 +17,8 @@ class LanguageTag {
 	/**
 	 * A BCP-47-shaped language tag: hyphen-separated subtags of 1–8 characters, the primary subtag
 	 * alphabetic and the rest alphanumeric. Kept in sync with the `lang` pattern in
-	 * mappingContentSchema.json (the save-time layer).
+	 * mappingContentSchema.json and the `labels` keys in schemaContentSchema.json (the save-time
+	 * layer).
 	 *
 	 * Carries no delimiters and stays within ECMA-262, so that the JSON Schema documents can use it
 	 * as a `pattern`.

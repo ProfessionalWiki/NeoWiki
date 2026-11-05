@@ -10,7 +10,7 @@
 				class="ext-neowiki-subject-statements__item"
 			>
 				<dt class="ext-neowiki-subject-statements__property">
-					{{ resolved.propertyDefinition.name.toString() }}
+					{{ propertyDisplayName( resolved.propertyDefinition ) }}
 				</dt>
 				<dd class="ext-neowiki-subject-statements__value">
 					<StatementDisplay
@@ -36,6 +36,7 @@ import { Schema } from '@/domain/Schema';
 import { useSchemaStore } from '@/stores/SchemaStore';
 import { resolveAllNonEmptyProperties, type ResolvedProperty } from '@/domain/resolveDisplayProperties';
 import StatementDisplay from '@/components/Value/StatementDisplay.vue';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 import { EnclosingSubjectIdsKey } from '@/components/Value/ValueDisplayContract.ts';
 
 const props = defineProps<{

@@ -95,6 +95,8 @@ Schemas have a name, description, and a list of Property Definitions, and declar
 A Property Definition has:
 
 - A **name**. Example: "Website".
+- Optional **labels**: what the UI calls the property, one per language. Example: "Webseite" in German. References
+  to the property use its name.
 - A **type**: a Property Type. Example: "url".
 - Whether a value is **required**.
 - An optional **description**.

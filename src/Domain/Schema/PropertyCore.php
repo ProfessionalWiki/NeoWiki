@@ -13,12 +13,14 @@ readonly class PropertyCore {
 	 *
 	 * @param array<string, Severity> $constraintSeverities Per-Constraint severity, keyed by
 	 *   the Constraint's JSON key (e.g. 'maximum', 'required'). See ADR 26.
+	 * @param array<string, string> $labels Keyed by lowercase language tag.
 	 */
 	public function __construct(
 		public string $description,
 		public bool $required,
 		public mixed $default,
 		public array $constraintSeverities = [],
+		public array $labels = [],
 	) {
 	}
 

@@ -25,7 +25,7 @@ use InvalidArgumentException;
 final class SeverityNormalizer {
 
 	/** Core keys handled outside the Constraint model; never severity-bearing. */
-	private const RESERVED = [ 'type', 'description', 'default' ];
+	private const RESERVED = [ 'type', 'description', 'labels', 'default' ];
 
 	/**
 	 * @param array<string, mixed> $property

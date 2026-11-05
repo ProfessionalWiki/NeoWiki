@@ -80,6 +80,7 @@ Every property definition carries the common fields below plus the type-specific
 |-------|------|----------|---------|-------------|
 | `type` | string | Yes | - | The property type. See [Property Types](#property-types). |
 | `description` | string | No | `""` | Human-readable description of the property |
+| `labels` | object | No | `{}` | What the UI calls the property, keyed by [language tag](subject-format.md#text-with-language), such as `{ "de": "Geburtsdatum" }`. Everything else refers to the property by its name. |
 | `required` | boolean or object | No | `false` | Whether a value is required. Accepts a [severity](#constraint-severity). |
 | `default` | varies | No | `null` | Default value when none is provided |
 

@@ -126,6 +126,22 @@ describe( 'SchemaSerializer', () => {
 		} );
 	} );
 
+	describe( 'labels', () => {
+		it( 'serializes the labels of a property back to the JSON they were read from', () => {
+			const json = {
+				description: '',
+				propertyDefinitions: {
+					'Birth date': { type: 'date', description: '', required: false, labels: { en: 'Date of birth', de: 'Geburtsdatum' } },
+				},
+			};
+
+			const schema = new SchemaDeserializer().deserialize( 'Person', json );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ).propertyDefinitions[ 'Birth date' ].labels )
+				.toEqual( { en: 'Date of birth', de: 'Geburtsdatum' } );
+		} );
+	} );
+
 	describe( 'unregistered-type round-trip', () => {
 		it( 'serializes a property of an unregistered type back to its original JSON', () => {
 			const json = {

@@ -26,6 +26,11 @@
 			/>
 		</CdxField>
 
+		<PropertyLabelsInput
+			ref="labelsInput"
+			v-model:labels="localProperty.labels"
+		/>
+
 		<CdxField>
 			<template #label>
 				{{ $i18n( 'neowiki-property-editor-description' ).text() }}
@@ -75,6 +80,7 @@
 import { PropertyDefinition, PropertyName, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import PropertyLabelsInput, { type PropertyLabelsInputExposes } from '@/components/SchemaEditor/Property/PropertyLabelsInput.vue';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
@@ -204,6 +210,7 @@ function changePropertyType( type: string ): void {
 			name: localProperty.value.name,
 			type: type,
 			description: localProperty.value.description,
+			labels: localProperty.value.labels,
 			required: localProperty.value.required,
 			default: undefined,
 			...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
@@ -266,6 +273,7 @@ const takesInitialValue = computed( (): boolean => targetSchemaNames.value.lengt
 	targetsDependentSubjects( targetSchemaNames.value, subjectsAreDependentIn( schemaSummaries.value ) ) !== true
 ) );
 
+const labelsInput = ref<PropertyLabelsInputExposes | null>( null );
 const attributesEditor = ref<AttributesEditorExposes | null>( null );
 const defaultValueInput = ref<ValueInputExposes | null>( null );
 
@@ -280,6 +288,7 @@ export interface PropertyDefinitionEditorExposes {
  */
 function unparseableInputMessage(): string | null {
 	return nameError.value ??
+		labelsInput.value?.unparseableInputMessage() ??
 		attributesEditor.value?.unparseableInputMessage?.() ??
 		defaultValueInput.value?.unparseableInputMessage?.() ??
 		null;

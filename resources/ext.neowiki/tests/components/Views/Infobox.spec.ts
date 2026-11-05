@@ -163,6 +163,23 @@ describe( 'Infobox', () => {
 		expect( linkElement.text() ).toBe( 'example.com' );
 	} );
 
+	it( 'names each property by its label in the reader\'s language', () => {
+		setupMwMock( { functions: [ 'message', 'msg', 'config', 'language', 'util' ], config: { wgUserLanguage: 'de' } } );
+		schemaStore.setSchema( 'TestSchema', newSchema( {
+			title: 'TestSchema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'name', { type: TextType.typeName, labels: { en: 'Name', de: 'Name (de)' } } ),
+				createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName, labels: { de: 'Alter' } } ),
+				createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
+			] ),
+		} ) );
+
+		const wrapper = mountComponent( mockSubject, false );
+
+		expect( wrapper.findAll( '.ext-neowiki-infobox__property' ).map( ( property ) => property.text() ) )
+			.toEqual( [ 'Name (de)', 'Alter', 'website' ] );
+	} );
+
 	it( 'renders without statements when subject has no statements', () => {
 		const emptySubject = newSubject( { id: 's1demo6sssssss1', label: 'Empty Subject', schemaName: 'TestSchema' } );
 

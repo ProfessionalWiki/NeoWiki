@@ -4,6 +4,7 @@ import type { SubjectNameFields } from '@/domain/HostSubject';
 import { isNamedAfterHostSubject } from '@/domain/dependentSubjects';
 import { resolveAllNonEmptyProperties } from '@/domain/resolveDisplayProperties';
 import { valueText } from '@/presentation/valueText';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName';
 
 /**
  * The name to show for a Subject.
@@ -48,7 +49,7 @@ export function identifyingSubjectName( subject: Subject, schema: Schema | undef
 		const text = valueText( propertyDefinition, value );
 
 		if ( text !== null ) {
-			return mw.message( 'neowiki-dependent-subject-identified-name', name, propertyDefinition.name.toString(), text ).text();
+			return mw.message( 'neowiki-dependent-subject-identified-name', name, propertyDisplayName( propertyDefinition ), text ).text();
 		}
 	}
 

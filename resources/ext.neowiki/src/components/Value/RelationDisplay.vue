@@ -5,7 +5,7 @@
 			:key="table.schema.getName()"
 			:schema="table.schema"
 			:subjects="table.subjects"
-			:property-name="props.property.name.toString()"
+			:relation-property-display-name="propertyDisplayName( props.property )"
 			:shows-schema-name="showsSchemaNames"
 		/>
 		<template v-for="( value, key ) in valuesOneByOne">
@@ -69,6 +69,7 @@ import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectLinkUrl } from '@/presentation/subjectLinks.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
 import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 
 interface RelationDisplayValueData {
 	text: string;

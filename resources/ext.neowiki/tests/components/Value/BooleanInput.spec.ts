@@ -5,7 +5,7 @@ import { newBooleanValue, newStringValue, ValueType } from '@/domain/Value';
 import BooleanInput from '@/components/Value/BooleanInput.vue';
 import { newBooleanProperty, BooleanProperty } from '@/domain/propertyTypes/Boolean';
 import { ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
-import { createTestWrapper } from '../../VueTestHelpers.ts';
+import { createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
 
 describe( 'BooleanInput', () => {
 	beforeEach( () => {
@@ -51,6 +51,31 @@ describe( 'BooleanInput', () => {
 
 		expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( true );
 		expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Is public' );
+	} );
+
+	describe( 'of a property with a label in the reader\'s language', () => {
+		beforeEach( () => {
+			setupMwMock( { config: { wgUserLanguage: 'de' } } );
+		} );
+
+		function newLabelledWrapper( label: string ): VueWrapper {
+			return newWrapper( {
+				label: label,
+				property: { ...newBooleanProperty( { name: 'Is public' } ), labels: { de: 'Öffentlich' } },
+			} );
+		}
+
+		it( 'labels the checkbox with that label', () => {
+			const wrapper = newLabelledWrapper( 'Initial value' );
+
+			expect( wrapper.findComponent( CdxCheckbox ).text() ).toContain( 'Öffentlich' );
+		} );
+
+		it( 'hides the field heading when the caller-supplied label equals that label', () => {
+			const wrapper = newLabelledWrapper( 'Öffentlich' );
+
+			expect( wrapper.findComponent( CdxField ).props( 'hideLabel' ) ).toBe( true );
+		} );
 	} );
 
 	it( 'renders the checkbox unchecked when modelValue is BooleanValue(false)', () => {

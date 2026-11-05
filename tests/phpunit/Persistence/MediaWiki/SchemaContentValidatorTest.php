@@ -558,6 +558,44 @@ JSON
 		);
 	}
 
+	public function testLabelsPerLanguagePassValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate(
+			$this->schemaWithProperty( '{ "type": "date", "labels": { "en": "Date of birth", "zh-Hant": "出生日期" } }' )
+		);
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testLabelUnderAKeyThatIsNoLanguageTagFailsValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate(
+				$this->schemaWithProperty( '{ "type": "date", "labels": { "en_GB": "Date of birth" } }' )
+			)
+		);
+	}
+
+	public function testLabelThatIsNoTextFailsValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate(
+				$this->schemaWithProperty( '{ "type": "date", "labels": { "en": [ "Date of birth" ] } }' )
+			)
+		);
+	}
+
+	public function testLabelsThatAreNoObjectFailValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate(
+				$this->schemaWithProperty( '{ "type": "date", "labels": [ "Date of birth" ] }' )
+			)
+		);
+	}
+
 	/**
 	 * Wraps the property under test between two valid siblings so a regression that only
 	 * inspects the first or last property definition is caught.

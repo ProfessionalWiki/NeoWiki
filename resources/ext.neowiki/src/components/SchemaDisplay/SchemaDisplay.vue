@@ -18,8 +18,15 @@
 				/>
 			</template>
 
-			<template #item-name="{ item }">
-				{{ item.toString() }}
+			<template #item-name="{ item, row }">
+				{{ propertyDisplayName( row ) }}
+				<!-- The name is what wikitext, Lua, Layouts and queries refer to the property by. -->
+				<div
+					v-if="propertyDisplayName( row ) !== item.toString()"
+					class="ext-neowiki-schema-display__property-name"
+				>
+					{{ item.toString() }}
+				</div>
 			</template>
 
 			<template #item-type="{ item }">
@@ -101,6 +108,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 
 const props = defineProps( {
 	schema: {
@@ -203,6 +211,12 @@ const onSchemaSaved = ( schema: Schema ): void => {
 
 	&__subjects {
 		margin-top: @spacing-200;
+	}
+
+	&__property-name {
+		color: @color-subtle;
+		font-size: @font-size-small;
+		font-weight: @font-weight-normal;
 	}
 
 	&__empty-value {

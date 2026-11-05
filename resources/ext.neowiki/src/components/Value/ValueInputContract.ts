@@ -9,9 +9,9 @@ export interface ValueInputProps<T extends PropertyDefinition> {
 	label?: string;
 	property: T;
 	/**
-	 * Server-sourced violations for this field, pre-filtered by the parent
-	 * to ones whose propertyName matches this property. Absent means no
-	 * backend-sourced errors to render.
+	 * Violations for this field, pre-filtered by the parent to ones whose
+	 * propertyName matches this property. Usually the backend's; a host may
+	 * also pass ones it finds in input it cannot store. Absent means none.
 	 */
 	serverViolations?: readonly SubjectViolation[];
 }

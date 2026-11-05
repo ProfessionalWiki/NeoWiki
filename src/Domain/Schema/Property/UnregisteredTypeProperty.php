@@ -41,10 +41,11 @@ class UnregisteredTypeProperty extends PropertyDefinition {
 	/**
 	 * Everything the core does not already carry. Subtracting the core keys rather than
 	 * listing the type-specific ones keeps unknown keys, which is the point, and cannot
-	 * drift from what coreToJson() emits.
+	 * drift from what coreToJson() emits. `labels` is subtracted even where coreToJson()
+	 * leaves it out, which it does for labels that are all empty.
 	 */
 	public function nonCoreToJson(): array {
-		return array_diff_key( $this->json, $this->coreToJson() );
+		return array_diff_key( $this->json, $this->coreToJson(), [ 'labels' => true ] );
 	}
 
 	public function toJsonSchema(): true {

@@ -7,7 +7,7 @@
 			<component
 				:is="valueEditingComponent( statement )"
 				:ref="( el: any ) => { if ( el ) valueEditors[ index ] = el; }"
-				:label="statement.propertyName.toString()"
+				:label="propertyDisplayName( props.schema.getPropertyDefinition( statement.propertyName ) )"
 				:model-value="statement.value"
 				:property="props.schema.getPropertyDefinition( statement.propertyName )"
 				:server-violations="violationsFor( statement.propertyName.toString() )"
@@ -53,6 +53,7 @@ import type { SubjectId } from '@/domain/SubjectId';
 import DependentSubjectsInput from '@/components/SubjectEditor/DependentSubjectsInput.vue';
 import type { DependentSubjectsInputExposes } from '@/components/SubjectEditor/DependentSubjectsInput.vue';
 import { DependentSubjectEditingKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 
 const props = defineProps<{
 	statements: StatementList;

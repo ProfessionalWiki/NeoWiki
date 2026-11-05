@@ -74,6 +74,8 @@
 
 	"neowiki-property-editor-name": "Name",
 	"neowiki-property-editor-name-required": "Please enter a property name.",
+	"neowiki-property-editor-labels": "Labels",
+	"neowiki-property-editor-labels-description": "Shown to readers in place of the name, in their language.",
 	"neowiki-property-editor-name-taken": "A property named \"$1\" already exists.",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",

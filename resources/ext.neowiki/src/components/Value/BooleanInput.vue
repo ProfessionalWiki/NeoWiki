@@ -14,7 +14,7 @@
 			:model-value="internalValue"
 			@update:model-value="onInput"
 		>
-			{{ props.property.name.toString() }}
+			{{ propertyDisplayName( props.property ) }}
 			<CdxIcon
 				v-if="props.property.description"
 				v-tooltip="props.property.description"
@@ -38,6 +38,7 @@ import { newBooleanValue, BooleanValue, ValueType } from '@/domain/Value';
 import { BooleanProperty } from '@/domain/propertyTypes/Boolean.ts';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { useFieldServerViolation } from '@/composables/useFieldServerViolation.ts';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<BooleanProperty>>(),
@@ -56,8 +57,8 @@ const { validationMessages, validationStatus, clearServerViolation } = useFieldS
 );
 
 // Hide the heading when it would duplicate the inline checkbox label
-// (subject-editor case: the caller passes the property name as the label).
-const showFieldHeading = computed( () => props.label !== props.property.name.toString() );
+// (subject-editor case: the caller passes the property's display name as the label).
+const showFieldHeading = computed( () => props.label !== propertyDisplayName( props.property ) );
 
 const toBoolean = ( value: Value | undefined ): boolean =>
 	value !== undefined && value.type === ValueType.Boolean ? ( value as BooleanValue ).boolean : false;

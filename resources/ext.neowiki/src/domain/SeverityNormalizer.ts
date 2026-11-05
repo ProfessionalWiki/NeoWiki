@@ -13,7 +13,7 @@ import { isSeverity, type Severity } from '@/domain/Severity';
  */
 
 /** Core keys handled outside the Constraint model; never severity-bearing. */
-const RESERVED = [ 'type', 'description', 'default' ];
+const RESERVED = [ 'type', 'description', 'labels', 'default' ];
 
 /**
  * The core boolean Constraints, whose object form carries no `value` key (see

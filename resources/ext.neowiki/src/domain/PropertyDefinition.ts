@@ -36,6 +36,12 @@ export interface PropertyDefinition {
 	readonly name: PropertyName;
 	readonly type: string;
 	readonly description: string;
+
+	/**
+	 * Keyed by lowercase language tag. Absent when the property has none.
+	 */
+	readonly labels?: Readonly<Record<string, string>>;
+
 	readonly required: boolean;
 	readonly default?: Value;
 
@@ -146,6 +152,7 @@ export class PropertyDefinitionDeserializer {
 			name: typeof name === 'string' ? new PropertyName( name ) : name,
 			type: json.type as string,
 			description: values.description as string ?? '',
+			labels: labelsFromJson( values.labels ),
 			required: values.required as boolean ?? false,
 			default: values.default !== undefined && values.default !== null ?
 				this.valueDeserializer.deserialize( values.default, json.type ) :
@@ -166,4 +173,16 @@ export class PropertyDefinitionDeserializer {
 		return this.registry.getType( json.type ).createPropertyDefinitionFromJson( base, values );
 	}
 
+}
+
+function labelsFromJson( json: unknown ): Record<string, string> | undefined {
+	const labels: Record<string, string> = {};
+
+	for ( const [ language, label ] of Object.entries( json ?? {} ) ) {
+		if ( typeof label === 'string' && label.trim() !== '' ) {
+			labels[ language.toLowerCase() ] = label.trim();
+		}
+	}
+
+	return Object.keys( labels ).length > 0 ? labels : undefined;
 }
