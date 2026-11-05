@@ -48,6 +48,9 @@ Each violation in the response has this shape:
   [codes for Dependent Subjects](#rules-for-dependent-subjects) always set it, as do the violations of
   a [`dependentSubjects`](subject-format.md#dependent-subjects) item. Without it, the violation is on
   the Subject the request creates, replaces or validates.
+- `introduced`, in `/validate` responses only, is `true` when the proposed write adds the violation and
+  `false` when the stored Subject already has it. For a new Subject it is always `true`. See
+  [Severity, blocking, and enforcement](#severity-blocking-and-enforcement).
 
 ## Severity, blocking, and enforcement
 

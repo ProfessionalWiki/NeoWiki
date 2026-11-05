@@ -92,6 +92,8 @@ export interface SubjectEditPaneExposes {
 	 */
 	buildDependentSubjects: () => Subject[];
 	setServerViolations: ( violations: readonly SubjectViolation[] ) => void;
+	/** Whether the wiki would refuse the save over a violation the form shows, its Dependent Subjects' included. */
+	violationsBlockSaving: boolean;
 	saveBlocker: () => SaveBlocker | null;
 	flushValidation: () => Promise<void>;
 }
@@ -118,7 +120,12 @@ import { useSubjectValidation } from '@/composables/useSubjectValidation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.ts';
 import { DependentSubjectViolationsKey, PaneWritesKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
-import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
+import {
+	withoutMissingValueViolations,
+	withoutUnsavedTargetViolations,
+	type SubjectViolation
+} from '@/domain/SubjectViolation';
+import { anyBlocksSaving } from '@/components/SubjectEditor/anyBlocksSaving.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 
@@ -299,6 +306,10 @@ const anchorlessViolations = computed<SubjectViolation[]>( () => {
 	} );
 } );
 
+const violationsBlockSaving = computed( (): boolean =>
+	anyBlocksSaving( serverViolations.value ) || ( subjectEditorRef.value?.violationsBlockSaving() ?? false )
+);
+
 function handleClearViolation( payload: { propertyName: string; valuePartIndex: number | null } ): void {
 	serverViolations.value = serverViolations.value.filter(
 		( v ) => !( v.propertyName === payload.propertyName && v.valuePartIndex === payload.valuePartIndex )
@@ -384,6 +395,7 @@ defineExpose( {
 	buildUpdatedSubject,
 	buildDependentSubjects,
 	setServerViolations,
+	violationsBlockSaving,
 	saveBlocker,
 	flushValidation
 } );
