@@ -1543,7 +1543,7 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 			subjectIdParser: $this->getSubjectIdParser(),
-			pageDependencyRecorder: new ParserPageDependencyRecorder( $parser ),
+			pageDependencyRecorder: ParserPageDependencyRecorder::forParser( $parser ),
 			schemaResolver: $this->getSchemaResolverFor( $authority ),
 		);
 	}
