@@ -31,6 +31,15 @@ final class ViolationSerializer {
 	}
 
 	/**
+	 * As a dry-run reports it, saying whether the proposed write introduces it.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function serializeProposed( Violation $violation, bool $introduced ): array {
+		return [ ...self::serialize( $violation ), 'introduced' => $introduced ];
+	}
+
+	/**
 	 * @param Violation[] $violations
 	 * @return array<int, array<string, mixed>>
 	 */

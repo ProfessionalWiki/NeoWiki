@@ -37,6 +37,11 @@ export interface SubjectEditorExposes {
 	 */
 	getDependentSubjects(): Subject[];
 	saveBlocker(): SaveBlocker | null;
+	/**
+	 * Whether a violation one of its Dependent Subjects shows would make the wiki refuse the save. The violations
+	 * passed in are the caller's to judge.
+	 */
+	violationsBlockSaving(): boolean;
 }
 </script>
 
@@ -152,6 +157,10 @@ const saveBlocker = (): SaveBlocker | null => {
 	return null;
 };
 
-defineExpose<SubjectEditorExposes>( { getSubjectData, getDependentSubjects, saveBlocker } );
+const violationsBlockSaving = (): boolean => valueEditors.value.some(
+	( editor ) => editor !== undefined && 'violationsBlockSaving' in editor && editor.violationsBlockSaving()
+);
+
+defineExpose<SubjectEditorExposes>( { getSubjectData, getDependentSubjects, saveBlocker, violationsBlockSaving } );
 
 </script>

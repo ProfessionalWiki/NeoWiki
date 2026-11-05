@@ -93,6 +93,8 @@ export interface DependentSubjectsInputExposes extends ValueInputExposes {
 	 * As their fields hold them, each followed by those inside it.
 	 */
 	dependentSubjects(): Subject[];
+	/** Whether a violation one of its Dependent Subjects shows would make the wiki refuse the save. */
+	violationsBlockSaving(): boolean;
 }
 
 export type DependentSubjectsInputEmits = ValueInputEmits & {
@@ -311,6 +313,8 @@ defineExpose<DependentSubjectsInputExposes>( {
 
 		return null;
 	},
+	violationsBlockSaving: (): boolean =>
+		targetIds.value.some( ( id ) => groupRefs.get( id )?.violationsBlockSaving() ?? false ),
 	dependentSubjects: (): Subject[] => {
 		const subjects: Subject[] = [];
 

@@ -117,6 +117,19 @@ class ValidateSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'valuePartIndex', $responseBody['violations'][0] );
 	}
 
+	public function testViolationOfANewSubjectIsIntroduced(): void {
+		$this->createSchemaWithRequiredProperty();
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectApi(),
+			$this->createRequestData( $this->validBody() )
+		);
+
+		$responseBody = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertTrue( $responseBody['violations'][0]['introduced'] );
+	}
+
 	public function testNeedsWriteAccessReturnsFalse(): void {
 		$this->assertFalse( $this->newValidateSubjectApi()->needsWriteAccess() );
 	}

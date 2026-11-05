@@ -4,7 +4,7 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## Unreleased
 
-*
+* The Subject editor's Save button is now disabled while the edit cannot be saved
 
 ## NeoWiki 0.1.1
 
