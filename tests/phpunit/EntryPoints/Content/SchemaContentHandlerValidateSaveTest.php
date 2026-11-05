@@ -108,6 +108,71 @@ class SchemaContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( '(neowiki-schema-invalid: 1,', $this->firstMessageInQqx( $status ) );
 	}
 
+	public function testFieldValueItsPropertyTypeCannotUseIsNamedWithWhatItMustHold(): void {
+		$status = $this->validate( '{ "propertyDefinitions": {
+			"Name": { "type": "text", "minLength": "five" },
+			"Age": { "type": "number" }
+		} }' );
+
+		$this->assertSame(
+			'(neowiki-schema-invalid: 1, (neowiki-schema-invalid-detail: /propertyDefinitions/Name/minLength, must be a whole number, not "five"))',
+			$this->firstMessageInQqx( $status )
+		);
+	}
+
+	public function testPointerToAFieldEscapesSlashAndTildeInThePropertyName(): void {
+		$status = $this->validate( '{ "propertyDefinitions": { "Height/We~ight": { "type": "text", "minLength": "five" } } }' );
+
+		$this->assertStringContainsString( '/propertyDefinitions/Height~1We~0ight/minLength,', $this->firstMessageInQqx( $status ) );
+	}
+
+	public function testFirstMessageNamesEveryPropertyDefinitionThatCannotBeReadAndCountsThem(): void {
+		$status = $this->validate( '{ "propertyDefinitions": {
+			"Founded": { "type": "date", "minimum": "yesterday" },
+			"Motto": { "type": "text" },
+			"Status": { "type": "select", "options": [ { "id": "a", "label": "A" }, { "id": "a", "label": "B" } ] }
+		} }' );
+
+		$text = $this->firstMessageInQqx( $status );
+
+		$this->assertStringContainsString( '(neowiki-schema-invalid: 2,', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Founded/minimum, must be a date', $text );
+		$this->assertStringContainsString( '/propertyDefinitions/Status/options, the option ID "a"', $text );
+		$this->assertStringNotContainsString( 'Motto', $text );
+	}
+
+	public function testPropertyDefinitionItsPropertyTypeCannotReadForAnotherReasonIsNamedAsAWhole(): void {
+		$status = $this->validate( '{ "propertyDefinitions": {
+			"Supervisor": { "type": "relation", "targetSchemas": [ "Page" ] }
+		} }' );
+
+		$this->assertStringContainsString(
+			'(neowiki-schema-invalid-detail: /propertyDefinitions/Supervisor, its Property Type cannot use this Property Definition)',
+			$this->firstMessageInQqx( $status )
+		);
+	}
+
+	public function testMessageShowsTheNamesOfUnreadablePropertiesAsWritten(): void {
+		$status = $this->validate( '{ "propertyDefinitions": {
+			"\'\'Big\'\'": { "type": "date", "minimum": "yesterday" },
+			"R&amp;D": { "type": "date", "minimum": "yesterday" }
+		} }' );
+
+		$text = html_entity_decode(
+			strip_tags( wfMessage( $status->getMessages()[0] )->inLanguage( 'en' )->parse() ),
+			ENT_QUOTES | ENT_HTML5
+		);
+
+		$this->assertStringContainsString( "''Big''", $text );
+		$this->assertStringContainsString( 'R&amp;D', $text );
+	}
+
+	public function testPropertyDefinitionOfAnUnregisteredTypePassesValidation(): void {
+		$status = $this->validate( '{ "propertyDefinitions": { "Mood": { "type": "typeNoExtensionRegisters" } } }' );
+
+		$this->assertStatusGood( $status );
+	}
+
 	private function firstMessageInQqx( StatusValue $status ): string {
 		return wfMessage( $status->getMessages()[0] )->inLanguage( 'qqx' )->text();
 	}
@@ -137,6 +202,18 @@ class SchemaContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$this->assertStatusError( 'neowiki-schema-relation-targets-mixed', $status );
+	}
+
+	public function testUnreadablePropertyDefinitionIsReportedAlongsideADependentSubjectError(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+
+		$status = $this->validate(
+			'{ "propertyDefinitions": { "Founded": { "type": "date", "minimum": "yesterday" } } }',
+			'Birth'
+		);
+
+		$this->assertStatusError( 'neowiki-schema-invalid', $status );
+		$this->assertStatusError( 'neowiki-schema-dependence-unchangeable', $status );
 	}
 
 }

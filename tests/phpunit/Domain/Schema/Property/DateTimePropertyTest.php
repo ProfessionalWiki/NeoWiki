@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
-use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -14,7 +13,7 @@ use ProfessionalWiki\NeoWiki\Tests\JsonSchemaAssertions;
 /**
  * @covers \ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateTimeProperty
  */
-class DateTimePropertyTest extends TestCase {
+class DateTimePropertyTest extends PropertyTestCase {
 
 	use JsonSchemaAssertions;
 
@@ -22,6 +21,25 @@ class DateTimePropertyTest extends TestCase {
 		$property = TestProperty::buildDateTime();
 
 		$this->assertSame( 'dateTime', $property->getPropertyType() );
+	}
+
+	/**
+	 * @dataProvider fieldThatIsNotADateAndTimeProvider
+	 */
+	public function testFieldThatIsNotADateAndTimeIsNamed( string $field, string $value ): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "dateTime", "' . $field . '": ' . $value . ' }',
+			$field,
+			'must be a date and time with a time zone, such as 2025-01-31T09:00:00Z, not ' . $value
+		);
+	}
+
+	public static function fieldThatIsNotADateAndTimeProvider(): iterable {
+		yield 'minimum that is only a date' => [ 'minimum', '"2020-01-01"' ];
+		yield 'minimum that is not text' => [ 'minimum', '2020' ];
+		yield 'maximum that is only a date' => [ 'maximum', '"2030-12-31"' ];
+		yield 'maximum that is not text' => [ 'maximum', '2030' ];
+		yield 'default that is only a date' => [ 'default', '"2025-06-15"' ];
 	}
 
 	public function testMinimumAndMaximumAreNullByDefault(): void {

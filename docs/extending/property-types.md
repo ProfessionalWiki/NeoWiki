@@ -13,6 +13,9 @@ Implement `PropertyType`, paired with a class extending `PropertyDefinition` tha
 fields, and register it with `NeoWikiRegistrar::addPropertyType()`. Example:
 [`src/ColorType.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorType.php) and [`src/ColorProperty.php`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/src/ColorProperty.php).
 
+A Schema save refuses a Property Definition your class cannot build from its JSON. To name the field at fault, throw
+`InvalidFieldException` with that field and an English reason, as `ColorProperty` does.
+
 `PropertyType::validate()` returns `Violation[]`. NeoWiki runs no validation in the browser; the input component
 shows the violations the server returns, each `code` resolved to the message key `neowiki-field-<code>`, which your
 extension defines (RedHerb's [`i18n/en.json`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/i18n/en.json)).

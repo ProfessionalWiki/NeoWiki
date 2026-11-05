@@ -4,7 +4,7 @@ import { type SelectOption, type SelectProperty, SelectType } from '@/domain/pro
 /**
  * The message naming what is wrong with each option, by option id; an option with nothing wrong has no
  * entry. Every option needs a label, and no two labels may differ only in letter case or surrounding
- * whitespace. The wiki stores a property that breaks this, then drops it when reading it back.
+ * whitespace. The wiki refuses to store a property that breaks this.
  */
 export function selectOptionProblems( options: readonly SelectOption[] ): Map<string, string> {
 	const labels = options.map( ( option ) => comparableLabel( option.label ) );

@@ -324,9 +324,9 @@ const invalidPropertyName = (): SaveBlocker | null => {
 };
 
 /**
- * The first property definition the wiki would refuse to store, or drop when reading it back, or
- * null. Read from the Schema rather than from the mounted editor: only the selected property has
- * one, and a property the user navigated away from is just as unsaveable. Only relation and select
+ * The first property definition the wiki would refuse to store, or null. Read from the Schema
+ * rather than from the mounted editor: only the selected property has one, and a property the user
+ * navigated away from is just as unsaveable. Only relation and select
  * properties can be faulty today; letting every Property Type answer for its own definition is
  * https://github.com/ProfessionalWiki/NeoWiki/issues/1454.
  */

@@ -13,6 +13,8 @@ use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
 use ProfessionalWiki\NeoWiki\Domain\Schema\DependentSubjectSchemaRules;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyNameRules;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -20,6 +22,7 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaContentValidator;
 use ProfessionalWiki\NeoWiki\Presentation\PropertyNameProblemMessage;
 use StatusValue;
+use Wikimedia\Message\MessageValue;
 
 class SchemaContentHandler extends JsonContentHandler {
 
@@ -56,11 +59,15 @@ class SchemaContentHandler extends JsonContentHandler {
 			);
 		}
 
-		if ( $status->isOK() ) {
-			$this->checkPropertyNames( $status, $content->getText() );
+		if ( !$status->isOK() || $schemaName === null ) {
+			return $status;
 		}
 
-		if ( $schemaName !== null && $status->isOK() ) {
+		$propertyDefinitions = $this->propertyDefinitions( $content->getText() );
+		$this->checkPropertyNames( $status, $propertyDefinitions );
+
+		if ( $status->isOK() ) {
+			$this->checkPropertyDefinitionsAreReadable( $status, $propertyDefinitions );
 			$this->checkDependentSubjectRules(
 				$status,
 				NeoWikiExtension::getInstance()->getPersistenceSchemaDeserializer()->deserialize( $schemaName, $content->getText() )
@@ -71,14 +78,23 @@ class SchemaContentHandler extends JsonContentHandler {
 	}
 
 	/**
-	 * Read from the JSON rather than from the Schema it holds, which leaves out integer names.
+	 * Read from the JSON rather than from the Schema it holds, which leaves out integer names
+	 * and the Property Definitions it cannot read.
+	 *
+	 * @return array<array-key, array<string, mixed>>
 	 */
-	private function checkPropertyNames( StatusValue $status, string $json ): void {
-		/** @var array{propertyDefinitions: array<array-key, mixed>} $schema */
+	private function propertyDefinitions( string $json ): array {
+		/** @var array{propertyDefinitions: array<array-key, array<string, mixed>>} $schema */
 		$schema = json_decode( $json, true );
-		$problems = PropertyNameRules::problemsInSchema(
-			array_map( strval( ... ), array_keys( $schema['propertyDefinitions'] ) )
-		);
+
+		return $schema['propertyDefinitions'];
+	}
+
+	/**
+	 * @param array<array-key, array<string, mixed>> $propertyDefinitions
+	 */
+	private function checkPropertyNames( StatusValue $status, array $propertyDefinitions ): void {
+		$problems = PropertyNameRules::problemsInSchema( array_map( strval( ... ), array_keys( $propertyDefinitions ) ) );
 
 		if ( $problems !== [] ) {
 			$this->reportErrors(
@@ -87,6 +103,52 @@ class SchemaContentHandler extends JsonContentHandler {
 				array_map( PropertyNameProblemMessage::from( ... ), $problems )
 			);
 		}
+	}
+
+	/**
+	 * @param array<array-key, array<string, mixed>> $propertyDefinitions
+	 */
+	private function checkPropertyDefinitionsAreReadable( StatusValue $status, array $propertyDefinitions ): void {
+		$errors = $this->readingErrors( $propertyDefinitions );
+
+		if ( $errors !== [] ) {
+			$this->reportErrors( $status, 'neowiki-schema-invalid', $errors );
+		}
+	}
+
+	/**
+	 * @param array<array-key, array<string, mixed>> $propertyDefinitions
+	 *
+	 * @return MessageValue[]
+	 */
+	private function readingErrors( array $propertyDefinitions ): array {
+		$propertyTypes = NeoWikiExtension::getInstance()->getPropertyTypeLookup();
+		$errors = [];
+
+		foreach ( $propertyDefinitions as $propertyName => $propertyDefinition ) {
+			$pointer = '/propertyDefinitions/' . self::pointerSegment( (string)$propertyName );
+
+			try {
+				PropertyDefinition::fromJson( $propertyDefinition, $propertyTypes );
+			} catch ( InvalidFieldException $exception ) {
+				$errors[] = self::readingError( $pointer . '/' . $exception->field, $exception->reason );
+			} catch ( InvalidArgumentException ) {
+				$errors[] = self::readingError( $pointer, 'its Property Type cannot use this Property Definition' );
+			}
+		}
+
+		return $errors;
+	}
+
+	private static function pointerSegment( string $key ): string {
+		return str_replace( [ '~', '/' ], [ '~0', '~1' ], $key );
+	}
+
+	/**
+	 * Plain text, as the entry quotes a property name and a value from the Schema.
+	 */
+	private static function readingError( string $pointer, string $reason ): MessageValue {
+		return MessageValue::new( 'neowiki-schema-invalid-detail' )->plaintextParams( $pointer, $reason );
 	}
 
 	private function checkDependentSubjectRules( StatusValue $status, Schema $schema ): void {

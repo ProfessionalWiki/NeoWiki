@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
 abstract class PropertyTestCase extends TestCase {
@@ -22,6 +23,17 @@ abstract class PropertyTestCase extends TestCase {
 			json_decode( $json, true ),
 			TestSources::newPropertyTypeRegistry()
 		);
+	}
+
+	protected function assertFieldIsRefused( string $json, string $field, string $reason ): void {
+		try {
+			$this->fromJson( $json );
+		} catch ( InvalidFieldException $exception ) {
+			$this->assertSame( [ $field, $reason ], [ $exception->field, $exception->reason ] );
+			return;
+		}
+
+		$this->fail( 'The Property Definition was read' );
 	}
 
 	protected function assertSerializationDoesNotChange( string $serialization ): void {

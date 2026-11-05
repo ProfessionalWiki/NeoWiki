@@ -435,7 +435,7 @@ JSON
 	 * The positive `options` case above cannot fail on its own: a key left declared but
 	 * unconstrained still accepts the object form, and being declared also puts it outside the
 	 * additionalProperties guard. These two pin that the $ref is actually wired up — without it
-	 * a typo'd severity saves cleanly and then throws on every subsequent read of the Schema page.
+	 * a typo'd severity is reported only as an unreadable Property Definition, not at its key.
 	 */
 	public function testOptionsObjectFormWithInvalidSeverityFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
@@ -490,9 +490,8 @@ JSON
 
 	/**
 	 * A custom Property Type's own Constraint keys are not declared here, so only the
-	 * additionalProperties guard checks their severity. Without it the typo saves cleanly and
-	 * SeverityNormalizer::extract then throws on every read, which SchemaPersistenceDeserializer
-	 * swallows — silently removing the property from the Schema with no error and no log.
+	 * additionalProperties guard checks their severity. Without it the typo is reported only as
+	 * an unreadable Property Definition, not at its key.
 	 */
 	public function testCustomKeyObjectFormWithInvalidSeverityFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();

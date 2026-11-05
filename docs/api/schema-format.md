@@ -124,8 +124,8 @@ Plain text values.
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
 | `uniqueItems` | boolean or object | `false` | Reject duplicate values (only with `multiple`) |
-| `minLength` | number | `null` | Minimum trimmed length of each value |
-| `maxLength` | number | `null` | Maximum trimmed length of each value |
+| `minLength` | integer | `null` | Minimum trimmed length of each value |
+| `maxLength` | integer | `null` | Maximum trimmed length of each value |
 
 ```json
 {
@@ -144,8 +144,8 @@ Text values that each carry the language they are in ([ADR 34](../adr/034-monoli
 |-------|------|---------|-------------|
 | `multiple` | boolean or object | `false` | Allow multiple values |
 | `uniqueLanguages` | boolean or object | `false` | At most one value per language (only with `multiple`) |
-| `minLength` | number | `null` | Minimum trimmed length of each text |
-| `maxLength` | number | `null` | Maximum trimmed length of each text |
+| `minLength` | integer | `null` | Minimum trimmed length of each text |
+| `maxLength` | integer | `null` | Maximum trimmed length of each text |
 
 ```json
 {
