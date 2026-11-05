@@ -6,16 +6,14 @@ To move an install to a newer version, see [Upgrading](https://neowiki.ai/docs/o
 
 ## NeoWiki 0.1.1
 
-* On MediaWiki 1.47, pages that place their Main Subject with `{{#main_subject}}` no longer show it twice; a page
-  cached before the upgrade still does until purged
+* On MediaWiki 1.47, pages that place their Main Subject with `{{#main_subject}}` no longer show it twice
 * The Subject editor lists each Subject you are editing, with its Schema, and stays still as you switch between them
 * The Data tab opens with the page's Main Subject expanded, and hides the empty "Other Subjects on this Page" heading
   from users who cannot edit
 * Special:NeoWiki no longer says "No subjects yet." on a wiki that has Subjects
 * Values of Property Types from other extensions no longer sometimes show as blank or as "not available on this wiki"
 * The interface is available in German (by Klaus Feldmann)
-* A SPARQL store that stops responding now delays a save by at most 10 seconds instead of 25, and then misses the
-  edit; for a slow store, raise `updateTimeoutSeconds` in its `$wgNeoWikiSparqlStores` entry
+* A SPARQL store that stops responding now delays a save by at most 10 seconds instead of 25
 * In the Docker demo, if QLever cannot read its data and fails to start, `make upgrade` rebuilds the data from the wiki
 * The Docker demo remembers the extras you last started, such as Neo4j and HTTPS for sharing, even after `make down`,
   until you pass different ones to `make up` or `make upgrade`; if you ran `make down` before this upgrade, see below
