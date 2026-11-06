@@ -1,0 +1,320 @@
+name: Simplification
+
+# Proposes behaviour-preserving simplifications of the past week's merges. Claude Code agents follow the procedures in
+# .github/simplification/, and the publish job turns their patches into draft pull requests and a report issue.
+
+on:
+  schedule:
+    - cron: '0 2 * * 6'  # Saturday, so a run's use of the Claude subscription falls outside working hours.
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days of merges to read'
+        default: '7'
+      publish:
+        description: 'Open the pull requests and the report issue (runs from master only)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: simplification
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  MODEL: claude-opus-5-5
+  MODEL_NAME: Opus 5.5
+  EFFORT: xhigh
+  MACHINE_ACCOUNT: ProWikiExperts
+
+jobs:
+  # Decides whether the run publishes: the publish job needs this job to have succeeded. Only from master, because the
+  # pull requests target it, so patches made against another branch would carry its commits.
+  check-token:
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'schedule' || inputs.publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm the PAT can write to this repository
+        env:
+          GH_TOKEN: ${{ secrets.PR_TOKEN_PROWIKIEXPERTS }}
+        run: |
+          # Fails in seconds, rather than after hours of agent work, when the token expired or the machine account
+          # lost write access.
+          gh api "repos/$GITHUB_REPOSITORY" -q '.permissions.push' | grep -qx true
+
+  window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      base: ${{ steps.window.outputs.base }}
+      changed: ${{ steps.window.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Find the merges to read
+        id: window
+        env:
+          DAYS: ${{ inputs.days || '7' }}
+        run: |
+          [[ $DAYS =~ ^[1-9][0-9]*$ ]] || { echo "days must be a positive whole number, not '$DAYS'."; exit 1; }
+          base=$(git rev-list -1 --first-parent --before="$DAYS days ago" HEAD)
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          paths=(src resources/ext.neowiki/src resources/ext.neowiki/tests tests/phpunit)
+          if [ -n "$(git diff --name-only "$base" HEAD -- "${paths[@]}")" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  simplify:
+    needs: [check-token, window]
+    # A run that publishes nothing needs no PAT, so this job goes ahead when the token check was skipped.
+    if: ${{ !cancelled() && needs.check-token.result != 'failure' && needs.window.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+
+    # No secret here but the Claude one.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+
+    # Restores caches but never saves one: what the agents leave in the MediaWiki install must not reach CI.
+    cache-mode: read
+
+    # Three agent invocations at xhigh over a week of merges, each running tests as it goes.
+    timeout-minutes: 240
+
+    env:
+      BASE: ${{ needs.window.outputs.base }}
+      HEAD: ${{ github.sha }}
+      REPO_DIR: ${{ github.workspace }}/mediawiki/extensions/NeoWiki
+      RUN_DIR: ${{ github.workspace }}/simplification-run
+      NEO4J_URL_OVERRIDE: bolt://neo4j:password@localhost:7689
+      NEO4J_URL_READ_OVERRIDE: bolt://neo4j:password@localhost:7689
+      GH_TOKEN: ${{ github.token }}
+      # The agents work from the workspace root, which is no git repository, so gh needs telling.
+      GH_REPO: ${{ github.repository }}
+      # claude-code-action ends a step at Claude's first result, and Claude yields one early when it waits on work in
+      # the background: subagents, or a command that outlived its timeout. With background work off, such a command
+      # stops at its timeout instead, hence the longer one.
+      CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1'
+      BASH_DEFAULT_TIMEOUT_MS: '600000'
+
+    services:
+      test_neo:
+        image: neo4j:5.26-community
+        ports:
+          - 7689:7689
+          - 7475:7475
+        env:
+          NEO4J_AUTH: neo4j/password
+          NEO4J_server_bolt_listen__address: :7689
+          NEO4J_server_http_listen__address: :7475
+        options: --name test_neo --hostname test_neo
+
+    steps:
+      # MediaWiki as the PHPUnit job of ci-php.yml sets it up, on its oldest leg, so the agents can run the tests that
+      # cover a change. PHPStan resolves MediaWiki through ../.., hence the extension inside the install.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Disable Composer block-insecure
+        run: composer config --global audit.block-insecure false
+
+      - name: Resolve MediaWiki REL1_43 commit
+        id: mw
+        run: echo "sha=$(git ls-remote https://github.com/wikimedia/mediawiki refs/heads/REL1_43 | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore MediaWiki
+        id: cache-mediawiki
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            mediawiki
+            !mediawiki/extensions/
+            !mediawiki/vendor/
+          key: mw_REL1_43-php8.3-${{ steps.mw.outputs.sha }}
+
+      - uses: actions/checkout@v6
+        with:
+          path: EarlyCopy
+
+      - name: Install MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
+        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh REL1_43 NeoWiki
+
+      # A second copy of the repository would be one more place for the agents to read or edit by mistake.
+      - name: Remove the copy that brought the install script
+        run: rm -rf EarlyCopy
+
+      # Full history: the agents read git log, blame and the commits behind each change.
+      - uses: actions/checkout@v6
+        with:
+          path: mediawiki/extensions/NeoWiki
+          fetch-depth: 0
+
+      - name: Load RedHerb test extension
+        working-directory: mediawiki
+        run: echo 'wfLoadExtension( "RedHerb", "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );' >> LocalSettings.php
+
+      - name: Install MediaWiki's dependencies
+        working-directory: mediawiki
+        run: composer update
+
+      - name: Install the extension's own dependencies, for PHPCS and PHPStan
+        working-directory: ${{ env.REPO_DIR }}
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install the frontend's dependencies
+        working-directory: ${{ env.REPO_DIR }}/resources/ext.neowiki
+        run: npm ci
+
+      - name: Wait for Neo4j
+        run: |
+          timeout 90 bash -c 'until docker exec test_neo cypher-shell -u neo4j -p password -a bolt://localhost:7689 "RETURN 1" >/dev/null 2>&1; do sleep 2; done' \
+            || { echo "Neo4j did not become ready in time; dumping logs:"; docker logs test_neo; exit 1; }
+
+      - name: Run update.php
+        working-directory: mediawiki
+        run: php maintenance/update.php --quick
+
+      - name: Gather what earlier runs proposed
+        working-directory: ${{ env.REPO_DIR }}
+        env:
+          SIMPLIFY_MACHINE_ACCOUNT: ${{ env.MACHINE_ACCOUNT }}
+        run: |
+          mkdir -p "$RUN_DIR"
+          touch "$RUN_DIR/candidates.md" "$RUN_DIR/bugs.md" "$RUN_DIR/rejected.md"
+          scripts/simplification-history.sh > "$RUN_DIR/history.md"
+
+      - name: Find simplifications
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Runs on a Claude subscription rather than metered API credits.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: Read the file ${{ env.REPO_DIR }}/.github/simplification/find.md and execute that procedure.
+          # Bash is allowed broadly rather than per command: the procedures are shell-heavy, and in headless mode a
+          # denied command degrades the result silently instead of stopping the run. The agents are contained from
+          # outside: this job can read but not write the repository and the caches, and CI runs their patches with a
+          # read-only token. The transcript stays out of the job log, which is public.
+          claude_args: |
+            --model ${{ env.MODEL }}
+            --effort ${{ env.EFFORT }}
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash,Agent,Task"
+
+      # The action reports success whenever Claude stops, so each procedure's last act is to leave a .done file.
+      - name: Note whether there is anything to implement
+        id: found
+        run: |
+          [ -e "$RUN_DIR/find.done" ] || { echo 'The find step stopped early.'; exit 1; }
+          if grep -q '[^[:space:]]' "$RUN_DIR/candidates.md"; then
+            echo "candidates=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Implement simplifications
+        if: steps.found.outputs.candidates == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: Read the file ${{ env.REPO_DIR }}/.github/simplification/implement.md and execute that procedure.
+          claude_args: |
+            --model ${{ env.MODEL }}
+            --effort ${{ env.EFFORT }}
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash,Agent,Task"
+
+      - name: Check the implement step finished
+        if: steps.found.outputs.candidates == 'true'
+        run: '[ -e "$RUN_DIR/implement.done" ] || { echo "The implement step stopped early."; exit 1; }'
+
+      - name: Note whether there is anything to review
+        id: produced
+        run: |
+          if grep -q '[^[:space:]]' "$RUN_DIR/bugs.md" || compgen -G "$RUN_DIR/patches/*/change.patch" > /dev/null; then
+            echo "output=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A separate invocation, so the reviewer reads what is in the patches rather than remembering what it meant to
+      # write.
+      - name: Review simplifications
+        if: steps.produced.outputs.output == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: Read the file ${{ env.REPO_DIR }}/.github/simplification/review.md and execute that procedure.
+          claude_args: |
+            --model ${{ env.MODEL }}
+            --effort ${{ env.EFFORT }}
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash,Agent,Task"
+
+      - name: Check the review step finished
+        if: steps.produced.outputs.output == 'true'
+        run: '[ -e "$RUN_DIR/review.done" ] || { echo "The review step stopped early."; exit 1; }'
+
+      # Only warnings: the publish job checks each patch against a fresh checkout of this commit, so a moved HEAD or a
+      # leftover change says a procedure went wrong, not that a patch is.
+      - name: Check the agents left the checkout as they found it
+        working-directory: ${{ env.REPO_DIR }}
+        run: |
+          [ "$(git rev-parse HEAD)" = "$HEAD" ] || echo '::warning::An agent moved HEAD.'
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::warning::An agent left changes behind: $(git status --porcelain | head -n 20 | tr '\n' ' ')"
+          fi
+
+      - name: Hand the run to the job that publishes it
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: simplification-run
+          path: simplification-run/
+
+  publish:
+    needs: [check-token, window, simplify]
+    runs-on: ubuntu-latest
+
+    # This job runs no code an agent could have altered: the patches arrive as an artifact, and the script that checks
+    # and applies them comes from a fresh checkout of the commit the agents started from. That is what makes it the
+    # job that may hold the PAT.
+    permissions:
+      contents: read
+
+    timeout-minutes: 15
+
+    steps:
+      # With the PAT rather than GITHUB_TOKEN, so that CI runs on the pull requests.
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.PR_TOKEN_PROWIKIEXPERTS }}
+
+      - name: Fetch the run
+        uses: actions/download-artifact@v8
+        with:
+          name: simplification-run
+          path: ${{ runner.temp }}/simplification-run
+
+      - name: Open the pull requests and the report
+        env:
+          GH_TOKEN: ${{ secrets.PR_TOKEN_PROWIKIEXPERTS }}
+          GIT_AUTHOR_NAME: ${{ env.MACHINE_ACCOUNT }}
+          GIT_AUTHOR_EMAIL: 73494570+ProWikiExperts@users.noreply.github.com
+          GIT_COMMITTER_NAME: ${{ env.MACHINE_ACCOUNT }}
+          GIT_COMMITTER_EMAIL: 73494570+ProWikiExperts@users.noreply.github.com
+          SIMPLIFY_BASE: ${{ needs.window.outputs.base }}
+          SIMPLIFY_MODEL: ${{ env.MODEL_NAME }}
+          SIMPLIFY_EFFORT: ${{ env.EFFORT }}
+        run: SIMPLIFY_DATE=$(date -u +%F) scripts/publish-simplifications.sh "$RUNNER_TEMP/simplification-run"
