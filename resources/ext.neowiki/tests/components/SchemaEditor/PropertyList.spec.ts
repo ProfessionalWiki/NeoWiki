@@ -5,7 +5,7 @@ import { useSortable, type UseSortableOptions } from '@/composables/useSortable.
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 vi.mock( '@/composables/useSortable.ts', () => ( {
 	useSortable: vi.fn(),
@@ -67,6 +67,10 @@ function rowTitle( row: DOMWrapper<Element> ): string {
 	return row.find( '.ext-neowiki-property-list__item__text__label' ).text();
 }
 
+function rowDescription( row: DOMWrapper<Element> ): string {
+	return row.find( '.ext-neowiki-property-list__item__text__description' ).text();
+}
+
 function rowTitles( wrapper: VueWrapper ): string[] {
 	return wrapper.findAll( '[role="option"]' ).map( rowTitle );
 }
@@ -105,9 +109,7 @@ function sortableOptions(): UseSortableOptions {
 describe( 'PropertyList', () => {
 
 	beforeEach( () => {
-		vi.stubGlobal( 'mw', {
-			msg: vi.fn( ( key ) => key ),
-		} );
+		setupMwMock();
 	} );
 
 	const property1 = createPropertyDefinitionFromJson( 'Alpha', { type: TextType.typeName } );
@@ -119,6 +121,21 @@ describe( 'PropertyList', () => {
 		const wrapper = createWrapper( properties );
 
 		expect( rowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE, 'Alpha', 'Beta', 'Gamma' ] );
+	} );
+
+	it( 'describes an optional property by its type, marked optional', () => {
+		const wrapper = createWrapper( properties );
+
+		expect( rowDescription( findRow( wrapper, 'Alpha' ) ) )
+			.toBe( 'neowiki-schema-editor-optional-property-typeneowiki-property-type-text' );
+	} );
+
+	it( 'describes a required property by its type alone', () => {
+		const wrapper = createWrapper( new PropertyDefinitionList( [
+			createPropertyDefinitionFromJson( 'Alpha', { type: TextType.typeName, required: true } ),
+		] ) );
+
+		expect( rowDescription( findRow( wrapper, 'Alpha' ) ) ).toBe( 'neowiki-property-type-text' );
 	} );
 
 	it( 'marks the selected property with aria-selected', () => {

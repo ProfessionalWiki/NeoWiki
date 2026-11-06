@@ -103,6 +103,7 @@
 	"neowiki-schema-editor-delete-property": "Aria label for the button that deletes a property definition in the schema editor.",
 	"neowiki-schema-editor-subject-label": "Title of the fixed first row of the property list in the schema editor, and heading of the pane shown when that row is selected. The row stands for the optional label of a subject: its name or title. Use the term for a subject's label used in {{msg-mw|neowiki-subject-editor-label-field}}.",
 	"neowiki-schema-editor-subject-label-help": "Text of the pane shown when the Label row of the schema editor's property list is selected. \"Name\" and \"Title\" are the names of properties a user might otherwise add for the label; translate them.",
+	"neowiki-schema-editor-optional-property-type": "Shown in the schema editor's property list under the name of each property whose value is not required (see {{msg-neowiki|neowiki-property-editor-required}}), and under the Label row.\n\nParameters:\n* $1 - the label of the property's type, such as {{msg-neowiki|neowiki-property-type-text}}",
 	"neowiki-schema-editor-description": "Label for the description field in the schema editor.",
 	"neowiki-schema-editor-resize-property-list": "Accessible name of the divider between the property list and the property editor in the schema editor. Dragging it, or moving it with the arrow keys, changes how wide the property list is.",
 	"neowiki-schema-editor-description-placeholder": "Placeholder text for the description field in the schema editor.",
