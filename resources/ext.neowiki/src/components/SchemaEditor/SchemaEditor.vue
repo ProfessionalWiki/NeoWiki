@@ -272,7 +272,8 @@ function buildUpdatedSchema( updatedProperty: PropertyDefinition ): Schema {
 		currentSchema.value.getName(),
 		currentSchema.value.getDescription(),
 		replacePropertyDefinition( updatedProperty ),
-		currentSchema.value.subjectsAreDependent()
+		currentSchema.value.subjectsAreDependent(),
+		currentSchema.value.getLabels()
 	);
 }
 

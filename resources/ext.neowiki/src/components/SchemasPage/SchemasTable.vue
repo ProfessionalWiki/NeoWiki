@@ -12,7 +12,7 @@
 				class="ext-neowiki-schemas-table__name"
 				:href="pageUrl( `Schema:${ row.name }` )"
 				:title="row.name"
-			>{{ row.name }}</a>
+			>{{ schemaDisplayName( row ) }}</a>
 		</template>
 
 		<template #item-description="{ item }">
@@ -73,6 +73,7 @@ import { CdxButton, CdxIcon, CdxTable, type TableColumn, useGeneratedId } from '
 import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
 import { type SubjectCounts, subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import SchemaActionsMenu from './SchemaActionsMenu.vue';
 
 const props = defineProps<{

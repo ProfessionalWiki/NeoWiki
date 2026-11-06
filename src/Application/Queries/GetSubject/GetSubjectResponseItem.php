@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetSubject;
 
 use ProfessionalWiki\NeoWiki\Application\HostSubject;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 
@@ -43,6 +44,10 @@ readonly class GetSubjectResponseItem {
 		 * $displayName.
 		 */
 		public ?HostSubject $hostSubject,
+		/**
+		 * @var array<string, string> Those of $schema, as on {@see HostSubject}
+		 */
+		public array $schemaLabels,
 	) {
 	}
 
@@ -54,12 +59,15 @@ readonly class GetSubjectResponseItem {
 	 * the page knows whether the Subject is its Main Subject. Null means nobody chose one, which is
 	 * what makes the name and the verdict on it one answer rather than two that could disagree. The
 	 * Host Subject comes from the page too.
+	 *
+	 * @param ?Schema $schema The Subject's, null where it does not resolve to one the reader may read
 	 */
 	public static function fromSubject(
 		Subject $subject,
 		?PageIdentifiers $pageIdentifiers,
 		?string $chosenName,
-		?HostSubject $hostSubject
+		?HostSubject $hostSubject,
+		?Schema $schema
 	): self {
 		return new self(
 			id: $subject->id->text,
@@ -72,6 +80,7 @@ readonly class GetSubjectResponseItem {
 			pageTitle: $pageIdentifiers?->getTitle(),
 			pageNamespaceId: $pageIdentifiers?->getNamespaceId(),
 			hostSubject: $hostSubject,
+			schemaLabels: $schema?->getLabels() ?? [],
 		);
 	}
 

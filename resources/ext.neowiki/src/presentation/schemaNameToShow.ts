@@ -1,9 +1,10 @@
 import type { Subject } from '@/domain/Subject.ts';
+import { schemaDisplayNameOf } from '@/presentation/schemaDisplayName.ts';
 
 /**
- * The Schema name to show beside a Subject, or null when the Subject is shown under that name
- * already, as one labelled after its Schema is. A Subject nobody named is shown under its id, which
- * says nothing about what it is, so it always gets the Schema name.
+ * The name of the Schema to badge beside a Subject, or null when the Subject is shown under what the
+ * badge would read already, as one labelled after its Schema is. A Subject nobody named is shown under
+ * its id, which says nothing about what it is, so it always gets the badge.
  *
  * The badge does not apply this itself: a surface guards its own wrapper along with the
  * name, since an emptied wrapper carrying a role is worse than a repeat.
@@ -17,5 +18,12 @@ export function schemaNameToShow( subject: Subject ): string | null {
 		return subject.getSchemaName();
 	}
 
-	return subject.getDisplayName() === subject.getSchemaName() ? null : subject.getSchemaName();
+	return subject.getDisplayName() === subjectSchemaDisplayName( subject ) ? null : subject.getSchemaName();
+}
+
+/**
+ * What the badge beside the Subject reads: schemaDisplayName() for its Schema.
+ */
+export function subjectSchemaDisplayName( subject: Subject ): string {
+	return schemaDisplayNameOf( subject.getSchemaName(), subject.getSchemaLabels() );
 }

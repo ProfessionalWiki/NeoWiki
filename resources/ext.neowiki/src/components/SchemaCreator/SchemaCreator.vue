@@ -113,7 +113,7 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ), false );
+const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ), false, undefined );
 
 const schemaName = ref( props.initialName );
 const schemaDescription = ref( baseSchema.getDescription() );
@@ -205,8 +205,10 @@ function getSchema(): Schema | null {
 		return null;
 	}
 
+	// Labels name a Schema as its name does, so a duplicate starts without those of the original.
 	return ( schemaEditorRef.value?.getSchema() ?? baseSchema )
 		.withName( name )
+		.withLabels( undefined )
 		.withDescription( schemaDescription.value.trim() )
 		.withSubjectsAreDependent( subjectsAreDependent.value );
 }

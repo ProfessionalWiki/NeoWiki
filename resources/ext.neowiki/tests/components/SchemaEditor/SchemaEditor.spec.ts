@@ -304,6 +304,21 @@ describe( 'SchemaEditor', () => {
 		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).subjectsAreDependent() ).toBe( true );
 	} );
 
+	it( 'keeps the labels of the schema when a property is edited', async () => {
+		const schema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
+			] ),
+			labels: { de: 'Unternehmen' },
+		} );
+
+		const wrapper = createWrapper( schema );
+		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
+		await wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit( 'update:propertyDefinition', updatedProperty );
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getLabels() ).toEqual( { de: 'Unternehmen' } );
+	} );
+
 	describe( 'the Label row', () => {
 		function labelRowShown( wrapper: VueWrapper ): boolean {
 			return wrapper.findComponent( { name: 'PropertyList' } ).props( 'showsLabelRow' );

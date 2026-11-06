@@ -1,6 +1,7 @@
 import type { TableColumn, TableSort } from '@wikimedia/codex';
 import type { SortDirection, SubjectSummary, SubjectSummarySort } from '@/application/SubjectSummaryLookup.ts';
 import { displayNameOf } from '@/presentation/subjectDisplayName.ts';
+import type { SchemaNamer } from '@/presentation/schemaDisplayName.ts';
 import { subjectRowLinkUrl } from '@/presentation/subjectLinks.ts';
 import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError.ts';
 
@@ -102,13 +103,13 @@ function relativeTime( secondsAgo: number ): string {
 }
 
 /**
- * The Schema menu's names in order. The selected Schema is among them even when the Schema list lacks it, as it does
- * before it loads, so the menu always shows the selection.
+ * The Schema menu's names, in the order of what the reader sees the Schemas called. The selected Schema is among them
+ * even when the Schema list lacks it, as it does before it loads, so the menu always shows the selection.
  */
-export function schemaMenuNames( schemaNames: string[], selected: string | null ): string[] {
+export function schemaMenuNames( schemaNames: string[], selected: string | null, schemaNamer: SchemaNamer ): string[] {
 	const names = selected === null || schemaNames.includes( selected ) ? schemaNames : [ ...schemaNames, selected ];
 
-	return [ ...names ].sort( ( a, b ) => a.localeCompare( b ) );
+	return [ ...names ].sort( ( a, b ) => schemaNamer( a ).localeCompare( schemaNamer( b ) ) );
 }
 
 export function emptyStateMessage( search: string, schema: string | null ): string {

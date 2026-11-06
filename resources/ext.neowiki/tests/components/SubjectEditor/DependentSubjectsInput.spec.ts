@@ -73,6 +73,11 @@ const SCHEMAS = [ recordSchema, birthSchema, nameSchema, pseudonymSchema ];
 const birthProperty = newRelationProperty( { name: 'Birth', targetSchemas: [ 'Birth' ] } );
 const namesProperty = newRelationProperty( { name: 'Names', targetSchemas: [ 'Name', 'Pseudonym' ], multiple: true } );
 
+/** The Schemas, with the one given labelled. */
+function withLabelled( labelled: Schema, labels: Record<string, string> ): Schema[] {
+	return SCHEMAS.map( ( schema ) => schema === labelled ? schema.withLabels( labels ) : schema );
+}
+
 function statementsOf( values: Record<string, Value> ): StatementList {
 	return new StatementList( Object.entries( values ).map( ( [ property, value ] ) => new Statement(
 		new PropertyName( property ),
@@ -249,7 +254,7 @@ describe( 'DependentSubjectsInput', () => {
 
 	beforeEach( () => {
 		setupMwMock( {
-			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
+			functions: [ 'message', 'msg', 'notify', 'config', 'util', 'language' ],
 			// Blur-only mode: the dry-run fires on blur and on mount, never on a keystroke.
 			config: { wgNeoWikiValidationDebounceMs: 0 },
 		} );
@@ -274,6 +279,13 @@ describe( 'DependentSubjectsInput', () => {
 		await flushPromises();
 
 		expect( addButton( wrapper ).text() ).toBe( 'neowiki-dependent-subject-addBirth' );
+	} );
+
+	it( 'offers to add a Dependent Subject of its one target Schema by that Schema\'s label in the reader\'s language', async () => {
+		const wrapper = mountInput( { schemas: withLabelled( birthSchema, { en: 'Birth event' } ) } );
+		await flushPromises();
+
+		expect( addButton( wrapper ).text() ).toBe( 'neowiki-dependent-subject-addBirth event' );
 	} );
 
 	it( 'adds a Dependent Subject, pointing the value at it', async () => {
@@ -345,6 +357,15 @@ describe( 'DependentSubjectsInput', () => {
 		expect( groups( wrapper )[ 0 ].find( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Pseudonym' );
 	} );
 
+	it( 'offers the target Schemas in its menu by their labels in the reader\'s language', async () => {
+		const wrapper = mountInput( { property: namesProperty, schemas: withLabelled( pseudonymSchema, { en: 'Alias' } ) } );
+		await flushPromises();
+
+		await addButton( wrapper ).trigger( 'click' );
+
+		expect( wrapper.findAll( '.cdx-menu-item' ).map( ( item ) => item.text() ) ).toEqual( [ 'Name', 'Alias' ] );
+	} );
+
 	it( 'says which Schema each Dependent Subject has only where the property has several', async () => {
 		const wrapper = mountInput( { value: pointingAt( BIRTH_ID ), stored: [ storedBirth, storedRecord ] } );
 		await flushPromises();
@@ -402,11 +423,34 @@ describe( 'DependentSubjectsInput', () => {
 		] );
 	} );
 
+	it( 'numbers the remove controls after the label of their Dependent Subjects\' Schema in the reader\'s language', async () => {
+		const wrapper = mountInput( {
+			property: namesProperty,
+			value: pointingAt( NAME_ID, SECOND_NAME_ID ),
+			stored: [ storedName( NAME_ID, 'Pablo' ), storedName( SECOND_NAME_ID, 'Ruiz' ) ],
+			schemas: withLabelled( nameSchema, { en: 'Given name' } ),
+		} );
+		await flushPromises();
+
+		expect( removeLabels( wrapper )[ 1 ] ).toBe( 'neowiki-dependent-subject-removeneowiki-dependent-subject-numberedGiven name2' );
+	} );
+
 	it( 'names a lone remove control after its Dependent Subject\'s Schema alone', async () => {
 		const wrapper = mountInput( { value: pointingAt( BIRTH_ID ), stored: [ storedBirth, storedRecord ] } );
 		await flushPromises();
 
 		expect( removeLabels( wrapper )[ 0 ] ).toBe( 'neowiki-dependent-subject-removeBirth' );
+	} );
+
+	it( 'names a remove control after the label of its Dependent Subject\'s Schema in the reader\'s language', async () => {
+		const wrapper = mountInput( {
+			value: pointingAt( BIRTH_ID ),
+			stored: [ storedBirth, storedRecord ],
+			schemas: withLabelled( birthSchema, { en: 'Birth event' } ),
+		} );
+		await flushPromises();
+
+		expect( removeLabels( wrapper )[ 0 ] ).toBe( 'neowiki-dependent-subject-removeBirth event' );
 	} );
 
 	it( 'numbers the Dependent Subjects of each Schema apart, and only those of a Schema it holds several of', async () => {

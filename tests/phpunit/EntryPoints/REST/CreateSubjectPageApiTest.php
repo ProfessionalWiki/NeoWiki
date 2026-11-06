@@ -52,6 +52,14 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testAnswersWithTheLabelsOfTheSchemaOfTheSubject(): void {
+		$this->createSchema( self::SCHEMA, '{"labels":{"de":"Angestellte"},"propertyDefinitions":{}}' );
+
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Amsterdam' ] ) );
+
+		$this->assertSame( [ 'de' => 'Angestellte' ], $body['subject']['schemaLabels'] );
+	}
+
 	public function testTitlesThePageAfterTheSubjectWhenNoLabelTitlesIt(): void {
 		$body = $this->bodyOf( $this->create( [] ) );
 

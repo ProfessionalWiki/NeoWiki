@@ -18,7 +18,10 @@
 					role="heading"
 					aria-level="3"
 				>
-					<SchemaNameDisplay :schema-name="schemaNameBadge" />
+					<SchemaNameDisplay
+						:schema-name="schemaNameBadge"
+						:display-name="subjectSchemaDisplayName( subject )"
+					/>
 				</div>
 			</div>
 			<CdxButton
@@ -71,7 +74,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
-import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
+import { schemaNameToShow, subjectSchemaDisplayName } from '@/presentation/schemaNameToShow.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';

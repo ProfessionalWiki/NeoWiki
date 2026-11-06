@@ -1,6 +1,7 @@
 import { Schema, type SchemaName } from '@/domain/Schema';
 import { createPropertyDefinitionFromJson } from '@/domain/PropertyDefinition';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList';
+import { labelsFromJson } from '@/domain/labels';
 
 export class SchemaDeserializer {
 
@@ -12,6 +13,7 @@ export class SchemaDeserializer {
 			schema.description ?? '',
 			this.deserializePropertyDefinitions( schema.propertyDefinitions ),
 			schema.subjectsAreDependent === true,
+			labelsFromJson( schema.labels ),
 		);
 	}
 

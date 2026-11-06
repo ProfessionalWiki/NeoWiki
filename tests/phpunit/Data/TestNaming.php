@@ -20,12 +20,13 @@ class TestNaming {
 	): SubjectResponseItemFactory {
 		return new SubjectResponseItemFactory(
 			new PageSubjectsLookup( $subjectRepository ),
-			self::newHostSubjectBuilder( $schemaLookup )
+			self::newHostSubjectBuilder( $schemaLookup ),
+			TestSources::newSchemaResolver( $schemaLookup )
 		);
 	}
 
 	public static function newHostSubjectBuilder( SchemaLookup $schemaLookup = new InMemorySchemaLookup() ): HostSubjectBuilder {
-		return new HostSubjectBuilder( self::newDependentSubjectRules( $schemaLookup ) );
+		return new HostSubjectBuilder( self::newDependentSubjectRules( $schemaLookup ), TestSources::newSchemaResolver( $schemaLookup ) );
 	}
 
 	public static function newDependentSubjectRules( SchemaLookup $schemaLookup = new InMemorySchemaLookup() ): DependentSubjectRules {

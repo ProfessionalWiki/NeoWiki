@@ -4,7 +4,7 @@
 			class="ext-neowiki-schema-display__properties"
 			:columns="hasProperties ? columns : []"
 			:data="properties"
-			:caption="currentSchema.getName()"
+			:caption="schemaDisplayName( currentSchema )"
 			:use-row-headers="true"
 			:hide-caption="true"
 		>
@@ -72,7 +72,7 @@
 
 		<SubjectsTable
 			class="ext-neowiki-schema-display__subjects"
-			:fixed-schema="currentSchema.getName()"
+			:fixed-schema="currentSchema"
 		/>
 
 		<SchemaEditorDialog
@@ -109,6 +109,7 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps( {
 	schema: {

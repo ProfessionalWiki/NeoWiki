@@ -6,11 +6,14 @@ import SubjectCreatorButton from '@/components/SubjectCreator/SubjectCreatorButt
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import { newSchema } from '@/TestHelpers.ts';
 
 const canCreateSubjectPage = ref( true );
 const canCreateMainSubject = ref( true );
 const checkCreateSubjectPagePermission = vi.fn();
 const checkPermissions = vi.fn();
+const getSchema = vi.fn();
 
 vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	useSubjectPermissions: () => ( {
@@ -40,6 +43,7 @@ describe( 'SubjectCreatorButton', () => {
 		canCreateMainSubject.value = true;
 		checkCreateSubjectPagePermission.mockClear();
 		checkPermissions.mockClear();
+		getSchema.mockReset().mockImplementation( async ( name: string ) => newSchema( { title: name } ) );
 	} );
 
 	async function mountButton( props: Record<string, unknown> = {} ): Promise<VueWrapper> {
@@ -51,6 +55,7 @@ describe( 'SubjectCreatorButton', () => {
 			},
 			global: {
 				plugins: [ pinia ],
+				provide: { [ Service.SchemaRepository ]: { getSchema } },
 				stubs: {
 					CdxButton: { template: '<button class="cdx-button-stub"><slot /></button>' },
 					CdxIcon: true,
@@ -177,6 +182,28 @@ describe( 'SubjectCreatorButton', () => {
 
 		expect( wrapper.find( '.cdx-button-stub' ).text() ).toContain( 'neowiki-schema-create-subject' );
 		expect( wrapper.find( '.cdx-button-stub' ).text() ).toContain( 'Person' );
+	} );
+
+	it( 'labels itself after the Schema\'s label in the reader\'s language', async () => {
+		getSchema.mockResolvedValue( newSchema( { title: 'Person', labels: { en: 'Human being' } } ) );
+
+		const wrapper = await mountButton( { schemaName: 'Person' } );
+
+		expect( wrapper.find( '.cdx-button-stub' ).text() ).toBe( 'neowiki-schema-create-subjectHuman being' );
+	} );
+
+	it( 'labels itself after the Schema name when the Schema cannot be read', async () => {
+		getSchema.mockRejectedValue( new Error( 'Not found' ) );
+
+		const wrapper = await mountButton( { schemaName: 'Person' } );
+
+		expect( wrapper.find( '.cdx-button-stub' ).text() ).toBe( 'neowiki-schema-create-subjectPerson' );
+	} );
+
+	it( 'reads no Schema when its label is given', async () => {
+		await mountButton( { schemaName: 'Person', text: 'Add a person' } );
+
+		expect( getSchema ).not.toHaveBeenCalled();
 	} );
 
 	it( 'labels itself generically without a Schema', async () => {

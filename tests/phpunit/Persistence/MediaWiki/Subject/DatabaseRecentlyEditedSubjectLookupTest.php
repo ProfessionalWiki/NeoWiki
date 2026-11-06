@@ -13,6 +13,10 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -62,6 +66,16 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 		$this->saveAt( self::TUESDAY, 'Ada Lovelace', $this->person( self::ADA, '1816' ) );
 
 		$this->assertSame( [ self::WEDNESDAY => [ self::GRACE ], self::TUESDAY => [ self::ADA ] ], $this->editsByTime() );
+	}
+
+	public function testARowCarriesTheLabelsOfItsSchema(): void {
+		$this->saveAt( self::MONDAY, 'Ada Lovelace', $this->person( self::ADA, '1815' ) );
+
+		$lookup = $this->newLookup( schemaResolver: TestSources::newSchemaResolver( new InMemorySchemaLookup(
+			TestSchema::build( name: TestSubject::DEFAULT_SCHEMA_ID, labels: [ 'de' => 'Mensch' ] )
+		) ) );
+
+		$this->assertSame( [ 'de' => 'Mensch' ], $lookup->getRecentlyEditedSubjects( 1 )[0]->schemaLabels );
 	}
 
 	public function testAnEditListsOnlyTheSubjectItChanged(): void {
@@ -278,7 +292,8 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 	private function newLookup(
 		int $revisionBound = 2000,
 		int $readBound = 200,
-		PageReadAuthorizer $readAuthorizer = new StubPageReadAuthorizer( true )
+		PageReadAuthorizer $readAuthorizer = new StubPageReadAuthorizer( true ),
+		?SchemaReferenceResolver $schemaResolver = null,
 	): DatabaseRecentlyEditedSubjectLookup {
 		return new DatabaseRecentlyEditedSubjectLookup(
 			connectionProvider: $this->getServiceContainer()->getConnectionProvider(),
@@ -288,6 +303,7 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 			readAuthorizer: $readAuthorizer,
 			titleFormatter: $this->getServiceContainer()->getTitleFormatter(),
 			hostSubjectBuilder: NeoWikiExtension::getInstance()->newHostSubjectBuilder(),
+			schemaResolver: $schemaResolver ?? TestSources::newSchemaResolver(),
 			revisionBound: $revisionBound,
 			readBound: $readBound,
 		);
