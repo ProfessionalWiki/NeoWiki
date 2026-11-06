@@ -5,9 +5,9 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Content\FallbackContent;
-use MediaWiki\Revision\RevisionAccessException;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\RevisionSlots;
 use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
@@ -18,39 +18,31 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProvider;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderContext;
 use ProfessionalWiki\NeoWiki\Domain\Page\PagePropertyProviderRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
-use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
+use ProfessionalWiki\NeoWiki\EntryPoints\GraphStoreProjector;
 use ProfessionalWiki\NeoWiki\FailureIsolatingPagePropertiesSource;
 use ProfessionalWiki\NeoWiki\PagePropertiesBuilder;
 use ProfessionalWiki\NeoWiki\Persistence\CorePagePropertyProvider;
-use ProfessionalWiki\NeoWiki\Persistence\PublishedSubjectIndex;
-use ProfessionalWiki\NeoWiki\Persistence\SubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyPublishedSubjectIndex;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpySubjectPageIndex;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingGraphDatabasePlugin;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingPublishedSubjectIndex;
-use ProfessionalWiki\NeoWiki\Tests\TestDoubles\ThrowingSubjectPageIndex;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
 use RuntimeException;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\GraphStoreProjector
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectsToPublish
  * @group Database
  */
-class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
+class GraphStoreProjectorTest extends NeoWikiIntegrationTestCase {
 
 	private const int DELETED_PAGE_ID = 42;
 	private const int STUB_PAGE_ID = 43;
 	private const string APPROVED_PAGE = 'Page with an approved revision';
 
 	private SpyGraphDatabasePlugin $graphStore;
-	private SpySubjectPageIndex $subjectPageIndex;
-	private SpyPublishedSubjectIndex $publishedSubjectIndex;
 	private TestLogger $logger;
 
 	protected function setUp(): void {
@@ -58,35 +50,22 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->setUpNeo4j();
 		$this->createSchema( TestSubject::DEFAULT_SCHEMA_ID );
 		$this->graphStore = new SpyGraphDatabasePlugin();
-		$this->subjectPageIndex = new SpySubjectPageIndex();
-		$this->publishedSubjectIndex = new SpyPublishedSubjectIndex();
 		$this->logger = new TestLogger();
 	}
 
 	public function testSavesPageWithSubjects(): void {
 		$revision = $this->createPageWithSubjects( 'Page with subject', TestSubject::build() );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+		$outcome = $this->newProjector()->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
 	}
 
-	public function testIndexesTheSubjectsThePageHolds(): void {
-		$revision = $this->createPageWithSubjects( 'Page with indexed subject', TestSubject::build() );
-
-		$this->newHandler()->onRevisionCreated( $revision );
-
-		$this->assertSame(
-			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
-			$this->subjectPageIndex->indexedSubjectsByPageId
-		);
-	}
-
 	public function testSavesPageWithoutSubjects(): void {
 		$revision = $this->newPlainPageRevision( 'Plain page' );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+		$outcome = $this->newProjector()->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
@@ -96,28 +75,27 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testSavesPageWhoseSubjectsWereAllDeleted(): void {
 		$revision = $this->createPageWithSubjects( 'Page that lost its subjects' );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+		$outcome = $this->newProjector()->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertCount( 1, $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
 	}
 
-	public function testIndexesThePageButSkipsTheGraphWhenThePagePropertiesCannotBeBuilt(): void {
+	public function testSkipsThePageWhenItsPagePropertiesCannotBeBuilt(): void {
 		// Building the properties parses the page and runs every provider, which throws for a page
-		// MediaWiki can no longer handle or a provider that fails. On the hook path that must not abort
-		// the triggering edit, which is what the isolating source production wires there is for.
+		// MediaWiki can no longer handle or a provider that fails. On the hook path that must not fail the
+		// projection, which is what the isolating source production wires there is for.
 		$revision = $this->newPlainPageRevision( 'Page with unbuildable properties' );
 
-		$outcome = $this->newHandlerWith(
+		$outcome = $this->newProjectorWith(
 			$this->graphStore,
 			$this->newFailingProviderRegistry(),
 			isolatePageProperties: true
-		)->onRevisionCreated( $revision );
+		)->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadablePageProperties, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
-		$this->assertSame( [ $revision->getPageId() => [] ], $this->publishedSubjectIndex->indexedSubjectsByPageId );
 		$this->assertTrue( $this->logger->hasErrorRecords(), 'the skipped page should be logged' );
 	}
 
@@ -132,8 +110,8 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( 'unknown content model' );
 
-		$this->newHandlerWith( $this->graphStore, $this->newFailingProviderRegistry() )
-			->onRevisionCreated( $revision );
+		$this->newProjectorWith( $this->graphStore, $this->newFailingProviderRegistry() )
+			->projectRevision( $revision, null );
 	}
 
 	public function testWritesNothingWhenTheSubjectSlotDoesNotHoldSubjectContent(): void {
@@ -144,77 +122,34 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
 		);
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+		$outcome = $this->newProjector()->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
-		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
-		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
 		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
 	}
 
-	public function testPropagatesReadFailureWhenSubjectSlotIsPresentButUnreadable(): void {
-		$slots = $this->createStub( RevisionSlots::class );
-		$slots->method( 'getContent' )->willThrowException( new RevisionAccessException( 'blob read failed' ) );
-
-		$revision = $this->createStub( RevisionRecord::class );
-		$revision->method( 'getPageId' )->willReturn( 42 );
-		$revision->method( 'hasSlot' )->willReturn( true );
-		$revision->method( 'getSlots' )->willReturn( $slots );
-
-		$this->expectException( RevisionAccessException::class );
-
-		$this->newHandler()->onRevisionCreated( $revision );
-	}
-
-	public function testUnreachableBackendDoesNotHardFailRevisionHandling(): void {
+	public function testUnreachableBackendDoesNotFailTheProjection(): void {
 		$revision = $this->createPageWithSubjects( 'Page with a failing backend', TestSubject::build() );
 
 		// The isolating decorator is what production wires around each backend on the hook path; here it
 		// wraps a backend that is down.
-		$handler = $this->newHandlerWith(
+		$projector = $this->newProjectorWith(
 			new FailureIsolatingGraphDatabasePlugin( new ThrowingGraphDatabasePlugin(), new NullLogger() )
 		);
 
-		$outcome = $handler->onRevisionCreated( $revision );
+		$outcome = $projector->projectRevision( $revision, null );
 
 		$this->assertSame(
 			PageRefreshOutcome::Refreshed,
 			$outcome,
-			'a projection write to an unreachable backend must not propagate out of the handler'
+			'a projection write to an unreachable backend must not propagate out of the projector'
 		);
 	}
 
-	public function testDeletingAPageRemovesItFromTheGraph(): void {
-		$this->newHandler()->onPageDelete( self::DELETED_PAGE_ID );
-
-		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
-	}
-
-	/**
-	 * Only the index removal can propagate — the projection write is failure-isolated — so the graph has
-	 * to be deleted first. The other order lets a database fault in the index skip the graph deletion,
-	 * leaving the deleted page's Subject values queryable through the Cypher surfaces.
-	 */
-	public function testGraphDeletionHappensEvenWhenTheIndexRemovalFails(): void {
-		try {
-			$this->newHandlerWithIndexes( new ThrowingSubjectPageIndex(), $this->publishedSubjectIndex )
-				->onPageDelete( self::DELETED_PAGE_ID );
-		} catch ( RuntimeException ) {
-			// Propagating is the index's contract; what matters is what already ran.
-		}
-
-		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
-	}
-
-	public function testGraphDeletionHappensEvenWhenThePublishedSubjectIndexRemovalFails(): void {
-		try {
-			$this->newHandlerWithIndexes( $this->subjectPageIndex, new ThrowingPublishedSubjectIndex() )
-				->onPageDelete( self::DELETED_PAGE_ID );
-		} catch ( RuntimeException ) {
-			// Propagating is the index's contract; what matters is what already ran.
-		}
+	public function testWithdrawsAPage(): void {
+		$this->newProjector()->withdrawPage( new PageId( self::DELETED_PAGE_ID ) );
 
 		$this->assertEquals( [ new PageId( self::DELETED_PAGE_ID ) ], $this->graphStore->deletedPageIds );
 	}
@@ -223,8 +158,8 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
 		$draft = $this->createPageWithSubjects( self::APPROVED_PAGE );
 
-		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
-			->onRevisionCreated( $draft );
+		$outcome = $this->newProjectorWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
+			->projectRevision( $draft, null );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertTrue(
@@ -243,11 +178,11 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 			$this->getTestUser()->getUser()
 		)->getNewRevision();
 
-		$this->newHandlerWith(
+		$this->newProjectorWith(
 			$this->graphStore,
 			$this->newCorePropertyRegistry(),
 			revisionPolicy: FixedRevisionPolicy::publishing( $approved )
-		)->onRevisionCreated( $draft );
+		)->projectRevision( $draft, null );
 
 		$this->assertSame(
 			$this->getTestSysop()->getUser()->getName(),
@@ -256,76 +191,41 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
-	public function testIndexesTheSubjectsOfTheGivenRevisionWhenAnotherIsPublished(): void {
-		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
-		$draft = $this->createPageWithSubjects( self::APPROVED_PAGE );
+	public function testBuildsThePagePropertiesFromMediaWikisRenderingOfThePublishedRevision(): void {
+		$revision = $this->editPage( 'Page rendered by MediaWiki', '[[Category:From the content]]' )->getNewRevision();
 
-		$this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
-			->onRevisionCreated( $draft );
+		$this->newProjectorWith( $this->graphStore, $this->newCorePropertyRegistry() )
+			->projectRevision( $revision, $this->newRenderingOf( $revision, 'From_the_rendering' ) );
 
 		$this->assertSame(
-			[ $draft->getPageId() => [] ],
-			$this->subjectPageIndex->indexedSubjectsByPageId,
-			'the index addresses the Subjects the page now holds, not the ones it publishes'
+			[ 'From_the_rendering' ],
+			$this->graphStore->savedPages[0]->getProperties()->get( 'categories' ),
+			'the rendering stands for a parse the projection does not repeat'
 		);
 	}
 
-	public function testWithdrawsThePageFromTheGraphWhenThePolicyPublishesNothing(): void {
+	public function testParsesThePublishedRevisionWhenMediaWikiRenderedAnotherOne(): void {
+		$approved = $this->editPage( self::APPROVED_PAGE, '[[Category:Approved]]' )->getNewRevision();
+		$draft = $this->editPage( self::APPROVED_PAGE, '[[Category:Draft]]' )->getNewRevision();
+
+		$this->newProjectorWith(
+			$this->graphStore,
+			$this->newCorePropertyRegistry(),
+			revisionPolicy: FixedRevisionPolicy::publishing( $approved )
+		)->projectRevision( $draft, $this->newRenderingOf( $draft, 'Draft' ) );
+
+		$this->assertSame( [ 'Approved' ], $this->graphStore->savedPages[0]->getProperties()->get( 'categories' ) );
+	}
+
+	public function testWithdrawsThePageWhenThePolicyPublishesNothing(): void {
 		$revision = $this->createPageWithSubjects( 'Page whose approval was revoked', TestSubject::build() );
 
-		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
-			->onRevisionCreated( $revision );
+		$outcome = $this->newProjectorWithPolicy( FixedRevisionPolicy::publishingNothing() )
+			->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::Unpublished, $outcome );
 		$this->assertEquals( [ new PageId( $revision->getPageId() ) ], $this->graphStore->deletedPageIds );
 		$this->assertSame( [], $this->graphStore->savedPages );
-	}
-
-	public function testIndexesTheSubjectsOfAPageThatPublishesNothing(): void {
-		$revision = $this->createPageWithSubjects( 'Page whose draft adds a subject', TestSubject::build() );
-
-		$this->newHandlerWithPolicy( FixedRevisionPolicy::publishingNothing() )
-			->onRevisionCreated( $revision );
-
-		$this->assertSame(
-			[ $revision->getPageId() => [ TestSubject::ZERO_GUID ] ],
-			$this->subjectPageIndex->indexedSubjectsByPageId,
-			'a withdrawn page is still on the wiki, so its Subjects stay editable'
-		);
-	}
-
-	public function testWritesNothingWhenThePublishedRevisionHoldsNoSubjectContent(): void {
-		$revision = $this->createPageWithSubjects( 'Page with an unreadable approved revision', TestSubject::build() );
-		$published = $this->newRevisionWithSlotContent(
-			$revision->getPageId(),
-			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
-		);
-
-		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $published ) )
-			->onRevisionCreated( $revision );
-
-		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
-		$this->assertSame( [], $this->graphStore->savedPages );
-		$this->assertSame( [], $this->graphStore->deletedPageIds );
-		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
-	}
-
-	public function testPublishesTheApprovedRevisionWhenTheGivenOneDoesNotHoldSubjectContent(): void {
-		$approved = $this->createPageWithSubjects( self::APPROVED_PAGE, TestSubject::build() );
-		$draft = $this->newRevisionWithSlotContent(
-			$approved->getPageId(),
-			new FallbackContent( '{"subjects":{}}', 'unregistered-model' )
-		);
-
-		$outcome = $this->newHandlerWithPolicy( FixedRevisionPolicy::publishing( $approved ) )
-			->onRevisionCreated( $draft );
-
-		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
-		$this->assertSame(
-			[ $approved->getPageId() => [ TestSubject::ZERO_GUID ] ],
-			$this->publishedSubjectIndex->indexedSubjectsByPageId
-		);
-		$this->assertSame( [], $this->subjectPageIndex->indexedSubjectsByPageId, 'the index should be left alone' );
 	}
 
 	/**
@@ -334,13 +234,11 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 	public function testLeavesThePageAsItWasWhenItsPublishedSubjectsDoNotDeserialize( string $subjectJson ): void {
 		$revision = $this->newRevisionWithSlotContent( self::STUB_PAGE_ID, new SubjectContent( $subjectJson ) );
 
-		$outcome = $this->newHandler()->onRevisionCreated( $revision );
+		$outcome = $this->newProjector()->projectRevision( $revision, null );
 
 		$this->assertSame( PageRefreshOutcome::SkippedUnreadableSubjects, $outcome );
 		$this->assertSame( [], $this->graphStore->savedPages );
 		$this->assertSame( [], $this->graphStore->deletedPageIds );
-		$this->assertSame( [], $this->publishedSubjectIndex->indexedSubjectsByPageId );
-		$this->assertSame( [], $this->publishedSubjectIndex->removedPageIds );
 		$this->assertTrue( $this->logger->hasWarningRecords(), 'the skipped page should be logged' );
 	}
 
@@ -369,6 +267,17 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		return $registry;
 	}
 
+	private function newRenderingOf( RevisionRecord $revision, string $category ): RenderedRevision {
+		$parserOutput = new ParserOutput();
+		$parserOutput->addCategory( $category );
+
+		$rendering = $this->createStub( RenderedRevision::class );
+		$rendering->method( 'getRevision' )->willReturn( $revision );
+		$rendering->method( 'getRevisionParserOutput' )->willReturn( $parserOutput );
+
+		return $rendering;
+	}
+
 	private function newPlainPageRevision( string $pageName ): RevisionRecord {
 		$pageId = $this->insertPage( $pageName, 'Just wikitext, no subjects.' )['id'];
 		$revision = $this->getServiceContainer()->getRevisionStore()->getRevisionByPageId( $pageId );
@@ -377,46 +286,28 @@ class OnRevisionCreatedHandlerTest extends NeoWikiIntegrationTestCase {
 		return $revision;
 	}
 
-	private function newHandler(): OnRevisionCreatedHandler {
-		return $this->newHandlerWith( $this->graphStore );
+	private function newProjector(): GraphStoreProjector {
+		return $this->newProjectorWith( $this->graphStore );
 	}
 
-	private function newHandlerWithPolicy( RevisionPolicy $policy ): OnRevisionCreatedHandler {
-		return $this->newHandlerWith( $this->graphStore, revisionPolicy: $policy );
+	private function newProjectorWithPolicy( RevisionPolicy $policy ): GraphStoreProjector {
+		return $this->newProjectorWith( $this->graphStore, revisionPolicy: $policy );
 	}
 
-	private function newHandlerWith(
+	private function newProjectorWith(
 		GraphDatabasePlugin $graphStore,
 		?PagePropertyProviderRegistry $providerRegistry = null,
 		bool $isolatePageProperties = false,
 		?RevisionPolicy $revisionPolicy = null
-	): OnRevisionCreatedHandler {
+	): GraphStoreProjector {
 		$pageProperties = $this->newPagePropertiesBuilder( $providerRegistry ?? new PagePropertyProviderRegistry() );
 
-		return new OnRevisionCreatedHandler(
+		return new GraphStoreProjector(
 			$graphStore,
-			$this->subjectPageIndex,
-			$this->publishedSubjectIndex,
 			$isolatePageProperties
 				? new FailureIsolatingPagePropertiesSource( $pageProperties, $this->logger )
 				: $pageProperties,
 			$revisionPolicy ?? new NullRevisionPolicy(),
-			$this->getServiceContainer()->getTitleFormatter(),
-			$this->logger
-		);
-	}
-
-	private function newHandlerWithIndexes(
-		SubjectPageIndex $subjectPageIndex,
-		PublishedSubjectIndex $publishedSubjectIndex
-	): OnRevisionCreatedHandler {
-		return new OnRevisionCreatedHandler(
-			$this->graphStore,
-			$subjectPageIndex,
-			$publishedSubjectIndex,
-			$this->newPagePropertiesBuilder( new PagePropertyProviderRegistry() ),
-			new NullRevisionPolicy(),
-			$this->getServiceContainer()->getTitleFormatter(),
 			$this->logger
 		);
 	}

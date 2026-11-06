@@ -12,13 +12,12 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
- * Moving a page keeps its graph node in sync with its new title. This needs no dedicated move hook:
- * core creates a null revision on the new title for every move and fires RevisionFromEditComplete for
- * it, which rewrites the page node, and a redirect left behind is a new page that is projected when it
- * is created. The write-count tests pin that, so a move cannot start projecting a page twice or
- * deleting nodes.
+ * Moving a page keeps its graph node in sync with its new title, and a redirect left behind is a new page
+ * that is projected when it is created. The write-count tests pin that a move projects no page twice and
+ * deletes no nodes.
  *
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onRevisionFromEditComplete
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onPageMoveComplete
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ProjectPageUpdate
  * @group Database
  */
 class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
@@ -119,7 +118,7 @@ class PageMoveGraphProjectionTest extends NeoWikiIntegrationTestCase {
 
 		$this->movePage( 'Redirect write count source', 'Redirect write count target', createRedirect: true );
 
-		$this->assertSame(
+		$this->assertEqualsCanonicalizing(
 			[ $movedPageId, Title::newFromText( 'Redirect write count source' )->getArticleID() ],
 			self::savedPageIds( $spy ),
 			'the moved page and the redirect left behind should each be projected exactly once'

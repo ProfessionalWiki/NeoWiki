@@ -18,8 +18,8 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 /**
  * Loads a {@see Page} domain object from the revision the registered revision policy publishes, so it
  * can be projected to RDF.
- * The revision slot is the source of truth (as in OnRevisionCreatedHandler and the graph rebuild),
- * so the export reflects the stored data rather than the secondary graph projection.
+ * The revision slot is the source of truth (as in GraphStoreProjector), so the export reflects the
+ * stored data rather than the secondary graph projection.
  *
  * Every page is exported, with the Subjects it holds and with none when it holds none, which keeps the
  * RDF surfaces describing the same pages as the graph databases. Returns null when the page does not
@@ -67,7 +67,7 @@ class RdfPageLoader {
 
 		return new Page(
 			id: new PageId( $revision->getPageId() ),
-			properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revision ),
+			properties: $this->pagePropertiesBuilder->getPagePropertiesFor( $revision, null ),
 			subjects: $subjects
 		);
 	}

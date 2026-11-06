@@ -11,6 +11,7 @@ use Laudis\Neo4j\Exception\Neo4jException;
 use Laudis\Neo4j\Types\CypherMap;
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutput;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CypherQueryValidator;
@@ -35,6 +36,7 @@ class CypherRawParserFunctionTest extends TestCase {
 	 */
 	private function createParser(): Parser {
 		$parser = $this->createMock( Parser::class );
+		$parser->method( 'getOutput' )->willReturn( new ParserOutput() );
 		$parser->method( 'msg' )->willReturnCallback(
 			function ( string $key, ...$params ): Message {
 				$rendered = $params === [] ? "[$key]" : '[' . $key . '|' . implode( '|', $params ) . ']';

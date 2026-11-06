@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\EntryPoints\ParserFunction;
 
 use MediaWiki\Parser\Parser;
+use ProfessionalWiki\NeoWiki\EntryPoints\GraphReads;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Exception\QueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryRequest;
@@ -23,6 +24,8 @@ class CypherRawParserFunction {
 	 * @return array{0: string, noparse: true, isHTML: true}
 	 */
 	public function handle( Parser $parser, string $cypherQuery ): array {
+		GraphReads::record( $parser->getOutput() );
+
 		try {
 			$result = $this->queryService->execute(
 				new Neo4jQueryRequest(

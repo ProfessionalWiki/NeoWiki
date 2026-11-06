@@ -12,7 +12,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyGraphDatabasePlugin;
 
 /**
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\LinksRefreshHandler
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\ProjectPageUpdate
  * @group Database
  */
 class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
@@ -43,21 +44,53 @@ class LinksRefreshGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'After' ], $this->readPageNodeProperty( $pageId, 'categories' ) );
 	}
 
-	public function testTemplateEditUpdatesPagePropertiesTakenFromTheParse(): void {
-		$this->registerPagePropertyProviders( self::newDefaultSortProvider() );
-		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:Before}}' );
+	public function testTemplateEditRemovesACategoryFromThePagesUsingIt(): void {
+		$this->savePage( self::TEMPLATE, '[[Category:Removed]]' );
 		$pageId = $this->savePage( self::PAGE, self::PAGE_TEXT );
 
-		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:After}}' );
+		$this->savePage( self::TEMPLATE, 'No category' );
 		$this->runRefreshJobs();
 
-		$this->assertSame( 'After', $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
+		$this->assertSame( [], $this->readPageNodeProperty( $pageId, 'categories' ) );
+	}
+
+	public function testTemplateEditAddsAPagePropertyTakenFromTheParse(): void {
+		$this->registerPagePropertyProviders( self::newDefaultSortProvider() );
+		$this->savePage( self::TEMPLATE, 'No sort key' );
+		$pageId = $this->savePage( self::PAGE, self::PAGE_TEXT );
+
+		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:Added}}' );
+		$this->runRefreshJobs();
+
+		$this->assertSame( 'Added', $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
+	}
+
+	public function testTemplateEditRemovesAPagePropertyTakenFromTheParse(): void {
+		$this->registerPagePropertyProviders( self::newDefaultSortProvider() );
+		$this->savePage( self::TEMPLATE, '{{DEFAULTSORT:Removed}}' );
+		$pageId = $this->savePage( self::PAGE, self::PAGE_TEXT );
+
+		$this->savePage( self::TEMPLATE, 'No sort key' );
+		$this->runRefreshJobs();
+
+		$this->assertSame( '', $this->readPageNodeProperty( $pageId, 'defaultSort' ) );
 	}
 
 	public function testTemplateEditThatOnlyChangesASortKeyWritesNothing(): void {
 		$this->savePage( self::TEMPLATE, '[[Category:Sorted|first]]' );
 		$this->savePage( self::PAGE, self::PAGE_TEXT );
 		$this->savePage( self::TEMPLATE, '[[Category:Sorted|second]]' );
+		$store = $this->registerSpyStore();
+
+		$this->runRefreshJobs();
+
+		$this->assertSame( [], self::savedPageIds( $store ) );
+	}
+
+	public function testTemplateEditThatChangesNothingThePageShowsWritesNothing(): void {
+		$this->savePage( self::TEMPLATE, 'Before' );
+		$this->savePage( self::PAGE, self::PAGE_TEXT );
+		$this->savePage( self::TEMPLATE, 'After' );
 		$store = $this->registerSpyStore();
 
 		$this->runRefreshJobs();
