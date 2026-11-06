@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use stdClass;
 use TypeError;
 
 /**
@@ -20,8 +21,8 @@ class SubjectsToPublish {
 	/**
 	 * None when the revision has no Subject slot.
 	 *
-	 * @throws UnreadableSubjectsException When the slot holds content that is not Subject data, or Subject data that
-	 *   does not deserialize.
+	 * @throws UnreadableSubjectsException When the slot holds content that is not Subject data, Subject data that is not
+	 *   a JSON object, or Subject data that does not deserialize.
 	 */
 	public static function of( RevisionRecord $revision ): PageSubjects {
 		if ( !$revision->hasSlot( MediaWikiSubjectRepository::SLOT_NAME ) ) {
@@ -32,6 +33,11 @@ class SubjectsToPublish {
 
 		if ( !$content instanceof SubjectContent ) {
 			throw new UnreadableSubjectsException( 'Its subject slot holds content that is not Subject data.' );
+		}
+
+		// The deserializer reads such JSON as holding no Subjects, which would drop the ones the page holds.
+		if ( !$content->getData()->getValue() instanceof stdClass ) {
+			throw new UnreadableSubjectsException( 'Its Subject data is not a JSON object.' );
 		}
 
 		try {

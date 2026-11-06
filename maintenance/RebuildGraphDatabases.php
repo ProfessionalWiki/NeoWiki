@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildRun;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildStatus;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildTrigger;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Presentation\PageIdSummary;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -28,11 +29,6 @@ require_once $basePath . '/maintenance/Maintenance.php';
 class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver {
 
 	private const DEFAULT_BATCH_SIZE = GraphRebuildCoordinator::BACKGROUND_BATCH_SIZE;
-
-	/**
-	 * How many of a store's failing pages the report names before pointing at the log for the rest.
-	 */
-	private const REPORTED_FAILED_PAGES = 5;
 
 	/**
 	 * @var int[] The pages the store now being rebuilt could not reconcile
@@ -220,17 +216,8 @@ class RebuildGraphDatabases extends Maintenance implements RebuildBatchObserver 
 		);
 	}
 
-	/**
-	 * Names enough of the failing pages to see what they have in common, and points at the log for the
-	 * rest: a store rejecting the whole wiki must not bury the summary under its page ids.
-	 */
 	private function describeFailedPages(): string {
-		$named = array_slice( $this->failedPageIds, 0, self::REPORTED_FAILED_PAGES );
-		$rest = count( $this->failedPageIds ) - count( $named );
-
-		return 'failed on pages ' . implode( ', ', $named )
-			. ( $rest === 0 ? '' : ' and ' . $rest . ' more' )
-			. '. The NeoWiki log channel says why.';
+		return 'failed on pages ' . PageIdSummary::of( $this->failedPageIds ) . '. The NeoWiki log channel says why.';
 	}
 
 	/**
