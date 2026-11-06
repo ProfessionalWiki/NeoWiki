@@ -19,40 +19,44 @@
 			</template>
 
 			<template #item-name="{ item, row }">
-				{{ propertyDisplayName( row ) }}
-				<!-- The name is what wikitext, Lua, Layouts and queries refer to the property by. -->
+				{{ item.toString() }}
 				<div
-					v-if="propertyDisplayName( row ) !== item.toString()"
-					class="ext-neowiki-schema-display__property-name"
+					v-if="labelOf( row ) !== null"
+					class="ext-neowiki-schema-display__property-label"
 				>
-					{{ item.toString() }}
+					{{ labelOf( row ) }}
 				</div>
 			</template>
 
-			<template #item-type="{ item }">
-				<CdxInfoChip :icon="getIcon( item )">
-					{{ getTypeLabel( item ) }}
-				</CdxInfoChip>
-			</template>
-
-			<template #item-required="{ item }">
-				{{ item ?
-					$i18n( 'neowiki-schema-display-required-yes' ).text() :
-					$i18n( 'neowiki-schema-display-required-no' ).text()
-				}}
-			</template>
-
-			<template #item-default="{ item, row }">
-				<component
-					:is="componentRegistry.getValueDisplayComponent( row.type )"
-					v-if="item !== undefined"
-					:value="item"
-					:property="row"
-				/>
-				<span
-					v-else
-					class="ext-neowiki-schema-display__empty-value"
-				>-</span>
+			<template #item-type="{ item, row }">
+				<span class="ext-neowiki-schema-display__type">
+					<!-- Keyed by its text: the tooltip directive reads its value only when mounted. -->
+					<CdxInfoChip
+						v-if="typeDetails( row, validationEnforced ) !== null"
+						:key="typeDetails( row, validationEnforced ) ?? ''"
+						v-tooltip="typeDetails( row, validationEnforced )"
+						class="ext-neowiki-schema-display__explained"
+						tabindex="0"
+						:icon="getIcon( item )"
+					>
+						{{ getTypeLabel( item ) }}
+					</CdxInfoChip>
+					<CdxInfoChip
+						v-else
+						:icon="getIcon( item )"
+					>
+						{{ getTypeLabel( item ) }}
+					</CdxInfoChip>
+					<span
+						v-if="requiredExplanation( row, validationEnforced ) !== null"
+						:key="requiredExplanation( row, validationEnforced ) ?? ''"
+						v-tooltip="requiredExplanation( row, validationEnforced )"
+						class="ext-neowiki-schema-display__required ext-neowiki-schema-display__explained"
+						tabindex="0"
+					>
+						{{ $i18n( 'neowiki-schema-display-required' ).text() }}
+					</span>
+				</span>
 			</template>
 
 			<template #item-description="{ item }">
@@ -100,6 +104,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { CdxTable, CdxInfoChip } from '@wikimedia/codex';
 import type { TableColumn } from '@wikimedia/codex';
 import type { Icon } from '@wikimedia/codex-icons';
+import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import SchemaDisplayHeader from './SchemaDisplayHeader.vue';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectsTable from '@/components/SubjectsTable/SubjectsTable.vue';
@@ -109,6 +114,8 @@ import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
+import { requiredExplanation, typeDetails } from '@/presentation/propertyDetails.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 
 const props = defineProps( {
 	schema: {
@@ -150,18 +157,18 @@ const columns = computed<TableColumn[]>( () => [
 		label: mw.msg( 'neowiki-schema-display-property-type' )
 	},
 	{
-		id: 'required',
-		label: mw.msg( 'neowiki-schema-display-property-required' )
-	},
-	{
-		id: 'default',
-		label: mw.msg( 'neowiki-schema-display-property-default' )
-	},
-	{
 		id: 'description',
 		label: mw.msg( 'neowiki-schema-display-property-description' )
 	}
 ] );
+
+const validationEnforced = NeoWikiExtension.getInstance().isValidationEnforced();
+
+function labelOf( property: PropertyDefinition ): string | null {
+	const displayName = propertyDisplayName( property );
+
+	return displayName === property.name.toString() ? null : displayName;
+}
 
 function getIcon( propertyType: string ): Icon {
 	return componentRegistry.getIcon( propertyType );
@@ -213,10 +220,23 @@ const onSchemaSaved = ( schema: Schema ): void => {
 		margin-top: @spacing-200;
 	}
 
-	&__property-name {
+	&__property-label {
 		color: @color-subtle;
 		font-size: @font-size-small;
 		font-weight: @font-weight-normal;
+	}
+
+	&__type {
+		white-space: nowrap;
+	}
+
+	&__explained {
+		cursor: help;
+	}
+
+	&__required {
+		margin-inline-start: @spacing-50;
+		color: @color-subtle;
 	}
 
 	&__empty-value {
