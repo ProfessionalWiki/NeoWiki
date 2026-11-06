@@ -18,7 +18,7 @@ function mountTable(): VueWrapper {
 describe( 'RecentSubjectsTable', () => {
 
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'config', 'msg', 'message', 'util' ] } );
+		setupMwMock( { functions: [ 'config', 'msg', 'message', 'util', 'language' ] } );
 		getRecentlyEditedSubjects = vi.fn().mockResolvedValue( [ {
 			id: 's1demo1aaaaaaa1', displayName: 'Commodore 64', displayNameIsGenerated: false, hostSubject: null,
 			schema: 'Computer',

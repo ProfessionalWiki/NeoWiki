@@ -43,12 +43,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, watch } from 'vue';
+import { ref, computed, inject, shallowRef, watch } from 'vue';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData, ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { schemaNamerFor, type SchemaNamer } from '@/presentation/schemaDisplayName.ts';
 import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import type { Subject } from '@/domain/Subject.ts';
@@ -103,6 +105,19 @@ const creatableSchemas = computed( (): readonly string[] =>
 );
 
 const creationOffered = computed( (): boolean => creatableSchemas.value.length > 0 );
+
+// Names the Schemas of the create options: by their names until the wiki's Schemas are listed, by their labels once
+// they are. A picker that offers none lists no Schemas.
+const schemaNamer = shallowRef<SchemaNamer>( ( schemaName ) => schemaName );
+
+if ( creationOffered.value ) {
+	useSchemaStore().fetchAllSchemaSummaries().then(
+		( summaries ) => {
+			schemaNamer.value = schemaNamerFor( summaries );
+		},
+		() => undefined
+	);
+}
 
 const selectedSubject = ref<string | null>( props.selected );
 // The selected target's own name, for a suffix to say what it acts on. Dropped as soon as the
@@ -161,13 +176,17 @@ const typedText = computed( (): string => {
 	return text === selectedName.value ? '' : text;
 } );
 
-const createItems = computed( (): MenuItemData[] => creatableSchemas.value.map( ( schemaName ) => ( {
-	value: CREATE_SUBJECT + schemaName,
-	label: typedText.value === '' ?
-		mw.msg( 'neowiki-subject-picker-create', schemaName ) :
-		mw.msg( 'neowiki-subject-picker-create-named', typedText.value, schemaName ),
-	icon: cdxIconAdd
-} ) ) );
+const createItems = computed( (): MenuItemData[] => creatableSchemas.value.map( ( schemaName ) => {
+	const shownName = schemaNamer.value( schemaName );
+
+	return {
+		value: CREATE_SUBJECT + schemaName,
+		label: typedText.value === '' ?
+			mw.msg( 'neowiki-subject-picker-create', shownName ) :
+			mw.msg( 'neowiki-subject-picker-create-named', typedText.value, shownName ),
+		icon: cdxIconAdd
+	};
+} ) );
 
 // Matched here rather than by the search: these Subjects exist only in the editor.
 const matchingDraftRows = computed( (): SubjectLabelResult[] => {

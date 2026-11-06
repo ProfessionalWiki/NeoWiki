@@ -28,6 +28,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectActi
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPageAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubjectPage\CreateSubjectPagePresenter;
 use ProfessionalWiki\NeoWiki\Application\Actions\CreateSubject\CreateSubjectPresenter;
+use ProfessionalWiki\NeoWiki\Application\Source\MemoizingSchemaResolver;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\Neo4jQueryService;
 use ProfessionalWiki\NeoWiki\Application\Actions\DeleteSubject\DeleteSubjectAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\MoveSubject\MoveSubjectAction;
@@ -2048,6 +2049,7 @@ class NeoWikiExtension {
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			scanBound: self::SUBJECT_SUMMARY_SCAN_BOUND,
 			searchTimeLimit: is_int( $searchTimeLimit ) ? $searchTimeLimit : 0,
+			schemaResolver: new MemoizingSchemaResolver( $this->getSchemaResolver() ),
 		);
 	}
 
@@ -2060,6 +2062,7 @@ class NeoWikiExtension {
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
 			hostSubjectBuilder: $this->newHostSubjectBuilder(),
+			schemaResolver: new MemoizingSchemaResolver( $this->getSchemaResolver() ),
 			revisionBound: self::RECENTLY_EDITED_SUBJECTS_REVISION_BOUND,
 			readBound: self::RECENTLY_EDITED_SUBJECTS_READ_BOUND,
 		);
@@ -2114,6 +2117,7 @@ class NeoWikiExtension {
 			pageSubjectsLookup: $this->newPageSubjectsLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
+			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 		);
 	}
 
@@ -2188,11 +2192,15 @@ class NeoWikiExtension {
 	}
 
 	private function newSubjectResponseItemFactory( PageSubjectsAtRevisionLookup $pageSubjectsLookup ): SubjectResponseItemFactory {
-		return new SubjectResponseItemFactory( $pageSubjectsLookup, $this->newHostSubjectBuilder() );
+		return new SubjectResponseItemFactory(
+			$pageSubjectsLookup,
+			$this->newHostSubjectBuilder(),
+			new MemoizingSchemaResolver( $this->getSchemaResolver() )
+		);
 	}
 
 	public function newHostSubjectBuilder(): HostSubjectBuilder {
-		return new HostSubjectBuilder( $this->newDependentSubjectRules() );
+		return new HostSubjectBuilder( $this->newDependentSubjectRules(), new MemoizingSchemaResolver( $this->getSchemaResolver() ) );
 	}
 
 	public function newSubjectSummaryHostSubjects(): SubjectSummaryHostSubjects {

@@ -6,6 +6,8 @@ import type { SchemaName } from '@/domain/Schema';
 export interface SubjectNameFields {
 	readonly id: string;
 	readonly schemaName: SchemaName;
+	/** Those of the Schema, keyed by lowercase language tag. Absent when it has none the reader may read. */
+	readonly schemaLabels?: Readonly<Record<string, string>>;
 	readonly displayName: string;
 	readonly displayNameIsGenerated: boolean;
 	/** Null except for a Dependent Subject nobody named. */

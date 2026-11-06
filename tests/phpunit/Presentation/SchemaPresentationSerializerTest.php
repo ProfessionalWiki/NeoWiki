@@ -178,6 +178,13 @@ class SchemaPresentationSerializerTest extends TestCase {
 		);
 	}
 
+	public function testSchemaWithLabelsCarriesThem(): void {
+		$this->assertSerializesTo(
+			'{ "description": "", "labels": { "de": "Unternehmen" }, "propertyDefinitions": {} }',
+			TestSchema::build( name: 'Company', description: '', labels: [ 'de' => 'Unternehmen' ] )
+		);
+	}
+
 	public function testSchemaWithoutPropertiesHasAnEmptyPropertyDefinitionsObject(): void {
 		$schema = TestSchema::build(
 			name: new SchemaName( 'testSchema' ),

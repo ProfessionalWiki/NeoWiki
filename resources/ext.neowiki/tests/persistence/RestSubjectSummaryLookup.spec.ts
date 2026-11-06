@@ -81,6 +81,13 @@ describe( 'RestSubjectSummaryLookup', () => {
 		} );
 	} );
 
+	it( 'reads the labels of the Schema of a listed Subject', async () => {
+		const zxSpectrum = { ...ZX_SPECTRUM_JSON, schemaLabels: { de: 'Rechner' } };
+		const lookup = newLookup( { [ RECENTLY_EDITED_URL ]: jsonResponse( { subjects: [ zxSpectrum ] } ) } );
+
+		expect( ( await lookup.getRecentlyEditedSubjects( 3 ) )[ 0 ].schemaLabels ).toEqual( { de: 'Rechner' } );
+	} );
+
 	it( 'says the search took too long when the wiki stops it', async () => {
 		const lookup = new RestSubjectSummaryLookup( REST_URL, productionClientAnswering( 503, {
 			errorType: 'searchTimeout',

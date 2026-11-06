@@ -39,6 +39,8 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 import type { InitialPage } from '@/components/SubjectCreator/InitialPage.ts';
 import type { SubjectCreatorButtonProps } from '@/components/SubjectCreator/subjectCreatorButtonProps.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps<SubjectCreatorButtonProps>();
 
@@ -76,7 +78,24 @@ function existingPageIdOf( initialPage: InitialPage ): number | null {
 	return initialPage.page?.pageId ?? null;
 }
 
+const shownSchemaName = ref( props.schemaName );
+const schemaRepository = NeoWikiServices.getSchemaRepository();
+
+async function readSchema( schemaName: string ): Promise<void> {
+	try {
+		shownSchemaName.value = schemaDisplayName( await schemaRepository.getSchema( schemaName ) );
+	} catch {
+		// Shown under its name.
+	}
+}
+
 onMounted( async (): Promise<void> => {
+	// Not awaited: the button shows under the name and changes to the label once the Schema arrives,
+	// so that wikis without Schema labels do not wait for the read.
+	if ( props.schemaName !== undefined && props.text === undefined ) {
+		readSchema( props.schemaName );
+	}
+
 	if ( existingPageId.value === null ) {
 		await checkCreateSubjectPagePermission();
 	} else {
@@ -107,8 +126,10 @@ const buttonLabel = computed( (): string => {
 		return props.text;
 	}
 
-	return props.schemaName === undefined ?
-		mw.msg( 'neowiki-create-subject-default-label' ) :
-		mw.msg( 'neowiki-schema-create-subject', props.schemaName );
+	if ( props.schemaName === undefined ) {
+		return mw.msg( 'neowiki-create-subject-default-label' );
+	}
+
+	return mw.msg( 'neowiki-schema-create-subject', shownSchemaName.value );
 } );
 </script>

@@ -23,6 +23,11 @@ readonly class HostSubject {
 		 * Null unless this Host Subject is a Dependent Subject too.
 		 */
 		public ?HostSubject $hostSubject,
+		/**
+		 * @var array<string, string> Those of $schema, keyed by lowercase language tag; none for a Schema the reader
+		 *   cannot read
+		 */
+		public array $schemaLabels,
 	) {
 	}
 

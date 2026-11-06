@@ -43,7 +43,7 @@ import type { ChipInputItem } from '@wikimedia/codex';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
 import { isLocalSchemaReference, schemaReferenceText, type SchemaReference } from '@/domain/SchemaReference';
-import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
+import { CREATE_SCHEMA, matchesSchemaSearch, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
 import { targetsDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
 
 const props = defineProps<{
@@ -99,7 +99,13 @@ const offeredSummaries = computed( (): SchemaSummary[] => propertyTargetsDepende
 	summaries.value.filter( ( summary ) => summary.subjectsAreDependent === propertyTargetsDependentSubjects.value ) );
 
 const menu = computed( (): SchemaMenu =>
-	schemaMenu( offeredSummaries.value, query.value, creationOffered.value ? typedName.value : null ) );
+	schemaMenu(
+		offeredSummaries.value,
+		query.value,
+		creationOffered.value ? typedName.value : null,
+		// The chips show the name of each chosen Schema.
+		'beside-every-label'
+	) );
 
 // Where the search finds Schemas only of the kind the targets rule out, a menu with nothing to offer says why.
 const leftOutKindReason = computed( (): string | null => {
@@ -107,7 +113,7 @@ const leftOutKindReason = computed( (): string | null => {
 	const targetsDependent = propertyTargetsDependentSubjects.value;
 
 	if ( targetsDependent === null || search === '' || !summaries.value.some( ( summary ) =>
-		summary.subjectsAreDependent !== targetsDependent && summary.name.toLowerCase().includes( search ) ) ) {
+		summary.subjectsAreDependent !== targetsDependent && matchesSchemaSearch( summary, search ) ) ) {
 		return null;
 	}
 

@@ -5,6 +5,7 @@ import SubjectsTable from '@/components/SubjectsTable/SubjectsTable.vue';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { createI18nMock, findNextPageButton, setupMwMock } from '../../VueTestHelpers.ts';
+import { newSchema } from '@/TestHelpers.ts';
 import type { SubjectSummaries, SubjectSummary, SubjectSummaryQuery } from '@/application/SubjectSummaryLookup.ts';
 import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError.ts';
 
@@ -25,7 +26,7 @@ let getSubjectSummaries: ReturnType<typeof vi.fn>;
 
 function mountTable( props: Record<string, unknown> = {}, subjectFirst = false ): VueWrapper {
 	setupMwMock( {
-		functions: [ 'config', 'msg', 'message', 'util', 'notify' ],
+		functions: [ 'config', 'msg', 'message', 'util', 'notify', 'language' ],
 		config: { wgNeoWikiSubjectFirst: subjectFirst },
 	} );
 
@@ -126,6 +127,46 @@ describe( 'SubjectsTable', () => {
 		await flushPromises();
 
 		expect( findSchemaMenu( wrapper ).text() ).toContain( 'Person' );
+	} );
+
+	describe( 'for a Schema with a label in the reader\'s language', () => {
+		beforeEach( () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Person', description: '', propertyCount: 1, subjectsAreDependent: false },
+				{ name: 'Computer', description: '', propertyCount: 4, subjectsAreDependent: false, labels: { en: 'Home computer' } },
+			] );
+		} );
+
+		it( 'offers it in the menu under its label', async () => {
+			const wrapper = mountTable();
+			await flushPromises();
+
+			expect( findSchemaMenu( wrapper ).text() ).toContain( 'Home computer' );
+		} );
+
+		it( 'names it by its label on the Create button', async () => {
+			const wrapper = mountTable( { initialSchema: 'Computer', canCreate: true } );
+			await flushPromises();
+
+			expect( wrapper.get( '.ext-neowiki-subjects-table__create' ).text() )
+				.toBe( 'neowiki-schema-create-subjectHome computer' );
+		} );
+
+		it( 'names it by its label when it has no Subjects', async () => {
+			getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
+			const wrapper = mountTable( { initialSchema: 'Computer' } );
+			await flushPromises();
+
+			expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaHome computer' );
+		} );
+
+		it( 'names the Schema it is fixed to by its label when it has no Subjects', async () => {
+			getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
+			const wrapper = mountTable( { fixedSchema: newSchema( { title: 'Computer', labels: { en: 'Home computer' } } ) } );
+			await flushPromises();
+
+			expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaHome computer' );
+		} );
 	} );
 
 	it( 'shows an unnamed Subject by its bracketed id', async () => {
@@ -336,7 +377,7 @@ describe( 'SubjectsTable', () => {
 	} );
 
 	it( 'lists only the fixed Schema, with no menu, Schema column or Create button', async () => {
-		const wrapper = mountTable( { fixedSchema: 'Computer', canCreate: true } );
+		const wrapper = mountTable( { fixedSchema: newSchema( { title: 'Computer' } ), canCreate: true } );
 		await flushPromises();
 
 		expect( lastQuery().schema ).toBe( 'Computer' );
@@ -344,6 +385,13 @@ describe( 'SubjectsTable', () => {
 		expect( columnLabels( wrapper ) ).not.toContain( 'neowiki-subjects-column-schema' );
 		expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( false );
 		expect( wrapper.find( '.cdx-table__header__caption' ).text() ).toBe( 'neowiki-special-subjects' );
+	} );
+
+	it( 'asks for no list of the wiki\'s Schemas when fixed to one', async () => {
+		mountTable( { fixedSchema: newSchema( { title: 'Computer' } ) } );
+		await flushPromises();
+
+		expect( useSchemaStore().fetchAllSchemaSummaries ).not.toHaveBeenCalled();
 	} );
 
 	it( 'offers no Create button to a user who cannot create', async () => {

@@ -73,4 +73,30 @@ describe( 'SchemaDeserializer', () => {
 		expect( schema.getDescription() ).toEqual( '' );
 	} );
 
+	it( 'reads the labels trimmed, under lowercase tags, without empty ones', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Company', {
+			labels: { 'zh-Hant': ' 公司 ', de: 'Unternehmen', nl: '  ', fr: 42 },
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getLabels() ).toEqual( { 'zh-hant': '公司', de: 'Unternehmen' } );
+	} );
+
+	it( 'reads labels that are a text rather than one per language as none', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Company', {
+			labels: 'Firm',
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getLabels() ).toBeUndefined();
+	} );
+
+	it( 'reads a schema without labels as having none', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Company', {
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.getLabels() ).toBeUndefined();
+	} );
+
 } );

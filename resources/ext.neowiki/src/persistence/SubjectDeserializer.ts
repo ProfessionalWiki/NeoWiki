@@ -5,6 +5,7 @@ import { StatementDeserializer } from '@/persistence/StatementDeserializer';
 import { Subject } from '@/domain/Subject';
 import { schemaReferenceName } from '@/domain/SchemaReference';
 import { hostSubjectFromJson } from '@/persistence/hostSubjectFromJson';
+import { labelsFromJson } from '@/domain/labels';
 
 export class SubjectDeserializer {
 
@@ -35,6 +36,7 @@ export class SubjectDeserializer {
 			statementList,
 			pageIdentifiers,
 			hostSubjectFromJson( json.hostSubject ),
+			labelsFromJson( json.schemaLabels ),
 		);
 	}
 

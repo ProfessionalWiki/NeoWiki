@@ -120,15 +120,18 @@ readonly class CreateSubjectPageAction {
 
 		$page = new PageIdentifiers( id: $pageId, title: $pageTitle, namespaceId: $this->subjectPageNamespace );
 
+		$schema = $this->schemaResolver->getSchema( $schemaReference );
+
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$page,
 				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageTitle ),
-				hostSubject: null
+				hostSubject: null,
+				schema: $schema
 			),
 			$page,
-			$this->schemaResolver->getSchema( $schemaReference ),
+			$schema,
 			$violations
 		);
 	}
