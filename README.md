@@ -5,7 +5,7 @@
 [Website](https://neowiki.ai) · [Documentation](https://neowiki.ai/docs/) · [Try it at neowiki.dev](https://neowiki.dev) · [Get a demo](https://neowiki.ai/demo) · [NeoWiki hosting](https://professional.wiki/en/hosting/neowiki)
 
 [![Mastodon](https://img.shields.io/mastodon/follow/116122313808578574)](https://mastodon.social/@NeoWiki)
-[![Bluesky](https://img.shields.io/bluesky/followers/neowiki.ai)](https://bsky.app/profile/neowiki.ai)
+[![Bluesky](https://img.shields.io/bluesky/followers/neowiki.ai?label=Follow%20%40neowiki.ai)](https://bsky.app/profile/neowiki.ai)
 [![X](https://img.shields.io/twitter/follow/NeoWikiAI)](https://x.com/NeoWikiAI)
 
 ## Installation
