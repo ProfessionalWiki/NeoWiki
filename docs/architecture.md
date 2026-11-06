@@ -85,4 +85,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 35: Dependent Subjects](adr/035-dependent-subjects.md)
 * [ADR 37: Subject Lookups in MediaWiki Tables](adr/037-subject-lookups-in-mediawiki-tables.md)
 * [ADR 38: Property Names](adr/038-property-names.md)
-* [ADR 39: Property Labels](adr/039-property-labels.md)
+* [ADR 39: Schema and Property Labels](adr/039-schema-and-property-labels.md)

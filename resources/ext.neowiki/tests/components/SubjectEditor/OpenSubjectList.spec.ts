@@ -105,6 +105,12 @@ describe( 'OpenSubjectList', () => {
 		expect( names( mountList( { subjects: [ attendance ] } ) ) ).toStrictEqual( [ 'Attendance of Rijksmuseum' ] );
 	} );
 
+	it( 'shows the schema of a subject by its label in the reader\'s language', () => {
+		const location = newSubject( { id: PLACE_ID, label: 'Amsterdam', schemaName: 'Place', schemaLabels: { en: 'Location' } } );
+
+		expect( schemaNames( mountList( { subjects: [ person, location ] } ) ) ).toStrictEqual( [ 'Person', 'Location' ] );
+	} );
+
 	it( 'shows the schema of each subject, named or not', () => {
 		expect( schemaNames( mountList() ) ).toStrictEqual( [ 'Person', 'Birth event', 'Place' ] );
 	} );

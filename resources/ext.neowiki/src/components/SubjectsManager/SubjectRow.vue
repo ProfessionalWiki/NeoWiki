@@ -64,6 +64,7 @@
 							v-if="schemaName !== null"
 							class="ext-neowiki-subject-row__schema"
 							:schema-name="schemaName"
+							:display-name="shownSchemaName"
 							@click.stop
 						/>
 						<span class="ext-neowiki-subject-row__count">
@@ -241,7 +242,7 @@ import { subjectRowDomId } from '@/presentation/subjectRowAnchor.ts';
 import { subjectLinkUrlFromRow } from '@/presentation/subjectLinks.ts';
 import { RelationTargetUrlKey } from '@/components/Value/ValueDisplayContract.ts';
 import { identifyingSubjectName } from '@/presentation/subjectDisplayName.ts';
-import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
+import { schemaNameToShow, subjectSchemaDisplayName } from '@/presentation/schemaNameToShow.ts';
 import { rdfProjectionsFor, subjectExportUrls } from '@/presentation/DataExportMenu.ts';
 import { subjectIri } from '@/presentation/subjectIri.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
@@ -329,10 +330,9 @@ provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
 
 const schemaStore = useSchemaStore();
 
-const displayName = computed( () => identifyingSubjectName(
-	props.subject,
-	schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined
-) );
+const schema = computed( () => schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined );
+const displayName = computed( () => identifyingSubjectName( props.subject, schema.value ) );
+const shownSchemaName = computed( () => subjectSchemaDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
 const statementCount = computed( () => props.subject.getNamesOfNonEmptyProperties().length );
 const exportUrls = computed( () => subjectExportUrls( props.subject.getId().text ) );

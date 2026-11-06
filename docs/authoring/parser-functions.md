@@ -183,7 +183,7 @@ Renders a button that opens the Subject creator without leaving the page.
 | `page=new` | Stores the Subject on a new page: titled by its id on a subject-first wiki, and on a [page-first](../glossary.md#page-first-and-subject-first-wikis) wiki by the title the creator asks for, filled in from its label. |
 | `page=this` | Stores the Subject on the page holding the button. Outside the content namespaces, `new` applies instead. |
 | `page=<pageName>` | Stores the Subject on that page, creating it when it does not exist — which only the main namespace of a page-first wiki allows. |
-| `text=<buttonLabel>` | The button's label. Defaults to `Create <schemaName>`, or `Create subject` without a Schema. |
+| `text=<buttonLabel>` | The button's label. Defaults to `Create <schema>`, naming the Schema by its label in the reader's language where it has one, or `Create subject` without a Schema. |
 
 ### Notes
 

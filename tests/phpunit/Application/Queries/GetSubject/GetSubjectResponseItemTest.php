@@ -29,6 +29,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			),
 			null,
 			'ACME Corp',
+			null,
 			null
 		);
 
@@ -43,6 +44,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			null,
 			// Nobody chose a name, so the Schema supplies one and the item says so.
 			null,
+			null,
 			null
 		);
 
@@ -56,6 +58,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			TestSubject::build( label: new SubjectLabel( 'ACME Corp' ) ),
 			null,
 			'ACME Corp',
+			null,
 			null
 		);
 
@@ -72,6 +75,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			),
 			null,
 			'ACME Corp',
+			null,
 			null
 		);
 
@@ -85,7 +89,7 @@ class GetSubjectResponseItemTest extends TestCase {
 	}
 
 	public function testFromSubjectWithoutPageIdentifiersLeavesPageFieldsNull(): void {
-		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null, 'Test subject', null );
+		$item = GetSubjectResponseItem::fromSubject( TestSubject::build(), null, 'Test subject', null, null );
 
 		$this->assertNull( $item->pageId );
 		$this->assertNull( $item->pageTitle );
@@ -97,6 +101,7 @@ class GetSubjectResponseItemTest extends TestCase {
 			TestSubject::build(),
 			new PageIdentifiers( new PageId( 42 ), 'Help:Bunnies', 12 ),
 			'Test subject',
+			null,
 			null
 		);
 

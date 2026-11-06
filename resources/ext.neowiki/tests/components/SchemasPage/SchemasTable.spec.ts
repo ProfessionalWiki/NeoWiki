@@ -8,7 +8,7 @@ const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 const CREATE_SUBJECT = 'neowiki-schemas-create-subject';
 
 function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']> = {} ): VueWrapper {
-	setupMwMock( { functions: [ 'msg', 'message', 'util', 'language' ] } );
+	setupMwMock( { functions: [ 'msg', 'message', 'util', 'language', 'config' ] } );
 
 	return mount( SchemasTable, {
 		props: {
@@ -50,6 +50,18 @@ describe( 'SchemasTable', () => {
 
 		expect( artwork.find( 'a[href="/wiki/Schema:Artwork"]' ).text() ).toBe( 'Artwork' );
 		expect( artwork.find( 'a[href="/wiki/Special:Subjects/Artwork"]' ).text() ).toBe( 'neowiki-schema-subject-count30' );
+	} );
+
+	it( 'links the label of a Schema in the reader\'s language to its page, with the name as its title', () => {
+		const artwork = row( mountTable( { schemas: [
+			{ name: 'Artist', description: '', propertyCount: 4, subjectsAreDependent: false },
+			{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false, labels: { en: 'Painting' } },
+		] } ), 1 );
+
+		const link = artwork.get( 'a[href="/wiki/Schema:Artwork"]' );
+
+		expect( link.text() ).toBe( 'Painting' );
+		expect( link.attributes( 'title' ) ).toBe( 'Artwork' );
 	} );
 
 	it( 'links to all the Subjects of a Schema whose count it does not know', () => {

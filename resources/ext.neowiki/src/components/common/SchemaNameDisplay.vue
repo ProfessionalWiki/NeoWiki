@@ -11,7 +11,7 @@
 		<span
 			class="ext-neowiki-schema-name__text"
 			aria-hidden="true"
-		>{{ props.schemaName }}</span>
+		>{{ props.displayName }}</span>
 	</component>
 </template>
 
@@ -25,6 +25,8 @@ import { computed } from 'vue';
 
 const props = withDefaults( defineProps<{
 	schemaName: string;
+	/** What the reader sees the Schema called: schemaDisplayName(), where the surface has the Schema. */
+	displayName: string;
 	link?: SchemaNameLink;
 }>(), {
 	link: 'same-tab'
@@ -32,10 +34,10 @@ const props = withDefaults( defineProps<{
 
 const schemaUrl = computed( (): string => mw.util.getUrl( `Schema:${ props.schemaName }` ) );
 
-// The badge shows the bare name, so the noun reaches a screen reader through this instead;
-// the visible name is aria-hidden, or it would be announced twice.
+// The badge shows the bare label or name, so the noun reaches a screen reader through this instead;
+// the visible text is aria-hidden, or it would be announced twice.
 const accessibleName = computed( (): string =>
-	mw.message( 'neowiki-schema-label', props.schemaName ).text()
+	mw.message( 'neowiki-schema-label', props.displayName ).text()
 );
 </script>
 

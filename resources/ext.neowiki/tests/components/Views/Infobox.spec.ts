@@ -26,7 +26,7 @@ const $i18n = createI18nMock();
 describe( 'Infobox', () => {
 	beforeEach( () => {
 		setupMwMock( {
-			functions: [ 'message', 'msg', 'config' ],
+			functions: [ 'message', 'msg', 'config', 'language' ],
 		} );
 		( globalThis as any ).mw.util = {
 			getUrl: vi.fn( ( title: string ) => `/wiki/${ title }` ),
@@ -239,6 +239,15 @@ describe( 'Infobox', () => {
 		// And the heading around it goes too: a wrapper left behind is an empty
 		// `role="heading"`, which assistive technology announces as an unnamed level 3.
 		expect( wrapper.find( '.ext-neowiki-infobox__schema' ).exists() ).toBe( false );
+	} );
+
+	it( 'badges the schema with its label in the reader\'s language', () => {
+		const labelled = newSubject( { id: 's1demo5sssssss3', label: 'Labelled', schemaName: 'TestSchema', schemaLabels: { en: 'Test type' } } );
+		subjectStore.setSubject( labelled );
+
+		const wrapper = mountComponent( labelled, false );
+
+		expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Test type' );
 	} );
 
 	it( 'renders schema name as a link to the Schema page', () => {

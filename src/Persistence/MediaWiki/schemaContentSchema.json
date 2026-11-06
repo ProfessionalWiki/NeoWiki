@@ -2,6 +2,15 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema#",
 	"type": "object",
 	"$defs": {
+		"labels": {
+			"type": "object",
+			"propertyNames": {
+				"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$"
+			},
+			"additionalProperties": {
+				"type": "string"
+			}
+		},
 		"severity": {
 			"enum": [ "error", "warning" ]
 		},
@@ -51,6 +60,7 @@
 		"description": {
 			"type": "string"
 		},
+		"labels": { "$ref": "#/$defs/labels" },
 		"subjectsAreDependent": {
 			"type": "boolean"
 		},
@@ -67,15 +77,7 @@
 						"description": {
 							"type": "string"
 						},
-						"labels": {
-							"type": "object",
-							"propertyNames": {
-								"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$"
-							},
-							"additionalProperties": {
-								"type": "string"
-							}
-						},
+						"labels": { "$ref": "#/$defs/labels" },
 						"type": {
 							"type": "string",
 							"minLength": 1

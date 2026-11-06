@@ -17,6 +17,7 @@ final class SubjectSummarySerializer {
 			'displayName' => $summary->displayName,
 			'displayNameIsGenerated' => $summary->displayNameIsGenerated,
 			'schema' => $summary->schemaName,
+		] + SubjectPresentationSerializer::schemaLabelsEntry( $summary->schemaLabels ) + [
 			'pageId' => $summary->pageId,
 			'pageTitle' => $summary->pageTitle,
 			'lastEdited' => $summary->lastEdited,

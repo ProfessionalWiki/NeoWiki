@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectL
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -42,6 +43,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly TitleFormatter $titleFormatter,
 		private readonly DependentSubjectRules $dependentSubjectRules,
+		private readonly SchemaReferenceResolver $schemaResolver,
 		private readonly int $revisionBound,
 		private readonly int $readBound,
 	) {
@@ -216,6 +218,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			pageTitle: $pageTitle,
 			lastEdited: (string)MWTimestamp::convert( TS_ISO_8601, $change->rev_timestamp ),
 			hostSubject: null,
+			schemaLabels: $this->schemaResolver->getSchema( $subject->getSchemaReference() )?->getLabels() ?? [],
 		);
 	}
 

@@ -3,6 +3,7 @@ import { defineComponent, nextTick, shallowRef, type Ref } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import SubjectPicker from '@/components/common/SubjectPicker.vue';
 import { createPinia, setActivePinia } from 'pinia';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
@@ -779,6 +780,7 @@ describe( 'SubjectPicker', () => {
 					'neowiki-subject-picker-no-results': 'No matches found',
 				},
 			} );
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
 		} );
 
 		afterEach( () => {
@@ -932,6 +934,16 @@ describe( 'SubjectPicker', () => {
 			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
 
 			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Product' ] );
+		} );
+
+		it( 'names the target Schema in the create option by its label in the reader\'s language', async () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Product', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Merchandise' } },
+			] );
+
+			const wrapper = await createWrapperOffering( hostOffering( creatorReturning( null ) ) );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Merchandise' ] );
 		} );
 
 		it( 'offers no create option without a target Schema', async () => {

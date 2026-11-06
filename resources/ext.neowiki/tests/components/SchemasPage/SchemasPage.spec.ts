@@ -375,6 +375,30 @@ describe( 'SchemasPage', () => {
 		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'Department' ] );
 	} );
 
+	it( 'keeps the Schemas whose label in the reader\'s language contains the find text', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			...summaries( [ 'Artist', 'City' ] ),
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Museum wing' } },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await find( wrapper, 'wing' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Department' ] );
+	} );
+
+	it( 'lists the Schemas in the order of what the reader sees them called', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			...summaries( [ 'Artist', 'City' ] ),
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Annex' } },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Department', 'Artist', 'City' ] );
+	} );
+
 	it( 'ignores spaces around the find text', async () => {
 		const wrapper = mountPage();
 		await flushPromises();

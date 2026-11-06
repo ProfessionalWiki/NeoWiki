@@ -13,6 +13,7 @@ export class SchemaSerializer {
 	public schemaToJson( schema: Schema ): Record<string, unknown> {
 		return {
 			description: schema.getDescription(),
+			...( schema.getLabels() === undefined ? {} : { labels: schema.getLabels() } ),
 			...( schema.subjectsAreDependent() ? { subjectsAreDependent: true } : {} ),
 			propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
 		};

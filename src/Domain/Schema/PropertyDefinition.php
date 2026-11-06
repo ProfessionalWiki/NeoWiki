@@ -137,7 +137,7 @@ abstract class PropertyDefinition {
 			required: $required,
 			default: $values['default'] ?? null,
 			constraintSeverities: $severities,
-			labels: self::labelsFromJson( $values['labels'] ?? [] ),
+			labels: Labels::fromJson( $values['labels'] ?? [] ),
 		);
 
 		// The extension owning the type is disabled or failed to load. Preserve the property
@@ -154,21 +154,6 @@ abstract class PropertyDefinition {
 		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
-	}
-
-	/**
-	 * @return array<string, string>
-	 */
-	private static function labelsFromJson( mixed $json ): array {
-		$labels = [];
-
-		foreach ( is_array( $json ) ? $json : [] as $language => $label ) {
-			if ( is_string( $label ) && trim( $label ) !== '' ) {
-				$labels[strtolower( (string)$language )] = trim( $label );
-			}
-		}
-
-		return $labels;
 	}
 
 }

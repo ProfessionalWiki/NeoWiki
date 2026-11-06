@@ -12,6 +12,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectPr
 use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectQuery;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject\GetMainSubjectResponse;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -21,9 +22,12 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestNaming;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersResolver;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 
@@ -71,10 +75,23 @@ class GetMainSubjectQueryTest extends TestCase {
 					pageTitle: self::PAGE_TITLE,
 					pageNamespaceId: NS_MAIN,
 					hostSubject: null,
+					schemaLabels: [],
 				)
 			),
 			$presenter->response
 		);
+	}
+
+	public function testMainSubjectCarriesTheLabelsOfItsSchema(): void {
+		$presenter = $this->newSpyPresenter();
+
+		$this->newQuery(
+			$presenter,
+			$this->newRepositoryWithPage( mainSubject: TestSubject::build( id: self::MAIN_SUBJECT_ID, schemaName: new SchemaName( 'City' ) ) ),
+			schemaLookup: new InMemorySchemaLookup( TestSchema::build( name: 'City', labels: [ 'de' => 'Stadt' ] ) )
+		)->execute( self::PAGE_ID );
+
+		$this->assertSame( [ 'de' => 'Stadt' ], $presenter->response->subject->schemaLabels );
 	}
 
 	public function testLabellessMainSubjectIsNamedAfterItsPage(): void {
@@ -185,12 +202,14 @@ class GetMainSubjectQueryTest extends TestCase {
 		InMemorySubjectRepository $repository,
 		?PageReadAuthorizer $readAuthorizer = null,
 		?PageIdentifiersResolver $pageIdentifiersResolver = null,
+		SchemaLookup $schemaLookup = new InMemorySchemaLookup(),
 	): GetMainSubjectQuery {
 		return new GetMainSubjectQuery(
 			presenter: $presenter,
 			pageSubjectsLookup: new PageSubjectsLookup( $repository ),
 			pageIdentifiersResolver: $pageIdentifiersResolver ?? $this->newResolverKnowingThePage(),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
+			responseItemFactory: TestNaming::newResponseItemFactory( $repository, $schemaLookup ),
 		);
 	}
 

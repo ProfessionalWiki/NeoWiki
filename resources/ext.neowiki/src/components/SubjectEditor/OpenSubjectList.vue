@@ -29,7 +29,8 @@
 			<SchemaNameDisplay
 				v-if="schemaNameToShow( subject ) !== null"
 				class="ext-neowiki-open-subject-list__schema"
-				:schema-name="schemaNameToShow( subject )!"
+				:schema-name="subject.getSchemaName()"
+				:display-name="subjectSchemaDisplayName( subject )"
 				link="none"
 			/>
 			<UnsavedDot
@@ -45,7 +46,7 @@ import { ref } from 'vue';
 import UnsavedDot from '@/components/common/UnsavedDot.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
-import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
+import { schemaNameToShow, subjectSchemaDisplayName } from '@/presentation/schemaNameToShow.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 

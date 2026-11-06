@@ -1,5 +1,6 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import LayoutEditorDialog, { type LayoutSaveHandler } from '@/components/LayoutEditor/LayoutEditorDialog.vue';
 import LayoutEditor from '@/components/LayoutEditor/LayoutEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
@@ -8,6 +9,7 @@ import DialogHeader from '@/components/common/DialogHeader.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const LAYOUT = new Layout( 'CompanyInfo', 'Company', 'infobox', '', [], {} );
 
@@ -22,11 +24,15 @@ const LayoutEditorStub = {
 
 describe( 'LayoutEditorDialog', () => {
 	let onSave: ReturnType<typeof vi.fn<LayoutSaveHandler>>;
+	let pinia: ReturnType<typeof createPinia>;
 
 	beforeEach( () => {
 		onSave = vi.fn<LayoutSaveHandler>();
-		// 'message' and 'util' for the Schema's name and link in the header.
-		setupMwMock( { functions: [ 'message', 'msg', 'notify', 'util' ] } );
+		// 'message' and 'util' for the Schema's name and link in the header, 'config' and 'language' for its label.
+		setupMwMock( { functions: [ 'message', 'msg', 'notify', 'util', 'config', 'language' ] } );
+		pinia = createPinia();
+		setActivePinia( pinia );
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
 	} );
 
 	function mountComponent(): VueWrapper {
@@ -37,6 +43,7 @@ describe( 'LayoutEditorDialog', () => {
 				onSave,
 			},
 			global: {
+				plugins: [ pinia ],
 				mocks: { $i18n: createI18nMock() },
 				stubs: {
 					LayoutEditor: LayoutEditorStub,
@@ -80,5 +87,25 @@ describe( 'LayoutEditorDialog', () => {
 		const wrapper = mountComponent();
 
 		expect( wrapper.findComponent( SchemaNameDisplay ).props( 'link' ) ).toBe( 'new-tab' );
+	} );
+
+	it( 'shows the Layout\'s Schema under its label in the reader\'s language', async () => {
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			{ name: 'Article', description: '', propertyCount: 1, subjectsAreDependent: false, labels: { en: 'Story' } },
+			{ name: 'Company', description: '', propertyCount: 2, subjectsAreDependent: false, labels: { en: 'Firm' } },
+			{ name: 'Person', description: '', propertyCount: 3, subjectsAreDependent: false, labels: { en: 'Human' } },
+		] );
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaNameDisplay ).props( 'displayName' ) ).toBe( 'Firm' );
+	} );
+
+	it( 'shows the Layout\'s Schema under its name when the Schemas cannot be read', async () => {
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'Network down' ) );
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaNameDisplay ).props( 'displayName' ) ).toBe( 'Company' );
 	} );
 } );

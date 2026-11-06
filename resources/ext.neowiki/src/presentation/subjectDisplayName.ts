@@ -5,6 +5,7 @@ import { isNamedAfterHostSubject } from '@/domain/dependentSubjects';
 import { resolveAllNonEmptyProperties } from '@/domain/resolveDisplayProperties';
 import { valueText } from '@/presentation/valueText';
 import { propertyDisplayName } from '@/presentation/propertyDisplayName';
+import { schemaDisplayNameOf } from '@/presentation/schemaDisplayName';
 
 /**
  * The name to show for a Subject.
@@ -14,7 +15,7 @@ import { propertyDisplayName } from '@/presentation/propertyDisplayName';
  * "(Main)": "Surrounded by brackets to signal that it's only a symbolic label and not an actual
  * namespace prefix." They also set it apart from the bare id a relation shows for a target that
  * cannot be found. A Dependent Subject is named after its Schema and Host Subject instead, as in
- * "Birth of Pablo Picasso".
+ * "Birth of Pablo Picasso", each Schema by its label in the reader's language.
  *
  * It has to be in the string rather than in styling: several surfaces interpolate a display name
  * into plain text no CSS reaches, and colour alone would carry the meaning nowhere for anyone using
@@ -27,6 +28,7 @@ export function subjectDisplayName( subject: Subject ): string {
 	return displayNameOf( {
 		id: subject.getId().text,
 		schemaName: subject.getSchemaName(),
+		schemaLabels: subject.getSchemaLabels(),
 		displayName: subject.getDisplayName(),
 		displayNameIsGenerated: subject.hasGeneratedDisplayName(),
 		hostSubject: subject.getHostSubject(),
@@ -61,7 +63,11 @@ export function identifyingSubjectName( subject: Subject, schema: Schema | undef
  */
 export function displayNameOf( named: SubjectNameFields ): string {
 	if ( named.hostSubject !== null ) {
-		return mw.msg( 'neowiki-dependent-subject-name', named.schemaName, displayNameOf( named.hostSubject ) );
+		return mw.msg(
+			'neowiki-dependent-subject-name',
+			schemaDisplayNameOf( named.schemaName, named.schemaLabels ),
+			displayNameOf( named.hostSubject ),
+		);
 	}
 
 	return named.displayNameIsGenerated ? generatedSubjectName( named.id ) : named.displayName;

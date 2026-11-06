@@ -16,6 +16,7 @@
 					<template #metadata>
 						<SchemaNameDisplay
 							:schema-name="props.initialLayout.getSchema()"
+							:display-name="shownSchemaName"
 							link="new-tab"
 						/>
 					</template>
@@ -58,10 +59,13 @@ import DialogHeader from '@/components/common/DialogHeader.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import EditorPanes from '@/components/common/EditorPanes.vue';
 import { Layout } from '@/domain/Layout.ts';
-import { ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSaveGuard } from '@/composables/useSaveGuard.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaNamerFor } from '@/presentation/schemaDisplayName.ts';
 
 export type LayoutSaveHandler = ( layout: Layout, comment: string ) => Promise<void>;
 
@@ -96,6 +100,26 @@ watch( () => props.open, ( isOpen ) => {
 		resetChanged();
 	}
 } );
+
+const schemaStore = useSchemaStore();
+const schemaSummaries = shallowRef<SchemaSummary[]>( [] );
+
+const shownSchemaName = computed( (): string =>
+	schemaNamerFor( schemaSummaries.value )( props.initialLayout.getSchema() ) );
+
+// Read as the dialog opens, alongside the Layout editor inside it, so the two share one request. Until it
+// answers, the badge shows the Schema's name.
+watch( () => props.open, async ( isOpen ) => {
+	if ( !isOpen ) {
+		return;
+	}
+
+	try {
+		schemaSummaries.value = await schemaStore.fetchAllSchemaSummaries();
+	} catch {
+		// Shown under its name.
+	}
+}, { immediate: true } );
 
 const { saving, save: handleSave } = useSaveGuard( writeLayout );
 

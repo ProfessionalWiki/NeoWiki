@@ -24,7 +24,7 @@ class SubjectPresentationSerializer {
 			'displayName' => $item->displayName,
 			'displayNameIsGenerated' => $item->displayNameIsGenerated,
 			'schema' => $item->schema,
-		];
+		] + self::schemaLabelsEntry( $item->schemaLabels );
 
 		if ( $item->hostSubject !== null ) {
 			$entry['hostSubject'] = self::serializeHostSubject( $item->hostSubject );
@@ -52,13 +52,23 @@ class SubjectPresentationSerializer {
 			'displayName' => $hostSubject->displayName,
 			'displayNameIsGenerated' => $hostSubject->displayNameIsGenerated,
 			'schema' => $hostSubject->schema,
-		];
+		] + self::schemaLabelsEntry( $hostSubject->schemaLabels );
 
 		if ( $hostSubject->hostSubject !== null ) {
 			$entry['hostSubject'] = self::serializeHostSubject( $hostSubject->hostSubject );
 		}
 
 		return $entry;
+	}
+
+	/**
+	 * Left out for a Schema without labels: an empty PHP array encodes as `[]`, not as the object keyed by language tag.
+	 *
+	 * @param array<string, string> $schemaLabels
+	 * @return array<string, array<string, string>>
+	 */
+	public static function schemaLabelsEntry( array $schemaLabels ): array {
+		return $schemaLabels === [] ? [] : [ 'schemaLabels' => $schemaLabels ];
 	}
 
 }

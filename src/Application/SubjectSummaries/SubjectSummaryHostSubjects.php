@@ -65,6 +65,7 @@ readonly class SubjectSummaryHostSubjects {
 			pageTitle: $summary->pageTitle,
 			lastEdited: $summary->lastEdited,
 			hostSubject: $this->hostSubjectBuilder->build( $subject, $pagesRead[$summary->pageId], $summary->pageTitle ),
+			schemaLabels: $summary->schemaLabels,
 		);
 	}
 

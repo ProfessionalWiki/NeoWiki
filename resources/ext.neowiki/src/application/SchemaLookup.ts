@@ -5,6 +5,10 @@ export interface SchemaSummary {
 	description: string;
 	propertyCount: number;
 	subjectsAreDependent: boolean;
+	/**
+	 * Keyed by lowercase language tag. Absent when the Schema has none.
+	 */
+	labels?: Readonly<Record<string, string>>;
 }
 
 export interface SchemaSummaryPage {
@@ -57,6 +61,7 @@ export class InMemorySchemaLookup implements SchemaLookup {
 			description: schema.getDescription(),
 			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
 			subjectsAreDependent: schema.subjectsAreDependent(),
+			labels: schema.getLabels(),
 		} ) );
 
 		// The cursor is opaque to callers; this fake encodes the next start index in it.

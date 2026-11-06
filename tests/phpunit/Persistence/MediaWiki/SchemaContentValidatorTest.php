@@ -596,6 +596,33 @@ JSON
 		);
 	}
 
+	public function testSchemaLabelsPerLanguagePassValidation(): void {
+		$validator = SchemaContentValidator::newInstance();
+
+		$valid = $validator->validate( $this->schemaWithLabels( '{ "en": "Company", "zh-Hant": "公司" }' ) );
+
+		if ( !$valid ) {
+			$this->assertSame( [], $validator->getErrors() );
+		}
+
+		$this->assertTrue( $valid );
+	}
+
+	public function testSchemaLabelUnderAKeyThatIsNoLanguageTagFailsValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate( $this->schemaWithLabels( '{ "en_GB": "Company" }' ) )
+		);
+	}
+
+	private function schemaWithLabels( string $labelsJson ): string {
+		return <<<JSON
+{
+	"labels": $labelsJson,
+	"propertyDefinitions": {}
+}
+JSON;
+	}
+
 	/**
 	 * Wraps the property under test between two valid siblings so a regression that only
 	 * inspects the first or last property definition is caught.
