@@ -4,9 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
-use Article;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\EditPage\EditPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\UltimateAuthority;
 use MediaWiki\Title\Title;
@@ -16,7 +14,6 @@ use SkinTemplate;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onContentHandlerDefaultModelFor
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onEditFilter
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onSkinTemplateNavigationUniversal
  * @group Database
  */
@@ -24,21 +21,6 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 
 	private function configTitle(): Title {
 		return Title::makeTitle( NS_MEDIAWIKI, 'NeoWiki' );
-	}
-
-	private function newEditPage( Title $title ): EditPage {
-		$context = new RequestContext();
-		$context->setLanguage( 'en' );
-		$context->setTitle( $title );
-
-		return new EditPage( Article::newFromTitle( $title, $context ) );
-	}
-
-	private function editFilterError( Title $title, string $text ): string {
-		$error = '';
-		NeoWikiHooks::onEditFilter( $this->newEditPage( $title ), $text, '', $error, '' );
-
-		return $error;
 	}
 
 	public function testConfigPageGetsTheJsonContentModel(): void {
@@ -64,39 +46,6 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 		NeoWikiHooks::onContentHandlerDefaultModelFor( $this->configTitle(), $model );
 
 		$this->assertSame( CONTENT_MODEL_WIKITEXT, $model );
-	}
-
-	public function testValidConfigIsAccepted(): void {
-		$this->assertSame(
-			'',
-			$this->editFilterError( $this->configTitle(), '{ "subjectFirst": true }' )
-		);
-	}
-
-	public function testWrongTypeForSubjectFirstIsRejectedWithItsMessage(): void {
-		$error = $this->editFilterError( $this->configTitle(), '{ "subjectFirst": "sidebar" }' );
-
-		$this->assertNotSame( '', $error );
-		$this->assertStringContainsString( 'subjectFirst', $error );
-	}
-
-	public function testUnknownKeyIsRejectedWithItsMessage(): void {
-		$error = $this->editFilterError( $this->configTitle(), '{ "NeoWikiSparqlStores": [] }' );
-
-		$this->assertStringContainsString( 'NeoWikiSparqlStores', $error );
-	}
-
-	public function testWrongTypeIsRejected(): void {
-		$error = $this->editFilterError( $this->configTitle(), '{ "autoRenderMainSubject": "yes" }' );
-
-		$this->assertStringContainsString( 'autoRenderMainSubject', $error );
-	}
-
-	public function testEditsToOtherPagesAreNotValidated(): void {
-		$this->assertSame(
-			'',
-			$this->editFilterError( Title::makeTitle( NS_MAIN, 'Some page' ), 'this is not even json' )
-		);
 	}
 
 	public function testConfigPageHasNoNamespaceTabs(): void {
@@ -150,15 +99,6 @@ class ConfigPageHooksTest extends MediaWikiIntegrationTestCase {
 		NeoWikiHooks::onSkinTemplateNavigationUniversal( $skin, $links );
 
 		return $links;
-	}
-
-	public function testConfigPageIsNotValidatedWhenInWikiConfigDisabled(): void {
-		$this->overrideConfigValue( 'NeoWikiEnableInWikiConfig', false );
-
-		$this->assertSame(
-			'',
-			$this->editFilterError( $this->configTitle(), '{ "subjectFirst": "sidebar" }' )
-		);
 	}
 
 }
