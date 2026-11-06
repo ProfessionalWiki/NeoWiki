@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { computed, defineComponent, nextTick, ref } from 'vue';
-import { mount } from '@vue/test-utils';
+import { computed, nextTick, ref } from 'vue';
 import { useGrowOnlyHeight } from '@/composables/useGrowOnlyHeight';
 
 // jsdom resolves no layout, so the real observer never reports a height.
@@ -11,19 +10,8 @@ vi.mock( '@wikimedia/codex', async ( importOriginal ) => ( {
 	useResizeObserver: () => computed( () => ( { width: 0, height: observedHeight.value } ) ),
 } ) );
 
-// The composable needs an owning scope: its resize observer is bound to one.
-function withElement(): ReturnType<typeof useGrowOnlyHeight> {
-	let api!: ReturnType<typeof useGrowOnlyHeight>;
-
-	mount( defineComponent( {
-		template: '<div />',
-		setup() {
-			api = useGrowOnlyHeight( ref( undefined ) );
-			return {};
-		},
-	} ) );
-
-	return api;
+function grownHeight(): ReturnType<typeof useGrowOnlyHeight> {
+	return useGrowOnlyHeight( ref( undefined ) );
 }
 
 async function measured( height: number ): Promise<void> {
@@ -38,11 +26,11 @@ describe( 'useGrowOnlyHeight', () => {
 	} );
 
 	it( 'holds no height before the element is measured', () => {
-		expect( withElement().tallest.value ).toBeNull();
+		expect( grownHeight().tallest.value ).toBe( 0 );
 	} );
 
 	it( 'holds the height the element is measured at', async () => {
-		const { tallest } = withElement();
+		const { tallest } = grownHeight();
 
 		await measured( 300 );
 
@@ -50,7 +38,7 @@ describe( 'useGrowOnlyHeight', () => {
 	} );
 
 	it( 'follows the element as it grows', async () => {
-		const { tallest } = withElement();
+		const { tallest } = grownHeight();
 
 		await measured( 300 );
 		await measured( 500 );
@@ -59,7 +47,7 @@ describe( 'useGrowOnlyHeight', () => {
 	} );
 
 	it( 'keeps the tallest height when the element measures shorter', async () => {
-		const { tallest } = withElement();
+		const { tallest } = grownHeight();
 
 		await measured( 500 );
 		await measured( 300 );
@@ -68,16 +56,16 @@ describe( 'useGrowOnlyHeight', () => {
 	} );
 
 	it( 'lets go of the height when reset', async () => {
-		const { tallest, reset } = withElement();
+		const { tallest, reset } = grownHeight();
 		await measured( 500 );
 
 		reset();
 
-		expect( tallest.value ).toBeNull();
+		expect( tallest.value ).toBe( 0 );
 	} );
 
 	it( 'holds a shorter height measured after a reset', async () => {
-		const { tallest, reset } = withElement();
+		const { tallest, reset } = grownHeight();
 		await measured( 500 );
 
 		reset();

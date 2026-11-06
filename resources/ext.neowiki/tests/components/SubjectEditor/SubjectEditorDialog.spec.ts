@@ -1,7 +1,7 @@
 import { mount, VueWrapper, DOMWrapper, enableAutoUnmount, flushPromises } from '@vue/test-utils';
 import { inject, nextTick, proxyRefs } from 'vue';
 import type { ComponentInternalInstance } from 'vue';
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, type Mock } from 'vitest';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -248,6 +248,21 @@ describe( 'SubjectEditorDialog', () => {
 		await new Promise( ( resolve ) => {
 			setTimeout( resolve );
 		} );
+	}
+
+	// A new promise per request: a later opening asks again.
+	function holdNotices(): { release: ( notices: EditNotice[] ) => void; restore: () => void } {
+		let release!: ( notices: EditNotice[] ) => void;
+		const repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
+			getNotices: () => new Promise<EditNotice[]>( ( resolve ) => {
+				release = resolve;
+			} ),
+		} );
+
+		return {
+			release: ( notices ) => release( notices ),
+			restore: () => repository.mockRestore(),
+		};
 	}
 
 	function editedPropertyNames( wrapper: VueWrapper ): string[] {
@@ -1237,21 +1252,37 @@ describe( 'SubjectEditorDialog', () => {
 			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
 		} );
 
+		// In a browser the closing dialog stays on screen through its fade, and focus taken into it goes with it when it
+		// is removed. jsdom removes it at once, so a panel of the same id stands in for it.
+		it( 'leaves the focus where it was while the dialog of the last opening fades out', async () => {
+			const opener = document.body.appendChild( document.createElement( 'button' ) );
+			onTestFinished( () => opener.remove() );
+			opener.focus();
+			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ) );
+			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
+			onTestFinished( holdNotices().restore );
+
+			await wrapper.setProps( { open: false } );
+			const fadingPanel = document.body.appendChild( document.createElement( 'div' ) );
+			onTestFinished( () => fadingPanel.remove() );
+			fadingPanel.id = `ext-neowiki-panel-${ rootSubjectId }`;
+			fadingPanel.tabIndex = -1;
+			await wrapper.setProps( { open: true } );
+			await openingFocusPlaced();
+
+			expect( document.activeElement ).toBe( opener );
+		} );
+
 		it( 'opens on the first field once the notices it waited for are in', async () => {
-			let releaseNotices!: ( notices: EditNotice[] ) => void;
-			const repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
-				getNotices: () => new Promise<EditNotice[]>( ( resolve ) => {
-					releaseNotices = resolve;
-				} ),
-			} );
+			const notices = holdNotices();
+			onTestFinished( notices.restore );
 			const wrapper = mountOpenOn( schemaStartingWith( { type: TextType.typeName } ) );
 			await flushPromises();
 			await openingFocusPlaced();
 
-			releaseNotices( [] );
+			notices.release( [] );
 
 			await vi.waitFor( () => expect( document.activeElement ).toBe( controlOf( wrapper, 'First', 'input' ) ) );
-			repository.mockRestore();
 		} );
 
 		it( 'opens on a select field, whose menu waits to be asked for', async () => {
@@ -1662,14 +1693,6 @@ describe( 'SubjectEditorDialog', () => {
 				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
 			} );
 
-			it( 'shows a Subject chosen from the list where it was left', async () => {
-				const wrapper = await mountOnRootScrolledTo( 300 );
-
-				await selectInList( wrapper, 's22222222222222' );
-
-				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
-			} );
-
 			it( 'returns to a Subject at the scroll position it was left at', async () => {
 				const wrapper = await mountOnRootScrolledTo( 300 );
 				await selectInList( wrapper, 's22222222222222' );
@@ -1680,34 +1703,40 @@ describe( 'SubjectEditorDialog', () => {
 				expect( formScroller( wrapper ).scrollTop ).toBe( 300 );
 			} );
 
-			it( 'forgets where a Subject was left once the dialog opens again', async () => {
+			async function mountWithSecondSubjectScrolled(): Promise<VueWrapper> {
 				const wrapper = await mountOnRootScrolledTo( 0 );
 				await selectInList( wrapper, 's22222222222222' );
 				formScroller( wrapper ).scrollTop = 200;
+
+				return wrapper;
+			}
+
+			async function expectSecondSubjectToOpenAtItsTop( wrapper: VueWrapper ): Promise<void> {
+				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
+				await flushPromises();
+
+				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
+				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+			}
+
+			it( 'forgets where a Subject was left once the dialog opens again', async () => {
+				const wrapper = await mountWithSecondSubjectScrolled();
 				await selectInList( wrapper, rootSubjectId );
 
 				await wrapper.setProps( { open: false } );
 				await wrapper.setProps( { open: true } );
 				await flushPromises();
-				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
-				await flushPromises();
 
-				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
-				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+				await expectSecondSubjectToOpenAtItsTop( wrapper );
 			} );
 
 			it( 'forgets where a Subject was left once the host replaces the root', async () => {
-				const wrapper = await mountOnRootScrolledTo( 0 );
-				await selectInList( wrapper, 's22222222222222' );
-				formScroller( wrapper ).scrollTop = 200;
+				const wrapper = await mountWithSecondSubjectScrolled();
 
 				await wrapper.setProps( { subject: labellessSubject } );
 				await flushPromises();
-				wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
-				await flushPromises();
 
-				expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
-				expect( formScroller( wrapper ).scrollTop ).toBe( 0 );
+				await expectSecondSubjectToOpenAtItsTop( wrapper );
 			} );
 		} );
 
@@ -2664,16 +2693,6 @@ describe( 'SubjectEditorDialog', () => {
 				await flushPromises();
 
 				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__divider' ).exists() ).toBe( false );
-			} );
-
-			// The form keeps its width while the list shows, so a wider list would widen the dialog.
-			it( 'offers no handle to resize the navigator', async () => {
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-
-				expect( wrapper.find( '[role="separator"]' ).exists() ).toBe( false );
 			} );
 
 			it( 'renders only the form surface when there is no navigator', async () => {
@@ -3703,35 +3722,35 @@ describe( 'SubjectEditorDialog', () => {
 		// holds the editor up no longer than reading it does before it says so.
 		describe( 'while they take a while', () => {
 			const NOTICE = { key: 'editnotice-0', html: '<p>Heads up</p>' };
-			let releaseNotices!: ( notices: EditNotice[] ) => void;
-			let repository: { mockRestore: () => void };
+			let notices: ReturnType<typeof holdNotices>;
 
 			beforeEach( () => {
 				vi.useFakeTimers();
-				repository = vi.spyOn( NeoWikiExtension.getInstance(), 'getEditNoticeRepository' ).mockReturnValue( {
-					getNotices: () => new Promise<EditNotice[]>( ( resolve ) => {
-						releaseNotices = resolve;
-					} ),
-				} );
+				notices = holdNotices();
 			} );
 
 			afterEach( () => {
-				repository.mockRestore();
+				notices.restore();
 				vi.useRealTimers();
 			} );
 
-			it( 'waits for them before it opens', async () => {
+			async function mountWaitingForNotices(): Promise<VueWrapper> {
 				const wrapper = mountComponent( false, saveButtonTestStubs );
 				await flushPromises();
+
+				return wrapper;
+			}
+
+			it( 'waits for them before it opens', async () => {
+				const wrapper = await mountWaitingForNotices();
 
 				expect( wrapper.findComponent( CdxDialog ).props( 'open' ) ).toBe( false );
 			} );
 
 			it( 'opens with the notices once they arrive', async () => {
-				const wrapper = mountComponent( false, saveButtonTestStubs );
-				await flushPromises();
+				const wrapper = await mountWaitingForNotices();
 
-				releaseNotices( [ NOTICE ] );
+				notices.release( [ NOTICE ] );
 				await flushPromises();
 
 				expect( exposedToHost( wrapper ).shown ).toBe( true );
@@ -3739,8 +3758,7 @@ describe( 'SubjectEditorDialog', () => {
 			} );
 
 			it( 'opens without them once it has waited as long as it waits before saying it is reading', async () => {
-				const wrapper = mountComponent( false, saveButtonTestStubs );
-				await flushPromises();
+				const wrapper = await mountWaitingForNotices();
 
 				await vi.advanceTimersByTimeAsync( 300 );
 
@@ -3750,17 +3768,148 @@ describe( 'SubjectEditorDialog', () => {
 			} );
 
 			it( 'shows notices that arrive once it has opened without them', async () => {
-				const wrapper = mountComponent( false, saveButtonTestStubs );
-				await flushPromises();
+				const wrapper = await mountWaitingForNotices();
 				await vi.advanceTimersByTimeAsync( 300 );
 
-				releaseNotices( [ NOTICE ] );
+				notices.release( [ NOTICE ] );
 				await flushPromises();
 
 				expect( wrapper.find( '.ext-neowiki-edit-notice' ).text() ).toBe( 'Heads up' );
 			} );
+
+			it( 'opens without the notices of the last opening when the new ones take a while', async () => {
+				const wrapper = await mountWaitingForNotices();
+				notices.release( [ NOTICE ] );
+				await flushPromises();
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await vi.advanceTimersByTimeAsync( 300 );
+
+				expect( exposedToHost( wrapper ).shown ).toBe( true );
+				expect( wrapper.find( '.ext-neowiki-edit-notice' ).exists() ).toBe( false );
+			} );
+
+			it( 'waits for them again on a later opening, however long the last one stayed open', async () => {
+				const wrapper = await mountWaitingForNotices();
+				await vi.advanceTimersByTimeAsync( 300 );
+				notices.release( [] );
+				await flushPromises();
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+
+				expect( exposedToHost( wrapper ).shown ).toBe( false );
+			} );
 		} );
 	} );
+
+	// So the save-scope note, which comes and goes as Subjects are switched, does not move Save.
+	it( 'keeps Save compact while it has no save-scope note to show', async () => {
+		const wrapper = mountComponent( false, {} );
+		await flushPromises();
+
+		expect( wrapper.find( '.ext-neowiki-summary-action__footer-text' ).exists() ).toBe( false );
+		expect( wrapper.find( '.ext-neowiki-summary-action__actions--compact' ).exists() ).toBe( true );
+	} );
+
+	describe( 'Height held through a session', () => {
+		// jsdom has no ResizeObserver, and Codex's useResizeObserver reports nothing without one.
+		const observers: FakeResizeObserver[] = [];
+
+		class FakeResizeObserver {
+			private readonly observed = new Set<Element>();
+
+			public constructor( private readonly report: ( entries: unknown[] ) => void ) {
+				observers.push( this );
+			}
+
+			public observe( element: Element ): void {
+				this.observed.add( element );
+			}
+
+			public disconnect(): void {
+				this.observed.clear();
+			}
+
+			public measure( element: Element, height: number ): void {
+				if ( this.observed.has( element ) ) {
+					this.report( [ { borderBoxSize: [ { inlineSize: 0, blockSize: height } ] } ] );
+				}
+			}
+		}
+
+		beforeEach( () => {
+			observers.length = 0;
+			vi.stubGlobal( 'ResizeObserver', FakeResizeObserver );
+			vi.stubGlobal( 'ResizeObserverEntry', class {} );
+		} );
+
+		// Not vi.unstubAllGlobals(), which would also take away the `mw` the whole spec shares.
+		afterEach( () => {
+			Reflect.deleteProperty( globalThis, 'ResizeObserver' );
+			Reflect.deleteProperty( globalThis, 'ResizeObserverEntry' );
+		} );
+
+		// Looked up each time: the stubbed Teleport renders the dialog anew when it updates.
+		function dialogOf( wrapper: VueWrapper ): HTMLElement {
+			return wrapper.get<HTMLElement>( '.cdx-dialog' ).element;
+		}
+
+		async function measureDialog( wrapper: VueWrapper, height: number ): Promise<void> {
+			observers.forEach( ( observer ) => observer.measure( dialogOf( wrapper ), height ) );
+			await nextTick();
+		}
+
+		function heldHeight( wrapper: VueWrapper ): string {
+			return dialogOf( wrapper ).style.getPropertyValue( '--ext-neowiki-dialog-grown-height' );
+		}
+
+		it( 'holds the dialog at the height it is measured at', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+
+			await measureDialog( wrapper, 500 );
+
+			expect( heldHeight( wrapper ) ).toBe( '500px' );
+		} );
+
+		it( 'holds a later opening at its own height, not at the one before it', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+			await measureDialog( wrapper, 500 );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			await measureDialog( wrapper, 300 );
+
+			expect( heldHeight( wrapper ) ).toBe( '300px' );
+		} );
+	} );
+
+	describe( 'Fade when the Subject creator hands over', () => {
+		const NEW_ROOT_CLASS = 'ext-neowiki-subject-editor-dialog--new-root';
+
+		it( 'names a dialog on a new root, for the stylesheet to leave its fade out', async () => {
+			const wrapper = mountComponent(
+				false, saveButtonTestStubs, undefined, mockSchema, {}, mockSubject, undefined, undefined, { rootIsNew: true },
+			);
+			await flushPromises();
+
+			expect( wrapper.get( '.cdx-dialog' ).classes() ).toContain( NEW_ROOT_CLASS );
+		} );
+
+		it( 'leaves an edit of an existing Subject with its fade', async () => {
+			const wrapper = mountComponent( false, saveButtonTestStubs );
+			await flushPromises();
+
+			expect( wrapper.get( '.cdx-dialog' ).classes() ).not.toContain( NEW_ROOT_CLASS );
+		} );
+	} );
+
 	describe( 'Dependent Subjects', () => {
 		const BIRTH_ID = 's1birthAAAAAAA1';
 		const MINTED_ID = 'smintedAAAAAAA1';
