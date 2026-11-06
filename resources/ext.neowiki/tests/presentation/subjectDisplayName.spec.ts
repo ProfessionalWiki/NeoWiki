@@ -146,6 +146,17 @@ describe( 'identifyingSubjectName', () => {
 			.toBe( 'Attendance of Rijksmuseum (Year: 2024)' );
 	} );
 
+	it( 'calls the property of that value by its label in the reader\'s language', () => {
+		setupMwMock( { config: { wgUserLanguage: 'de' } } );
+		const labelledSchema = newSchema( {
+			title: 'Attendance',
+			subjectsAreDependent: true,
+			properties: new PropertyDefinitionList( [ { ...newNumberProperty( { name: 'Year' } ), labels: { de: 'Jahr' } } ] ),
+		} );
+
+		expect( identifyingSubjectName( attendance( year ), labelledSchema ) ).toBe( 'Attendance of Rijksmuseum (Jahr: 2024)' );
+	} );
+
 	it( 'passes over a value that reads as no text, such as a relation', () => {
 		expect( identifyingSubjectName( attendance( source, visitors ), attendanceSchema ) )
 			.toBe( 'Attendance of Rijksmuseum (Visitors: 2.7 million)' );

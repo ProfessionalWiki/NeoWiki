@@ -22,6 +22,7 @@ import {
 	listenForDialogKeys,
 	openMenuAndPressEscape,
 	reportUnparseableNumber,
+	setupMwMock,
 } from '../../VueTestHelpers.ts';
 import DependentSubjectsInput from '@/components/SubjectEditor/DependentSubjectsInput.vue';
 import { DependentSubjectEditingKey, type DependentSubjectEditing } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
@@ -59,6 +60,21 @@ describe( 'SubjectEditor', () => {
 	function editor( wrapper: VueWrapper ): SubjectEditorExposes {
 		return wrapper.vm as unknown as SubjectEditorExposes;
 	}
+
+	it( 'labels each field with the label of its property in the reader\'s language', () => {
+		setupMwMock( { config: { wgUserLanguage: 'de' } } );
+		const labelledSchema = newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Name', { type: TextType.typeName, labels: { de: 'Bezeichnung' } } ),
+				createPropertyDefinitionFromJson( 'Notes', { type: TextType.typeName } ),
+			] ),
+		} );
+
+		const wrapper = createTestWrapper( SubjectEditor, { statements: labelledSchema.blankStatements(), schema: labelledSchema } );
+
+		expect( wrapper.findAllComponents( TextInput ).map( ( input ) => input.props( 'label' ) ) )
+			.toEqual( [ 'Bezeichnung', 'Notes' ] );
+	} );
 
 	it( 'reports no unparseable input while every field can be read', () => {
 		const wrapper = newWrapper();

@@ -63,10 +63,15 @@ describe( 'RelationDisplay.vue', () => {
 	}
 
 	function useWikiMode( subjectFirst: boolean ): void {
-		setupMwMock( {
-			functions: [ 'config', 'message', 'msg', 'util' ],
-			config: { wgNeoWikiSubjectFirst: subjectFirst },
-		} );
+		mockMw( { wgNeoWikiSubjectFirst: subjectFirst } );
+	}
+
+	function useReaderLanguage( language: string ): void {
+		mockMw( { wgUserLanguage: language } );
+	}
+
+	function mockMw( config: Record<string, unknown> ): void {
+		setupMwMock( { functions: [ 'config', 'message', 'msg', 'util', 'language' ], config } );
 	}
 
 	beforeEach( () => {
@@ -360,6 +365,16 @@ describe( 'RelationDisplay.vue', () => {
 			expect( wrapper.find( 'table' ).exists() ).toBe( false );
 		} );
 
+		it( 'names its statements by the labels of their properties', () => {
+			useReaderLanguage( 'de' );
+			storeSchema( 'Birth', [ { ...newTextProperty( { name: 'Date' } ), labels: { de: 'Datum' } } ], true );
+			storeDependentSubject( BIRTH_ID, 'Birth', new StatementList( [ text( 'Date', '25 October 1881' ) ] ) );
+
+			const wrapper = mountNested( relationsTo( BIRTH_ID ) );
+
+			expect( wrapper.find( '.ext-neowiki-subject-statements__property' ).text() ).toBe( 'Datum' );
+		} );
+
 		it( 'shows the statements of a Dependent Subject it holds in turn', () => {
 			storeBirth( relation( 'Record', RECORD_ID ) );
 			storeSchema( 'Record', [ newTextProperty( { name: 'Archive' } ) ], true );
@@ -514,6 +529,16 @@ describe( 'RelationDisplay.vue', () => {
 				expect( headersOf( onlyTable( wrapper ) ) ).toEqual( [ 'Borrower', 'Venue', 'Year' ] );
 			} );
 
+			it( 'heads each column with the label of its property', () => {
+				useReaderLanguage( 'de' );
+				storeLoanSchema( { ...newTextProperty( { name: 'Insurer' } ), labels: { de: 'Versicherer' } } );
+				storeLoan( LOAN_A, text( 'Borrower', 'Louvre' ), text( 'Insurer', 'AXA' ) );
+
+				const wrapper = mountNested( relationsTo( LOAN_A ), {}, loans );
+
+				expect( headersOf( onlyTable( wrapper ) ) ).toEqual( [ 'Borrower', 'Versicherer' ] );
+			} );
+
 			it( 'leaves out the column of a property none of them has a value for', () => {
 				storeLoanSchema();
 				storeLoan( LOAN_A, text( 'Borrower', 'Louvre' ), text( 'Year', '1990' ) );
@@ -595,6 +620,18 @@ describe( 'RelationDisplay.vue', () => {
 					const region = regionOf( onlyTable( wrapper ) );
 					expect( region.getAttribute( 'tabindex' ) ).toBe( '0' );
 					expect( accessibleName( region ) ).toBe( 'Loans' );
+				} );
+
+				it( 'is named after the label of the property', async () => {
+					useReaderLanguage( 'de' );
+					laidOut( 900, 300 );
+					storeLoanSchema();
+					storeLoan( LOAN_A, text( 'Borrower', 'Louvre' ) );
+
+					const wrapper = mountNested( relationsTo( LOAN_A ), {}, { ...loans, labels: { de: 'Leihgaben' } } );
+					await nextTick();
+
+					expect( accessibleName( regionOf( onlyTable( wrapper ) ) ) ).toBe( 'Leihgaben' );
 				} );
 
 				it( 'shows that more of it lies past its end', async () => {

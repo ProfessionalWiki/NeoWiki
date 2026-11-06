@@ -1,4 +1,4 @@
-import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { DOMWrapper, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
@@ -45,7 +45,7 @@ const getSchemaMock = vi.fn();
 let pinia: ReturnType<typeof createPinia>;
 
 function mountComponent( schema: Schema ): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+	setupMwMock( { functions: [ 'msg', 'config', 'language' ], config: { wgUserLanguage: 'de' } } );
 
 	return mount( SchemaDisplay, {
 		props: { schema },
@@ -169,6 +169,36 @@ describe( 'SchemaDisplay', () => {
 		expect( rows[ 1 ].text() ).toContain( 'Age' );
 		expect( rows[ 1 ].text() ).toContain( 'neowiki-property-type-number' );
 		expect( rows[ 1 ].text() ).toContain( 'neowiki-schema-display-required-no' );
+	} );
+
+	describe( 'a property with a label in the reader\'s language', () => {
+		function birthDateRow(): DOMWrapper<Element> {
+			const wrapper = mountComponent( newSchema( {
+				properties: new PropertyDefinitionList( [
+					createPropertyDefinitionFromJson( 'Birth date', { type: TextType.typeName, labels: { de: 'Geburtsdatum' } } ),
+				] ),
+			} ) );
+
+			return wrapper.find( 'tbody tr' );
+		}
+
+		it( 'is shown under that label', () => {
+			expect( birthDateRow().find( 'th' ).text() ).toContain( 'Geburtsdatum' );
+		} );
+
+		it( 'has its name beside the label', () => {
+			expect( birthDateRow().find( '.ext-neowiki-schema-display__property-name' ).text() ).toBe( 'Birth date' );
+		} );
+	} );
+
+	it( 'shows a property without a label in the reader\'s language by its name alone', () => {
+		const wrapper = mountComponent( newSchema( {
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'Birth date', { type: TextType.typeName, labels: { fr: 'Date de naissance' } } ),
+			] ),
+		} ) );
+
+		expect( wrapper.find( 'tbody tr th' ).text() ).toBe( 'Birth date' );
 	} );
 
 	it( 'renders default values for properties that have them', () => {

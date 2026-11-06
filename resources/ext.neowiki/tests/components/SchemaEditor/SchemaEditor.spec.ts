@@ -108,7 +108,8 @@ describe( 'SchemaEditor', () => {
 		};
 
 		vi.stubGlobal( 'mw', {
-			config: { get: vi.fn() },
+			config: { get: vi.fn( ( key: string ) => ( { wgUserLanguage: 'en', wgContentLanguage: 'en' } as Record<string, string> )[ key ] ) },
+			language: { bcp47: ( code: string ) => code },
 			notify: vi.fn(),
 			message: vi.fn( ( str ) => ( {
 				text: () => messages[ str ] ?? str,

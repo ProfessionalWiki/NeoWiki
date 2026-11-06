@@ -67,6 +67,15 @@
 						"description": {
 							"type": "string"
 						},
+						"labels": {
+							"type": "object",
+							"propertyNames": {
+								"pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$"
+							},
+							"additionalProperties": {
+								"type": "string"
+							}
+						},
 						"type": {
 							"type": "string",
 							"minLength": 1

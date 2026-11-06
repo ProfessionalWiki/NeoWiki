@@ -10,6 +10,21 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 class UnregisteredTypePropertyTest extends PropertyTestCase {
 
 	/**
+	 * @dataProvider labelsThatAreAllEmptyProvider
+	 */
+	public function testSerializesWithoutLabelsThatAreAllEmpty( string $labels ): void {
+		$this->assertArrayNotHasKey(
+			'labels',
+			$this->fromJson( '{ "type": "color", "labels": ' . $labels . ' }' )->toJson()
+		);
+	}
+
+	public static function labelsThatAreAllEmptyProvider(): iterable {
+		yield 'none' => [ '{}' ];
+		yield 'blank' => [ '{ "en": " " }' ];
+	}
+
+	/**
 	 * The type "color" is not among the core types, so it deserializes to an
 	 * UnregisteredTypeProperty. Its object-form constraint severities must survive a
 	 * round-trip (regression: the core `required` severity was previously dropped).

@@ -46,7 +46,7 @@
 				class="ext-neowiki-infobox__item"
 			>
 				<div class="ext-neowiki-infobox__property">
-					{{ resolved.propertyDefinition.name.toString() }}
+					{{ propertyDisplayName( resolved.propertyDefinition ) }}
 				</div>
 				<div class="ext-neowiki-infobox__value">
 					<component
@@ -73,6 +73,7 @@ import { useSubjectEditor } from '@/composables/useSubjectEditor.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { schemaNameToShow } from '@/presentation/schemaNameToShow.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';

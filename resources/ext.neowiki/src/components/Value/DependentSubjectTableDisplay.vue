@@ -15,7 +15,7 @@
 			:role="scrolls ? 'region' : undefined"
 			:tabindex="scrolls ? 0 : undefined"
 			:aria-labelledby="scrolls && props.showsSchemaName ? captionId : undefined"
-			:aria-label="scrolls && !props.showsSchemaName ? props.propertyName : undefined"
+			:aria-label="scrolls && !props.showsSchemaName ? props.relationPropertyDisplayName : undefined"
 			@scroll="measure"
 		>
 			<table
@@ -38,7 +38,7 @@
 							:class="{ 'ext-neowiki-dependent-subject-table__header--number': column.type === NumberType.typeName }"
 							scope="col"
 						>
-							{{ column.name.toString() }}
+							{{ propertyDisplayName( column ) }}
 						</th>
 					</tr>
 				</thead>
@@ -64,12 +64,13 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import DependentSubjectRowDisplay from '@/components/Value/DependentSubjectRowDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 
 const props = defineProps<{
 	schema: Schema;
 	/** Subjects of the Schema above, one row each. */
 	subjects: readonly Subject[];
-	propertyName: string;
+	relationPropertyDisplayName: string;
 	showsSchemaName: boolean;
 }>();
 

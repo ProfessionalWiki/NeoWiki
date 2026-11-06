@@ -410,10 +410,16 @@ export function stubUpdateTooltipAccessKeys(): void {
  * enough for a spec to tell a translated code from one passed straight through, which a pass-through
  * fake hides; every other code passes through.
  */
-const BCP_47_TAGS: Record<string, string> = {
-	als: 'gsw',
-	'be-x-old': 'be-tarask',
-	simple: 'en-simple',
+const BCP_47_TAGS = new Map<string, string>( [
+	[ 'als', 'gsw' ],
+	[ 'be-x-old', 'be-tarask' ],
+	[ 'simple', 'en-simple' ],
+] );
+
+// MediaWiki always has an interface and a content language.
+const DEFAULT_CONFIG: Record<string, string> = {
+	wgUserLanguage: 'en',
+	wgContentLanguage: 'en',
 };
 
 export interface MwMockOptions {
@@ -443,6 +449,9 @@ export function setupMwMock(
 	} = options;
 
 	const mwMock: any = {};
+
+	// Read through rather than copied, so a spec can change a setting after mocking.
+	const configValue = ( key: string ): any => customConfig[ key ] ?? DEFAULT_CONFIG[ key ];
 
 	const resolveMessage = ( key: string, params: any[] ): string => {
 		// Rendered by real MediaWiki everywhere a Subject nobody named is shown, so the fake carries
@@ -477,7 +486,7 @@ export function setupMwMock(
 
 	const implementations: Record<string, any> = {
 		config: () => ( {
-			get: vi.fn( ( key: string ) => customConfig[ key ] ),
+			get: vi.fn( configValue ),
 		} ),
 		message: () => vi.fn( ( key: string, ...params: any[] ) => ( {
 			text: () => resolveMessage( key, params ),
@@ -504,14 +513,14 @@ export function setupMwMock(
 			},
 		} ),
 		language: () => ( {
-			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS[ code.toLowerCase() ] ?? code ),
+			bcp47: vi.fn( ( code: string ) => BCP_47_TAGS.get( code.toLowerCase() ) ?? code ),
 			getData: vi.fn(
 				( _langCode: string, dataKey: string ) => dataKey === 'languageNames' ? customLanguageNames : undefined,
 			),
 			// MediaWiki's own chain starts at the interface language and ends at English, which every
 			// wiki falls back to; the fake carries just that, so a spec setting a user language gets a
 			// chain of its own without configuring one.
-			getFallbackLanguageChain: vi.fn( () => [ customConfig.wgUserLanguage, 'en' ] ),
+			getFallbackLanguageChain: vi.fn( () => [ configValue( 'wgUserLanguage' ), 'en' ] ),
 			// MediaWiki formats a number the way the interface language writes it; the fake groups its digits the
 			// English way, so a spec can tell a formatted number from a bare one.
 			convertNumber: vi.fn( ( number: number ) => number.toLocaleString( 'en-US' ) ),

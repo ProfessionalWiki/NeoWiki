@@ -19,6 +19,7 @@ import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
+import PropertyLabelsInput from '@/components/SchemaEditor/Property/PropertyLabelsInput.vue';
 import { newNumberValue, newStringValue } from '@/domain/Value';
 import {
 	createTestWrapper,
@@ -91,6 +92,44 @@ describe( 'PropertyDefinitionEditor', () => {
 		await changeTypeTo( wrapper, 'select' );
 
 		expect( lastEmittedProperty( wrapper ).default ).toBeUndefined();
+	} );
+
+	describe( 'labels', () => {
+		function labelTextInputs( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
+			return wrapper.findComponent( PropertyLabelsInput ).findAll( '.ext-neowiki-monolingual-text-input__text input' );
+		}
+
+		it( 'are taken from the labels field', async () => {
+			const wrapper = newWrapper( newDateProperty( { name: 'Birth date' } ) );
+
+			await labelTextInputs( wrapper )[ 0 ].setValue( 'Date of birth' );
+
+			expect( lastEmittedProperty( wrapper ).labels ).toEqual( { en: 'Date of birth' } );
+		} );
+
+		it( 'keep the ones the property has when another is typed', async () => {
+			const wrapper = newWrapper( { ...newDateProperty( { name: 'Birth date' } ), labels: { de: 'Geburtsdatum' } } );
+
+			await labelTextInputs( wrapper )[ 1 ].setValue( 'Date of birth' );
+
+			expect( lastEmittedProperty( wrapper ).labels ).toEqual( { de: 'Geburtsdatum', en: 'Date of birth' } );
+		} );
+
+		it( 'are kept when the type changes', async () => {
+			const wrapper = newWrapper( { ...newTextProperty( { name: 'Birth date' } ), labels: { de: 'Geburtsdatum' } } );
+
+			await changeTypeTo( wrapper, 'date' );
+
+			expect( lastEmittedProperty( wrapper ).labels ).toEqual( { de: 'Geburtsdatum' } );
+		} );
+
+		it( 'hold the save while the labels field holds two in one language', async () => {
+			const wrapper = newWrapper( { ...newDateProperty( { name: 'Birth date' } ), labels: { en: 'Date of birth' } } );
+
+			await labelTextInputs( wrapper )[ 1 ].setValue( 'Birthday' );
+
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-single-value-per-language' );
+		} );
 	} );
 
 	it( 'takes the initial value typed into its field', async () => {

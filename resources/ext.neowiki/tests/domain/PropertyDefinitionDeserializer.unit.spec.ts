@@ -315,3 +315,45 @@ it( 'treats default: null as no default', () => {
 
 	expect( property.default ).toBeUndefined();
 } );
+
+it( 'reads the labels by language', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'Birth date',
+		{ type: 'date', labels: { en: 'Date of birth', de: 'Geburtsdatum' } },
+	);
+
+	expect( property.labels ).toEqual( { en: 'Date of birth', de: 'Geburtsdatum' } );
+} );
+
+it( 'lowercases the language tags of labels', () => {
+	const property = serializer.propertyDefinitionFromJson( 'Birth date', { type: 'date', labels: { 'pt-BR': 'Data de nascimento' } } );
+
+	expect( property.labels ).toEqual( { 'pt-br': 'Data de nascimento' } );
+} );
+
+it( 'trims labels and drops the empty ones', () => {
+	const property = serializer.propertyDefinitionFromJson(
+		'Birth date',
+		{ type: 'date', labels: { de: ' Geburtsdatum ', en: ' ', nl: '' } },
+	);
+
+	expect( property.labels ).toEqual( { de: 'Geburtsdatum' } );
+} );
+
+it( 'never reads the labels as a Constraint severity', () => {
+	const property = serializer.propertyDefinitionFromJson( 'Birth date', { type: 'date', labels: { severity: 'error' } } );
+
+	expect( property.labels ).toEqual( { severity: 'error' } );
+} );
+
+it( 'gives a definition whose labels are all empty none', () => {
+	const property = serializer.propertyDefinitionFromJson( 'Birth date', { type: 'date', labels: { en: '' } } );
+
+	expect( property.labels ).toBeUndefined();
+} );
+
+it( 'gives a definition of an unregistered type whose labels are all empty none', () => {
+	const property = serializer.propertyDefinitionFromJson( 'Hue', { type: 'color', labels: { en: ' ' } } );
+
+	expect( property.labels ).toBeUndefined();
+} );

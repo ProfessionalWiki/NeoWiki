@@ -40,7 +40,7 @@
 				class="ext-redherb-card__wide-field"
 			>
 				<dt class="ext-redherb-card__term">
-					{{ resolved.propertyDefinition.name.toString() }}
+					{{ propertyDisplayName( resolved.propertyDefinition ) }}
 				</dt>
 				<dd class="ext-redherb-card__value">
 					<component
@@ -63,7 +63,7 @@
 					class="ext-redherb-card__row"
 				>
 					<dt class="ext-redherb-card__term">
-						{{ resolved.propertyDefinition.name.toString() }}
+						{{ propertyDisplayName( resolved.propertyDefinition ) }}
 					</dt>
 					<dd class="ext-redherb-card__value">
 						<component
@@ -192,6 +192,8 @@ module.exports = exports = {
 			subject: subject,
 			// A Subject nobody named is shown as a marked stand-in, not under a bare Schema name.
 			subjectDisplayName: nw.subjectDisplayName,
+			// A property is shown under its label in the reader's language, as NeoWiki shows it.
+			propertyDisplayName: nw.propertyDisplayName,
 			layoutUrl: layoutUrl,
 			schemaUrl: schemaUrl,
 			layoutSections: layoutSections,

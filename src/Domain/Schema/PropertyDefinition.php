@@ -24,6 +24,13 @@ abstract class PropertyDefinition {
 		return $this->core->description;
 	}
 
+	/**
+	 * @return array<string, string> Keyed by lowercase language tag
+	 */
+	public function getLabels(): array {
+		return $this->core->labels;
+	}
+
 	public function isRequired(): bool {
 		return $this->core->required;
 	}
@@ -60,11 +67,11 @@ abstract class PropertyDefinition {
 			'description' => $this->getDescription(),
 			'required' => $this->isRequired(),
 			'default' => $this->getDefault(),
-		];
+		] + ( $this->getLabels() === [] ? [] : [ 'labels' => $this->getLabels() ] );
 	}
 
 	/**
-	 * Type-specific fields beyond the common core (type/description/required/default).
+	 * Type-specific fields beyond the common core (type/description/labels/required/default).
 	 *
 	 * @internal Public only so that PHP-side serializers (REST `toJson`, the Lua
 	 * `SchemaLuaSerializer`, and persistence) can share one extension point per type.
@@ -130,6 +137,7 @@ abstract class PropertyDefinition {
 			required: $required,
 			default: $values['default'] ?? null,
 			constraintSeverities: $severities,
+			labels: self::labelsFromJson( $values['labels'] ?? [] ),
 		);
 
 		// The extension owning the type is disabled or failed to load. Preserve the property
@@ -146,6 +154,21 @@ abstract class PropertyDefinition {
 		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private static function labelsFromJson( mixed $json ): array {
+		$labels = [];
+
+		foreach ( is_array( $json ) ? $json : [] as $language => $label ) {
+			if ( is_string( $label ) && trim( $label ) !== '' ) {
+				$labels[strtolower( (string)$language )] = trim( $label );
+			}
+		}
+
+		return $labels;
 	}
 
 }
