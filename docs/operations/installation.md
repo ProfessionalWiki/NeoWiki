@@ -83,7 +83,7 @@ Run this from the MediaWiki root. If your wiki has no `composer.local.json` yet,
 `cp composer.local.json-sample composer.local.json`.
 
 ```sh
-COMPOSER=composer.local.json composer require --no-update neowiki/neowiki:^0.1
+COMPOSER=composer.local.json composer require --no-update --no-plugins neowiki/neowiki:^0.1
 composer update --no-dev -o
 ```
 

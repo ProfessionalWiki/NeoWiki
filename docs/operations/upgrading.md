@@ -25,7 +25,7 @@ make upgrade
 This pulls the demo image of that version, restarts the stack on it, runs MediaWiki's updater, and
 [rebuilds](maintenance.md#rebuilding-the-graph) every configured backend's projection.
 
-For a stack started with the `server` profile, run `COMPOSE_PROFILES=server make upgrade` instead.
+`make upgrade` keeps the optional services the stack last started with.
 
 If the new version cannot read your pre-0.1 data, start fresh with `make remove && make demo`, which deletes that data.
 
@@ -43,8 +43,11 @@ For a Composer install, run this from the MediaWiki root:
 composer update neowiki/neowiki --no-dev -o
 ```
 
-This stays on 0.1. To move to 0.2, run `COMPOSER=composer.local.json composer require --no-update neowiki/neowiki:^0.2`
-first, then the command above.
+This stays on 0.1. To move to 0.2, run this first, then the command above:
+
+```sh
+COMPOSER=composer.local.json composer require --no-update --no-plugins neowiki/neowiki:^0.2
+```
 
 For a branch checkout, update the code, its dependencies, and the frontend bundle from the MediaWiki root:
 
