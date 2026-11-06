@@ -6,6 +6,7 @@
 	<SchemaNameDisplay
 		v-else-if="column === 'schema'"
 		:schema-name="summary.schema"
+		:display-name="schemaDisplayNameOf( summary.schema, summary.schemaLabels )"
 	/>
 	<a
 		v-else-if="column === 'page'"
@@ -23,6 +24,7 @@
 import { computed } from 'vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
+import { schemaDisplayNameOf } from '@/presentation/schemaDisplayName.ts';
 import {
 	describeLastEdited, summaryName, summaryUrl, type SubjectColumnId
 } from '@/presentation/subjectSummaryTable.ts';

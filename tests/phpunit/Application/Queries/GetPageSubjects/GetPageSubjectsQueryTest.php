@@ -104,6 +104,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageTitle: null,
 						pageNamespaceId: null,
 						hostSubject: null,
+						schemaLabels: [],
 					),
 					's11111111111ca2' => new GetSubjectResponseItem(
 						id: 's11111111111ca2',
@@ -116,6 +117,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageTitle: null,
 						pageNamespaceId: null,
 						hostSubject: null,
+						schemaLabels: [],
 					),
 					's11111111111ca3' => new GetSubjectResponseItem(
 						id: 's11111111111ca3',
@@ -128,6 +130,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageTitle: null,
 						pageNamespaceId: null,
 						hostSubject: null,
+						schemaLabels: [],
 					),
 					's11111111111ca1' => new GetSubjectResponseItem(
 						id: 's11111111111ca1',
@@ -140,6 +143,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 						pageTitle: null,
 						pageNamespaceId: null,
 						hostSubject: null,
+						schemaLabels: [],
 					),
 				]
 			),

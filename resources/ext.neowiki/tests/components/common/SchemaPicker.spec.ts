@@ -137,20 +137,20 @@ describe( 'SchemaPicker', () => {
 		it( 'lists every schema with its description', async () => {
 			const wrapper = await mountLoadedPicker();
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
-			expect( listedDescriptions( wrapper ) ).toEqual( [ 'A product', 'A physical location' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
+			expect( listedDescriptions( wrapper ) ).toEqual( [ 'A physical location', 'A product' ] );
 		} );
 
 		it( 'lists only the schemas it is limited to', async () => {
 			const wrapper = await mountLoadedPicker( { schemaNames: [ 'City', 'Product' ] } );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Product' ] );
 		} );
 
 		it( 'leaves out the schemas whose subjects are dependent where it offers standalone ones only', async () => {
 			const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Product' ] );
 		} );
 
 		describe( 'where it offers standalone ones only', () => {
@@ -180,6 +180,18 @@ describe( 'SchemaPicker', () => {
 				await type( wrapper, 'office' );
 
 				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsOffice' );
+			} );
+
+			it( 'names a Schema left out by the label the typed text finds it under', async () => {
+				schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+					...SUMMARIES.filter( ( summary ) => summary.name !== 'Office' ),
+					{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: true, labels: { en: 'Branch' } },
+				] );
+				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+				await type( wrapper, 'branch' );
+
+				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsBranch' );
 			} );
 
 			it( 'says nothing of typed text that finds no Schema at all', async () => {
@@ -213,7 +225,7 @@ describe( 'SchemaPicker', () => {
 			await type( wrapper, 'off' );
 			await type( wrapper, '' );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 		} );
 
 		it( 'lists every schema again after one is picked', async () => {
@@ -222,7 +234,7 @@ describe( 'SchemaPicker', () => {
 			await type( wrapper, 'off' );
 			await clickSchema( wrapper, 'Office' );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 		} );
 
 		it( 'lists no schemas and reports the failure when loading them fails', async () => {
@@ -335,13 +347,13 @@ describe( 'SchemaPicker', () => {
 
 			await type( wrapper, 'o' );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office', 'Product' ] );
 		} );
 
 		it( 'pins the offer for no name below every schema before anything is typed', async () => {
 			const wrapper = await mountCreatingPicker();
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', CREATE_ITEM ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product', CREATE_ITEM ] );
 			expect( pinnedItem( wrapper ) ).toBe( CREATE_ITEM );
 		} );
 
@@ -350,7 +362,7 @@ describe( 'SchemaPicker', () => {
 
 			await type( wrapper, 'o' );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', createItemFor( 'o' ) ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office', 'Product', createItemFor( 'o' ) ] );
 			expect( pinnedItem( wrapper ) ).toBe( createItemFor( 'o' ) );
 		} );
 
@@ -386,7 +398,7 @@ describe( 'SchemaPicker', () => {
 
 			await wrapper.setProps( { selected: 'Archived' } );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 		} );
 
 		describe.each( [
@@ -423,6 +435,91 @@ describe( 'SchemaPicker', () => {
 		} );
 	} );
 
+	describe( 'for a Schema with a label in the reader\'s language', () => {
+		beforeEach( () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Product', description: 'A product', propertyCount: 2, subjectsAreDependent: false, labels: { en: 'Merchandise' } },
+				...SUMMARIES.slice( 1 ),
+			] );
+		} );
+
+		function supportingTexts( wrapper: VueWrapper ): string[] {
+			return wrapper.findAll( '.cdx-menu-item__text__supporting-text' ).map( ( text ) => text.text() );
+		}
+
+		it( 'lists it under its label, with its name beside it', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			expect( listedSchemas( wrapper ) ).toContain( 'Merchandise' );
+			expect( supportingTexts( wrapper ) ).toEqual( [ 'Product' ] );
+		} );
+
+		it( 'lists the schemas in the order of what the reader sees them called', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
+				{ name: 'Product', description: '', propertyCount: 2, subjectsAreDependent: false, labels: { en: 'Abacus' } },
+			] );
+			const wrapper = await mountLoadedPicker();
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Abacus', 'City' ] );
+		} );
+
+		it( 'finds it by its label', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'merch' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Merchandise' ] );
+		} );
+
+		it( 'finds it by its name', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'prod' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Merchandise' ] );
+		} );
+
+		it( 'makes no offer for the committed schema it shows by its label', async () => {
+			const wrapper = await mountLoadedPicker( { offersCreation: true, selected: 'Product' } );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Merchandise', 'Office' ] );
+		} );
+
+		it( 'makes no offer for typed text naming it by its label', async () => {
+			const wrapper = await mountLoadedPicker( { offersCreation: true } );
+
+			await type( wrapper, 'merchandise' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Merchandise' ] );
+		} );
+
+		it( 'reports its name and shows its label in the field once picked', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await clickSchema( wrapper, 'Merchandise' );
+
+			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Product' ] ] );
+			expect( fieldText( wrapper ) ).toBe( 'Merchandise' );
+		} );
+
+		it( 'shows its label in the field while it is the committed schema', async () => {
+			const wrapper = await mountLoadedPicker( { selected: 'Product' } );
+
+			expect( fieldText( wrapper ) ).toBe( 'Merchandise' );
+		} );
+
+		it( 'restores its label in the field on blur', async () => {
+			const wrapper = await mountLoadedPicker( { selected: 'Product' } );
+
+			await type( wrapper, 'xyz' );
+			await field( wrapper ).trigger( 'blur' );
+			await nextTick();
+
+			expect( fieldText( wrapper ) ).toBe( 'Merchandise' );
+		} );
+	} );
+
 	describe( 'reverting uncommitted typing', () => {
 		it( 'restores the committed schema in the field on blur', async () => {
 			const wrapper = await mountLoadedPicker( { selected: 'Product' } );
@@ -432,7 +529,7 @@ describe( 'SchemaPicker', () => {
 			await nextTick();
 
 			expect( fieldText( wrapper ) ).toBe( 'Product' );
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 			expect( wrapper.emitted( 'select' ) ).toBeFalsy();
 		} );
 
@@ -486,7 +583,7 @@ describe( 'SchemaPicker', () => {
 				await wrapper.setProps( { selected: 'Artwork' } );
 				await flushPromises();
 
-				expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', 'Artwork' ] );
+				expect( listedSchemas( wrapper ) ).toEqual( [ 'Artwork', 'City', 'Office', 'Product' ] );
 			} );
 
 			it( 'marks it as the chosen one', async () => {
@@ -553,7 +650,7 @@ describe( 'SchemaPicker', () => {
 
 			expect( document.activeElement ).toBe( field( wrapper ).element );
 			expect( field( wrapper ).attributes( 'aria-expanded' ) ).toBe( 'true' );
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 		} );
 	} );
 

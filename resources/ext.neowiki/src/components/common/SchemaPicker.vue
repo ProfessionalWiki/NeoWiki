@@ -32,7 +32,8 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
+import { CREATE_SCHEMA, matchesSchemaSearch, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
+import { schemaDisplayName, schemaNamerFor } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps<{
 	/**
@@ -65,7 +66,8 @@ defineSlots<{
 
 const schemaStore = useSchemaStore();
 const selectedSchema = ref<string | null>( props.selected ?? null );
-const inputText = ref<string | number>( props.selected ?? '' );
+// Set on the first load, before the field comes into being.
+const inputText = ref<string | number>( '' );
 const summaries = ref<SchemaSummary[]>( [] );
 const schemasLoaded = ref( false );
 // A failed request leaves `summaries` empty too, so only a list that loaded can tell the wiki has none.
@@ -76,9 +78,13 @@ const lookupRef = ref<InstanceType<typeof CdxLookup> | null>( null );
 const typedName = computed( (): string => String( inputText.value ).trim() );
 
 // Schema names are unique, so a name that is taken can only be picked. The committed Schema's name is
-// taken even while the list leaves it out.
+// taken even while the list leaves it out. A label the reader sees is taken too: a new Schema of that
+// name would read the same as the one listed.
 const takenNames = computed( (): Set<string> => {
-	const names = summaries.value.map( ( summary ) => summary.name );
+	const names = [
+		...summaries.value.map( ( summary ) => summary.name ),
+		...summaries.value.map( ( summary ) => schemaDisplayName( summary ) )
+	];
 
 	return new Set( ( props.selected ? [ ...names, props.selected ] : names ).map( normalizeSchemaName ) );
 } );
@@ -104,9 +110,11 @@ const leftOutDependentSchema = computed( (): string | null => {
 
 	const found = summaries.value.filter( ( summary ) => summary.subjectsAreDependent &&
 		( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) &&
-		summary.name.toLowerCase().includes( search ) );
+		matchesSchemaSearch( summary, search ) );
+	const named = found.find( ( summary ) => summary.name.toLowerCase() === search ||
+		schemaDisplayName( summary ).toLowerCase() === search ) ?? found[ 0 ];
 
-	return ( found.find( ( summary ) => summary.name.toLowerCase() === search ) ?? found[ 0 ] )?.name ?? null;
+	return named === undefined ? null : schemaDisplayName( named );
 } );
 
 const nothingToOffer = computed( (): boolean => wikiHasNoSchemas.value && !props.offersCreation );
@@ -122,6 +130,12 @@ async function loadSchemas(): Promise<void> {
 	} catch ( error ) {
 		console.error( 'Failed to load schemas for the picker:', error );
 	}
+
+	// The field comes into being only now, so it shows the committed Schema by the label the list has for it.
+	if ( !schemasLoaded.value ) {
+		inputText.value = committedText();
+	}
+
 	schemasLoaded.value = true;
 }
 
@@ -133,21 +147,31 @@ const schemasReady = loadSchemas();
 // than the list, so the list is fetched again. Text typed in the meantime is not overwritten.
 watch( () => props.selected, async ( value ) => {
 	selectedSchema.value = selectableSchema( value ?? null );
-	inputText.value = value ?? '';
+	inputText.value = committedText();
 	query.value = '';
 
 	if ( value && selectedSchema.value === null ) {
+		const shownBefore = inputText.value;
+
 		await loadSchemas();
 
-		if ( inputText.value === value ) {
+		// The first load may have shown the Schema by its label meanwhile, which is not typing either.
+		if ( inputText.value === shownBefore || inputText.value === committedText() ) {
 			selectedSchema.value = selectableSchema( value );
+			inputText.value = committedText();
 		}
 	}
 } );
 
+const schemaNamer = computed( () => schemaNamerFor( summaries.value ) );
+
+function committedText(): string {
+	return props.selected ? schemaNamer.value( props.selected ) : '';
+}
+
 // CdxLookup takes the field's text for a selection from the matching menu entry and
 // empties the field when there is none, so it is only handed a schema it lists. The
-// field keeps showing the committed name either way.
+// field keeps showing the committed Schema either way.
 function selectableSchema( schemaName: string | null ): string | null {
 	return offeredSummaries.value.some( ( summary ) => summary.name === schemaName ) ? schemaName : null;
 }
@@ -160,7 +184,7 @@ function filterSchemas( value: string ): void {
 // they type, so a schema name typed out in full is not picked by itself.
 //
 // Setting the field text is load-bearing: left to do it itself, CdxLookup announces the
-// name as typed input, which would re-apply the filter cleared on the next line.
+// text as typed input, which would re-apply the filter cleared on the next line.
 // Restoring the full menu means reopening the picker without leaving the field browses
 // every schema again rather than the last filter.
 function onSelect( schemaName: string | null ): void {
@@ -175,7 +199,7 @@ function onSelect( schemaName: string | null ): void {
 		return;
 	}
 
-	inputText.value = schemaName;
+	inputText.value = schemaNamer.value( schemaName );
 	query.value = '';
 
 	if ( schemaName !== props.selected ) {
@@ -185,7 +209,7 @@ function onSelect( schemaName: string | null ): void {
 
 function revertUncommittedTyping(): void {
 	selectedSchema.value = selectableSchema( props.selected ?? null );
-	inputText.value = props.selected ?? '';
+	inputText.value = committedText();
 	query.value = '';
 }
 

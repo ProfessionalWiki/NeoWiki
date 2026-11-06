@@ -272,6 +272,15 @@ describe( 'DependentSubjectLoader', () => {
 			expect( started.dependentSubjects.subjects[ 0 ].getLabel() ).toBeNull();
 		} );
 
+		it( 'starts the new Dependent Subject with the labels of its Schema', async () => {
+			const host = subjectOf( HOST_ID, 'Person', HOST_PAGE );
+			const schemas = [ requiringSchema, ...schemasBesidePerson.filter( ( each ) => each !== birthSchema ), birthSchema.withLabels( { de: 'Geburt' } ) ];
+
+			const started = await newLoader( [], schemas ).startFor( host, requiringSchema, new Map() );
+
+			expect( started.dependentSubjects.subjects[ 0 ].getSchemaLabels() ).toEqual( { de: 'Geburt' } );
+		} );
+
 		it.each( [
 			[ 'an optional property', { name: 'Birth', targetSchemas: [ 'Birth' ] } ],
 			[ 'one with several target Schemas', { name: 'Names', targetSchemas: [ 'Name', 'Pseudonym' ], required: true } ],

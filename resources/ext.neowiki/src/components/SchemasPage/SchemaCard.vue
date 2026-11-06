@@ -9,7 +9,7 @@
 					:id="headingId"
 					class="ext-neowiki-schema-card__name"
 				>
-					<a :href="schemaUrl">{{ summary.name }}</a>
+					<a :href="schemaUrl">{{ displayName }}</a>
 				</h2>
 				<span
 					v-if="canEdit || canDuplicate || canDelete"
@@ -34,6 +34,14 @@
 					/>
 				</span>
 			</div>
+
+			<!-- The name is what Subjects, wikitext, Lua, Layouts and queries refer to the Schema by. -->
+			<p
+				v-if="displayName !== summary.name"
+				class="ext-neowiki-schema-card__schema-name"
+			>
+				{{ summary.name }}
+			</p>
 
 			<p
 				v-if="summary.description !== ''"
@@ -109,6 +117,7 @@ import SchemaActionsMenu from './SchemaActionsMenu.vue';
 import { subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps<{
 	summary: SchemaSummary;
@@ -144,12 +153,13 @@ const subjectsNote = computed( () => {
 		case 'failed':
 			return mw.msg( 'neowiki-subjects-load-error' );
 		case 'loaded':
-			return mw.msg( 'neowiki-subjects-empty-schema', props.summary.name );
+			return mw.msg( 'neowiki-subjects-empty-schema', displayName.value );
 		default:
 			return null;
 	}
 } );
 
+const displayName = computed( () => schemaDisplayName( props.summary ) );
 const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ props.summary.name }` ) );
 const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ props.summary.name }` ) );
 
@@ -197,6 +207,13 @@ watch( cardInView, ( inView ) => {
 		font-size: @font-size-large;
 		font-weight: @font-weight-bold;
 		line-height: @line-height-small;
+		overflow-wrap: anywhere;
+	}
+
+	&__schema-name {
+		margin: 0;
+		color: @color-subtle;
+		font-size: @font-size-small;
 		overflow-wrap: anywhere;
 	}
 

@@ -62,6 +62,22 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withLabels', () => {
+
+		it( 'returns a new Schema with the labels, the rest unchanged', () => {
+			const originalSchema = newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Founded' } ) ] ),
+				labels: { en: 'Company' },
+			} );
+
+			const updatedSchema = originalSchema.withLabels( { de: 'Unternehmen' } );
+
+			expect( updatedSchema.getLabels() ).toEqual( { de: 'Unternehmen' } );
+			expect( updatedSchema.withLabels( { en: 'Company' } ) ).toEqual( originalSchema );
+		} );
+
+	} );
+
 	describe( 'withSubjectsAreDependent', () => {
 
 		it( 'returns a new Schema declaring its Subjects dependent, the rest unchanged', () => {
@@ -108,6 +124,12 @@ describe( 'Schema', () => {
 			} );
 		} );
 
+		it( 'keeps the labels of the Schema', () => {
+			const updatedSchema = newSchema( { labels: { de: 'Unternehmen' } } ).withAddedPropertyDefinition( newTextProperty() );
+
+			expect( updatedSchema.getLabels() ).toEqual( { de: 'Unternehmen' } );
+		} );
+
 	} );
 
 	describe( 'withRemovedPropertyDefinition', () => {
@@ -125,6 +147,26 @@ describe( 'Schema', () => {
 			expect( updatedSchema.getPropertyDefinitions().asRecord() ).toEqual( {
 				[ property2.name.toString() ]: property2,
 			} );
+		} );
+
+		it( 'keeps the labels of the Schema', () => {
+			const property = newTextProperty();
+			const originalSchema = newSchema( { properties: new PropertyDefinitionList( [ property ] ), labels: { de: 'Unternehmen' } } );
+
+			expect( originalSchema.withRemovedPropertyDefinition( property.name ).getLabels() ).toEqual( { de: 'Unternehmen' } );
+		} );
+
+	} );
+
+	describe( 'withReorderedPropertyDefinitions', () => {
+
+		it( 'keeps the labels of the Schema', () => {
+			const first = newTextProperty( { name: 'First' } );
+			const second = newTextProperty( { name: 'Second' } );
+			const originalSchema = newSchema( { properties: new PropertyDefinitionList( [ first, second ] ), labels: { de: 'Unternehmen' } } );
+
+			expect( originalSchema.withReorderedPropertyDefinitions( [ second.name, first.name ] ).getLabels() )
+				.toEqual( { de: 'Unternehmen' } );
 		} );
 
 	} );

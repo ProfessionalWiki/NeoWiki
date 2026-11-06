@@ -86,6 +86,8 @@
 import { computed, onMounted, onScopeDispose, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, CdxSearchInput, CdxSelect, CdxTable } from '@wikimedia/codex';
 import type { MenuItemData, TableSort } from '@wikimedia/codex';
+import { schemaNamerFor } from '@/presentation/schemaDisplayName.ts';
+import type { Schema } from '@/domain/Schema.ts';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from './SubjectSummaryCell.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -104,7 +106,7 @@ import {
 
 const props = withDefaults( defineProps<{
 	/** Lists only this Schema's Subjects, with no menu to pick another: a Schema's own page. */
-	fixedSchema?: string;
+	fixedSchema?: Schema;
 	/** The Schema the menu starts on; null starts on every Schema. */
 	initialSchema?: string | null;
 	canCreate?: boolean;
@@ -135,11 +137,12 @@ const failureText = ref<string | null>( null );
 // Undefined while the end of the listing is unknown, which keeps the pager at "of many" (ADR 27).
 const totalRows = ref<number | undefined>( undefined );
 const sort = ref<TableSort>( {} );
-const selectedSchema = ref<string | null>( props.fixedSchema ?? props.initialSchema );
+const selectedSchema = ref<string | null>( props.fixedSchema?.getName() ?? props.initialSchema );
 const searchText = ref( '' );
 const appliedSearch = ref( '' );
 const schemaSummaries = ref<SchemaSummary[]>( [] );
 const schemaNames = computed( (): string[] => schemaSummaries.value.map( ( summary ) => summary.name ) );
+const schemaNamer = computed( () => schemaNamerFor( props.fixedSchema === undefined ? schemaSummaries.value : [ props.fixedSchema ] ) );
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
 
@@ -158,7 +161,8 @@ const schemaChoice = computed( {
 
 const schemaMenuItems = computed( (): MenuItemData[] => [
 	{ value: ALL_SCHEMAS, label: mw.msg( 'neowiki-subjects-all-schemas' ) },
-	...schemaMenuNames( schemaNames.value, selectedSchema.value ).map( ( name ) => ( { value: name, label: name } ) )
+	...schemaMenuNames( schemaNames.value, selectedSchema.value, schemaNamer.value )
+		.map( ( name ) => ( { value: name, label: schemaNamer.value( name ) } ) )
 ] );
 
 const createsWithoutHost = computed( (): boolean => selectedSchema.value === null ||
@@ -166,9 +170,12 @@ const createsWithoutHost = computed( (): boolean => selectedSchema.value === nul
 
 const createLabel = computed( () => selectedSchema.value === null ?
 	mw.msg( 'neowiki-createsubject-button' ) :
-	mw.msg( 'neowiki-schema-create-subject', selectedSchema.value ) );
+	mw.msg( 'neowiki-schema-create-subject', schemaNamer.value( selectedSchema.value ) ) );
 
-const emptyText = computed( () => failureText.value ?? emptyStateMessage( appliedSearch.value, selectedSchema.value ) );
+const emptyText = computed( () => failureText.value ?? emptyStateMessage(
+	appliedSearch.value,
+	selectedSchema.value === null ? null : schemaNamer.value( selectedSchema.value )
+) );
 
 async function fetchPage( offset: number, limit: number ): Promise<void> {
 	// Rows no response led to, as Previous asks for after a page-size change: nothing resumes the listing there.

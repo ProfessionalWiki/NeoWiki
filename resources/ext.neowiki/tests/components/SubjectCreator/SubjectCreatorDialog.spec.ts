@@ -270,7 +270,7 @@ describe( 'SubjectCreatorDialog', () => {
 	// lazily, so re-stubbing before mounting is enough.
 	function stubMw( config: Record<string, unknown> = {} ): void {
 		setupMwMock( {
-			functions: [ 'msg', 'notify', 'config', 'storage', 'util' ],
+			functions: [ 'msg', 'notify', 'config', 'storage', 'util', 'language' ],
 			config: {
 				wgArticleId: PAGE_ID,
 				wgTitle: PAGE_TITLE,
@@ -520,6 +520,18 @@ describe( 'SubjectCreatorDialog', () => {
 		expect( ( editor.props( 'subject' ) as Subject ).getId().text ).toBe( MINTED_ID );
 	} );
 
+	it( 'hands the editor a Subject carrying the labels of the picked schema', async () => {
+		getSchemaMock.mockResolvedValue( newSchema( { title: SCHEMA_NAME, labels: { de: 'Testschema' } } ) );
+		const wrapper = mountComponent();
+		await flushPromises();
+
+		await wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+		await flushPromises();
+
+		expect( ( wrapper.findComponent( SubjectEditorDialog ).props( 'subject' ) as Subject ).getSchemaLabels() )
+			.toEqual( { de: 'Testschema' } );
+	} );
+
 	// Nobody has named it yet, so it carries what the server derives for a label-less Subject
 	// (ADR 31): its Schema name, flagged as one nobody chose.
 	it( 'hands the editor a Subject whose name nobody chose', async () => {
@@ -751,6 +763,18 @@ describe( 'SubjectCreatorDialog', () => {
 			expect( wrapper.findComponent( SchemaPicker ).exists() ).toBe( true );
 			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
 			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-create-subject-error-dependent-subjectsBirth', { type: 'error' } );
+		} );
+
+		it( 'names the Schema whose Subjects are dependent by its label in the reader\'s language', async () => {
+			getSchemaMock.mockImplementation( async ( name: string ) => name === 'Birth' ?
+				birthSchema.withLabels( { en: 'Birth event' } ) :
+				newSchema( { title: name } ) );
+			const wrapper = mountComponent( {}, { initialSchemaName: 'Birth' } );
+
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-create-subject-error-dependent-subjectsBirth event', { type: 'error' } );
 		} );
 
 		it( 'writes the Dependent Subjects along with the Subject it creates', async () => {

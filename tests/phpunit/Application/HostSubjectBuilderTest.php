@@ -51,9 +51,23 @@ class HostSubjectBuilderTest extends TestCase {
 				schema: 'Person',
 				displayName: 'Pablo Picasso',
 				displayNameIsGenerated: false,
-				hostSubject: null
+				hostSubject: null,
+				schemaLabels: []
 			),
 			$this->newBuilder()->build( $birth, $this->picassoWith( $birth ), self::PAGE_NAME )
+		);
+	}
+
+	public function testAHostSubjectCarriesTheLabelsOfItsSchema(): void {
+		$birth = $this->subject( self::BIRTH, 'Birth' );
+		$builder = TestNaming::newHostSubjectBuilder( new InMemorySchemaLookup(
+			TestSchema::build( name: 'Person', labels: [ 'de' => 'Mensch' ] ),
+			TestSchema::build( name: 'Birth', subjectsAreDependent: true ),
+		) );
+
+		$this->assertSame(
+			[ 'de' => 'Mensch' ],
+			$builder->build( $birth, $this->picassoWith( $birth ), self::PAGE_NAME )?->schemaLabels
 		);
 	}
 
@@ -75,8 +89,10 @@ class HostSubjectBuilderTest extends TestCase {
 					schema: 'Person',
 					displayName: 'Pablo Picasso',
 					displayNameIsGenerated: false,
-					hostSubject: null
-				)
+					hostSubject: null,
+					schemaLabels: []
+				),
+				schemaLabels: []
 			),
 			$this->newBuilder()->build( $record, $page, self::PAGE_NAME )
 		);
@@ -100,7 +116,8 @@ class HostSubjectBuilderTest extends TestCase {
 				schema: 'Person',
 				displayName: self::PAGE_NAME,
 				displayNameIsGenerated: false,
-				hostSubject: null
+				hostSubject: null,
+				schemaLabels: []
 			),
 			$this->newBuilder()->build( $birth, $page, self::PAGE_NAME )
 		);
@@ -129,7 +146,8 @@ class HostSubjectBuilderTest extends TestCase {
 				schema: 'Birth',
 				displayName: 'Birth',
 				displayNameIsGenerated: true,
-				hostSubject: null
+				hostSubject: null,
+				schemaLabels: []
 			),
 			$this->newBuilder()->build( $record, $page, self::PAGE_NAME )
 		);

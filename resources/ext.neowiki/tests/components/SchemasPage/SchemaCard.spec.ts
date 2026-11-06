@@ -104,6 +104,18 @@ describe( 'SchemaCard', () => {
 		expect( link.attributes( 'href' ) ).toBe( '/wiki/Schema:Artist' );
 	} );
 
+	it( 'links the label of the Schema in the reader\'s language to its page, with the name beneath it', () => {
+		const wrapper = mountCard( { summary: { ...ARTIST, labels: { en: 'Painter' } } } );
+
+		expect( wrapper.get( 'h2 a' ).text() ).toBe( 'Painter' );
+		expect( wrapper.get( 'h2 a' ).attributes( 'href' ) ).toBe( '/wiki/Schema:Artist' );
+		expect( wrapper.get( '.ext-neowiki-schema-card__schema-name' ).text() ).toBe( 'Artist' );
+	} );
+
+	it( 'shows the name of a Schema shown under its name only once', () => {
+		expect( mountCard().find( '.ext-neowiki-schema-card__schema-name' ).exists() ).toBe( false );
+	} );
+
 	it( 'shows the description', () => {
 		expect( mountCard().text() ).toContain( 'A person who creates works of art.' );
 	} );
@@ -164,6 +176,15 @@ describe( 'SchemaCard', () => {
 		await scrollIntoView( wrapper );
 
 		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaArtist' );
+	} );
+
+	it( 'names the Schema by its label when it has no Subjects yet', async () => {
+		getSubjectSummaries.mockResolvedValue( { subjects: [], nextCursor: null } );
+		const wrapper = mountCard( { summary: { ...ARTIST, labels: { en: 'Painter' } } } );
+
+		await scrollIntoView( wrapper );
+
+		expect( wrapper.text() ).toContain( 'neowiki-subjects-empty-schemaPainter' );
 	} );
 
 	it( 'says nothing about Subjects while they load', async () => {

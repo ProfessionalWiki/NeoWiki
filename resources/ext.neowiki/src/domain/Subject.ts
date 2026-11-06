@@ -17,6 +17,10 @@ export class Subject {
 		private readonly statements: StatementList,
 		private readonly pageIdentifiers: PageIdentifiers,
 		private readonly hostSubject: HostSubject | null,
+		/**
+		 * Those of the Schema, keyed by lowercase language tag. Absent when it has none the reader may read.
+		 */
+		private readonly schemaLabels: Readonly<Record<string, string>> | undefined,
 	) {
 	}
 
@@ -52,6 +56,10 @@ export class Subject {
 
 	public getSchemaName(): SchemaName {
 		return this.schemaName;
+	}
+
+	public getSchemaLabels(): Readonly<Record<string, string>> | undefined {
+		return this.schemaLabels;
 	}
 
 	/**
@@ -97,6 +105,7 @@ export class Subject {
 			this.statements,
 			this.pageIdentifiers,
 			this.hostSubject,
+			this.schemaLabels,
 		);
 	}
 
@@ -110,6 +119,7 @@ export class Subject {
 			statements,
 			this.pageIdentifiers,
 			this.hostSubject,
+			this.schemaLabels,
 		);
 	}
 

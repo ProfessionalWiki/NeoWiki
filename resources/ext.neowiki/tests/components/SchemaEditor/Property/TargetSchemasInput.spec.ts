@@ -142,7 +142,7 @@ describe( 'TargetSchemasInput', () => {
 		await pickSchema( wrapper, 'City' );
 
 		expect( chipTexts( wrapper ) ).toEqual( [ 'Office', 'City' ] );
-		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Office', 'City' ] );
+		expect( checkedSchemas( wrapper ) ).toEqual( [ 'City', 'Office' ] );
 	} );
 
 	it( 'drops the target schema whose chip is removed', async () => {
@@ -190,7 +190,7 @@ describe( 'TargetSchemasInput', () => {
 		await pickSchema( wrapper, 'City' );
 
 		expect( field( wrapper ).element.value ).toBe( '' );
-		expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City' ] );
+		expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product' ] );
 	} );
 
 	it( 'keeps the typed text when a target schema is removed', async () => {
@@ -222,7 +222,7 @@ describe( 'TargetSchemasInput', () => {
 		await wrapper.setProps( { modelValue: [ 'Office', 'Artwork' ] } );
 		await flushPromises();
 
-		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Office', 'Artwork' ] );
+		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Artwork', 'Office' ] );
 	} );
 
 	describe( 'offering to create a schema', () => {
@@ -271,7 +271,7 @@ describe( 'TargetSchemasInput', () => {
 
 			await type( wrapper, 'o' );
 
-			expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', offerFor( 'o' ) ] );
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Office', 'Product', offerFor( 'o' ) ] );
 			expect( pinnedItem( wrapper ) ).toBe( offerFor( 'o' ) );
 		} );
 
@@ -325,7 +325,7 @@ describe( 'TargetSchemasInput', () => {
 				const wrapper = await chooseOffer();
 
 				expect( field( wrapper ).element.value ).toBe( '' );
-				expect( listedSchemas( wrapper ) ).toEqual( [ 'Product', 'Office', 'City', OFFER ] );
+				expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Office', 'Product', OFFER ] );
 			} );
 		} );
 	} );
@@ -387,6 +387,31 @@ describe( 'TargetSchemasInput', () => {
 			await flushPromises();
 
 			expect( noResultsLine( wrapper ) ).toBe( 'neowiki-property-editor-target-schema-standalone-only' );
+		} );
+
+		describe( 'with a label in the reader\'s language', () => {
+			beforeEach( () => {
+				useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+					{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true },
+					{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
+					{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: false, labels: { en: 'Agency' } },
+				] );
+			} );
+
+			it( 'lists the Schemas in the order of what the reader sees them called', async () => {
+				const wrapper = await mountInput( [] );
+
+				expect( listedSchemas( wrapper ) ).toEqual( [ 'Agency', 'Birth', 'City' ] );
+			} );
+
+			it( 'says why a Schema the typed text finds by its label cannot be added', async () => {
+				const wrapper = await mountInput( [ 'Birth' ] );
+
+				await field( wrapper ).setValue( 'Agen' );
+				await flushPromises();
+
+				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-property-editor-target-schema-dependent-only' );
+			} );
 		} );
 
 		it( 'says nothing of typed text that finds no Schema at all', async () => {

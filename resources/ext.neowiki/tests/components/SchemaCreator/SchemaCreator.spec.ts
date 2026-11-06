@@ -306,6 +306,15 @@ describe( 'SchemaCreator', () => {
 		} );
 	} );
 
+	it( 'leaves out the labels of the Schema it starts from, which name that Schema', async () => {
+		editorSchema = newSchema( { title: '', labels: { en: 'Firm' } } );
+		const wrapper = mountComponent();
+
+		await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getLabels() ).toBeUndefined();
+	} );
+
 	describe( 'saveBlocker', () => {
 		it( 'reports nothing while the schema editor reports nothing', () => {
 			const wrapper = mountComponent();

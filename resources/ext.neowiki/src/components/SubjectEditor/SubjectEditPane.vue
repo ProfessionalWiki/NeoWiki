@@ -54,6 +54,7 @@
 					from it. -->
 				<SchemaNameDisplay
 					:schema-name="schemaBadge"
+					:display-name="schemaDisplayName( props.schema )"
 					link="new-tab"
 					@click="openSchemaEditor"
 				/>
@@ -116,6 +117,7 @@ export interface SubjectEditPaneExposes {
 </script>
 
 <script setup lang="ts">
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { ref, shallowRef, computed, watch, provide } from 'vue';
 import { CdxField, CdxTextInput } from '@wikimedia/codex';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';

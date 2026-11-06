@@ -22,7 +22,8 @@ class SubjectPresentationSerializerTest extends TestCase {
 		?int $pageId,
 		?string $pageTitle = null,
 		?int $pageNamespaceId = null,
-		array $statements = [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ]
+		array $statements = [ 'Animal' => [ 'propertyType' => 'text', 'value' => [ 'bunny' ] ] ],
+		array $schemaLabels = []
 	): GetSubjectResponseItem {
 		return new GetSubjectResponseItem(
 			id: 's1demo1aaaaaaa1',
@@ -35,6 +36,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			pageTitle: $pageTitle,
 			pageNamespaceId: $pageNamespaceId,
 			hostSubject: null,
+			schemaLabels: $schemaLabels,
 		);
 	}
 
@@ -95,6 +97,7 @@ class SubjectPresentationSerializerTest extends TestCase {
 			pageTitle: null,
 			pageNamespaceId: null,
 			hostSubject: null,
+			schemaLabels: [],
 		);
 
 		$this->assertEquals(
@@ -131,9 +134,12 @@ class SubjectPresentationSerializerTest extends TestCase {
 					schema: [ 'source' => 'wikibase', 'name' => 'Person' ],
 					displayName: 'Pablo Picasso',
 					displayNameIsGenerated: false,
-					hostSubject: null
-				)
+					hostSubject: null,
+					schemaLabels: []
+				),
+				schemaLabels: []
 			),
+			schemaLabels: [],
 		);
 
 		$this->assertSame(
@@ -150,6 +156,29 @@ class SubjectPresentationSerializerTest extends TestCase {
 				],
 			],
 			( new SubjectPresentationSerializer() )->serialize( $item )['hostSubject']
+		);
+	}
+
+	public function testSerializesTheLabelsOfTheSchemaBesideIt(): void {
+		$this->assertSame(
+			[ 'de' => 'Organisation' ],
+			( new SubjectPresentationSerializer() )->serialize( $this->newItem( null, schemaLabels: [ 'de' => 'Organisation' ] ) )['schemaLabels']
+		);
+	}
+
+	public function testSerializesTheLabelsOfTheSchemaOfAHostSubject(): void {
+		$hostSubject = new HostSubject(
+			id: 'sPerson11111111',
+			schema: 'Person',
+			displayName: 'Pablo Picasso',
+			displayNameIsGenerated: false,
+			hostSubject: null,
+			schemaLabels: [ 'de' => 'Mensch' ],
+		);
+
+		$this->assertSame(
+			[ 'de' => 'Mensch' ],
+			SubjectPresentationSerializer::serializeHostSubject( $hostSubject )['schemaLabels']
 		);
 	}
 

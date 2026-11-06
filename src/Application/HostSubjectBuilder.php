@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use WeakMap;
@@ -25,6 +26,7 @@ class HostSubjectBuilder {
 
 	public function __construct(
 		private readonly DependentSubjectRules $dependentSubjectRules,
+		private readonly SchemaReferenceResolver $schemaResolver,
 	) {
 		$this->hostSubjectsByPage = new WeakMap();
 	}
@@ -78,6 +80,7 @@ class HostSubjectBuilder {
 			hostSubject: $chosenName === null
 				? $this->hostSubjectAlong( $host, $hostSubjects, $pageSubjects, $pageName, $chain + [ $host->id->text => true ] )
 				: null,
+			schemaLabels: $this->schemaResolver->getSchema( $host->getSchemaReference() )?->getLabels() ?? [],
 		);
 	}
 

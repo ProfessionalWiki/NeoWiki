@@ -600,7 +600,8 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 				schemaName,
 				new StatementList( [] ),
 				page,
-				null
+				null,
+				schema.getLabels()
 			),
 			schema,
 			dependentSubjectEditing.schemas

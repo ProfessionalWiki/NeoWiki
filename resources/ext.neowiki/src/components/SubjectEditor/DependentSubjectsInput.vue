@@ -66,7 +66,7 @@
 					@click="add( addableSchemaNames[ 0 ] )"
 				>
 					<CdxIcon :icon="cdxIconAdd" />
-					{{ $i18n( 'neowiki-dependent-subject-add', addableSchemaNames[ 0 ] ).text() }}
+					{{ $i18n( 'neowiki-dependent-subject-add', shownSchemaName( addableSchemaNames[ 0 ] ) ).text() }}
 				</CdxButton>
 
 				<CdxMenuButton
@@ -105,6 +105,7 @@ export type DependentSubjectsInputEmits = ValueInputEmits & {
 </script>
 
 <script setup lang="ts">
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { computed, inject, nextTick, ref, shallowReactive, shallowRef, toRef, watch } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxMenuButton, useGeneratedId } from '@wikimedia/codex';
 import type { MenuButtonItemData } from '@wikimedia/codex';
@@ -184,7 +185,7 @@ const addable = computed( (): boolean =>
 	addableSchemaNames.value.length > 0 && ( props.property.multiple === true || targetIds.value.length === 0 ) );
 
 const addMenuItems = computed( (): MenuButtonItemData[] =>
-	addableSchemaNames.value.map( ( name ) => ( { value: name, label: name } ) ) );
+	addableSchemaNames.value.map( ( name ) => ( { value: name, label: shownSchemaName( name ) } ) ) );
 
 const menuSelection = ref<string | number | null>( null );
 
@@ -225,14 +226,21 @@ function schemaNameOf( id: string ): string {
 	return editing?.subject( id )?.getSchemaName() ?? props.label;
 }
 
+function shownSchemaName( schemaName: string ): string {
+	const schema = editing?.schema( schemaName );
+
+	return schema === undefined ? schemaName : schemaDisplayName( schema );
+}
+
 // Numbered among those of its Schema where the field shows several, so that each remove control names its own group.
 function groupName( id: string ): string {
 	const schemaName = schemaNameOf( id );
 	const sameSchemaIds = shownIds.value.filter( ( shownId ) => schemaNameOf( shownId ) === schemaName );
+	const shownName = shownSchemaName( schemaName );
 
 	return sameSchemaIds.length > 1 ?
-		mw.message( 'neowiki-dependent-subject-numbered', schemaName, String( sameSchemaIds.indexOf( id ) + 1 ) ).text() :
-		schemaName;
+		mw.message( 'neowiki-dependent-subject-numbered', shownName, String( sameSchemaIds.indexOf( id ) + 1 ) ).text() :
+		shownName;
 }
 
 function removedText( id: string ): string {

@@ -146,7 +146,7 @@ describe( 'SubjectEditPane', () => {
 		// (via flush()), which runs synchronously in tests.
 		wikiConfig = { wgNeoWikiValidationDebounceMs: 0 };
 		setupMwMock( {
-			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
+			functions: [ 'message', 'msg', 'notify', 'config', 'util', 'language' ],
 			messages: {
 				// The parameter sits mid-string, so an assertion can tell the page name apart from
 				// the sentence around it.
@@ -389,6 +389,12 @@ describe( 'SubjectEditPane', () => {
 			const wrapper = mountPane();
 
 			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
+		} );
+
+		it( 'badges the schema with its label in the reader\'s language', () => {
+			const wrapper = mountPane( { schema: newSchema( { labels: { en: 'Test type' } } ) } );
+
+			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Test type' );
 		} );
 
 		// The name beside it says the same word, but only the badge is a link to the Schema and the

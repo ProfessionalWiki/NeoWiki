@@ -17,7 +17,7 @@ function mountCell( column: SubjectColumnId, overrides: Partial<SubjectSummary> 
 describe( 'SubjectSummaryCell', () => {
 
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'config', 'msg', 'message', 'util' ], config: { wgNeoWikiSubjectFirst: false } } );
+		setupMwMock( { functions: [ 'config', 'msg', 'message', 'util', 'language' ], config: { wgNeoWikiSubjectFirst: false } } );
 		vi.useFakeTimers();
 		vi.setSystemTime( new Date( '2026-10-01T17:02:00Z' ) );
 	} );
@@ -35,6 +35,12 @@ describe( 'SubjectSummaryCell', () => {
 
 	it( 'names the Schema', () => {
 		expect( mountCell( 'schema' ).find( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Computer' );
+	} );
+
+	it( 'names the Schema by its label in the reader\'s language', () => {
+		const cell = mountCell( 'schema', { schemaLabels: { en: 'Home computer' } } );
+
+		expect( cell.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Home computer' );
 	} );
 
 	it( 'links the page the Subject is on', () => {
