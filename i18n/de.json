@@ -173,7 +173,7 @@
 	"neowiki-schema-editor-delete-property": "Eigenschaftsdefinition löschen",
 	"neowiki-schema-editor-subject-label": "Bezeichnung",
 	"neowiki-schema-editor-subject-label-help": "Jedes Subjekt hat eine optionale Bezeichnung für seinen Namen oder Titel. Du brauchst also keine Eigenschaft „Name“ oder „Titel“.",
-	"neowiki-schema-editor-optional": "Optional",
+	"neowiki-schema-editor-optional-property-type": "$1 · Optional",
 	"neowiki-schema-editor-description": "Beschreibung",
 	"neowiki-schema-editor-resize-property-list": "Größe der Eigenschaftsliste ändern",
 	"neowiki-schema-editor-description-placeholder": "Beschreibung für das Schema eingeben",

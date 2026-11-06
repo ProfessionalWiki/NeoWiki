@@ -150,7 +150,7 @@ function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
 
 function describeType( type: string, required: boolean ): string {
 	const typeLabel = mw.msg( componentRegistry.getLabel( type ) );
-	return required ? typeLabel : `${ typeLabel }・${ mw.msg( 'neowiki-schema-editor-optional' ) }`;
+	return required ? typeLabel : mw.msg( 'neowiki-schema-editor-optional-property-type', typeLabel );
 }
 
 // Indexes below are into the properties, with the Label row before them as -1. Without a Label row, -1
