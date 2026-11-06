@@ -128,12 +128,14 @@
 				/>
 			</CdxField>
 			<CdxButton
+				ref="saveButton"
 				action="progressive"
 				weight="primary"
 				:disabled="!changed || saving || changedMeanwhile"
+				v-bind="saveKeyAttributes"
 				@click="save"
 			>
-				{{ $i18n( 'neowiki-config-editor-save' ).text() }}
+				{{ saveLabel }}
 			</CdxButton>
 			<CdxMessage
 				v-if="saveFailure !== null"
@@ -164,6 +166,7 @@ import {
 	sameJson
 } from '@/components/ConfigEditor/configEditing.ts';
 import type { PageRevisionSaver } from '@/persistence/PageSaver.ts';
+import { useSaveKey } from '@/composables/useSaveKey.ts';
 
 const props = defineProps<ConfigEditorJsConfig & {
 	canEdit: boolean;
@@ -175,6 +178,7 @@ const wikiTypeLabel = mw.message( 'neowiki-config-setting-subject-first' ).text(
 const dataLanguagesLabel = mw.message( 'neowiki-config-setting-data-languages' ).text();
 const enforcementLabel = mw.message( 'neowiki-config-setting-enforce-validation' ).text();
 const infoboxLabel = mw.message( 'neowiki-config-setting-auto-render-main-subject' ).text();
+const saveLabel = mw.message( 'neowiki-config-editor-save' ).text();
 
 const values = ref<PageValues>( { ...props.pageValues } );
 const subjectFirst = valueInEffect( 'subjectFirst' );
@@ -195,6 +199,9 @@ const wikiTypeField = ref<InstanceType<typeof CdxField> | null>( null );
 const languageList = ref<InstanceType<typeof LanguageListInput> | null>( null );
 const enforcementCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 const infoboxCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
+const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
+
+const saveKeyAttributes = useSaveKey( saveButton, saveLabel, true );
 
 const changed = computed( (): boolean => source.value !== savedSource.value );
 
