@@ -2,9 +2,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="810" height="340" viewBox="0 0 810 340"
 	font-family="sans-serif" font-size="16">
 <defs>
-<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-<path d="M0,0L10,5L0,10z" fill="#202122"/>
-</marker>
 <marker id="arrow-relation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
 <path d="M0,0L10,5L0,10z" fill="#D96B00"/>
 </marker>
@@ -34,8 +31,8 @@
 <text x="100" y="178" text-anchor="end" fill="#2E7D32">reference</text>
 <path stroke="#2E7D32" d="M104,174H126"/>
 
-<!-- becomes -->
-<path stroke="#202122" stroke-width="1.5" d="M364,186H410" marker-end="url(#arrow)"/>
+<!-- divider -->
+<path stroke="#A2A9B1" stroke-width="1.5" d="M387,24V316"/>
 
 <!-- NeoWiki -->
 <text x="567" y="40" text-anchor="middle" font-size="15" font-weight="bold" fill="#202122">NeoWiki</text>
