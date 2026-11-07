@@ -199,3 +199,47 @@ jobs:
           delete-only-untagged-versions: true
           ignore-versions: ${{ steps.children.outputs.regex }}
           token: ${{ secrets.PAT_write_packages }}
+
+  # Fails when a demo wiki of the previous release, upgraded to the image just published as
+  # docs/operations/upgrading.md says, loses a page, a Subject or a graph store's Subject.
+  upgrade_from_previous_release:
+    needs: publish_mediawiki
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # The workflow-level tag would start the previous release's demo on this run's image.
+    env:
+      NEOWIKI_IMAGE_TAG: ''
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Release tags sit on build commits beside master, so the previous release is the highest version other than the
+      # run's own tag, not an ancestor.
+      - name: Find the previous release
+        id: previous
+        run: |
+          echo "tag=$(git tag --list --sort=-version:refname | grep -xE '[0-9]+\.[0-9]+\.[0-9]+' |
+            grep -vxF "$GITHUB_REF_NAME" | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Start a demo wiki of the previous release
+        env:
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          git checkout "$PREVIOUS"
+          make demo services=qlever,neo
+
+      # The commit under test brings the script, while the stack keeps running the previous release until make upgrade.
+      - name: Snapshot the wiki
+        run: |
+          git checkout "$GITHUB_SHA"
+          Docker/tests/wiki-snapshot.sh > "$RUNNER_TEMP/before.txt"
+
+      - run: make upgrade
+
+      - name: Compare the upgraded wiki with its snapshot
+        run: |
+          Docker/tests/wiki-snapshot.sh > "$RUNNER_TEMP/after.txt"
+          diff -u "$RUNNER_TEMP/before.txt" "$RUNNER_TEMP/after.txt"

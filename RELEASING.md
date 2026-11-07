@@ -43,9 +43,10 @@ To fix something, merge the fix, wait for its run as in step 2, and tag `0.1.0-r
 
 ## Release
 
-Sign the release on the last pre-release, here `0.1.0-rc.2`. The script builds it on that pre-release's master commit
-and refuses a result that differs from the pre-release in more than `Docker/image-tag`, the only file `git diff` should
-list:
+Sign the release on the last pre-release, here `0.1.0-rc.2`, once its [Build Docker image][build-docker] run, which
+upgrades a demo wiki of the previous release to it, has succeeded. The script builds the release on that pre-release's
+master commit and refuses a result that differs from the pre-release in more than `Docker/image-tag`, the only file
+`git diff` should list:
 
 ```bash
 scripts/tag-release.sh 0.1.0 0.1.0-rc.2
