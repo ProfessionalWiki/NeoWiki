@@ -44,14 +44,22 @@ const getSchemaMock = vi.fn();
 
 let pinia: ReturnType<typeof createPinia>;
 
-function mountComponent( schema: Schema ): VueWrapper {
-	setupMwMock( { functions: [ 'msg', 'config', 'language' ], config: { wgUserLanguage: 'de' } } );
+function mountComponent( schema: Schema, config: Record<string, unknown> = {} ): VueWrapper {
+	setupMwMock( {
+		functions: [ 'msg', 'message', 'config', 'language', 'util' ],
+		config: { wgUserLanguage: 'de', ...config },
+	} );
 
 	return mount( SchemaDisplay, {
 		props: { schema },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
+			directives: {
+				tooltip: { mounted: ( element: HTMLElement, binding: { value: unknown } ) => {
+					element.dataset.tooltip = String( binding.value );
+				} },
+			},
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
@@ -66,6 +74,19 @@ function mountComponent( schema: Schema ): VueWrapper {
 			},
 		},
 	} );
+}
+
+function mountWithProperty( name: string, json: Record<string, unknown>, config: Record<string, unknown> = {} ): VueWrapper {
+	return mountComponent(
+		newSchema( { properties: new PropertyDefinitionList( [ createPropertyDefinitionFromJson( name, json ) ] ) } ),
+		config,
+	);
+}
+
+function cellOf( wrapper: VueWrapper, header: string ): DOMWrapper<Element> {
+	const column = wrapper.findAll( 'thead th' ).map( ( headerCell ) => headerCell.text() ).indexOf( header );
+
+	return wrapper.find( 'tbody tr' ).findAll( 'th, td' )[ column ];
 }
 
 describe( 'SchemaDisplay', () => {
@@ -145,91 +166,88 @@ describe( 'SchemaDisplay', () => {
 		expect( wrapper.findComponent( SubjectCreatorDialog ).exists() ).toBe( false );
 	} );
 
-	it( 'renders property names, types, and required status', () => {
+	it( 'renders property names and types', () => {
 		const schema = newSchema( {
 			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Website', {
-					type: TextType.typeName,
-					required: true,
-				} ),
-				createPropertyDefinitionFromJson( 'Age', {
-					type: NumberType.typeName,
-					required: false,
-				} ),
+				createPropertyDefinitionFromJson( 'Website', { type: TextType.typeName } ),
+				createPropertyDefinitionFromJson( 'Age', { type: NumberType.typeName } ),
 			] ),
 		} );
 
-		const wrapper = mountComponent( schema );
-		const rows = wrapper.findAll( 'tbody tr' );
+		const rows = mountComponent( schema ).findAll( 'tbody tr' );
 
 		expect( rows ).toHaveLength( 2 );
 		expect( rows[ 0 ].text() ).toContain( 'Website' );
 		expect( rows[ 0 ].text() ).toContain( 'neowiki-property-type-text' );
-		expect( rows[ 0 ].text() ).toContain( 'neowiki-schema-display-required-yes' );
 		expect( rows[ 1 ].text() ).toContain( 'Age' );
 		expect( rows[ 1 ].text() ).toContain( 'neowiki-property-type-number' );
-		expect( rows[ 1 ].text() ).toContain( 'neowiki-schema-display-required-no' );
 	} );
 
 	describe( 'a property with a label in the reader\'s language', () => {
-		function birthDateRow(): DOMWrapper<Element> {
-			const wrapper = mountComponent( newSchema( {
-				properties: new PropertyDefinitionList( [
-					createPropertyDefinitionFromJson( 'Birth date', { type: TextType.typeName, labels: { de: 'Geburtsdatum' } } ),
-				] ),
-			} ) );
-
-			return wrapper.find( 'tbody tr' );
+		function birthDateNameCell(): DOMWrapper<Element> {
+			return cellOf(
+				mountWithProperty( 'Birth date', { type: TextType.typeName, labels: { de: 'Geburtsdatum' } } ),
+				'neowiki-schema-display-property-name',
+			);
 		}
 
-		it( 'is shown under that label', () => {
-			expect( birthDateRow().find( 'th' ).text() ).toContain( 'Geburtsdatum' );
+		it( 'is shown by its name', () => {
+			expect( birthDateNameCell().text() ).toMatch( /^Birth date/ );
 		} );
 
-		it( 'has its name beside the label', () => {
-			expect( birthDateRow().find( '.ext-neowiki-schema-display__property-name' ).text() ).toBe( 'Birth date' );
+		it( 'has its label beneath the name', () => {
+			expect( birthDateNameCell().find( '.ext-neowiki-schema-display__property-label' ).text() ).toBe( 'Geburtsdatum' );
 		} );
 	} );
 
 	it( 'shows a property without a label in the reader\'s language by its name alone', () => {
-		const wrapper = mountComponent( newSchema( {
-			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Birth date', { type: TextType.typeName, labels: { fr: 'Date de naissance' } } ),
-			] ),
-		} ) );
+		const wrapper = mountWithProperty( 'Birth date', { type: TextType.typeName, labels: { fr: 'Date de naissance' } } );
 
-		expect( wrapper.find( 'tbody tr th' ).text() ).toBe( 'Birth date' );
+		expect( cellOf( wrapper, 'neowiki-schema-display-property-name' ).text() ).toBe( 'Birth date' );
 	} );
 
-	it( 'renders default values for properties that have them', () => {
-		const schema = newSchema( {
-			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'greeting', {
-					type: TextType.typeName,
-					default: [ 'Hello' ],
-				} ),
-			] ),
+	describe( 'the Type column', () => {
+		function typeCellOf( wrapper: VueWrapper ): DOMWrapper<Element> {
+			return cellOf( wrapper, 'neowiki-schema-display-property-type' );
+		}
+
+		it( 'names what a property takes beyond its type in a tooltip on the type', () => {
+			const wrapper = mountWithProperty( 'Products', { type: 'relation', targetSchemas: [ 'Product' ] } );
+
+			expect( typeCellOf( wrapper ).find( '[data-tooltip]' ).attributes( 'data-tooltip' ) ).toContain( 'Product' );
 		} );
 
-		const wrapper = mountComponent( schema );
+		it( 'gives a type with nothing to add no tooltip', () => {
+			const wrapper = mountWithProperty( 'Website', { type: TextType.typeName } );
 
-		expect( wrapper.find( 'tbody tr' ).text() ).toContain( 'Hello' );
+			expect( typeCellOf( wrapper ).find( '[data-tooltip]' ).exists() ).toBe( false );
+		} );
+
+		it( 'marks a required property', () => {
+			const wrapper = mountWithProperty( 'Website', { type: TextType.typeName, required: true } );
+
+			expect( typeCellOf( wrapper ).text() ).toContain( 'neowiki-schema-display-required' );
+		} );
+
+		it( 'says in a tooltip what happens without a required value', () => {
+			const wrapper = mountWithProperty( 'Website', { type: TextType.typeName, required: true } );
+
+			expect( typeCellOf( wrapper ).find( '[data-tooltip]' ).attributes( 'data-tooltip' ) )
+				.toBe( 'neowiki-schema-display-required-warning' );
+		} );
+
+		it( 'leaves an optional property unmarked', () => {
+			const wrapper = mountWithProperty( 'Website', { type: TextType.typeName } );
+
+			expect( typeCellOf( wrapper ).text() ).not.toContain( 'neowiki-schema-display-required' );
+		} );
 	} );
 
-	it( 'shows empty value indicators for missing default and description', () => {
-		const schema = newSchema( {
-			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'Website', {
-					type: TextType.typeName,
-				} ),
-			] ),
-		} );
+	it( 'shows an empty value indicator for a missing description', () => {
+		const wrapper = mountWithProperty( 'Website', { type: TextType.typeName } );
 
-		const wrapper = mountComponent( schema );
-		const emptyValues = wrapper.findAll( '.ext-neowiki-schema-display__empty-value' );
-
-		expect( emptyValues ).toHaveLength( 2 );
-		expect( emptyValues[ 0 ].text() ).toBe( '-' );
+		expect( cellOf( wrapper, 'neowiki-schema-display-property-description' ).find( '.ext-neowiki-schema-display__empty-value' ).text() )
+			.toBe( '-' );
 	} );
 
 	it( 'does not show empty value indicator when description is present', () => {
@@ -245,8 +263,10 @@ describe( 'SchemaDisplay', () => {
 
 		const wrapper = mountComponent( schema );
 
-		expect( wrapper.find( '.ext-neowiki-schema-display__empty-value' ).exists() ).toBe( false );
-		expect( wrapper.text() ).toContain( 'The main website URL' );
+		const descriptionCell = cellOf( wrapper, 'neowiki-schema-display-property-description' );
+
+		expect( descriptionCell.find( '.ext-neowiki-schema-display__empty-value' ).exists() ).toBe( false );
+		expect( descriptionCell.text() ).toBe( 'The main website URL' );
 	} );
 
 	it( 'shows empty message when schema has no properties', () => {
