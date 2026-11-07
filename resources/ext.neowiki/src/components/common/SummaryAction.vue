@@ -49,8 +49,7 @@
 				:action="props.saveButtonAction"
 				weight="primary"
 				:disabled="props.saveDisabled"
-				:accesskey="accessKey"
-				:title="accessKey === undefined ? undefined : props.saveButtonLabel"
+				v-bind="saveKeyAttributes"
 				@click="onSaveClick"
 			>
 				<CdxIcon :icon="props.saveButtonIcon" />
@@ -61,11 +60,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxTextArea, CdxAccordion } from '@wikimedia/codex';
 import { cdxIconCheck } from '@wikimedia/codex-icons';
 import type { Icon } from '@wikimedia/codex-icons';
 import { useDialogStack } from '@/composables/useDialogStack.ts';
+import { useSaveKey } from '@/composables/useSaveKey.ts';
 import { isAccordionOpen } from '@/codex/accordionOpen.ts';
 
 const props = withDefaults(
@@ -103,23 +103,11 @@ const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
 // Mounted exactly while its dialog is open, so it stands for that dialog in the stack.
 const inFront = useDialogStack( true );
 
-// As in core, a message of "-" or nothing switches the key off.
-const wikiSaveKey = mw.msg( 'accesskey-save' );
-const saveKey = wikiSaveKey === '-' || wikiSaveKey === '' ? undefined : wikiSaveKey;
-
-const accessKey = computed(
-	(): string | undefined => inFront.value && props.saveButtonAction !== 'destructive' ? saveKey : undefined
+const saveKeyAttributes = useSaveKey(
+	saveButton,
+	() => props.saveButtonLabel,
+	() => inFront.value && props.saveButtonAction !== 'destructive'
 );
-
-// Vue resets the title whenever the key or the label changes, which drops the key's name.
-function nameKeyInTooltip(): void {
-	if ( accessKey.value !== undefined && saveButton.value !== null ) {
-		$( saveButton.value.$el ).updateTooltipAccessKeys();
-	}
-}
-
-onMounted( nameKeyInTooltip );
-onUpdated( nameKeyInTooltip );
 
 // A closing dialog stays in the document while it fades out, where its button would still take the key.
 onBeforeUnmount( () => saveButton.value?.$el.removeAttribute( 'accesskey' ) );
