@@ -2,8 +2,7 @@
 
 Date: 2026-11-07
 
-Status: Draft. Amends [ADR 26](026-validation-severity-levels.md): adds `min-precision-month` and
-`min-precision-day`, whose severity the Schema sets, and `invalid-edtf`, a fixed `error`.
+Status: Draft.
 
 ## Context
 
@@ -27,12 +26,15 @@ NeoWiki has three date Property Types:
 
 Date & Time is unchanged.
 
+**EDTF date is off by default.** A wiki can enable it, as the ECHOLOT installation does. On a wiki without it, EDTF
+date values are kept unchanged but not validated, and they stay out of queries, as for any Property Type whose
+extension is not installed.
+
 **Date takes the three forms XML Schema has datatypes for**, `xsd:gYear`, `xsd:gYearMonth` and `xsd:date`, without a
-time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms. Decades, approximate
-dates and ranges need EDTF date.
+time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms.
 
 **A Date property asks for a full date unless its `minPrecision` Constraint allows a month or a year.** A less
-precise value gets a Violation, a warning by default, as for every Constraint.
+precise value gets a Violation, a warning by default.
 
 **A year or a month stands for every day in it.** A value breaks a `minimum` or `maximum` only when all its days fall
 outside it, so `1984` meets a minimum of `1984-06-01`.
@@ -48,23 +50,19 @@ intervals, seasons, sets, years before the common era and date-times.
 - Programs that read Date values must now handle a year or a month, not only a day.
 - On wikis that enforce validation, a year in an existing Date property now warns instead of blocking, unless the
   Schema sets `minPrecision` to `"day"` with severity `error`.
-- Date or EDTF date is chosen per property. Changing it later converts nothing: the existing values are flagged as
-  written under the old type. So a property where any value may need EDTF starts as EDTF date.
+- Changing a property between Date and EDTF date converts nothing: its existing values get `type-mismatch`.
 - A Julian date entered as written is read as Gregorian. A day can be converted before entry; a year or a month only
   into an EDTF interval.
 
 ## Implementation Thoughts
 
-- EDTF date is registered only on wikis that enable it: off by default, on in the ECHOLOT installation. On other
-  wikis, an EDTF date value, for example from an imported Schema, is kept unchanged and flagged, like a value of a
-  Property Type whose extension is not installed.
 - Neo4j holds each Date value as its earliest and latest day. EDTF date values keep their text and get those days too
   where they have both.
 - The first EDTF date input takes typed EDTF and shows the date in words.
 
 ## Out of Scope
 
-Other calendars, such as the Julian. They get their own decision when someone needs them.
+Other calendars, such as the Julian.
 
 ## Alternatives Considered
 

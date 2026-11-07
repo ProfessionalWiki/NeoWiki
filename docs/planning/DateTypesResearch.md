@@ -3,8 +3,7 @@
 Gathered 2026-11-07 by Claude Opus 5.5 for Jeroen De Dauw. Supports
 [ADR 40: Date Property Types](../adr/040-date-property-types.md).
 
-Status: Work in progress. Findings with their sources, as checked on that date; "inferred" marks a conclusion
-nobody checked directly.
+Status: Work in progress. "Inferred" marks a conclusion nobody checked directly.
 
 ## Date models elsewhere
 
@@ -91,21 +90,21 @@ values have day precision. Its users pick the calendar by hand
 
 - [T207705](https://phabricator.wikimedia.org/T207705), on an EDTF datatype for Wikibase: commenters state that EDTF
   values represent Gregorian dates, and propose a separate Julian variant.
-- [SemanticNeoWiki](https://github.com/Klaus-Feldmann/SemanticNeoWiki), a NeoWiki fork, lists "Historical BCE dates
+- [SemanticWikiSchema](https://github.com/Klaus-Feldmann/SemanticWikiSchema), a NeoWiki fork, lists "Historical BCE dates
   with precision/calendar information" among its additions.
 
 ## The EDTF library
 
 [professional-wiki/edtf](https://github.com/ProfessionalWiki/EDTF), version 3, which
-[PR 1811](https://github.com/ProfessionalWiki/NeoWiki/pull/1811) adds as a dependency:
+[#1811](https://github.com/ProfessionalWiki/NeoWiki/pull/1811) adds as a dependency:
 
-- Parses every level 0, 1 and 2 form except an open range ending in a date (`..2004-06-01/2004-06-20`).
+- Parses every level 0, 1 and 2 form except intervals like `..2004-06-01/2004-06-20`; `../2004-06-20` parses.
 - Every value has `getMin()`, `getMax()` and `covers()`.
 - Humanizes in many languages, but not significant digits (`1950S2`), group or component qualification
   (`2004-06~-11`, `?2004-06-~11`) or level 2 unspecified digits (`1XXX-1X`).
 - For an unspecified year, `ExtDate::calculateMin()` returns 0, which is 1970-01-01 ("FIXME: this is not correct").
   Open interval ends have no date.
-- It is PHP only. PR 1811 shows the date in words through a REST endpoint.
+- It is PHP only. #1811 shows the date in words through a REST endpoint.
 - The Library of Congress datatype IRI for EDTF literals is `http://id.loc.gov/datatypes/edtf/EDTF` (not fetched:
   id.loc.gov answered 403).
 
@@ -113,35 +112,27 @@ values have day precision. Its users pick the calendar by hand
 
 Oxigraph leaves `xsd:gYear` and `xsd:gYearMonth` values out of `<` and `>` comparisons with `xsd:date`; QLever
 compares them. `YEAR()` covers all three on both. Measured on the dev stack for
-[PR 1514](https://github.com/ProfessionalWiki/NeoWiki/pull/1514).
+[#1514](https://github.com/ProfessionalWiki/NeoWiki/pull/1514).
 
-## NeoWiki behaviour the design relies on
+## NeoWiki behaviour
 
-On master, 2026-11-07:
-
-- A Statement whose stored Property Type differs from the Schema's gets `type-mismatch`, a fixed `error`, and skips
-  its type's checks (`SubjectValidator`).
-- The Subject editor saves each Statement with its stored type (`Schema::statementsFrom()` in `Schema.ts`,
-  `getSubjectData()` in `SubjectEditor.vue`), so after a type change, saving does not clear `type-mismatch`.
-- `$wgNeoWikiEnforceValidation` defaults to `false` (`extension.json`): violations are reported and writes always
-  persist.
-- Constraints default to severity `warning` ([ADR 26](../adr/026-validation-severity-levels.md)); `invalid-date` is
-  a fixed `error`.
-- A value whose Property Type is not registered is kept unchanged and gets an `unregistered-type` warning; the write
-  goes through.
+On master, 2026-11-07, the Subject editor saves each Statement with its stored type (`Schema::statementsFrom()` in
+`Schema.ts`, `getSubjectData()` in `SubjectEditor.vue`), so after a property's type changes, saving does not clear
+`type-mismatch`.
 
 ## User testing
 
 ECHOLOT user testing, September 2026: imprecise dates came up in all five sessions. Years came up in three: one
 tester typed them as text, one team used a number property. Decades or half-decade brackets came up in two. One
 tester chose Date & Time when they wanted a date. Nobody asked for Julian dates. See also
-[issue 1486](https://github.com/ProfessionalWiki/NeoWiki/issues/1486).
+[#1486](https://github.com/ProfessionalWiki/NeoWiki/issues/1486).
 
 ## Related records
 
-- [Issue 767](https://github.com/ProfessionalWiki/NeoWiki/issues/767): Date and Date & Time became separate Property
+- [#767](https://github.com/ProfessionalWiki/NeoWiki/issues/767): Date and Date & Time became separate Property
   Types (April 2026).
-- [Issue 679](https://github.com/ProfessionalWiki/NeoWiki/issues/679): the EDTF date Property Type.
-- [Issue 1841](https://github.com/ProfessionalWiki/NeoWiki/issues/1841) and
-  [a proposal on PR 1514](https://github.com/ProfessionalWiki/NeoWiki/pull/1514#issuecomment-6590962242): Julian
-  dates as a calendar on each value, allowed per property.
+- [#679](https://github.com/ProfessionalWiki/NeoWiki/issues/679): the EDTF date Property Type.
+- [#1841](https://github.com/ProfessionalWiki/NeoWiki/issues/1841) and
+  [Jeroen De Dauw's comment on #1514](https://github.com/ProfessionalWiki/NeoWiki/pull/1514#issuecomment-6590962242):
+  Julian dates as a calendar on each value, allowed per property. It is one of the two ways left open for other
+  calendars; the other is a Property Type of its own.
