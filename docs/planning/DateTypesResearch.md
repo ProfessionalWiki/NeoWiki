@@ -117,7 +117,7 @@ compares them. `YEAR()` covers all three on both. Measured on the dev stack for
 ## NeoWiki behaviour
 
 On master, 2026-11-07, the Subject editor saves each Statement with its stored type (`Schema::statementsFrom()` in
-`Schema.ts`, `getSubjectData()` in `SubjectEditor.vue`), so after a property's type changes, saving does not clear
+`Schema.ts`, `getSubjectData()` in `SubjectEditor.vue`), so after a Property Definition's type changes, saving does not clear
 `type-mismatch`.
 
 ## User testing

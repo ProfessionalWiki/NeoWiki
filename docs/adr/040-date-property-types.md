@@ -8,7 +8,7 @@ Status: Draft.
 
 Many wikis record some dates as only a year or a month: the year a company was founded, the month a project started.
 Heritage wikis also record dates the way their sources give them: "c. 1850", "1620s", "between 1980 and 1985". A
-Date property accepts only a full day.
+Property Definition of type Date accepts only a full day.
 
 Each Statement records the Property Type its property had when the value was written
 ([ADR 11](011-include-writers-schema.md)), not the property's Constraints. API clients, Lua modules, exports and
@@ -33,7 +33,8 @@ extension is not installed.
 **Date takes the three forms XML Schema has datatypes for**, `xsd:date`, `xsd:gYearMonth` and `xsd:gYear`, without a
 time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms.
 
-**A Date property asks for a full date unless its `minPrecision` Constraint allows a month or a year.** A less
+**A Property Definition of type Date asks for a full date unless its `minPrecision` Constraint allows a month or a
+year.** A less
 precise value gets a Violation, a warning by default.
 
 **A year or a month stands for every day in it.** A value breaks a `minimum` or `maximum` only when all its days fall
@@ -48,9 +49,10 @@ intervals, seasons, sets, years before the common era and date-times.
 
 - Someone entering a Date value sees no EDTF syntax and no calendar choice.
 - Programs that read Date values must now handle a year or a month, not only a day.
-- On wikis that enforce validation, a year in an existing Date property now warns instead of blocking, unless the
-  Schema sets `minPrecision` to `"day"` with severity `error`.
-- Changing a property between Date and EDTF date converts nothing: its existing values get `type-mismatch`.
+- On wikis that enforce validation, a year entered for an existing Property Definition of type Date now warns
+  instead of blocking, unless the Schema sets its `minPrecision` to `"day"` with severity `error`.
+- Changing a Property Definition between Date and EDTF date converts nothing: its existing values get
+  `type-mismatch`.
 - A Julian date entered as written is read as Gregorian. A day can be converted before entry; a year or a month only
   into an EDTF interval.
 
