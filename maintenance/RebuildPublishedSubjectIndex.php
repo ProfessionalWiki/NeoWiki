@@ -9,6 +9,7 @@ use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndexRebuilder;
+use ProfessionalWiki\NeoWiki\Presentation\PageIdSummary;
 
 $basePath = getenv( 'MW_INSTALL_PATH' ) !== false ? getenv( 'MW_INSTALL_PATH' ) : __DIR__ . '/../../..';
 
@@ -18,8 +19,6 @@ require_once $basePath . '/maintenance/Maintenance.php';
  * Running it again after update.php needs --force, since the update is logged as done.
  */
 class RebuildPublishedSubjectIndex extends LoggedUpdateMaintenance {
-
-	private const int REPORTED_PAGES = 5;
 
 	public function __construct() {
 		parent::__construct();
@@ -67,16 +66,13 @@ class RebuildPublishedSubjectIndex extends LoggedUpdateMaintenance {
 	}
 
 	/**
-	 * To stderr, which reaches whoever scheduled the run; a few page ids show what the pages have in common.
+	 * To stderr, which reaches whoever scheduled the run.
 	 *
 	 * @param int[] $pageIds
 	 */
 	private function reportPagesLeftAsTheyWere( array $pageIds ): void {
-		$named = array_slice( $pageIds, 0, self::REPORTED_PAGES );
-		$rest = count( $pageIds ) - count( $named );
-
 		$this->error(
-			'Did not reindex pages ' . implode( ', ', $named ) . ( $rest === 0 ? '' : " and $rest more" )
+			'Did not reindex pages ' . PageIdSummary::of( $pageIds )
 			. ': their published Subject data cannot be read. The NeoWiki log channel says why; once they are fixed, '
 			. 'run this script again with --force.'
 		);

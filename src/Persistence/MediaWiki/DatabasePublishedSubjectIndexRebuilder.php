@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use Generator;
+use InvalidArgumentException;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\TitleFormatter;
@@ -36,6 +37,11 @@ class DatabasePublishedSubjectIndexRebuilder {
 		private readonly LoggerInterface $logger,
 		private readonly int $batchSize,
 	) {
+		// A batch of no pages never advances the walk over the wiki.
+		if ( $batchSize < 1 ) {
+			throw new InvalidArgumentException( 'A rebuild batch must hold at least one page, not ' . $batchSize . '.' );
+		}
+
 		$this->index = new DatabasePublishedSubjectIndex( $db, $dependentSubjectRules );
 	}
 
