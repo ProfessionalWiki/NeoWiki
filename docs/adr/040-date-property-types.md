@@ -24,19 +24,14 @@ NeoWiki has three date Property Types:
 | Date & Time (`dateTime`) | a date with a time of day | `1984-06-15T14:30:00+02:00` |
 | EDTF date (`edtf`) | any value in the [Extended Date/Time Format](https://www.loc.gov/standards/datetime/) | `1850~`, `1640/1650`, `162X` |
 
-Date & Time is unchanged.
-
-**EDTF date is off by default.** A wiki can enable it, as the ECHOLOT installation does. On a wiki without it, EDTF
-date values are kept unchanged but not validated, and they stay out of queries, as for any Property Type whose
-extension is not installed.
+**A wiki has EDTF date only when an administrator enables it.**
 
 **Date takes the three forms XML Schema has datatypes for**: `xsd:date`, `xsd:gYearMonth` and `xsd:gYear`.
 
 **A Property Definition of type Date asks for a full date unless its `minPrecision` Constraint allows a month or a
 year.** A less precise value gets a Violation, a warning by default.
 
-**EDTF date takes everything the EDTF library parses**: approximate and uncertain dates, unspecified digits,
-intervals, seasons, sets, years before the common era and date-times.
+**EDTF date takes every value the EDTF library parses.**
 
 **Values of all three date Property Types are in the proleptic Gregorian calendar.**
 
@@ -44,6 +39,8 @@ intervals, seasons, sets, years before the common era and date-times.
 
 - Someone entering a Date value sees no EDTF syntax and no calendar choice.
 - Programs that read Date values must now handle a year or a month, not only a day.
+- On a wiki without EDTF date, its values, for example from an imported Schema, are kept unchanged but not validated,
+  and they stay out of queries.
 - On wikis that enforce validation, a year entered for an existing Property Definition of type Date now warns
   instead of blocking, unless the Schema sets its `minPrecision` to `"day"` with severity `error`.
 - Changing a Property Definition between Date and EDTF date converts nothing: its existing values get
