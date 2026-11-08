@@ -30,14 +30,10 @@ Date & Time is unchanged.
 date values are kept unchanged but not validated, and they stay out of queries, as for any Property Type whose
 extension is not installed.
 
-**Date takes the three forms XML Schema has datatypes for**, `xsd:date`, `xsd:gYearMonth` and `xsd:gYear`, without a
-time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms.
+**Date takes the three forms XML Schema has datatypes for**: `xsd:date`, `xsd:gYearMonth` and `xsd:gYear`.
 
 **A Property Definition of type Date asks for a full date unless its `minPrecision` Constraint allows a month or a
 year.** A less precise value gets a Violation, a warning by default.
-
-**A year or a month stands for every day in it.** A value breaks a `minimum` or `maximum` only when all its days fall
-outside it, so `1984` meets a minimum of `1984-06-01`.
 
 **EDTF date takes everything the EDTF library parses**: approximate and uncertain dates, unspecified digits,
 intervals, seasons, sets, years before the common era and date-times.
