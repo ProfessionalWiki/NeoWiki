@@ -34,8 +34,7 @@ extension is not installed.
 time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms.
 
 **A Property Definition of type Date asks for a full date unless its `minPrecision` Constraint allows a month or a
-year.** A less
-precise value gets a Violation, a warning by default.
+year.** A less precise value gets a Violation, a warning by default.
 
 **A year or a month stands for every day in it.** A value breaks a `minimum` or `maximum` only when all its days fall
 outside it, so `1984` meets a minimum of `1984-06-01`.
