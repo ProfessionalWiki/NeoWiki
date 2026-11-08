@@ -38,7 +38,7 @@ year.** A less precise value gets a Violation, a warning by default.
 **EDTF date takes everything the EDTF library parses**: approximate and uncertain dates, unspecified digits,
 intervals, seasons, sets, years before the common era and date-times.
 
-**Date and EDTF date values are in the proleptic Gregorian calendar.**
+**Values of all three date Property Types are in the proleptic Gregorian calendar.**
 
 ## Consequences
 
