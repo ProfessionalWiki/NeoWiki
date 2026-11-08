@@ -63,9 +63,8 @@ year.** A less precise value gets a Violation, a warning by default.
 Date accepts every EDTF value, and Constraints narrow each property to what it needs: full dates, years, or
 approximate dates.
 
-Not chosen because a Statement records its type, not its Constraints, so every program that reads Date values would
-need an EDTF parser. Handing those programs a simpler form, such as the earliest and latest day, drops `~` and `?`, so
-approximate dates would read as certain.
+Not chosen because a Date value's type would then no longer tell a program which forms the value can take; only the
+Constraints of its property would. So every program that reads Date values would need an EDTF parser.
 
 ### Date for full days only
 
