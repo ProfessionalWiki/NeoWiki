@@ -45,6 +45,8 @@ year.** A less precise value gets a Violation, a warning by default.
   instead of blocking, unless the Schema sets its `minPrecision` to `"day"` with severity `error`.
 - Changing a Property Definition between Date and EDTF date converts nothing: its existing values get
   `type-mismatch`.
+- Julian dates need no decision now. Support for them can be added later on top of these types, and values stored
+  until then stay valid as Gregorian dates.
 - A Julian date entered as written is read as Gregorian. A day can be converted before entry; a year or a month only
   into an EDTF interval.
 
@@ -53,10 +55,6 @@ year.** A less precise value gets a Violation, a warning by default.
 - Neo4j holds each Date value as its earliest and latest day. EDTF date values keep their text and get those days too
   where they have both.
 - The first EDTF date input takes typed EDTF and shows the date in words, like in Wikibase EDTF.
-
-## Out of Scope
-
-Other calendars, such as the Julian.
 
 ## Alternatives Considered
 
