@@ -52,7 +52,7 @@ year.** A less precise value gets a Violation, a warning by default.
 
 - Neo4j holds each Date value as its earliest and latest day. EDTF date values keep their text and get those days too
   where they have both.
-- The first EDTF date input takes typed EDTF and shows the date in words.
+- The first EDTF date input takes typed EDTF and shows the date in words, like in Wikibase EDTF.
 
 ## Out of Scope
 
