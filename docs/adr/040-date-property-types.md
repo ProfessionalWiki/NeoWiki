@@ -20,7 +20,7 @@ NeoWiki has three date Property Types:
 
 | Property Type | Holds | Examples |
 |---------------|-------|----------|
-| Date (`date`) | a year, a month or a day | `1984`, `1984-06`, `1984-06-15` |
+| Date (`date`) | a day, a month or a year | `1984-06-15`, `1984-06`, `1984` |
 | Date & Time (`dateTime`) | a date with a time of day | `1984-06-15T14:30:00+02:00` |
 | EDTF date (`edtf`) | any value in the [Extended Date/Time Format](https://www.loc.gov/standards/datetime/) | `1850~`, `1640/1650`, `162X` |
 
@@ -30,7 +30,7 @@ Date & Time is unchanged.
 date values are kept unchanged but not validated, and they stay out of queries, as for any Property Type whose
 extension is not installed.
 
-**Date takes the three forms XML Schema has datatypes for**, `xsd:gYear`, `xsd:gYearMonth` and `xsd:date`, without a
+**Date takes the three forms XML Schema has datatypes for**, `xsd:date`, `xsd:gYearMonth` and `xsd:gYear`, without a
 time zone and for the years 1 to 9999. `minimum`, `maximum` and `default` take the same forms.
 
 **A Date property asks for a full date unless its `minPrecision` Constraint allows a month or a year.** A less
