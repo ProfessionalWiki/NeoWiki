@@ -2,7 +2,9 @@
 
 Date: 2026-11-02
 
-Status: Draft. Amends [ADR 17](017-names-as-identifiers.md): the UI shows new Property labels that are editable
+Status: Accepted
+
+Amends [ADR 17](017-names-as-identifiers.md): the UI shows new Property labels that are editable
 so Property names can remain stable.
 
 ## Context
