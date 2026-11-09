@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import ConfigEditor from '@/components/ConfigEditor/ConfigEditor.vue';
 import type { ConfigValues, PageValues } from '@/components/ConfigEditor/configEditing.ts';
 import type { PageRevisionSaver, RevisionSaveStatus } from '@/persistence/PageSaver.ts';
-import { listedLanguages, setupMwMock } from '../../VueTestHelpers.ts';
+import { listedLanguages, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 
 interface Save {
 	pageName: string;
@@ -86,8 +86,10 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-editor-read-only': 'You do not have permission to change NeoWiki\'s settings.',
 				'neowiki-config-editor-save-failed': ( reason: string ) => `The settings were not saved: ${ reason }`,
 				'neowiki-config-editor-changed-meanwhile': 'This page was also changed after the form was loaded.',
+				'accesskey-save': 'x',
 			},
 		} );
+		stubUpdateTooltipAccessKeys();
 	} );
 
 	afterEach( () => {
@@ -273,6 +275,14 @@ describe( 'ConfigEditor', () => {
 		await resetLink( editor, 'Wiki type' ).trigger( 'click' );
 
 		expect( saveButton( editor ).element.disabled ).toBe( true );
+	} );
+
+	it( 'gives the save button the wiki\'s save key, named in its tooltip', async () => {
+		const editor = newEditor();
+		await editor.vm.$nextTick();
+
+		expect( saveButton( editor ).attributes( 'accesskey' ) ).toBe( 'x' );
+		expect( saveButton( editor ).attributes( 'title' ) ).toBe( 'Save settings [alt-shift-x]' );
 	} );
 
 	it( 'saves the settings the page sets and no others', async () => {
