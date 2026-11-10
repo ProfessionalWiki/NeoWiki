@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use Article;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\FauxRequest;
@@ -130,6 +131,49 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'No label defined', $browserTitle );
 	}
 
+	public function testTheHistoryOfAPageTitledByItsSubjectsIdNamesThePageByTheSubjectsLabelAlone(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'Ada Lovelace', $heading );
+		$this->assertStringNotContainsString( substr( self::SUBJECT_ID, 1 ), $heading );
+		$this->assertStringNotContainsString( 'Subject:', $heading );
+	}
+
+	public function testAnActionKeepsTheWordingOfItsHeading(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'Revision history', $heading );
+	}
+
+	public function testTheNameInAnActionHeadingIsIsolatedFromTheWordingAroundIt(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '<bdi>Ada Lovelace</bdi>', $heading );
+	}
+
+	public function testTheNameInAnActionHeadingIsEscaped(): void {
+		$this->createPageLabelled( '<i>Ada</i>', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '&lt;i&gt;Ada&lt;/i&gt;', $heading );
+	}
+
+	public function testTheHistoryOfAPageTitledByTheIdOfASubjectWithoutALabelNamesThePageByTheBracketedId(): void {
+		$this->createPageLabelled( null, self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '(' . self::SUBJECT_ID . ')', $heading );
+		$this->assertStringNotContainsString( 'No label defined', $heading );
+	}
+
 	private function createPageLabelled( ?string $label, string $pageName = self::SUBJECT_ID ): RevisionRecord {
 		return $this->createPageWithSubjects(
 			$pageName,
@@ -157,6 +201,18 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$out->setRevisionId( $revisionId );
 
 		return $out;
+	}
+
+	private function performAction( string $actionName, string $pageName ): OutputPage {
+		$context = new RequestContext();
+		$context->setRequest( new FauxRequest( [ 'action' => $actionName ] ) );
+		$context->setTitle( Title::newFromText( $pageName ) );
+
+		$this->getServiceContainer()->getActionFactory()
+			->getAction( $actionName, Article::newFromTitle( $context->getTitle(), $context ), $context )
+			->show();
+
+		return $this->display( $context->getOutput() );
 	}
 
 	private function display( OutputPage $out ): OutputPage {
