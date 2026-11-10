@@ -5,101 +5,60 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
 use Closure;
-use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
-use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
-use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
-use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex;
 use stdClass;
-use Throwable;
 use Wikimedia\Rdbms\IReadableDatabase;
-use Wikimedia\Rdbms\IResultWrapper;
 
 /**
- * The Subject whose label stands in for the title of each page titled by a Subject id (ADR 31), as
- * the wiki publishes the page, for lists that link to many pages at once, such as Recent changes. A
- * list reads its pages up front, in one batch, and they are kept for the rendering of that list, so
- * its links read nothing of their own.
- *
- * What a list reads is bounded, since anyone can ask for a long list: a page past the first
- * $maxPages, or whose Subjects take more than MAX_SLOT_SIZE bytes, keeps its title.
+ * The Main Subject whose label stands in for the title of a page titled by a Subject id (ADR 31), as the
+ * wiki publishes the page (ADR 37). What it reads is kept for the request, so the many links to one page
+ * read it once, and a list can read all of its pages in one query up front.
  */
 class SubjectInPlaceOfPageTitleLookup {
 
-	private const int MAX_SLOT_SIZE = 65536;
-
-	/** @var array<string, Subject> Keyed by prefixed database key */
+	/** @var array<string, ?SubjectLabelLookupResult> Keyed by prefixed database key, null where the title stands */
 	private array $subjects = [];
-
-	/** @var array<int, true> Keyed by page id */
-	private array $readPageIds = [];
 
 	/** @var array<string, bool> Keyed by reader and page, so a list's many links to one page ask once */
 	private array $readable = [];
-
-	private ?OutputPage $listOutput = null;
 
 	/**
 	 * @param Closure(Authority): PageReadAuthorizer $newReadAuthorizer
 	 */
 	public function __construct(
-		private readonly RevisionStore $revisionStore,
 		private readonly IReadableDatabase $db,
-		private readonly RevisionPolicy $revisionPolicy,
 		private readonly Closure $newReadAuthorizer,
-		private readonly int $maxPages,
 	) {
 	}
 
 	/**
 	 * @param int[] $pageIds
-	 * @param OutputPage $listOutput Where the list renders; only links rendered there get labels.
 	 */
-	public function prefetch( array $pageIds, OutputPage $listOutput ): void {
-		$this->listOutput = $listOutput;
-
-		$unread = array_slice(
-			array_values( array_diff( array_unique( $pageIds ), array_keys( $this->readPageIds ) ) ),
-			0,
-			$this->maxPages
-		);
-
-		if ( $unread === [] ) {
-			return;
-		}
-
-		foreach ( $unread as $pageId ) {
-			$this->readPageIds[$pageId] = true;
-		}
-
-		$published = [];
-
-		foreach ( $this->latestRevisions( $unread ) as $latestRevision ) {
-			$revision = $this->publishedRevisionToRead( $latestRevision );
-
-			if ( $revision !== null ) {
-				$published[(int)$revision->getId()] = $revision;
-			}
-		}
-
-		foreach ( $this->subjectContents( $published ) as $revisionId => $content ) {
-			$this->addSubjectInPlaceOfTitle( $published[$revisionId], $content );
+	public function prefetch( array $pageIds ): void {
+		if ( $pageIds !== [] ) {
+			$this->read( [ 'page_id' => array_values( array_unique( $pageIds ) ) ] );
 		}
 	}
 
 	/**
-	 * Only for a link rendered where the list is, and only for a reader who may read the page, since
-	 * the label is its content.
+	 * Only for a reader who may read the page, since the label is its content.
 	 */
-	public function forListedPage( Title $title, Authority $reader, OutputPage $output ): ?Subject {
-		$subject = $this->subjects[$title->getPrefixedDBkey()] ?? null;
+	public function forPage( Title $title, Authority $reader ): ?SubjectLabelLookupResult {
+		$key = $title->getPrefixedDBkey();
 
-		if ( $subject === null || $output !== $this->listOutput || !$this->mayRead( $reader, $title ) ) {
+		if ( !array_key_exists( $key, $this->subjects ) ) {
+			$this->subjects[$key] = null;
+			$this->read( [ 'page_namespace' => $title->getNamespace(), 'page_title' => $title->getDBkey() ] );
+		}
+
+		$subject = $this->subjects[$key];
+
+		if ( $subject === null || !$this->mayRead( $reader, $title ) ) {
 			return null;
 		}
 
@@ -114,91 +73,56 @@ class SubjectInPlaceOfPageTitleLookup {
 	}
 
 	/**
-	 * @param int[] $pageIds
+	 * A page without Subjects is read too, so that links to it do not read it again.
 	 *
-	 * @return RevisionRecord[]
+	 * @param array<string, int|string|int[]> $pageCondition
 	 */
-	private function latestRevisions( array $pageIds ): array {
-		/** @var iterable<stdClass>&IResultWrapper $rows */
-		$rows = $this->revisionStore->newSelectQueryBuilder( $this->db )
-			->joinComment()
-			->joinPage()
-			->where( [ 'page_id' => $pageIds ] )
-			->andWhere( 'rev_id = page_latest' )
+	private function read( array $pageCondition ): void {
+		$rows = $this->db->newSelectQueryBuilder()
+			->select( [ 'page_namespace', 'page_title', 'nws_subject_id', 'nws_display_name', 'nws_is_main' ] )
+			->from( 'page' )
+			->leftJoin( DatabasePublishedSubjectIndex::SUBJECT_TABLE, null, 'nws_page_id = page_id' )
+			->where( $pageCondition )
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
-		// Slot metadata only: the content is read below, for the Subject slot alone.
-		$revisions = $this->revisionStore->newRevisionsFromBatch(
-			$rows,
-			[ 'slots' => [ MediaWikiSubjectRepository::SLOT_NAME ] ]
-		)->getValue();
+		$rowsByPage = [];
 
-		return is_array( $revisions ) ? array_filter( $revisions ) : [];
+		/** @var stdClass $row */
+		foreach ( $rows as $row ) {
+			$rowsByPage[$row->page_namespace . ':' . $row->page_title][] = $row;
+		}
+
+		foreach ( $rowsByPage as $pageRows ) {
+			$title = Title::makeTitle( (int)$pageRows[0]->page_namespace, (string)$pageRows[0]->page_title );
+			$this->subjects[$title->getPrefixedDBkey()] = $this->subjectInPlaceOfTitle( $title, $pageRows );
+		}
 	}
 
 	/**
-	 * On a wiki with an approval extension the published revision can be an older one. Its text is
-	 * never hidden: the policy refuses such a revision, and it is checked here all the same, since
-	 * the content is read raw.
+	 * Only a labelled one: a link saying "No label defined" would not tell apart the pages it links to,
+	 * and the title carries the id.
+	 *
+	 * @param stdClass[] $pageRows
 	 */
-	private function publishedRevisionToRead( RevisionRecord $latestRevision ): ?RevisionRecord {
-		$published = $this->revisionPolicy->publishedRevision( $latestRevision );
+	private function subjectInPlaceOfTitle( Title $title, array $pageRows ): ?SubjectLabelLookupResult {
+		$subjectIds = array_map( static fn ( stdClass $row ): string => (string)$row->nws_subject_id, $pageRows );
 
-		if ( $published === null
-			|| $published->isDeleted( RevisionRecord::DELETED_TEXT )
-			|| !$published->hasSlot( MediaWikiSubjectRepository::SLOT_NAME )
-			|| $published->getSlot( MediaWikiSubjectRepository::SLOT_NAME, RevisionRecord::RAW )->getSize() > self::MAX_SLOT_SIZE
-		) {
+		if ( !SubjectDisplayName::isTitledByIdAmong( $title->getPrefixedText(), $subjectIds ) ) {
 			return null;
 		}
 
-		return $published;
-	}
-
-	/**
-	 * @param array<int, RevisionRecord> $revisions
-	 *
-	 * @return array<int, SubjectContent> Keyed by revision id
-	 */
-	private function subjectContents( array $revisions ): array {
-		if ( $revisions === [] ) {
-			return [];
-		}
-
-		$blobs = $this->revisionStore->getContentBlobsForBatch(
-			array_map( static fn ( RevisionRecord $revision ): int => (int)$revision->getId(), $revisions ),
-			[ MediaWikiSubjectRepository::SLOT_NAME ]
-		)->getValue();
-
-		$contents = [];
-
-		foreach ( is_array( $blobs ) ? $blobs : [] as $revisionId => $slots ) {
-			$slot = $slots[MediaWikiSubjectRepository::SLOT_NAME] ?? null;
-
-			if ( $slot?->model_name === SubjectContent::CONTENT_MODEL_ID ) {
-				$contents[(int)$revisionId] = new SubjectContent( (string)$slot->blob_data );
+		foreach ( $pageRows as $row ) {
+			if ( (int)$row->nws_is_main === 1 && $row->nws_display_name !== null ) {
+				return new SubjectLabelLookupResult(
+					id: (string)$row->nws_subject_id,
+					label: (string)$row->nws_display_name,
+					pageTitle: $title->getPrefixedText()
+				);
 			}
 		}
 
-		return $contents;
-	}
-
-	private function addSubjectInPlaceOfTitle( RevisionRecord $publishedRevision, SubjectContent $content ): void {
-		$title = Title::newFromPageIdentity( $publishedRevision->getPage() );
-
-		try {
-			$subject = SubjectDisplayName::inPlaceOfPageTitle( $content->getPageSubjects(), $title->getPrefixedText() );
-		} catch ( Throwable ) {
-			// Subject data that does not deserialize must not take the list down; its page keeps its title.
-			return;
-		}
-
-		// Only a labelled one: a link saying "No label defined" would not tell apart the pages it links
-		// to, and the title carries the id.
-		if ( $subject?->getLabel() !== null ) {
-			$this->subjects[$title->getPrefixedDBkey()] = $subject;
-		}
+		return null;
 	}
 
 }
