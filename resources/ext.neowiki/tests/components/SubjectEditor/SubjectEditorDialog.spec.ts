@@ -303,15 +303,11 @@ describe( 'SubjectEditorDialog', () => {
 		expect( editedPropertyNames( wrapper ) ).toEqual( [ 'nickname' ] );
 	} );
 
-	// The Schema is shown by the pane that uses it, not by a header that names the root's
-	// whichever pane is on screen.
-	it( 'shows the schema in the pane rather than the dialog header', async () => {
+	it( 'shows the schema of the subject being edited beside the title', async () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		expect( wrapper.get( '.cdx-dialog__header' ).text() ).not.toContain( 'TestSchema' );
-		expect( wrapper.get( '.ext-neowiki-subject-edit-pane__meta .ext-neowiki-schema-name__text' ).text() )
-			.toBe( 'TestSchema' );
+		expect( schemaBesideTitle( wrapper ) ).toBe( 'TestSchema' );
 	} );
 
 	// The badge is a link to the Schema page whoever is looking, so it carries its own
@@ -320,7 +316,7 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( false, {} );
 		await flushPromises();
 
-		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const badge = schemaBadge( wrapper );
 		const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
 		badge.element.dispatchEvent( event );
 		await flushPromises();
@@ -333,7 +329,7 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const badge = schemaBadge( wrapper );
 		const event = new MouseEvent( 'click', { button: 0, ctrlKey: true, bubbles: true, cancelable: true } );
 		badge.element.dispatchEvent( event );
 		await flushPromises();
@@ -342,13 +338,13 @@ describe( 'SubjectEditorDialog', () => {
 		expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
 	} );
 
-	it( 'opens SchemaEditorDialog from the pane\'s schema badge', async () => {
+	it( 'opens SchemaEditorDialog from the schema badge', async () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const schemaBadge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const badge = schemaBadge( wrapper );
 		const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
-		schemaBadge.element.dispatchEvent( event );
+		badge.element.dispatchEvent( event );
 		await flushPromises();
 
 		const schemaEditorDialog = wrapper.findComponent( SchemaEditorDialog );
@@ -371,9 +367,9 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const schemaBadge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const badge = schemaBadge( wrapper );
 		const event = new MouseEvent( 'click', { bubbles: true, cancelable: true, ...init } );
-		schemaBadge.element.dispatchEvent( event );
+		badge.element.dispatchEvent( event );
 		await flushPromises();
 
 		expect( event.defaultPrevented ).toBe( false );
@@ -386,7 +382,7 @@ describe( 'SubjectEditorDialog', () => {
 		const wrapper = mountComponent( true, {} );
 		await flushPromises();
 
-		const badge = wrapper.get( '.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name' );
+		const badge = schemaBadge( wrapper );
 
 		expect( badge.attributes( 'target' ) ).toBe( '_blank' );
 		expect( badge.attributes( 'rel' ) ).toBe( 'noopener' );
@@ -402,11 +398,23 @@ describe( 'SubjectEditorDialog', () => {
 
 	// Reached through a pane: the real Teleport moves the dialog out of the wrapper's subtree, where
 	// a query rooted at the wrapper finds no header and so reads every id as absent.
-	function idBesideTitle( wrapper: VueWrapper ): string | null {
+	function dialogHeader( wrapper: VueWrapper ): DOMWrapper<Element> {
 		const header = wrapper.findComponent( SubjectEditPane ).element
 			.closest( '.cdx-dialog' )?.querySelector( '.cdx-dialog__header' );
 		expect( header ).toBeTruthy();
-		return header?.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
+		return new DOMWrapper( header as Element );
+	}
+
+	function idBesideTitle( wrapper: VueWrapper ): string | null {
+		return dialogHeader( wrapper ).element.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
+	}
+
+	function schemaBadge( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
+		return dialogHeader( wrapper ).get( 'a.ext-neowiki-schema-name' );
+	}
+
+	function schemaBesideTitle( wrapper: VueWrapper ): string {
+		return schemaBadge( wrapper ).get( '.ext-neowiki-schema-name__text' ).text();
 	}
 
 	it( 'shows the id of the subject being edited beside the title', async () => {
@@ -1132,12 +1140,8 @@ describe( 'SubjectEditorDialog', () => {
 			);
 			await flushPromises();
 
-			// Codex points the dialog at its own heading when nothing slots a header over it,
-			// so the announced name is the visible one rather than a parallel string.
-			const heading = wrapper.get( '.cdx-dialog__header__title' );
-			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-labelledby' ) )
-				.toBe( heading.attributes( 'id' ) );
-			expect( heading.text() ).toBe( 'neowiki-subject-editor-title' );
+			expect( wrapper.get( '.cdx-dialog' ).attributes( 'aria-label' ) )
+				.toBe( 'neowiki-subject-editor-title' );
 		} );
 
 		it( 'sends no label to the dry-run validation once the label is blanked', async () => {
@@ -1535,6 +1539,12 @@ describe( 'SubjectEditorDialog', () => {
 			const { wrapper } = await mountWithSecondPaneOpen();
 
 			expect( idBesideTitle( wrapper ) ).toBe( 's22222222222222' );
+		} );
+
+		it( 'shows the schema of a newly opened relation target beside the title', async () => {
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			expect( schemaBesideTitle( wrapper ) ).toBe( 'Person' );
 		} );
 
 		it( 'opens a second pane with the freshly fetched target subject', async () => {
@@ -1946,13 +1956,8 @@ describe( 'SubjectEditorDialog', () => {
 				it( 'does not open the schema editor from a nested pane', async () => {
 					const { wrapper } = await mountWithSecondPaneOpen();
 
-					const badges = wrapper.findAll(
-						'.ext-neowiki-subject-edit-pane__meta a.ext-neowiki-schema-name',
-					);
-					expect( badges.length ).toBeGreaterThan( 1 );
-
 					const event = new MouseEvent( 'click', { button: 0, bubbles: true, cancelable: true } );
-					badges[ badges.length - 1 ].element.dispatchEvent( event );
+					schemaBadge( wrapper ).element.dispatchEvent( event );
 					await flushPromises();
 
 					expect( event.defaultPrevented ).toBe( false );
@@ -1970,6 +1975,20 @@ describe( 'SubjectEditorDialog', () => {
 					settle( new Error( 'Boom' ) );
 					await flushPromises();
 					expect( content( wrapper ).attributes( 'inert' ) ).toBeUndefined();
+				} );
+
+				// Outside the form, so not frozen with it.
+				it( 'makes the schema badge inert until the save settles', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+					await makePaneDirty( wrapper, 0 );
+
+					await triggerSave( wrapper, '' );
+					expect( schemaBadge( wrapper ).attributes( 'inert' ) ).toBeDefined();
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
+					expect( schemaBadge( wrapper ).attributes( 'inert' ) ).toBeUndefined();
 				} );
 			} );
 
@@ -3644,6 +3663,12 @@ describe( 'SubjectEditorDialog', () => {
 
 					expect( visibleSubjectId( wrapper ) ).toBe( 's22222222222222' );
 					expect( idBesideTitle( wrapper ) ).toBeNull();
+				} );
+
+				it( 'shows the schema of the subject being created beside the title', async () => {
+					const { wrapper } = await mountCreating();
+
+					expect( schemaBesideTitle( wrapper ) ).toBe( 'TestSchema' );
 				} );
 
 				it( 'writes with the create summary where the user gave none', async () => {

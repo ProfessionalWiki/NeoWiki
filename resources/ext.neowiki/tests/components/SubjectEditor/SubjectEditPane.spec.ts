@@ -384,23 +384,6 @@ describe( 'SubjectEditPane', () => {
 			.toBe( 'Test page' );
 	} );
 
-	describe( 'The Schema beside the name', () => {
-		it( 'shows the schema as a badge beside a labelled subject', () => {
-			const wrapper = mountPane();
-
-			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
-		} );
-
-		// The name beside it says the same word, but only the badge is a link to the Schema and the
-		// way into its editor.
-		it( 'shows the badge for a subject labelled after its schema', () => {
-			const labelledAfterSchema = newSubject( { label: 'TestSchema', schemaName: 'TestSchema' } );
-			const wrapper = mountPane( { subject: labelledAfterSchema, nested: true } );
-
-			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
-		} );
-	} );
-
 	// The field edits the stored label, which is empty here.
 	it( 'starts the label field empty for a label-less subject', () => {
 		const wrapper = mountPane( { subject: labellessSubject } );
@@ -715,14 +698,6 @@ describe( 'SubjectEditPane', () => {
 			await rename( wrapper, '   ' );
 
 			expect( labelLine( wrapper ) ).toBe( 'neowiki-subject-no-label' );
-		} );
-
-		it( 'keeps the schema badge once an unnamed subject is given a label of its own', async () => {
-			const wrapper = mountPane( { subject: unnamedSubject, nested: true } );
-
-			await rename( wrapper, 'Alice' );
-
-			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'TestSchema' );
 		} );
 	} );
 
