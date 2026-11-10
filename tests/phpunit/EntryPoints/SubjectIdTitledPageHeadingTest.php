@@ -6,7 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use Article;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -149,6 +151,25 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( 'Revision history', $heading );
 	}
 
+	/**
+	 * From MediaWiki 1.46 on, the history and edit headings carry the title as Parser::formatPageTitle()
+	 * markup in the page's language rather than as text.
+	 */
+	public function testAnActionHeadingHoldingTheTitleAsFormattedMarkupNamesThePageByTheSubjectsLabel(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+		$out = $this->actionOutput( 'history', self::SUBJECT_NAMESPACE_PAGE );
+		$out->setPageTitleMsg( $out->msg( 'history-title' )->rawParams( Html::rawElement(
+			'span',
+			[ 'lang' => 'en', 'dir' => 'ltr' ],
+			Parser::formatPageTitle( 'Subject', ':', ucfirst( self::SUBJECT_ID ) )
+		) ) );
+
+		$heading = $this->display( $out )->getPageTitle();
+
+		$this->assertStringContainsString( 'Ada Lovelace', $heading );
+		$this->assertStringNotContainsString( substr( self::SUBJECT_ID, 1 ), $heading );
+	}
+
 	public function testTheNameInAnActionHeadingIsIsolatedFromTheWordingAroundIt(): void {
 		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
 
@@ -204,15 +225,21 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 	}
 
 	private function performAction( string $actionName, string $pageName ): OutputPage {
+		$out = $this->actionOutput( $actionName, $pageName );
+
+		$this->getServiceContainer()->getActionFactory()
+			->getAction( $actionName, Article::newFromTitle( $out->getTitle(), $out->getContext() ), $out->getContext() )
+			->show();
+
+		return $this->display( $out );
+	}
+
+	private function actionOutput( string $actionName, string $pageName ): OutputPage {
 		$context = new RequestContext();
 		$context->setRequest( new FauxRequest( [ 'action' => $actionName ] ) );
 		$context->setTitle( Title::newFromText( $pageName ) );
 
-		$this->getServiceContainer()->getActionFactory()
-			->getAction( $actionName, Article::newFromTitle( $context->getTitle(), $context ), $context )
-			->show();
-
-		return $this->display( $context->getOutput() );
+		return $context->getOutput();
 	}
 
 	private function display( OutputPage $out ): OutputPage {

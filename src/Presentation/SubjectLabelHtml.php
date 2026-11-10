@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use MessageLocalizer;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -35,19 +36,24 @@ class SubjectLabelHtml {
 
 	/**
 	 * Core builds an action's heading around the page title, as in "$1: Revision history", so the
-	 * Subject's name takes the title's place and the action's wording stays. The name stands alone,
-	 * as in the browser tab: the page the action is reached from carries the id in its heading. A
-	 * heading that does not name the page, such as an error, is left alone.
+	 * Subject's name takes the title's place and the action's wording stays. The title is there as
+	 * text, or, for some actions from MediaWiki 1.46 on, as Parser::formatPageTitle() markup. The name
+	 * stands alone, as in the browser tab: the page the action is reached from carries the id in its
+	 * heading. A heading that does not name the page, such as an error, is left alone.
 	 */
 	public static function nameInHeading( OutputPage $out, Title $title, ?string $label, SubjectId $subjectId ): void {
-		$pageName = htmlspecialchars( $title->getPrefixedText() );
+		$heading = str_replace(
+			[
+				htmlspecialchars( $title->getPrefixedText() ),
+				Parser::formatPageTitle( str_replace( '_', ' ', (string)$title->getNsText() ), ':', $title->getText() ),
+			],
+			Html::element( 'bdi', [], SubjectNameMessage::from( $out, $subjectId, $label )->text() ),
+			$out->getPageTitle()
+		);
 
-		if ( !str_contains( $out->getPageTitle(), $pageName ) ) {
-			return;
+		if ( $heading !== $out->getPageTitle() ) {
+			$out->setPageTitle( $heading );
 		}
-
-		$name = Html::element( 'bdi', [], SubjectNameMessage::from( $out, $subjectId, $label )->text() );
-		$out->setPageTitle( str_replace( $pageName, $name, $out->getPageTitle() ) );
 	}
 
 	/**
