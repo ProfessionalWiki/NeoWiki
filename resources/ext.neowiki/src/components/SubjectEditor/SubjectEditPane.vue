@@ -3,10 +3,7 @@
 		class="ext-neowiki-subject-edit-pane"
 		:aria-label="paneName"
 	>
-		<div
-			class="ext-neowiki-subject-edit-pane__header"
-			:class="{ 'ext-neowiki-subject-edit-pane__header--new': props.isNew }"
-		>
+		<div class="ext-neowiki-subject-edit-pane__header">
 			<h3
 				v-if="subjectsAreDependent"
 				class="ext-neowiki-subject-edit-pane__name"
@@ -44,34 +41,19 @@
 				/>
 			</h3>
 
-			<div class="ext-neowiki-subject-edit-pane__meta">
-				<!-- The Schema the pane's Subject uses, beside the name it belongs to. A real
-					link, so it carries the badge's own interactive styling and a destination;
-					a plain click opens the Schema editor instead.
-
-					A new tab, for the reason the storage link below gives: this dialog holds
-					unsaved edits for every open pane and nothing guards a navigation away
-					from it. -->
-				<SchemaNameDisplay
-					:schema-name="schemaBadge"
-					link="new-tab"
-					@click="openSchemaEditor"
-				/>
-
-				<div
-					v-if="props.nested && pageName !== null"
-					class="ext-neowiki-subject-edit-pane__storage"
-				>
-					<I18nSlot message-key="neowiki-subject-editor-stored-on">
-						<!-- A new tab: following the link in this one discards unsaved edits. -->
-						<a
-							class="ext-neowiki-subject-edit-pane__page"
-							:href="pageUrl"
-							target="_blank"
-							rel="noopener"
-						>{{ pageName }}</a>
-					</I18nSlot>
-				</div>
+			<div
+				v-if="props.nested && pageName !== null"
+				class="ext-neowiki-subject-edit-pane__storage"
+			>
+				<I18nSlot message-key="neowiki-subject-editor-stored-on">
+					<!-- A new tab: following the link in this one discards unsaved edits. -->
+					<a
+						class="ext-neowiki-subject-edit-pane__page"
+						:href="pageUrl"
+						target="_blank"
+						rel="noopener"
+					>{{ pageName }}</a>
+				</I18nSlot>
 			</div>
 		</div>
 
@@ -125,7 +107,6 @@ import I18nSlot from '@/components/common/I18nSlot.vue';
 import { subjectLabelPlaceholder } from '@/presentation/subjectLabelPlaceholder.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import EditableText from '@/components/common/EditableText.vue';
-import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { StatementList } from '@/domain/StatementList.ts';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -139,15 +120,12 @@ import { RelationTargetEditingKey } from '@/components/Value/ValueInputContract.
 import { DependentSubjectViolationsKey, PaneWritesKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
 import { withoutMissingValueViolations, withoutUnsavedTargetViolations, type SubjectViolation } from '@/domain/SubjectViolation';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
-import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 
 const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
-	// Whether this pane's Schema may be edited, so its name can offer the editor.
-	canEditSchema?: boolean;
 	// A Subject this editing session invented, which the server has never seen. It is validated
 	// as a creation rather than as an update, and the dialog writes it with a create.
 	isNew?: boolean;
@@ -158,7 +136,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	'edit-relation-target': [ SubjectId ];
-	'edit-schema': [];
 }>();
 
 provide( RelationTargetEditingKey, true );
@@ -207,11 +184,6 @@ const storedLabel = computed( (): string | null => enteredSubjectLabel( label.va
 
 const paneName = computed( (): string => storedLabel.value ?? subjectDisplayName( props.subject ) );
 
-// Shown whether or not the name beside it already carries the Schema's name. Elsewhere that repeat is
-// worth suppressing, and `schemaNameToShow` does so; here the badge is the only link to the Schema
-// and the only way into its editor, so withholding it costs a way through rather than a word.
-const schemaBadge = computed( (): string => props.subject.getSchemaName() );
-
 // A Subject bound for a page the save has yet to settle carries the page it will be stored on
 // without a title for it, and a Subject whose page the API could not resolve carries none at all.
 // Either way there is nothing to point at and nothing to name. A subject-first wiki names no page
@@ -231,20 +203,6 @@ const pageUrl = computed( (): string =>
 );
 
 const labelPlaceholder = computed( (): string => subjectLabelPlaceholder( props.subject ) );
-
-/**
- * Opens the Schema editor in place of following the link, for a plain left click by someone
- * who may edit it. Anything else — a modifier, the middle button, no edit right — is left to
- * the browser, so the Schema page stays reachable and nothing here is a dead end.
- */
-function openSchemaEditor( event: MouseEvent ): void {
-	if ( !props.canEditSchema || !isPlainLeftClick( event ) ) {
-		return;
-	}
-
-	event.preventDefault();
-	emit( 'edit-schema' );
-}
 
 // EditableText commits once per edit, so a commit is both the change and the
 // end of the interaction: validate immediately rather than waiting for a blur.
@@ -435,46 +393,31 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-subject-edit-pane {
-	/* The name at the start, the Schema and where it is stored flush to the end. Baseline
-		rather than centre, because the three differ in size. A name too long to share the row
-		pushes the other two onto the line below. */
+	/* The name at the start, where it is stored flush to the end. Baseline rather than centre,
+		because the two differ in size. A name too long to share the row pushes the storage onto
+		the line below. */
 	&__header {
 		display: flex;
 		align-items: baseline;
 		flex-wrap: wrap;
 		gap: @spacing-25 @spacing-50;
 		margin-bottom: @spacing-75;
-
-		/* The field's first baseline is its label's, above the input the meta belongs beside. */
-		&--new {
-			align-items: last baseline;
-		}
 	}
 
+	/* A row of its own, as wide as the fields below it. */
 	&__label {
-		flex-grow: 1;
+		flex-basis: @size-full;
 	}
 
 	/* A heading for screen readers and outline tools, sized like the body around it. The
 		skin gives headings block padding of their own, which would push the row open.
-		It takes the free space, which is what puts the meta at the end of the row. */
+		It takes the free space, which is what puts the storage at the end of the row. */
 	&__name {
 		flex-grow: 1;
 		min-width: 0;
 		margin: 0;
 		padding-block: 0;
 		font-size: @font-size-medium;
-	}
-
-	/* Shrinkable, with `min-width: 0` so it may go below its content: the badge ellipsises
-		itself, but only once its parent is allowed to be narrower than the name inside it.
-		Under `flex-shrink: 0` a long Schema name pushed the row wider than the pane and the
-		whole form picked up a horizontal scrollbar. */
-	&__meta {
-		display: flex;
-		align-items: baseline;
-		gap: @spacing-50;
-		min-width: 0;
 	}
 
 	/* A page title can run long with no space to wrap at. */

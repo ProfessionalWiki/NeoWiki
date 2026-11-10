@@ -12,10 +12,44 @@
 			}"
 			:style="grownHeightStyle"
 			:title="dialogTitle"
-			:subtitle="headerSubjectId"
-			:use-close-button="true"
 			@update:open="onDialogUpdateOpen"
 		>
+			<!-- Codex's own header, reproduced to hold the Schema of the Subject on screen. -->
+			<template #header>
+				<div class="cdx-dialog__header__title-group">
+					<h2 class="cdx-dialog__header__title">
+						{{ dialogTitle }}
+					</h2>
+
+					<p
+						v-if="headerSubjectId !== undefined"
+						class="cdx-dialog__header__subtitle"
+					>
+						{{ headerSubjectId }}
+					</p>
+
+					<!-- A new tab: this dialog holds unsaved edits for every open pane and nothing
+						guards a navigation away from it. Inert during a save, like the form. -->
+					<SchemaNameDisplay
+						v-if="activePane !== undefined"
+						:schema-name="activePane.subject.getSchemaName()"
+						link="new-tab"
+						:inert="saving || undefined"
+						@click="openSchemaEditor"
+					/>
+				</div>
+
+				<CdxButton
+					class="cdx-dialog__header__close-button"
+					weight="quiet"
+					type="button"
+					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
+					@click="closeRequested"
+				>
+					<CdxIcon :icon="cdxIconClose" />
+				</CdxButton>
+			</template>
+
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
 				the ValueInput refs inside it. -->
@@ -70,9 +104,7 @@
 								:nested="pane.id !== rootPaneId"
 								:is-new="pane.isNew"
 								:unsaved-target-ids="unsavedTargetIds"
-								:can-edit-schema="pane.id === rootPaneId && canEditSchema"
 								@edit-relation-target="openRelationTargetFromForm"
-								@edit-schema="openSchemaEditor( pane.id )"
 							/>
 						</div>
 					</div>
@@ -132,7 +164,9 @@ import type { SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectE
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
-import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import { CdxButton, CdxDialog, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
+import { cdxIconClose } from '@wikimedia/codex-icons';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -156,6 +190,7 @@ import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
+import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import { DependentSubjectLoader, loadedSchemasOf } from '@/application/DependentSubjectLoader.ts';
@@ -498,15 +533,19 @@ watch( activePaneId, async ( shownId, hiddenId ) => {
 // dropped by it: the hosts keep this dialog mounted after it closes, so the fetch would otherwise
 // land in the next opening.
 /**
- * `SchemaEditorDialog` below is bound to the root's Schema, so only the root pane may open it —
- * a nested pane would put the reader in front of a Schema they did not point at. The pane has a
- * guard of its own; this one is where the consequence lives.
+ * Opens the Schema editor in place of following the link, for a plain left click by someone
+ * who may edit it. Anything else — a modifier, the middle button, no edit right — is left to
+ * the browser, so the Schema page stays reachable and nothing here is a dead end.
+ *
+ * Only while the root pane is on screen: `SchemaEditorDialog` below is bound to the root's
+ * Schema, and would put the reader of a nested pane in front of a Schema they did not point at.
  */
-function openSchemaEditor( paneId: string ): void {
-	if ( paneId !== rootPaneId.value ) {
+function openSchemaEditor( event: MouseEvent ): void {
+	if ( activePaneId.value !== rootPaneId.value || !canEditSchema.value || !isPlainLeftClick( event ) ) {
 		return;
 	}
 
+	event.preventDefault();
 	isSchemaEditorOpen.value = true;
 }
 
@@ -1058,12 +1097,14 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		min-height: min( var( --ext-neowiki-dialog-grown-height ), @ext-neowiki-dialog-height-limit );
 	}
 
-	/* The id on the title's line, where Codex stacks a subtitle below it, and centred on the
-		title as the header centres both on the close button. */
+	/* The id and the Schema on the title's line, where Codex stacks a subtitle below it, and
+		centred on the title as the header centres them all on the close button. Shrinkable, so
+		a long Schema name ellipsises rather than pushing the close button out of the dialog. */
 	.cdx-dialog__header__title-group {
 		flex-flow: row wrap;
 		align-items: center;
 		column-gap: @spacing-50;
+		min-width: 0;
 
 		/* Trimmed to the capitals and the baseline, so centring lines up the letters: the
 			monospace font leaves more room below its letters than the title's does, which
