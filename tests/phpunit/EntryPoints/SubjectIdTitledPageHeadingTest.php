@@ -4,8 +4,11 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use Article;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Parser;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
@@ -130,6 +133,68 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'No label defined', $browserTitle );
 	}
 
+	public function testTheHistoryOfAPageTitledByItsSubjectsIdNamesThePageByTheSubjectsLabelAlone(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'Ada Lovelace', $heading );
+		$this->assertStringNotContainsString( substr( self::SUBJECT_ID, 1 ), $heading );
+		$this->assertStringNotContainsString( 'Subject:', $heading );
+	}
+
+	public function testAnActionKeepsTheWordingOfItsHeading(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( 'Revision history', $heading );
+	}
+
+	/**
+	 * From MediaWiki 1.46 on, the history and edit headings carry the title as Parser::formatPageTitle()
+	 * markup in the page's language rather than as text.
+	 */
+	public function testAnActionHeadingHoldingTheTitleAsFormattedMarkupNamesThePageByTheSubjectsLabel(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+		$out = $this->actionOutput( 'history', self::SUBJECT_NAMESPACE_PAGE );
+		$out->setPageTitleMsg( $out->msg( 'history-title' )->rawParams( Html::rawElement(
+			'span',
+			[ 'lang' => 'en', 'dir' => 'ltr' ],
+			Parser::formatPageTitle( 'Subject', ':', ucfirst( self::SUBJECT_ID ) )
+		) ) );
+
+		$heading = $this->display( $out )->getPageTitle();
+
+		$this->assertStringContainsString( 'Ada Lovelace', $heading );
+		$this->assertStringNotContainsString( substr( self::SUBJECT_ID, 1 ), $heading );
+	}
+
+	public function testTheNameInAnActionHeadingIsIsolatedFromTheWordingAroundIt(): void {
+		$this->createPageLabelled( 'Ada Lovelace', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '<bdi>Ada Lovelace</bdi>', $heading );
+	}
+
+	public function testTheNameInAnActionHeadingIsEscaped(): void {
+		$this->createPageLabelled( '<i>Ada</i>', self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '&lt;i&gt;Ada&lt;/i&gt;', $heading );
+	}
+
+	public function testTheHistoryOfAPageTitledByTheIdOfASubjectWithoutALabelNamesThePageByTheBracketedId(): void {
+		$this->createPageLabelled( null, self::SUBJECT_NAMESPACE_PAGE );
+
+		$heading = $this->performAction( 'history', self::SUBJECT_NAMESPACE_PAGE )->getPageTitle();
+
+		$this->assertStringContainsString( '(' . self::SUBJECT_ID . ')', $heading );
+		$this->assertStringNotContainsString( 'No label defined', $heading );
+	}
+
 	private function createPageLabelled( ?string $label, string $pageName = self::SUBJECT_ID ): RevisionRecord {
 		return $this->createPageWithSubjects(
 			$pageName,
@@ -157,6 +222,24 @@ class SubjectIdTitledPageHeadingTest extends NeoWikiIntegrationTestCase {
 		$out->setRevisionId( $revisionId );
 
 		return $out;
+	}
+
+	private function performAction( string $actionName, string $pageName ): OutputPage {
+		$out = $this->actionOutput( $actionName, $pageName );
+
+		$this->getServiceContainer()->getActionFactory()
+			->getAction( $actionName, Article::newFromTitle( $out->getTitle(), $out->getContext() ), $out->getContext() )
+			->show();
+
+		return $this->display( $out );
+	}
+
+	private function actionOutput( string $actionName, string $pageName ): OutputPage {
+		$context = new RequestContext();
+		$context->setRequest( new FauxRequest( [ 'action' => $actionName ] ) );
+		$context->setTitle( Title::newFromText( $pageName ) );
+
+		return $context->getOutput();
 	}
 
 	private function display( OutputPage $out ): OutputPage {

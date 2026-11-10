@@ -99,6 +99,8 @@ class NeoWikiHooks {
 
 		if ( self::isContentPage( $out ) ) {
 			self::handleContentPage( $out, $skin );
+		} elseif ( self::isActionOnContentPage( $out ) ) {
+			self::nameActionPageByMainSubject( $out );
 		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
 			self::handleSchemaPage( $out, $skin );
 		} elseif ( self::isLayoutPage( $out ) && $out->isArticle() ) {
@@ -122,8 +124,18 @@ class NeoWikiHooks {
 	}
 
 	private static function isContentPage( OutputPage $out ): bool {
-		return $out->isArticle()
-			&& MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
+		return $out->isArticle() && self::isInContentNamespace( $out );
+	}
+
+	/**
+	 * Diffs and old revisions are views too, so they stay with the page view.
+	 */
+	private static function isActionOnContentPage( OutputPage $out ): bool {
+		return self::isInContentNamespace( $out ) && $out->getActionName() !== 'view';
+	}
+
+	private static function isInContentNamespace( OutputPage $out ): bool {
+		return MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
 	}
 
 	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
@@ -241,6 +253,17 @@ class NeoWikiHooks {
 		}
 
 		SubjectLabelHtml::headPage( $out, $subject->getLabel()?->text, $subject->getId() );
+	}
+
+	private static function nameActionPageByMainSubject( OutputPage $out ): void {
+		$title = $out->getTitle();
+		$subject = NeoWikiExtension::getInstance()->newViewHtmlBuilder()->subjectInPlaceOfPageTitle( $title, null );
+
+		if ( $subject === null ) {
+			return;
+		}
+
+		SubjectLabelHtml::nameInHeading( $out, $title, $subject->getLabel()?->text, $subject->getId() );
 	}
 
 	public static function onDifferenceEngineRenderRevisionAddParserOutput(
