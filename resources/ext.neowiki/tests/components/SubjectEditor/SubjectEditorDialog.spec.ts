@@ -25,6 +25,7 @@ import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectE
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
@@ -396,6 +397,13 @@ describe( 'SubjectEditorDialog', () => {
 			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
+	it( 'keeps its close button on wide screens', async () => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		expect( wrapper.findComponent( DialogHeader ).props( 'useCloseButton' ) ).toBe( true );
+	} );
+
 	// Reached through a pane: the real Teleport moves the dialog out of the wrapper's subtree, where
 	// a query rooted at the wrapper finds no header and so reads every id as absent.
 	function dialogHeader( wrapper: VueWrapper ): DOMWrapper<Element> {
@@ -406,7 +414,7 @@ describe( 'SubjectEditorDialog', () => {
 	}
 
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
-		return dialogHeader( wrapper ).element.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
+		return dialogHeader( wrapper ).element.querySelector( '.ext-neowiki-subject-editor-dialog__subject-id' )?.textContent?.trim() ?? null;
 	}
 
 	function schemaBadge( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
@@ -1945,7 +1953,7 @@ describe( 'SubjectEditorDialog', () => {
 					await makePaneDirty( wrapper, 0 );
 					await triggerSave( wrapper, '' );
 
-					await wrapper.find( '.cdx-dialog__header__close-button' ).trigger( 'click' );
+					await wrapper.find( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
 
 					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
@@ -1996,7 +2004,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithThreePanesOpen();
 				await makePaneDirty( wrapper, 0 );
 
-				await wrapper.find( '.cdx-dialog__header__close-button' ).trigger( 'click' );
+				await wrapper.find( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
 
 				expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
 			} );

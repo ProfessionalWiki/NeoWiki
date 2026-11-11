@@ -9,10 +9,17 @@
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
-		:use-close-button="true"
 		:inert="editorStarting || undefined"
 		@update:open="onSchemaStepUpdateOpen"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-subject-creator-title' ).text()"
+				:use-close-button="true"
+				@close="onSchemaStepUpdateOpen( false )"
+			/>
+		</template>
+
 		<EditNoticeList :notices="shownNotices" />
 
 		<SchemaPicker
@@ -198,6 +205,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxAccordion, CdxDialog, CdxField, CdxMessage, CdxRadio } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import type { CreatedSubjectPage, DependentSubjects, SubjectCreatorTarget } from '@/stores/SubjectStore.ts';
@@ -1092,14 +1100,8 @@ defineExpose( { hasChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-creator {
-	/* The Schema step, which the Subject editor takes over from. */
-	&-dialog.cdx-dialog {
-		.ext-neowiki-subject-dialog-header();
-	}
-
 	/* Sibling of the edit-summary section below it, and built to read as one. */
 	&-page-section.cdx-accordion {
 		border-bottom: 0;

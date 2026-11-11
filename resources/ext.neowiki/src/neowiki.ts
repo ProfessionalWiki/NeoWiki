@@ -5,6 +5,7 @@ import '@/codex/button-focus.less';
 import '@/codex/menu-button-focus.less';
 import '@/codex/accordion-focus.less';
 import '@/codex/menu-footer.less';
+import '@/codex/dialog-spacing.less';
 import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 import NeoWikiApp from '@/components/NeoWikiApp.vue';
 import { CdxTooltip } from '@wikimedia/codex';

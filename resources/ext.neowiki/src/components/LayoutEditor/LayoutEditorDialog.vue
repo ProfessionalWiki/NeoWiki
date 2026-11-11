@@ -2,11 +2,18 @@
 	<div>
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-layout-editor-dialog"
 			:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
+			<template #header>
+				<DialogHeader
+					:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
+					:use-close-button="true"
+					@close="onDialogUpdateOpen( false )"
+				/>
+			</template>
+
 			<LayoutEditor
 				ref="layoutEditor"
 				:initial-layout="initialLayout"
@@ -37,6 +44,7 @@ import type { LayoutEditorExposes } from '@/components/LayoutEditor/LayoutEditor
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';

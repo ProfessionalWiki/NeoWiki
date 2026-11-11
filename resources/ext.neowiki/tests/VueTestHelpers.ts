@@ -289,12 +289,20 @@ export function openDialogTitles(): string[] {
 }
 
 /**
+ * Presses Close in a dialog's header. Reached through the header's component, which a real CdxDialog teleports out of
+ * the wrapper's own element.
+ */
+export async function pressHeaderClose( wrapper: VueWrapper ): Promise<void> {
+	await wrapper.findComponent( { name: 'DialogHeader' } ).get( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
+}
+
+/**
  * CdxDialog as a stub that still renders its slots. shallowMount's auto-stubs render none, and a
  * dialog's controls live in its #footer slot, so a test driving one needs them in the tree.
  */
 export const CdxDialogStub = {
-	template: '<div v-if="open" class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton', 'defaultAction' ],
+	template: '<div v-if="open" class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
+	props: [ 'open', 'title', 'defaultAction' ],
 	emits: [ 'update:open' ],
 };
 

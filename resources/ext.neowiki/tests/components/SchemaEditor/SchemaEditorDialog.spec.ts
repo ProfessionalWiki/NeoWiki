@@ -7,6 +7,7 @@ import EditableText from '@/components/common/EditableText.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
@@ -267,12 +268,10 @@ describe( 'SchemaEditorDialog', () => {
 	} );
 
 	describe( 'Close button', () => {
-		// From Codex 2.3.3 the header hides its close button at 640px and wider unless the dialog
-		// asks for one, even when the header slot renders that button itself.
 		it( 'keeps its close button on wide screens', () => {
 			const wrapper = mountComponent();
 
-			expect( wrapper.findComponent( CdxDialog ).props( 'useCloseButton' ) ).toBe( true );
+			expect( wrapper.findComponent( DialogHeader ).props( 'useCloseButton' ) ).toBe( true );
 		} );
 	} );
 

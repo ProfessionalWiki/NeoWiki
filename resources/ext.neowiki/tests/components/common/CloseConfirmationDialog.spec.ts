@@ -2,7 +2,7 @@ import { enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
-import { createI18nMock, openDialogTitles, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, openDialogTitles, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -27,6 +27,14 @@ describe( 'CloseConfirmationDialog', () => {
 		wrapper.findComponent( CdxDialog ).vm.$emit( 'primary' );
 
 		expect( wrapper.emitted( 'discard' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'emits keep-editing on its header\'s Close', async () => {
+		const wrapper = mountComponent();
+
+		await pressHeaderClose( wrapper );
+
+		expect( wrapper.emitted( 'keep-editing' ) ).toHaveLength( 1 );
 	} );
 
 	it( 'emits keep-editing on default action', () => {
