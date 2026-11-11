@@ -129,10 +129,10 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-layout-editor {
-	padding: @spacing-100;
+	padding: @spacing-50 @spacing-100 @spacing-100;
 
 	@media ( min-width: @min-width-breakpoint-desktop ) {
-		padding: @spacing-150;
+		padding: @spacing-50 @spacing-150 @spacing-100;
 	}
 
 	&__description {

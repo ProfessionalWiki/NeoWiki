@@ -23,6 +23,8 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectEditor.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
+import PaneDivider from '@/components/common/PaneDivider.vue';
+import EditorPanes from '@/components/common/EditorPanes.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import DialogHeader from '@/components/common/DialogHeader.vue';
@@ -1537,6 +1539,19 @@ describe( 'SubjectEditorDialog', () => {
 				.toContain( 'display: none' );
 		} );
 
+		it( 'remembers the width of the list of open Subjects apart from other editors\' lists', async () => {
+			const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
+			const global = globalThis as unknown as { mw: Record<string, unknown> };
+			global.mw = { ...global.mw, storage };
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 400 );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
+			await nextTick();
+
+			expect( storage.set ).toHaveBeenCalledWith( 'neowiki-subject-editor-pane-size', '400' );
+		} );
+
 		it( 'shows a newly opened relation target', async () => {
 			const { wrapper } = await mountWithSecondPaneOpen();
 
@@ -1685,7 +1700,7 @@ describe( 'SubjectEditorDialog', () => {
 		describe( 'Scroll position', () => {
 			function formScroller( wrapper: VueWrapper ): Element {
 				return wrapper.findComponent( SubjectEditPane ).element
-					.closest( '.ext-neowiki-subject-editor-dialog__surface' ) as Element;
+					.closest( '.ext-neowiki-editor-panes__pane' ) as Element;
 			}
 
 			async function mountOnRootScrolledTo( scrollTop: number ): Promise<VueWrapper> {
@@ -2680,59 +2695,24 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 			} );
 
-			// Auto-placement puts each child in its own column, and the divider between them draws
-			// the rule between them, so both rest on this order. jsdom resolves no layout: this pins
-			// the structure, and the placement itself is verified in the browser.
-			it( 'renders the navigator and the pane region as sibling surfaces, navigator first', async () => {
+			it( 'puts the form in the main pane, beside the navigator', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
 
-				const content = wrapper.find( '.ext-neowiki-subject-editor-dialog__content' );
+				const mainPane = ( wrapper.findComponent( EditorPanes ).vm as unknown as { mainPane: Element } ).mainPane;
 
-				expect( Array.from( content.element.children ).map( ( child ) => child.className ) )
-					.toEqual( [
-						'ext-neowiki-subject-editor-dialog__surface',
-						'ext-neowiki-subject-editor-dialog__divider',
-						'ext-neowiki-subject-editor-dialog__surface',
-					] );
+				expect( mainPane.contains( wrapper.find( '.ext-neowiki-subject-editor-dialog__panels' ).element ) ).toBe( true );
+				expect( mainPane.contains( wrapper.findComponent( OpenSubjectList ).element ) ).toBe( false );
 			} );
 
-			it( 'renders the navigator inside the first surface', async () => {
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-
-				const surfaces = wrapper.findAll(
-					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
-				);
-
-				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( true );
-				expect( surfaces[ 1 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
-			} );
-
-			// The track list and the divider turn on together: a divider left behind would
-			// hold a track open for a column that is not rendered.
-			it( 'renders no divider when there is no navigator', async () => {
+			it( 'shows neither the navigator nor its divider while one Subject is open', async () => {
 				const wrapper = mountComponent( false, {} );
 				await flushPromises();
 
-				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__divider' ).exists() ).toBe( false );
-			} );
-
-			it( 'renders only the form surface when there is no navigator', async () => {
-				const wrapper = mountComponent( false, {} );
-				await flushPromises();
-
-				const surfaces = wrapper.findAll(
-					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
-				);
-
-				expect( surfaces ).toHaveLength( 1 );
-				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( false );
-				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
+				expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
 			} );
 
 			// Every listed Subject is a pane already, so a choice is a switch and never a load.
@@ -3733,10 +3713,9 @@ describe( 'SubjectEditorDialog', () => {
 			const content = wrapper.find( '.ext-neowiki-subject-editor-dialog__content' );
 			const children = Array.from( content.element.children );
 
-			expect( children.map( ( child ) => child.className ) ).toEqual( [
-				'ext-neowiki-edit-notices',
-				'ext-neowiki-subject-editor-dialog__surface',
-			] );
+			expect( children ).toHaveLength( 2 );
+			expect( children[ 0 ].classList ).toContain( 'ext-neowiki-edit-notices' );
+			expect( children[ 1 ].classList ).toContain( 'ext-neowiki-subject-editor-dialog__panes' );
 
 			repository.mockRestore();
 		} );
