@@ -276,7 +276,6 @@
 	"neowiki-delete-error": "Error notification title shown when deleting a page fails. $1 is the page name.",
 	"neowiki-layout-editor-description": "Label for the description field in the layout editor.",
 	"neowiki-layout-editor-description-placeholder": "Placeholder text for the description field in the layout editor.",
-	"neowiki-layout-editor-schema": "Label for the read-only schema field in the layout editor.",
 	"neowiki-layout-editor-view-type": "Label for the read-only view type field in the layout editor.",
 	"neowiki-layout-editor-show-all-properties": "Label for the button that reveals all hidden properties, keeping the existing order of the shown ones.",
 	"neowiki-layout-editor-shown-count": "Header in the display rule editor showing how many properties are visible. $1 is the number shown; $2 is the total number of properties.",

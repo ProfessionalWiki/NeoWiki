@@ -11,7 +11,15 @@
 					:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
 					:use-close-button="true"
 					@close="onDialogUpdateOpen( false )"
-				/>
+				>
+					<!-- A new tab: nothing guards a navigation away from the unsaved Layout. -->
+					<template #metadata>
+						<SchemaNameDisplay
+							:schema-name="props.initialLayout.getSchema()"
+							link="new-tab"
+						/>
+					</template>
+				</DialogHeader>
 			</template>
 
 			<EditorPanes>
@@ -47,6 +55,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import EditorPanes from '@/components/common/EditorPanes.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { ref, watch } from 'vue';
