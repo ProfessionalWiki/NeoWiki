@@ -410,7 +410,6 @@
 	"neowiki-edit-summary-help-text-layout": "Changes affect all views using this Layout.",
 	"neowiki-layout-editor-description": "Description",
 	"neowiki-layout-editor-description-placeholder": "Enter a description for the layout",
-	"neowiki-layout-editor-schema": "Schema",
 	"neowiki-layout-editor-view-type": "View type",
 	"neowiki-layout-editor-show-all-properties": "Show all properties",
 	"neowiki-layout-editor-shown-count": "$1 of $2 shown",
