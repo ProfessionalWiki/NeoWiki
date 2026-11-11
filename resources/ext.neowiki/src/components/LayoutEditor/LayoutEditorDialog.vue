@@ -14,11 +14,13 @@
 				/>
 			</template>
 
-			<LayoutEditor
-				ref="layoutEditor"
-				:initial-layout="initialLayout"
-				@change="markChanged"
-			/>
+			<EditorPanes>
+				<LayoutEditor
+					ref="layoutEditor"
+					:initial-layout="initialLayout"
+					@change="markChanged"
+				/>
+			</EditorPanes>
 
 			<template #footer>
 				<SummaryAction
@@ -45,6 +47,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
+import EditorPanes from '@/components/common/EditorPanes.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
@@ -117,14 +120,12 @@ defineExpose( { hasChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-layout-editor-dialog {
 	&.cdx-dialog {
+		.ext-neowiki-dialog-grid-body();
 		max-width: @size-5600;
-
-		.cdx-dialog__body {
-			padding: 0;
-		}
 	}
 }
 </style>
