@@ -349,6 +349,23 @@ describe( 'PaneDivider', () => {
 			expect( document.documentElement.classList.contains( 'ext-neowiki-pane-resizing' ) ).toBe( false );
 		} );
 
+		it( 'shows itself as held', async () => {
+			const wrapper = mountDivider();
+
+			await pointer( wrapper, 'pointerdown', { clientX: 500 } );
+
+			expect( wrapper.classes() ).toContain( 'ext-neowiki-pane-divider--dragging' );
+		} );
+
+		it( 'shows itself as let go once the drag ends', async () => {
+			const wrapper = mountDivider();
+
+			await drag( wrapper, 500, 560 );
+			await pointer( wrapper, 'pointerup' );
+
+			expect( wrapper.classes() ).not.toContain( 'ext-neowiki-pane-divider--dragging' );
+		} );
+
 		it( 'unmarks the page when it is torn down mid-drag', async () => {
 			const wrapper = mountDivider();
 
