@@ -8,11 +8,11 @@ data is curated for demonstration and is not authoritative.
 
 == Which museums have the most visitors? ==
 
-{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:Annual_visitors ?Annual_visitors } ORDER BY DESC(?Annual_visitors)|linkColumns=Museum}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; Museum:Annual_visitors ?Annual_visitors } ORDER BY DESC(?Annual_visitors)|linkColumns=Museum}}
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?City ?Founded ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:City ?c . ?c rdfs:label ?City . OPTIONAL { ?m neo-prop:Founded ?Founded } OPTIONAL { ?m neo-prop:Annual_visitors ?Annual_visitors } } ORDER BY ?Museum|linkColumns=Museum, City}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Museum ?City ?Founded ?Annual_visitors WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; Museum:City ?c . ?c rdfs:label ?City . OPTIONAL { ?m Museum:Founded ?Founded } OPTIONAL { ?m Museum:Annual_visitors ?Annual_visitors } } ORDER BY ?Museum|linkColumns=Museum, City}}
 
 == Add your own ==
 

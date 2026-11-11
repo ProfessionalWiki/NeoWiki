@@ -18,6 +18,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelation;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -213,7 +214,7 @@ class RdfPageProjector implements PageProjector {
 
 			$this->warnOnDroppedValues( $statement, count( $terms ), $pageId );
 
-			$predicate = $this->namespaces->property( $statement->getPropertyName()->text );
+			$predicate = $this->namespaces->property( $subject->getSchemaName(), $statement->getPropertyName()->text );
 
 			foreach ( $terms as $term ) {
 				$quads[] = new Quad( $subjectIri, $predicate, $term, $graph );
@@ -230,7 +231,7 @@ class RdfPageProjector implements PageProjector {
 		$quads = [];
 
 		foreach ( $subject->getTypedRelations()->relations as $relation ) {
-			$quads = array_merge( $quads, $this->projectRelation( $relation, $subjectIri, $graph ) );
+			$quads = array_merge( $quads, $this->projectRelation( $relation, $subject->getSchemaName(), $subjectIri, $graph ) );
 		}
 
 		return $quads;
@@ -242,14 +243,14 @@ class RdfPageProjector implements PageProjector {
 	 *
 	 * @return Quad[]
 	 */
-	private function projectRelation( TypedRelation $relation, Iri $subjectIri, Iri $graph ): array {
+	private function projectRelation( TypedRelation $relation, SchemaName $schemaName, Iri $subjectIri, Iri $graph ): array {
 		$targetIri = $this->subjectIris->targetIri( $relation->targetId );
 
 		if ( $targetIri === null ) {
 			return [];
 		}
 
-		$predicate = $this->namespaces->property( $relation->propertyName->text );
+		$predicate = $this->namespaces->property( $schemaName, $relation->propertyName->text );
 		$relationIri = $this->namespaces->relationNode( $relation->id );
 
 		return [

@@ -55,7 +55,7 @@ readonly class SparqlPlugin {
 			// Prefix-less: Turtle with an empty prefix table emits full IRIs and no @prefix directives,
 			// which is what is valid inside a SPARQL INSERT DATA block. The projection's own serializer
 			// must NOT be reused; its prefix table would emit @prefix, which is illegal there.
-			serializer: new HardfRdfSerializer( [], $logger ),
+			serializer: HardfRdfSerializer::withPrefixes( [], $logger ),
 			projectionName: $store->projection,
 			endpointUrl: $store->updateUrl,
 		);
