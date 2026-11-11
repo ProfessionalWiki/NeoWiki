@@ -109,7 +109,7 @@ php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 
 ## 5. Native vs EDM output
 
-Real output from the demo wiki (Turtle; shared prefix header trimmed — the `neo*` CURIEs are the
+Real output from the demo wiki (Turtle; shared prefix header trimmed — the `neo*` and `Person:` CURIEs are the
 [IRI scheme](../api/rdf-export.md#iri-scheme)). The **native** projection of `Pablo_Picasso` —
 NeoWiki's own vocabulary, lossless, with page metadata and the two-layer relation:
 
@@ -123,15 +123,15 @@ NeoWiki's own vocabulary, lossless, with page metadata and the two-layer relatio
     neo:hasSubject neo-subj:s2picasso2aaaa2.
 neo-subj:s2picasso2aaaa2 a neo-schema:Person;
     rdfs:label "Pablo Picasso";
-    neo-prop:Description "Spanish painter, sculptor, and printmaker who co-founded the Cubist movement…";
-    neo-prop:Gender "Male";
-    neo-prop:Birth_date "1881-10-25"^^xsd:date;
-    neo-prop:Source "A Life of Picasso I: The Prodigy: 1881-1906 by John Richardson (ISBN 978-0375711497)";
-    neo-prop:Birth_place neo-subj:s2birthcity2aa2.
+    Person:Description "Spanish painter, sculptor, and printmaker who co-founded the Cubist movement…";
+    Person:Gender "Male";
+    Person:Birth_date "1881-10-25"^^xsd:date;
+    Person:Source "A Life of Picasso I: The Prodigy: 1881-1906 by John Richardson (ISBN 978-0375711497)";
+    Person:Birth_place neo-subj:s2birthcity2aa2.
 neo-rel:r2picasso2city2 a neo:Relation;
     neo:source neo-subj:s2picasso2aaaa2;
     neo:target neo-subj:s2birthcity2aa2;
-    neo:relationType neo-prop:Birth_place.
+    neo:relationType Person:Birth_place.
 ```
 
 The **EDM** projection of the same page — target vocabulary only, no page metadata, no relation reification:
@@ -211,11 +211,11 @@ The projections share entity IRIs, so a single query can also cross them. Here t
 PREFIX edm: <http://www.europeana.eu/schemas/edm/>
 PREFIX rdaGr2: <http://rdvocab.info/ElementsGr2/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX neo-prop: <https://wiki.example/prop/>
+PREFIX Person: <https://wiki.example/prop/Person/>
 
 SELECT ?agent ?dateOfBirth ?source ?edmGraph ?nativeGraph WHERE {
   GRAPH ?edmGraph { ?a a edm:Agent ; rdaGr2:dateOfBirth ?dateOfBirth }
-  GRAPH ?nativeGraph { ?a rdfs:label ?agent ; neo-prop:Source ?source }
+  GRAPH ?nativeGraph { ?a rdfs:label ?agent ; Person:Source ?source }
 }
 ```
 

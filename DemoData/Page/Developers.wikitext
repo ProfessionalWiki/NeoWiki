@@ -15,12 +15,12 @@ The <code><nowiki>{{#sparql_raw}}</nowiki></code> parser function runs a SPARQL 
 Source:
 
 <syntaxhighlight lang="mediawiki">
-{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Museum/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
 </syntaxhighlight>
 
 Result:
 
-{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
+{{#sparql_raw:SELECT ?museum ?visitors WHERE { ?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <{{SERVER}}/schema/Museum> . ?m <http://www.w3.org/2000/01/rdf-schema#label> ?museum . ?m <{{SERVER}}/prop/Museum/Annual_visitors> ?visitors } ORDER BY DESC(?visitors) LIMIT 5}}
 
 {{#ifexist:SPARQL queries|[[SPARQL queries]] has more examples, from Lua and over REST too.}}
 
@@ -89,7 +89,7 @@ function p.largestMuseums( frame )
 		'SELECT ?label ?visitors WHERE { ' ..
 		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
 		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
-		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
+		'?m <' .. base .. '/prop/Museum/Annual_visitors> ?visitors ' ..
 		'} ORDER BY DESC(?visitors) LIMIT 3'
 	)
 
