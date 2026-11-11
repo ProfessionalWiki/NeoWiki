@@ -93,7 +93,7 @@ class RdfSubjectExporterTest extends TestCase {
 		)->exportBySubjectId( new SubjectId( self::SUBJECT_ID ), RdfFormat::TriG );
 
 		$this->assertSame(
-			( new HardfRdfSerializer( [], new NullLogger() ) )->serialize( $quads, RdfFormat::TriG ),
+			HardfRdfSerializer::withPrefixes( [], new NullLogger() )->serialize( $quads, RdfFormat::TriG ),
 			$document,
 			'The document is the projected Subject serialized in the requested format.'
 		);
@@ -109,7 +109,7 @@ class RdfSubjectExporterTest extends TestCase {
 			new SubjectHostingPageResolver( $lookup, new StubPageReadAuthorizer( $authorized ) ),
 			$this->fixedLoader( $loadedPage ),
 			$projector ?? new FixedPageProjector( new QuadList() ),
-			new HardfRdfSerializer( [], new NullLogger() ),
+			HardfRdfSerializer::withPrefixes( [], new NullLogger() ),
 		);
 	}
 

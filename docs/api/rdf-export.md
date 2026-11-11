@@ -28,8 +28,8 @@ All NeoWiki IRIs live under `$base` (`$wgNeoWikiRdfBaseUri`). Standard vocabular
 |---|---|---|
 | `neo:` | `$base/ontology/` | NeoWiki vocabulary terms (`neo:Page`, `neo:Relation`, `neo:hasSubject`, `neo:source`, …) |
 | `neo-subj:` | `$base/entity/` | Subject IRIs (`neo-subj:s1demo8aaaaaab5`) |
-| `neo-prop:` | `$base/prop/` | Property predicates (`neo-prop:Has_author`) |
 | `neo-schema:` | `$base/schema/` | Schema classes (`neo-schema:Person`) |
+| `{Schema}:` | `$base/prop/{Schema}/` | Property predicates of that Schema (`Person:Birth_date`) |
 | `neo-rel:` | `$base/relation/` | Relation node IRIs (`neo-rel:r1demo8aaaaaaD6`) |
 | `neo-page:` | `$base/page/` | Page resource IRIs (`neo-page:42`) — the subject of the page-metadata triples |
 
@@ -43,11 +43,14 @@ QLever always does, and Oxigraph does with `--union-default-graph` — and on a 
 page data only through `GRAPH`. Scope each pattern by the graph holding it rather than wrapping a whole query in one
 `GRAPH` block: patterns sharing a block must match within a single page.
 
-Property and Schema names form the local part of their IRI: spaces become underscores (`Has author` →
-`neo-prop:Has_author`), and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick, control characters) are
-percent-encoded. Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides when a name already
-contains an underscore — `Has author` and `Has_author` share the `neo-prop:Has_author` IRI, which the native projection
-accepts. The base URI is trusted admin config and is not encoded.
+In IRIs, Property and Schema names have their spaces replaced by underscores (`Birth date` → `Person:Birth_date`), and
+`/`, `#`, `?` and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick, control characters) percent-encoded.
+Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides when a name already contains an
+underscore — `Has author` and `Has_author` share the `Book:Has_author` IRI, which the native projection accepts. The
+base URI is trusted admin config and is not encoded.
+
+Turtle and TriG write a Schema's predicates with a prefix named after the Schema where they can
+(`Annual_attendance:Year`), and in full otherwise.
 
 A `url` value projects as an **IRI object** (`<https://…>`); a value that is not a valid absolute IRI falls back to
 an `xsd:anyURI` literal. The other value types map to `xsd` datatypes: `text`/`select` →
@@ -67,14 +70,14 @@ value `rdfs:label`, whose scheme is one of the document's `@prefix` labels.
 A Subject becomes one RDF resource: its `rdf:type` is its Schema's `neo-schema:` class, and `rdfs:label` is always
 emitted. A Subject with no label takes the page name when it is that page's Main Subject and its Schema
 name otherwise ([ADR 31](../adr/031-optional-subject-labels.md)). Each Statement adds triples whose predicate is the
-property's `neo-prop:` IRI, one per part of a multi-part Value.
+property's IRI under the Subject's Schema, one per part of a multi-part Value.
 
 A Relation is emitted twice, so that a simple query never has to navigate reification:
 
 | Layer | Triples |
 |---|---|
-| Direct | `neo-subj:<source> neo-prop:<property> neo-subj:<target>` |
-| Reified | `neo-rel:<relationId> a neo:Relation`, carrying `neo:source`, `neo:target`, and `neo:relationType neo-prop:<property>` |
+| Direct | `neo-subj:<source> <Schema>:<property> neo-subj:<target>` |
+| Reified | `neo-rel:<relationId> a neo:Relation`, carrying `neo:source`, `neo:target`, and `neo:relationType <Schema>:<property>` |
 
 Page metadata describes the `neo-page:` resource, in the same named graph as the page's Subjects:
 

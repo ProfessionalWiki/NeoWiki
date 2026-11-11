@@ -13,6 +13,7 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfFormat;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfLiteralFactory;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfTerm;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
@@ -38,7 +39,7 @@ class HardfRdfSerializerTest extends TestCase {
 	}
 
 	private function serializer(): HardfRdfSerializer {
-		return new HardfRdfSerializer( $this->ns->prefixMap(), $this->logger );
+		return HardfRdfSerializer::withNamespaces( $this->ns, $this->logger );
 	}
 
 	private function personQuads( int $pageId, string $subjectId ): QuadList {
@@ -48,9 +49,9 @@ class HardfRdfSerializerTest extends TestCase {
 		return QuadList::fromArray( [
 			new Quad( $subject, $this->ns->rdfType(), $this->ns->schemaClass( new SchemaName( 'Person' ) ), $graph ),
 			new Quad( $subject, $this->ns->rdfsLabel(), new Literal( 'John Doe', $this->ns->xsd( 'string' ) ), $graph ),
-			new Quad( $subject, $this->ns->property( 'Age' ), new Literal( '42', $this->ns->xsd( 'integer' ) ), $graph ),
-			new Quad( $subject, $this->ns->property( 'Active' ), new Literal( 'true', $this->ns->xsd( 'boolean' ) ), $graph ),
-			new Quad( $subject, $this->ns->property( 'Website' ), new Literal( 'https://x', $this->ns->xsd( 'anyURI' ) ), $graph ),
+			new Quad( $subject, $this->ns->property( new SchemaName( 'Person' ), 'Age' ), new Literal( '42', $this->ns->xsd( 'integer' ) ), $graph ),
+			new Quad( $subject, $this->ns->property( new SchemaName( 'Person' ), 'Active' ), new Literal( 'true', $this->ns->xsd( 'boolean' ) ), $graph ),
+			new Quad( $subject, $this->ns->property( new SchemaName( 'Person' ), 'Website' ), new Literal( 'https://x', $this->ns->xsd( 'anyURI' ) ), $graph ),
 		] );
 	}
 
@@ -59,7 +60,7 @@ class HardfRdfSerializerTest extends TestCase {
 
 		$expected = <<<TRIG
 			@prefix neo-subj: <https://wiki.example/entity/> .
-			@prefix neo-prop: <https://wiki.example/prop/> .
+			@prefix Person: <https://wiki.example/prop/Person/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix neo-page: <https://wiki.example/page/> .
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -67,9 +68,9 @@ class HardfRdfSerializerTest extends TestCase {
 			neo-page:1 {
 				neo-subj:s1demo8aaaaaab5 a neo-schema:Person ;
 					rdfs:label "John Doe" ;
-					neo-prop:Age 42 ;
-					neo-prop:Active true ;
-					neo-prop:Website "https://x"^^xsd:anyURI .
+					Person:Age 42 ;
+					Person:Active true ;
+					Person:Website "https://x"^^xsd:anyURI .
 			}
 			TRIG;
 
@@ -81,15 +82,15 @@ class HardfRdfSerializerTest extends TestCase {
 
 		$expected = <<<TURTLE
 			@prefix neo-subj: <https://wiki.example/entity/> .
-			@prefix neo-prop: <https://wiki.example/prop/> .
+			@prefix Person: <https://wiki.example/prop/Person/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 			@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 			neo-subj:s1demo8aaaaaab5 a neo-schema:Person ;
 				rdfs:label "John Doe" ;
-				neo-prop:Age 42 ;
-				neo-prop:Active true ;
-				neo-prop:Website "https://x"^^xsd:anyURI .
+				Person:Age 42 ;
+				Person:Active true ;
+				Person:Website "https://x"^^xsd:anyURI .
 			TURTLE;
 
 		$this->assertSame( ParsedRdf::canonicalQuads( $expected ), ParsedRdf::canonicalQuads( $output ) );
@@ -134,8 +135,8 @@ class HardfRdfSerializerTest extends TestCase {
 	public function testOutputUsesReadablePrefixedNames(): void {
 		$output = $this->serializer()->serialize( $this->personQuads( 1, 's1demo8aaaaaab5' ), RdfFormat::TriG );
 
-		$this->assertStringContainsString( '@prefix neo-prop:', $output );
 		$this->assertStringContainsString( 'neo-schema:Person', $output );
+		$this->assertStringContainsString( 'Person:Age', $output );
 	}
 
 	public function testLiteralWithEmbeddedQuotesIsEscapedInOutputAndStaysOneQuad(): void {
@@ -187,7 +188,7 @@ class HardfRdfSerializerTest extends TestCase {
 	}
 
 	private function exampleSerializer(): HardfRdfSerializer {
-		return new HardfRdfSerializer( [ 'ex' => self::EXAMPLE_NAMESPACE ], $this->logger );
+		return HardfRdfSerializer::withPrefixes( [ 'ex' => self::EXAMPLE_NAMESPACE ], $this->logger );
 	}
 
 	private function documentWithExamplePrefix( string ...$lines ): string {
@@ -278,7 +279,7 @@ class HardfRdfSerializerTest extends TestCase {
 		);
 
 		$this->assertStatesNothingBeyond(
-			"<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Website> <$iri> .",
+			"<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/City/Website> <$iri> .",
 			$output
 		);
 	}
@@ -287,13 +288,18 @@ class HardfRdfSerializerTest extends TestCase {
 		yield 'forging a triple through the rdfs prefix' => [ self::FORGING_IRI ];
 		yield 'reading as another IRI through the rdfs prefix' => [ 'rdfs:label' ];
 		yield 'resembling the rdfs namespace' => [ 'http://wwwxw3.org/2000/01/rdf-schema#true' ];
+		yield 'reading as a property through a Schema prefix' => [ 'City:x' ];
 	}
 
 	private function websiteQuad( Iri $website ): Quad {
+		return $this->schemaPropertyQuad( 'City', 'Website', $website );
+	}
+
+	private function schemaPropertyQuad( string $schemaName, string $propertyName, RdfTerm $value ): Quad {
 		return new Quad(
 			$this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
-			$this->ns->property( 'Website' ),
-			$website,
+			$this->ns->property( new SchemaName( $schemaName ), $propertyName ),
+			$value,
 			$this->ns->page( new PageId( 1 ) )
 		);
 	}
@@ -335,8 +341,8 @@ class HardfRdfSerializerTest extends TestCase {
 			"<rdfs:x;rdfs:label'forged'> { <https://wiki.example/entity/s1demo8aaaaaab5> <http://www.w3.org/2000/01/rdf-schema#label> \"Berlin\" }",
 		];
 		yield 'datatype' => [
-			new Quad( $subject, $ns->property( 'Age' ), new Literal( '42', $forging ), $graph ),
-			"<https://wiki.example/page/1> { <https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Age> \"42\"^^<rdfs:x;rdfs:label'forged'> }",
+			new Quad( $subject, $ns->property( new SchemaName( 'Person' ), 'Age' ), new Literal( '42', $forging ), $graph ),
+			"<https://wiki.example/page/1> { <https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Person/Age> \"42\"^^<rdfs:x;rdfs:label'forged'> }",
 		];
 	}
 
@@ -352,7 +358,7 @@ class HardfRdfSerializerTest extends TestCase {
 			new Iri( 'http://wiki.example/page/1' )
 		);
 
-		$output = ( new HardfRdfSerializer( $prefixes, $this->logger ) )->serialize( new QuadList( $quad ), RdfFormat::Turtle );
+		$output = HardfRdfSerializer::withPrefixes( $prefixes, $this->logger )->serialize( new QuadList( $quad ), RdfFormat::Turtle );
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads(
@@ -387,7 +393,7 @@ class HardfRdfSerializerTest extends TestCase {
 
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( <<<TURTLE
-				<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Website> <https://berlin.de/>, <https://visitberlin.de/> .
+				<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/City/Website> <https://berlin.de/>, <https://visitberlin.de/> .
 				TURTLE ),
 			ParsedRdf::canonicalQuads( $output )
 		);
@@ -395,17 +401,12 @@ class HardfRdfSerializerTest extends TestCase {
 
 	public function testLanguageTaggedLiteralKeepsItsTag(): void {
 		$output = $this->serializer()->serialize(
-			new QuadList( new Quad(
-				$this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
-				$this->ns->property( 'Name' ),
-				RdfLiteralFactory::languageTagged( 'Zinema', 'eu' ),
-				$this->ns->page( new PageId( 1 ) )
-			) ),
+			new QuadList( $this->schemaPropertyQuad( 'City', 'Name', RdfLiteralFactory::languageTagged( 'Zinema', 'eu' ) ) ),
 			RdfFormat::Turtle
 		);
 
 		$this->assertSame(
-			ParsedRdf::canonicalQuads( '<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Name> "Zinema"@eu .' ),
+			ParsedRdf::canonicalQuads( '<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/City/Name> "Zinema"@eu .' ),
 			ParsedRdf::canonicalQuads( $output )
 		);
 	}
@@ -416,6 +417,113 @@ class HardfRdfSerializerTest extends TestCase {
 		$this->assertCount( 1, $this->logger->getLogCalls()->getMessages() );
 		$this->assertSame( LogLevel::WARNING, $this->logger->getFirstLogCall()->getLevel() );
 		$this->assertStringContainsString( self::FORGING_IRI, $this->logger->getLogCalls()->getMessages()[0] );
+	}
+
+	public function testStreamingWriterAbbreviatesPredicatesOfASchemaFirstSeenInALaterWrite(): void {
+		$this->assertStringContainsString( 'City:Website', $this->streamWithASchemaFirstSeenInTheSecondWrite() );
+	}
+
+	public function testStreamingWriterKeepsEveryQuadWhenALaterWriteDeclaresPrefixes(): void {
+		$this->assertCount( 6, ParsedRdf::canonicalQuads( $this->streamWithASchemaFirstSeenInTheSecondWrite() ) );
+	}
+
+	private function streamWithASchemaFirstSeenInTheSecondWrite(): string {
+		$writer = $this->serializer()->newWriter( RdfFormat::TriG );
+
+		return $writer->write( $this->personQuads( 1, 's1demo8aaaaaab5' ) )
+			. $writer->write( new QuadList( $this->websiteQuad( new Iri( 'https://www.malaga.eu' ) ) ) )
+			. $writer->finish();
+	}
+
+	public function testSchemaNamedLikeAUriSchemeKeepsItsTriples(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( $this->schemaPropertyQuad( 'https', 'Website', new Iri( 'https://www.malaga.eu' ) ) ),
+			RdfFormat::TriG
+		);
+
+		$this->assertCount( 1, ParsedRdf::canonicalQuads( $output ) );
+	}
+
+	public function testStreamingWriterRechecksAnIriAfterALaterWriteDeclaresAPrefix(): void {
+		$writer = $this->serializer()->newWriter( RdfFormat::TriG );
+
+		$output = $writer->write( new QuadList( $this->schemaPropertyQuad( 'Person', 'Website', new Iri( 'City:x' ) ) ) )
+			. $writer->write( new QuadList( $this->schemaPropertyQuad( 'City', 'Website', new Iri( 'City:x' ) ) ) )
+			. $writer->finish();
+
+		$this->assertStatesNothingBeyond(
+			'<https://wiki.example/page/1> { '
+				. '<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/Person/Website> <City:x> . '
+				. '<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/City/Website> <City:x> }',
+			$output
+		);
+	}
+
+	public function testStreamingWriterKeepsAbbreviatingAfterAThousandSchemas(): void {
+		$writer = $this->serializer()->newWriter( RdfFormat::TriG );
+
+		foreach ( range( 1, 1000 ) as $number ) {
+			$writer->write( new QuadList(
+				$this->schemaPropertyQuad( "Schema number $number", 'Name', new Literal( 'x', $this->ns->xsd( 'string' ) ) )
+			) );
+		}
+
+		$this->assertStringContainsString(
+			'neo-subj:s1demo8aaaaaac6',
+			$writer->write( $this->personQuads( 2, 's1demo8aaaaaac6' ) )
+		);
+	}
+
+	public function testDocumentWithoutPrefixesWhoseTriplesAreAllLeftOutIsEmpty(): void {
+		$output = HardfRdfSerializer::withPrefixes( [], $this->logger )->serialize(
+			new QuadList( $this->websiteQuad( new Iri( 'https://evil.example/>,<https://evil.example/forged' ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame( '', $output );
+	}
+
+	public function testSchemaNamedLikeADeclaredPrefixLeavesThatPrefixUnchanged(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList(
+				$this->schemaPropertyQuad( 'rdfs', 'Age', new Literal( '42', $this->ns->xsd( 'integer' ) ) ),
+				new Quad(
+					$this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
+					$this->ns->rdfsLabel(),
+					new Literal( 'Berlin', $this->ns->xsd( 'string' ) ),
+					$this->ns->page( new PageId( 1 ) )
+				),
+			),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( <<<TURTLE
+				<https://wiki.example/entity/s1demo8aaaaaab5> <https://wiki.example/prop/rdfs/Age> 42 ;
+					<http://www.w3.org/2000/01/rdf-schema#label> "Berlin" .
+				TURTLE ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	/**
+	 * @dataProvider schemaNameThatIsNoPrefixLabelProvider
+	 */
+	public function testPredicatesOfASchemaWhoseNameIsNoPrefixLabelAreWritten( string $schemaName, string $predicateIri ): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( $this->schemaPropertyQuad( $schemaName, 'Age', new Literal( '42', $this->ns->xsd( 'integer' ) ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( "<https://wiki.example/entity/s1demo8aaaaaab5> <$predicateIri> 42 ." ),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	public static function schemaNameThatIsNoPrefixLabelProvider(): iterable {
+		yield 'non-ASCII letter' => [ 'Café', 'https://wiki.example/prop/Café/Age' ];
+		yield 'leading digit' => [ '2024 Exhibitions', 'https://wiki.example/prop/2024_Exhibitions/Age' ];
 	}
 
 }

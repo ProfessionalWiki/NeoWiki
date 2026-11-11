@@ -16,7 +16,7 @@ function p.largestMuseums( frame )
 		'SELECT ?label ?visitors WHERE { ' ..
 		'?m <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <' .. base .. '/schema/Museum> . ' ..
 		'?m <http://www.w3.org/2000/01/rdf-schema#label> ?label . ' ..
-		'?m <' .. base .. '/prop/Annual_visitors> ?visitors ' ..
+		'?m <' .. base .. '/prop/Museum/Annual_visitors> ?visitors ' ..
 		'} ORDER BY DESC(?visitors) LIMIT 3'
 	)
 
