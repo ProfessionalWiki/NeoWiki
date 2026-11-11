@@ -10,30 +10,33 @@
 				<DialogHeader
 					:title="dialogTitle"
 					:use-close-button="true"
+					:collapses-supporting-text="true"
 					@close="requestClose"
 				>
 					<template #supporting-text>
-						<EditableText
-							ref="descriptionField"
-							:model-value="description"
-							:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
-							:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
-							:expand-label="$i18n( 'neowiki-schema-editor-description-expand' ).text()"
-							:collapse-label="$i18n( 'neowiki-schema-editor-description-collapse' ).text()"
-							:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
-							:multiline="true"
-							:clamp-lines="2"
-							@dirty="descriptionDirty = $event"
-							@update:model-value="onDescriptionChanged"
-						/>
+						<div class="ext-neowiki-schema-editor-dialog__supporting-text">
+							<EditableText
+								ref="descriptionField"
+								:model-value="description"
+								:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
+								:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
+								:expand-label="$i18n( 'neowiki-schema-editor-description-expand' ).text()"
+								:collapse-label="$i18n( 'neowiki-schema-editor-description-collapse' ).text()"
+								:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
+								:multiline="true"
+								:clamp-lines="2"
+								@dirty="descriptionDirty = $event"
+								@update:model-value="onDescriptionChanged"
+							/>
 
-						<!-- Shown, not offered: it is set when the Schema is created. -->
-						<p
-							v-if="props.initialSchema.subjectsAreDependent()"
-							class="ext-neowiki-schema-editor-dialog__dependence"
-						>
-							{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
-						</p>
+							<!-- Shown, not offered: it is set when the Schema is created. -->
+							<p
+								v-if="props.initialSchema.subjectsAreDependent()"
+								class="ext-neowiki-schema-editor-dialog__dependence"
+							>
+								{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
+							</p>
+						</div>
 					</template>
 				</DialogHeader>
 			</template>
@@ -203,18 +206,15 @@ defineExpose( { hasChanged } );
 	&.cdx-dialog {
 		.ext-neowiki-schema-dialog-size();
 		.ext-neowiki-dialog-grid-body();
+	}
 
-		/* Secondary to the title. Nested under the header to out-rank
-			Codex's runtime-injected two-class subtitle rule. */
-		.cdx-dialog__header .cdx-dialog__header__subtitle {
-			font-size: @font-size-small;
-		}
+	/* Secondary to the title. A block, as the description's own text is inline. */
+	&__supporting-text {
+		font-size: @font-size-small;
 	}
 
 	&__dependence {
 		margin: @spacing-25 0 0;
-		color: @color-subtle;
-		font-size: @font-size-small;
 	}
 }
 </style>
