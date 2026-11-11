@@ -8,6 +8,7 @@
 		v-if="!editorVisible"
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog"
+		:class="{ 'ext-neowiki-dialog--takes-over': returnedFromEditor }"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 		:inert="editorStarting || undefined"
 		@update:open="onSchemaStepUpdateOpen"
@@ -55,6 +56,21 @@
 		:on-saved="handleSaved"
 		@update:open="onEditorUpdateOpen"
 	>
+		<template
+			v-if="offersBack"
+			#start-actions="{ saving }"
+		>
+			<CdxButton
+				weight="quiet"
+				type="button"
+				:aria-label="$i18n( 'neowiki-subject-creator-back' ).text()"
+				:disabled="saving"
+				@click="requestBack"
+			>
+				<CdxIcon :icon="cdxIconArrowPrevious" />
+			</CdxButton>
+		</template>
+
 		<template #before-actions="{ saving }">
 			<div
 				v-if="pageChoice !== null && pageFixed"
@@ -189,6 +205,12 @@
 		@keep-editing="cancelClose"
 	/>
 
+	<CloseConfirmationDialog
+		:open="backConfirmationOpen"
+		@discard="confirmBack"
+		@keep-editing="cancelBack"
+	/>
+
 	<!-- Mounted only while open, as the confirmations are: Codex stacks dialogs in mount order, and
 		the Schema step it stands in front of is mounted afresh each time the creator starts over. The
 		Schema's Subjects are standalone, as the Subject being created has no Host Subject. -->
@@ -204,7 +226,8 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
-import { CdxAccordion, CdxDialog, CdxField, CdxMessage, CdxRadio } from '@wikimedia/codex';
+import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio } from '@wikimedia/codex';
+import { cdxIconArrowPrevious } from '@wikimedia/codex-icons';
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
@@ -318,6 +341,9 @@ const editorShown = computed( (): boolean => editorRef.value?.shown === true );
 const editorVisible = computed( (): boolean => editorRef.value?.visible === true );
 
 const editorStarting = computed( (): boolean => rootSubject.value !== null && !editorShown.value );
+
+// Rather than one a caller pinned, which opens the editor with no Schema step to return to.
+const schemaChosenOnStep = ref( false );
 
 // The title typed, cleared included, or the caller's; while null, the title follows the label.
 const typedPageTitle = ref<string | null>( null );
@@ -734,6 +760,7 @@ async function onSchemaSelected( schemaName: string ): Promise<void> {
 		return;
 	}
 
+	schemaChosenOnStep.value = true;
 	markChanged();
 	await loadSchema( schemaName );
 }
@@ -820,7 +847,7 @@ function answeredPageId(): number | null {
  * from the footer, which stays live while the rest of the save is out: a Subject created alongside
  * the root goes where the root went, whatever the fields say by then.
  */
-let writtenRoot: { subjectId: SubjectId; pageId: number | null; pageTitle: string | null } | null = null;
+const writtenRoot = shallowRef<{ subjectId: SubjectId; pageId: number | null; pageTitle: string | null } | null>( null );
 
 async function handleCreate( subject: Subject, pageId: number, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
 	if ( subject.getId().text === rootSubject.value?.getId().text ) {
@@ -836,7 +863,7 @@ async function handleCreate( subject: Subject, pageId: number, dependentSubjects
 	// a page-first wiki, a target created from a pane the user drilled into belongs on the page that
 	// pane's Subject is stored on, which the editor resolved, and one created against the Subject
 	// being created carries no page of its own and follows it instead.
-	const page = isSubjectFirst() || pageId > 0 ? pageId : writtenRoot?.pageId ?? null;
+	const page = isSubjectFirst() || pageId > 0 ? pageId : writtenRoot.value?.pageId ?? null;
 
 	if ( page === null ) {
 		throw new Error( mw.msg( 'neowiki-subject-creator-error' ) );
@@ -860,8 +887,8 @@ function refusalOfGivenId( error: unknown ): unknown {
 async function writeRootSubject( subject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
 	// A save that stopped part way has created it already, and the answer it got says where. Creating
 	// it again would be refused: its id, and any page title it was given, are taken now.
-	if ( writtenRoot !== null ) {
-		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot ), dependentSubjects, comment );
+	if ( writtenRoot.value !== null ) {
+		await subjectStore.updateSubject( asWrittenRoot( subject, writtenRoot.value ), dependentSubjects, comment );
 		return;
 	}
 
@@ -883,7 +910,7 @@ async function writeRootSubject( subject: Subject, dependentSubjects: DependentS
 	if ( answer.goingTo === 'newPage' ) {
 		const created = await createOnNewPage( subject, dependentSubjects, comment, answer.title );
 
-		writtenRoot = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
+		writtenRoot.value = { subjectId: created.subjectId, pageId: created.pageId, pageTitle: created.pageTitle };
 		return;
 	}
 
@@ -897,7 +924,7 @@ async function writeRootSubject( subject: Subject, dependentSubjects: DependentS
 		await createBesideMainSubject( pageId, label, schemaName, statements, dependentSubjects, comment, subject.getId() ) :
 		await subjectStore.createMainSubject( pageId, label, schemaName, statements, dependentSubjects, comment, subject.getId() );
 
-	writtenRoot = { subjectId, pageId, pageTitle: answer.pageTitle };
+	writtenRoot.value = { subjectId, pageId, pageTitle: answer.pageTitle };
 }
 
 /**
@@ -1020,32 +1047,34 @@ async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promi
  * a null title is the page being viewed, which is reloaded rather than navigated to.
  */
 function handleSaved(): void {
-	if ( writtenRoot === null ) {
+	if ( writtenRoot.value === null ) {
 		return;
 	}
 
 	if ( isSubjectFirst() ) {
-		window.location.href = subjectPageUrl( writtenRoot.subjectId.text );
+		window.location.href = subjectPageUrl( writtenRoot.value.subjectId.text );
 		return;
 	}
 
 	setPendingNotification( 'neowiki-subject-creator-success' );
 
-	if ( writtenRoot.pageTitle === null ) {
+	if ( writtenRoot.value.pageTitle === null ) {
 		// Assigning a URL that differs only in its fragment would not reload.
 		if ( mw.config.get( 'wgAction' ) === 'subjects' ) {
-			history.replaceState( null, '', '#' + writtenRoot.subjectId.text );
+			history.replaceState( null, '', '#' + writtenRoot.value.subjectId.text );
 		}
 
 		window.location.reload();
 		return;
 	}
 
-	window.location.href = mw.util.getUrl( writtenRoot.pageTitle );
+	window.location.href = mw.util.getUrl( writtenRoot.value.pageTitle );
 }
 
 watch( () => props.open, async ( isOpen ) => {
 	if ( isOpen ) {
+		returnedFromEditor.value = false;
+
 		// Before mount there is no choice yet; onMounted fills it in then.
 		if ( pageChoice.value !== null ) {
 			applyInitialPageTarget();
@@ -1083,7 +1112,8 @@ function resetForm(): void {
 	requestSequence++;
 	loadedSchema.value = null;
 	rootSubject.value = null;
-	writtenRoot = null;
+	writtenRoot.value = null;
+	schemaChosenOnStep.value = false;
 
 	// Back to where a fresh open starts, unless the permission answer that decides it has yet to
 	// land, in which case no choice is being offered to reset.
@@ -1093,6 +1123,30 @@ function resetForm(): void {
 
 	resetPageChoice();
 	resetChanged();
+}
+
+// Back to the Schema step the Schema was chosen on, and only until the Subject has been written: going back from
+// there would leave it behind, and a Schema chosen again would create another.
+const offersBack = computed( (): boolean => schemaChosenOnStep.value && writtenRoot.value === null );
+
+const editorHasChanged = computed( (): boolean => editorRef.value?.hasChanged === true );
+
+const {
+	confirmationOpen: backConfirmationOpen,
+	requestClose: requestBack,
+	confirmClose: confirmBack,
+	cancelClose: cancelBack
+} = useCloseConfirmation( editorHasChanged, goBack );
+
+// The Schema step shows again without fading in, as the editor went without fading out.
+const returnedFromEditor = ref( false );
+
+// As a fresh open does, short of the Schema a pinned one would load.
+function goBack(): void {
+	returnedFromEditor.value = true;
+	resetForm();
+	applyInitialPageTarget();
+	nextTick( () => schemaLookupRef.value?.focus() );
 }
 
 defineExpose( { hasChanged } );

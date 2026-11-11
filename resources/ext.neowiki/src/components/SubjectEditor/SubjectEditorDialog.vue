@@ -5,7 +5,7 @@
 			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
 			:class="{
 				'ext-neowiki-subject-editor-dialog--wide': showsNavigator,
-				'ext-neowiki-subject-editor-dialog--new-root': props.rootIsNew === true
+				'ext-neowiki-dialog--takes-over': props.rootIsNew === true
 			}"
 			:style="grownHeightStyle"
 			:title="dialogTitle"
@@ -17,6 +17,15 @@
 					:use-close-button="true"
 					@close="closeRequested"
 				>
+					<!-- Whatever the host offers ahead of the title, such as a way back to where it opened
+						this dialog from. Handed the save's progress, as the header is not inert during it. -->
+					<template
+						v-if="$slots[ 'start-actions' ]"
+						#start-actions
+					>
+						<slot name="start-actions" :saving="saving" />
+					</template>
+
 					<template #metadata>
 						<p
 							v-if="headerSubjectId !== undefined"
@@ -1156,14 +1165,5 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 	&__partial-save {
 		margin: 0 0 @spacing-50;
 	}
-}
-
-/* A new root is what the creator opens this dialog on, in place of its Schema step, whose backdrop
-	already dims the page. Codex fades every dialog's backdrop in, the dialog with it, which would
-	take the dimming away and bring it back; it offers no dialog that opens without the fade. Where
-	the creator is opened on a Schema, this dialog replaces the step without a fade however far the
-	step's own fade had got, which depends on how soon the Schema and the edit notices answer. */
-.cdx-dialog-backdrop.cdx-dialog-fade-enter-from:has( > .ext-neowiki-subject-editor-dialog--new-root ) {
-	opacity: 1;
 }
 </style>

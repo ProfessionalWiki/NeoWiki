@@ -1,0 +1,12 @@
+/**
+ * Codex: fades a dialog's backdrop in as the dialog opens, the dialog with it, and offers no dialog that opens without
+ *   the fade.
+ * Remove when: Codex lets a dialog open without fading in.
+ *
+ * For a dialog that takes the place of another, whose backdrop already dims the page: fading in would take the
+ * dimming away and bring it back.
+ */
+
+.cdx-dialog-backdrop.cdx-dialog-fade-enter-from:has( > .ext-neowiki-dialog--takes-over ) {
+	opacity: 1;
+}

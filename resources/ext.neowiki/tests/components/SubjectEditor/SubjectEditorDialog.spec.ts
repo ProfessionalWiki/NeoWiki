@@ -30,7 +30,7 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { EditNotice } from '@/domain/EditNotice';
@@ -156,6 +156,7 @@ describe( 'SubjectEditorDialog', () => {
 			( subject: any, pageId: number, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>
 		) | undefined = undefined,
 		extraProps: Record<string, unknown> = {},
+		slots: Record<string, string> = {},
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
@@ -167,6 +168,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		return mount( SubjectEditorDialog, {
 			attachTo,
+			slots,
 			props: {
 				subject,
 				schema,
@@ -1427,6 +1429,7 @@ describe( 'SubjectEditorDialog', () => {
 			rootSchema?: Schema;
 			rootSubject?: Subject;
 			stubs?: Record<string, any>;
+			slots?: Record<string, string>;
 		}
 
 		function mountWithTargetRepos(
@@ -1437,6 +1440,7 @@ describe( 'SubjectEditorDialog', () => {
 			attachTo: Element | undefined = undefined,
 			onCreate: Mock | undefined = undefined,
 			extraProps: Record<string, unknown> = {},
+			slots: Record<string, string> = {},
 		): TargetReposMount {
 			const target = targetSubject( 's22222222222222', 'Target subject' );
 			const mockSubjectRepository = {
@@ -1462,14 +1466,15 @@ describe( 'SubjectEditorDialog', () => {
 				attachTo,
 				onCreate,
 				extraProps,
+				slots,
 			);
 			return { wrapper, mockSubjectRepository, mockSchemaRepository, target };
 		}
 
 		async function mountWithSecondPaneOpen(
-			{ onSave, rootSchema, rootSubject, stubs = {} }: PaneStackOptions = {},
+			{ onSave, rootSchema, rootSubject, stubs = {}, slots = {} }: PaneStackOptions = {},
 		): Promise<TargetReposMount> {
-			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject );
+			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject, undefined, undefined, {}, slots );
 			await flushPromises();
 			result.wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
@@ -1968,7 +1973,7 @@ describe( 'SubjectEditorDialog', () => {
 					await makePaneDirty( wrapper, 0 );
 					await triggerSave( wrapper, '' );
 
-					await wrapper.find( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
+					await pressHeaderClose( wrapper );
 
 					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
@@ -1985,6 +1990,24 @@ describe( 'SubjectEditorDialog', () => {
 
 					expect( event.defaultPrevented ).toBe( false );
 					expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+				} );
+
+				// The header is outside the form's inert part, so a host's actions there are handed the save's
+				// progress to freeze themselves with.
+				it( 'puts the host\'s start actions in its header, frozen until the save settles', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave, slots: {
+						'start-actions': '<template #start-actions="{ saving }"><button class="host-action" :disabled="saving">Back</button></template>',
+					} } );
+					await makePaneDirty( wrapper, 0 );
+					const action = (): HTMLButtonElement => wrapper.get<HTMLButtonElement>( '.ext-neowiki-dialog-header .host-action' ).element;
+
+					await triggerSave( wrapper, '' );
+					expect( action().disabled ).toBe( true );
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
+					expect( action().disabled ).toBe( false );
 				} );
 
 				it( 'makes the form inert until the save settles', async () => {
@@ -2019,7 +2042,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithThreePanesOpen();
 				await makePaneDirty( wrapper, 0 );
 
-				await wrapper.find( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
+				await pressHeaderClose( wrapper );
 
 				expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
 			} );
@@ -3893,7 +3916,7 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	describe( 'Fade when the Subject creator hands over', () => {
-		const NEW_ROOT_CLASS = 'ext-neowiki-subject-editor-dialog--new-root';
+		const NEW_ROOT_CLASS = 'ext-neowiki-dialog--takes-over';
 
 		it( 'names a dialog on a new root, for the stylesheet to leave its fade out', async () => {
 			const wrapper = mountComponent(

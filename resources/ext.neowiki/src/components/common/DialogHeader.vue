@@ -194,6 +194,11 @@ onBeforeUnmount( () => {
 
 	&__actions {
 		display: flex;
+
+		/* As Close is pulled into the padding at the end. */
+		&:first-child {
+			margin-inline-start: -@spacing-50;
+		}
 	}
 
 	/* Collapsed by its row rather than its height, which cannot be animated to from `auto`. */

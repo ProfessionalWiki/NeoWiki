@@ -206,6 +206,7 @@
 	"neowiki-schema-editor-no-properties-dependent": "Add the Property Definitions of this Schema's Dependent Subjects.",
 
 	"neowiki-subject-creator-title": "Creating subject",
+	"neowiki-subject-creator-back": "Back",
 	"neowiki-subject-creator-schema-field": "Schema",
 	"neowiki-schema-picker-placeholder": "Select a schema",
 	"neowiki-schema-picker-create": "Create schema",
