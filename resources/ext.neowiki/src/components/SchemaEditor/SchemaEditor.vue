@@ -356,12 +356,19 @@ defineExpose<SchemaEditorExposes>( {
 			}
 		}
 
+		/* As the Subject editor's list of open Subjects: a row reaches the dialog's edge, so the space
+			before its icon is the dialog's own gutter, and its hover and selected backgrounds start at
+			that edge. */
 		&__property-list {
 			@media ( min-width: @min-width-breakpoint-desktop ) {
 				padding-block: 0 @spacing-50;
-				/* The end side's 6px, with half the divider's 12px track, matches the 12px a row's
-					background leaves from the dialog's edge on the start side. */
-				padding-inline: ( @spacing-150 - @spacing-75 ) @spacing-35;
+
+				.ext-neowiki-property-list__item,
+				.ext-neowiki-property-list__add-item {
+					padding-inline-start: @spacing-150;
+					border-start-start-radius: 0;
+					border-end-start-radius: 0;
+				}
 			}
 		}
 

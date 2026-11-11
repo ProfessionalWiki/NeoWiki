@@ -366,5 +366,12 @@ useSortable( listRef, {
 			background-color: @background-color-interactive-subtle;
 		}
 	}
+
+	/* Inside the row: the pane around the list clips at the dialog's edge. */
+	&__item:focus-visible,
+	&__add-item:focus-visible {
+		outline: @border-width-thick solid @outline-color-progressive--focus;
+		outline-offset: -@border-width-thick;
+	}
 }
 </style>
