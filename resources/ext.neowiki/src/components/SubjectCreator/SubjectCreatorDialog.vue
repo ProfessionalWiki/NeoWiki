@@ -7,7 +7,7 @@
 	<CdxDialog
 		v-if="!editorVisible"
 		:open="props.open"
-		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog cdx-dialog--dividers"
+		class="ext-neowiki-ui ext-neowiki-subject-creator-dialog"
 		:title="$i18n( 'neowiki-subject-creator-title' ).text()"
 		:use-close-button="true"
 		:inert="editorStarting || undefined"

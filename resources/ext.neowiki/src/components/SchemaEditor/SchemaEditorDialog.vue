@@ -1,12 +1,9 @@
 <template>
 	<div>
-		<!-- Codex adds the dividers only for a dialog whose own body scrolls, which leaves the
-			rule between the columns running into nothing whenever it does not, so the variant is
-			asked for by name. Same reasoning as the subject editor. -->
 		<CdxDialog
 			:open="props.open"
 			:use-close-button="true"
-			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog cdx-dialog--dividers"
+			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog"
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>

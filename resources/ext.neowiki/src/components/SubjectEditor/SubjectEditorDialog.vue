@@ -1,11 +1,8 @@
 <template>
 	<div class="ext-neowiki-subject-editor-container">
-		<!-- Codex switches `cdx-dialog--dividers` on by itself only when the dialog body scrolls,
-			which this body never does: the navigator and the form each scroll inside it. The
-			dividers are what the rule between those two surfaces runs into, so ask by name. -->
 		<CdxDialog
 			:open="visible"
-			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
+			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
 			:class="{
 				'ext-neowiki-subject-editor-dialog--wide': showsNavigator,
 				'ext-neowiki-subject-editor-dialog--new-root': props.rootIsNew === true
@@ -1086,10 +1083,9 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		its dialog move on every switch.
 
 		Codex's own 16px/24px body padding is dropped by the mixin and handed to the regions inside,
-		because the border between the two surfaces is the only rule between the navigator and the
-		form and that padding would hold it short of the header's and the footer's rules.
-		Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it scopes
-		them. */
+		so the navigator's rows can reach the dialog's edge and each surface scrolls with its own
+		inset. Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it
+		scopes them. */
 	&.cdx-dialog {
 		.ext-neowiki-subject-dialog-header();
 		.ext-neowiki-dialog-grid-body();
@@ -1149,8 +1145,7 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		`auto` the taller cell sets the row's height, pushing the scrolling up to the dialog body
 		and taking the navigator off-screen with the form.
 
-		No column gap: the divider has a track of its own and draws the rule inside it, so the
-		rule still runs into the header's and the footer's rather than floating short of them.
+		No column gap: the divider has a track of its own and draws the rule inside it.
 
 		jsdom resolves no layout, so the suite cannot see this grid collapse. Measure every change
 		in a browser, at more than one viewport height, with and without an edit notice, and with
@@ -1182,7 +1177,10 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		grid-row: 2;
 	}
 
+	/* Scrolling shows as a fade at the edges the content runs past, not as lines under the header
+		and above the footer, which Codex draws only for a body that scrolls itself. */
 	&__surface {
+		.ext-neowiki-scroll-fade();
 		min-width: 0;
 		min-height: 0;
 		overflow-y: auto;
@@ -1191,10 +1189,12 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		scrollbar-gutter: stable;
 	}
 
-	/* The rule between the navigator and the form, centred in a track of its own. A border
-		rather than a painted box, which forced-colors mode would replace with the canvas. */
+	/* The rule between the navigator and the form, centred in a track of its own and stopping
+		short of the surfaces' ends, with no line above or below them to meet. A border rather than
+		a painted box, which forced-colors mode would replace with the canvas. */
 	&__divider {
 		justify-self: center;
+		margin-block: @spacing-50;
 		border-inline-start: @border-subtle;
 	}
 

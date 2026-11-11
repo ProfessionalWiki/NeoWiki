@@ -363,6 +363,7 @@ defineExpose<SchemaEditorExposes>( {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-schema-editor {
 	display: grid;
@@ -461,6 +462,7 @@ defineExpose<SchemaEditorExposes>( {
 			&__property-list,
 			&__detail {
 				overflow-y: auto;
+				.ext-neowiki-scroll-fade();
 			}
 		}
 	}

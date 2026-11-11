@@ -266,9 +266,12 @@ function sizeForKey( key: string, sign: number ): number {
 
 	/* A border rather than a painted box: forced-colors mode keeps borders and replaces
 		backgrounds with the canvas, which would leave the rule invisible exactly where the
-		12px target is hardest to hit. Printing drops backgrounds too. */
+		12px target is hardest to hit. Printing drops backgrounds too. Stopping short of the panes'
+		ends, as there is no line above or below them for it to meet; the target still runs their
+		whole height. */
 	&::before {
 		content: '';
+		margin-block: @spacing-50;
 		border-inline-start: @border-subtle;
 	}
 

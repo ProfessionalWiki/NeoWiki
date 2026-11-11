@@ -3693,16 +3693,6 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 	} );
 
-	// Codex draws the rules under the header and above the footer only for a dialog whose own
-	// body scrolls, which this one's never does, so the variant is asked for by name.
-	it( 'asks Codex for the dividers variant, navigator or no navigator', async () => {
-		const wrapper = mountComponent( false, saveButtonTestStubs );
-		await flushPromises();
-
-		expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
-		expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'cdx-dialog--dividers' );
-	} );
-
 	describe( 'Edit notices', () => {
 		it( 'loads the viewed page\'s notices when the dialog opens', async () => {
 			const getNotices = vi.fn().mockResolvedValue( [] );

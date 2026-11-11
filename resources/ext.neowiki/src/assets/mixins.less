@@ -39,6 +39,80 @@
 }
 
 /**
+ * Fades a scroller's content out at an edge it runs past, over as much of `@spacing-150` as it runs past by, so
+ * scrolling shows without a line drawn all the time. Where scroll-driven animations are not supported, nothing fades.
+ *
+ * Drawn over the content in the background colour, for a scroller on that background. Not a mask, which would also
+ * hide a menu opening past the scroller's edge: Codex before 2.3.1 (MediaWiki 1.44 and older) renders a menu inside
+ * its component. Once the oldest supported MediaWiki ships a later Codex, a mask would work over any background if
+ * NeoWiki provides `CdxTeleportMenus`, which moves menus out of their component.
+ *
+ * The fades stick to the scroller's edges and take no room, as the scroller lays its content out in a column. They
+ * are scaled rather than resized, which would lay out and restyle the content on every frame of a scroll.
+ */
+.ext-neowiki-scroll-fade() {
+	display: flex;
+	flex-direction: column;
+
+	&::before,
+	&::after {
+		content: '';
+		position: sticky;
+		z-index: 1;
+		flex: none;
+		block-size: @spacing-150;
+		pointer-events: none;
+		transform: scaleY( 0 );
+	}
+
+	&::before {
+		inset-block-start: 0;
+		margin-block-end: -@spacing-150;
+		transform-origin: top;
+		background-image: linear-gradient( to bottom, @background-color-base, transparent );
+	}
+
+	&::after {
+		inset-block-end: 0;
+		margin-block-start: -@spacing-150;
+		transform-origin: bottom;
+		background-image: linear-gradient( to top, @background-color-base, transparent );
+	}
+
+	/* Without a scroll timeline the animations would run once and stay on their last frame. */
+	@supports ( animation-timeline: scroll() ) {
+		&::before,
+		&::after {
+			animation-timing-function: linear;
+			animation-fill-mode: both;
+			animation-timeline: scroll();
+		}
+
+		&::before {
+			animation-name: ext-neowiki-scroll-fade-start;
+			animation-range: 0 @spacing-150;
+		}
+
+		&::after {
+			animation-name: ext-neowiki-scroll-fade-end;
+			animation-range: calc( 100% - @spacing-150 ) 100%;
+		}
+	}
+
+	@keyframes ext-neowiki-scroll-fade-start {
+		to {
+			transform: scaleY( 1 );
+		}
+	}
+
+	@keyframes ext-neowiki-scroll-fade-end {
+		from {
+			transform: scaleY( 1 );
+		}
+	}
+}
+
+/**
  * The tallest a dialog may be. Set by each dialog rather than left to Codex, whose limit differs between versions.
  */
 @ext-neowiki-dialog-height-limit: calc( @size-viewport-height-full - @size-250 );
