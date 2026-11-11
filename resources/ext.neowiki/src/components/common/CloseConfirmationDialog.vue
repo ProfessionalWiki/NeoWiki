@@ -6,7 +6,6 @@
 		:open="true"
 		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-close-confirmation-title' ).text()"
-		:use-close-button="true"
 		:stacked-actions="true"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
@@ -14,12 +13,21 @@
 		@primary="$emit( 'discard' )"
 		@default="$emit( 'keep-editing' )"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-close-confirmation-title' ).text()"
+				:use-close-button="true"
+				@close="onUpdateOpen( false )"
+			/>
+		</template>
+
 		{{ $i18n( 'neowiki-close-confirmation-message' ).text() }}
 	</CdxDialog>
 </template>
 
 <script setup lang="ts">
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { PrimaryDialogAction, DialogAction } from '@wikimedia/codex';
 import { useDialogStack } from '@/composables/useDialogStack.ts';
 

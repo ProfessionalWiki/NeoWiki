@@ -2,12 +2,19 @@
 	<div>
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-schema-creator-dialog"
 			:style="{ '--ext-neowiki-schema-dialog-stack-level': stackLevel }"
 			:title="title"
 			@update:open="onDialogUpdateOpen"
 		>
+			<template #header>
+				<DialogHeader
+					:title="title"
+					:use-close-button="true"
+					@close="onDialogUpdateOpen( false )"
+				/>
+			</template>
+
 			<SchemaCreator
 				ref="schemaCreatorRef"
 				:initial-name="props.initialName"
@@ -47,6 +54,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import SchemaCreator from '@/components/SchemaCreator/SchemaCreator.vue';
 import type { SchemaCreatorExposes } from '@/components/SchemaCreator/SchemaCreator.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';

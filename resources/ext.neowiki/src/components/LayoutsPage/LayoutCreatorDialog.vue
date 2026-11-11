@@ -2,11 +2,18 @@
 	<div>
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-layout-creator-dialog"
 			:title="$i18n( 'neowiki-layout-creator-title' ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
+			<template #header>
+				<DialogHeader
+					:title="$i18n( 'neowiki-layout-creator-title' ).text()"
+					:use-close-button="true"
+					@close="onDialogUpdateOpen( false )"
+				/>
+			</template>
+
 			<LayoutCreator
 				ref="layoutCreatorRef"
 				@change="markChanged"
@@ -33,6 +40,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import LayoutCreator from './LayoutCreator.vue';
 import type { LayoutCreatorExposes } from './LayoutCreator.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
@@ -115,10 +123,14 @@ async function createLayout( summary: string ): Promise<void> {
 </script>
 
 <style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+/* The creator pads itself, except above: Codex takes the top padding off the body's first child, so the body
+	keeps its own, as Codex 2 sizes it. */
 .ext-neowiki-layout-creator-dialog {
 	&.cdx-dialog {
 		.cdx-dialog__body {
-			padding: 0;
+			padding: @spacing-50 0 0;
 		}
 	}
 }

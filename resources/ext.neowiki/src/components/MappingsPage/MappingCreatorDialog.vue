@@ -1,11 +1,18 @@
 <template>
 	<CdxDialog
 		:open="props.open"
-		:use-close-button="true"
 		class="ext-neowiki-ui ext-neowiki-mapping-creator-dialog"
 		:title="$i18n( 'neowiki-mapping-creator-title' ).text()"
 		@update:open="onDialogUpdateOpen"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-mapping-creator-title' ).text()"
+				:use-close-button="true"
+				@close="onDialogUpdateOpen( false )"
+			/>
+		</template>
+
 		<CdxField
 			:status="nameStatus"
 			:messages="nameError ? { error: nameError } : {}"
@@ -36,6 +43,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { CdxDialog, CdxField, CdxTextInput } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 

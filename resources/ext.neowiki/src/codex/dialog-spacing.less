@@ -1,0 +1,22 @@
+/**
+ * Codex: pads a dialog's header 16px below and its body 16px above and below, which Codex 2 halves to 8px, so the
+ *   body sits 32px below the title rather than 16px.
+ * Remove when: the Codex of the oldest MediaWiki NeoWiki supports is 2.0.0 or later.
+ *
+ * One class above Codex's, so it wins whatever the load order, and below a NeoWiki dialog's own, which can still
+ * lay out its body.
+ */
+
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+.ext-neowiki-ui > .cdx-dialog__header {
+	padding-bottom: @spacing-50;
+}
+
+.ext-neowiki-ui > .cdx-dialog__body {
+	padding-block: @spacing-50;
+}
+
+.ext-neowiki-ui > .cdx-dialog__body--no-footer {
+	padding-bottom: @spacing-150;
+}

@@ -11,40 +11,31 @@
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>
-			<!-- Codex's own header, reproduced to hold the Schema of the Subject on screen. -->
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ dialogTitle }}
-					</h2>
-
-					<p
-						v-if="headerSubjectId !== undefined"
-						class="cdx-dialog__header__subtitle"
-					>
-						{{ headerSubjectId }}
-					</p>
-
-					<!-- A new tab: this dialog holds unsaved edits for every open pane and nothing
-						guards a navigation away from it. Inert during a save, like the form. -->
-					<SchemaNameDisplay
-						v-if="activePane !== undefined"
-						:schema-name="activePane.subject.getSchemaName()"
-						link="new-tab"
-						:inert="saving || undefined"
-						@click="openSchemaEditor"
-					/>
-				</div>
-
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="closeRequested"
+				<DialogHeader
+					:title="dialogTitle"
+					:use-close-button="true"
+					@close="closeRequested"
 				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
+					<template #metadata>
+						<p
+							v-if="headerSubjectId !== undefined"
+							class="ext-neowiki-subject-editor-dialog__subject-id"
+						>
+							{{ headerSubjectId }}
+						</p>
+
+						<!-- A new tab: this dialog holds unsaved edits for every open pane and nothing
+							guards a navigation away from it. Inert during a save, like the form. -->
+						<SchemaNameDisplay
+							v-if="activePane !== undefined"
+							:schema-name="activePane.subject.getSchemaName()"
+							link="new-tab"
+							:inert="saving || undefined"
+							@click="openSchemaEditor"
+						/>
+					</template>
+				</DialogHeader>
 			</template>
 
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
@@ -162,8 +153,8 @@ import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
-import { cdxIconClose } from '@wikimedia/codex-icons';
+import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -1087,37 +1078,21 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		inset. Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it
 		scopes them. */
 	&.cdx-dialog {
-		.ext-neowiki-subject-dialog-header();
 		.ext-neowiki-dialog-grid-body();
 		max-height: @ext-neowiki-dialog-height-limit;
 		min-height: min( var( --ext-neowiki-dialog-grown-height ), @ext-neowiki-dialog-height-limit );
 	}
 
-	/* The id and the Schema on the title's line, where Codex stacks a subtitle below it, and
-		centred on the title as the header centres them all on the close button. Shrinkable, so
-		a long Schema name ellipsises rather than pushing the close button out of the dialog. */
-	.cdx-dialog__header__title-group {
-		flex-flow: row wrap;
-		align-items: center;
-		column-gap: @spacing-50;
-		min-width: 0;
-
-		/* Trimmed to the capitals and the baseline, so centring lines up the letters: the
-			monospace font leaves more room below its letters than the title's does, which
-			centred the id's line box with its letters high. */
-		.cdx-dialog__header__title,
-		.cdx-dialog__header__subtitle {
-			text-box: trim-both cap alphabetic;
-		}
-
-		/* Directed by its own first letter: an id from another Source may end in punctuation,
-			which a right-to-left page would otherwise move to the front. Sized like the id on
-			the Data tab. */
-		.cdx-dialog__header__subtitle {
-			unicode-bidi: plaintext;
-			font-family: @font-family-monospace;
-			font-size: @font-size-x-small;
-		}
+	/* Directed by its own first letter: an id from another Source may end in punctuation, which a
+		right-to-left page would otherwise move to the front. Sized like the id on the Data tab, and
+		trimmed like the title beside it, as the monospace font leaves more room below its letters. */
+	&__subject-id {
+		margin: 0;
+		color: @color-subtle;
+		unicode-bidi: plaintext;
+		font-family: @font-family-monospace;
+		font-size: @font-size-x-small;
+		text-box: trim-both cap alphabetic;
 	}
 
 	/* Widened by the navigator alone, so the form keeps the width it had.
