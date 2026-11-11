@@ -2,6 +2,7 @@
 	<div
 		ref="root"
 		class="ext-neowiki-pane-divider"
+		:class="{ 'ext-neowiki-pane-divider--dragging': dragPointerId !== null }"
 		role="separator"
 		tabindex="0"
 		aria-orientation="vertical"
@@ -63,7 +64,7 @@ const emit = defineEmits<{
 const root = ref<HTMLElement | null>( null );
 
 // A drag is in progress exactly while this holds a pointer.
-let dragPointerId: number | null = null;
+const dragPointerId = ref<number | null>( null );
 let dragStartX = 0;
 let dragStartSize = 0;
 let dragSign = 1;
@@ -90,7 +91,7 @@ function directionSign(): number {
 }
 
 function onPointerDown( event: PointerEvent ): void {
-	if ( props.disabled === true || event.button !== 0 || dragPointerId !== null ) {
+	if ( props.disabled === true || event.button !== 0 || dragPointerId.value !== null ) {
 		return;
 	}
 
@@ -100,7 +101,7 @@ function onPointerDown( event: PointerEvent ): void {
 	event.preventDefault();
 	root.value?.focus();
 
-	dragPointerId = event.pointerId;
+	dragPointerId.value = event.pointerId;
 	dragStartX = event.clientX;
 	dragStartSize = props.size;
 	dragSign = directionSign();
@@ -117,7 +118,7 @@ function onPointerDown( event: PointerEvent ): void {
 }
 
 function onPointerMove( event: PointerEvent ): void {
-	if ( dragPointerId !== event.pointerId ) {
+	if ( dragPointerId.value !== event.pointerId ) {
 		return;
 	}
 
@@ -136,14 +137,14 @@ function onPointerMove( event: PointerEvent ): void {
 }
 
 function endDrag( event: PointerEvent ): void {
-	if ( dragPointerId !== event.pointerId ) {
+	if ( dragPointerId.value !== event.pointerId ) {
 		return;
 	}
 
 	// Capture is released implicitly on both events that get here, and asking for it
 	// again throws once the pointer is gone — which is exactly what pointercancel
 	// reports. A throw here would strand the page-wide cursor lock set below.
-	dragPointerId = null;
+	dragPointerId.value = null;
 	setResizingMarker( false );
 
 	if ( draggedPointer ) {
@@ -162,13 +163,13 @@ function setResizingMarker( resizing: boolean ): void {
 // page-wide and another divider may be the one dragging: five dialogs render the schema
 // editor, and a nested one closing must not drop the cursor of a drag still in progress.
 onBeforeUnmount( () => {
-	if ( dragPointerId !== null ) {
+	if ( dragPointerId.value !== null ) {
 		setResizingMarker( false );
 	}
 
 	// A dialog closed on Escape takes the focused divider with it, so no keyup and no blur
 	// ever arrive and the width the reader just set would go unremembered.
-	if ( dragPointerId !== null || movedByKey ) {
+	if ( dragPointerId.value !== null || movedByKey ) {
 		emit( 'commit' );
 	}
 } );
@@ -256,13 +257,19 @@ function sizeForKey( key: string, sign: number ): number {
  * than a courtesy.
  */
 .ext-neowiki-pane-divider {
-	display: flex;
-	justify-content: center;
+	display: grid;
+	justify-items: center;
 	inline-size: @spacing-75;
 	cursor: col-resize;
 	// Or the browser claims the gesture for panning before the first move arrives.
 	touch-action: none;
 	user-select: none;
+
+	&::before,
+	&::after {
+		content: '';
+		grid-area: 1 / 1;
+	}
 
 	/* A border rather than a painted box: forced-colors mode keeps borders and replaces
 		backgrounds with the canvas, which would leave the rule invisible exactly where the
@@ -270,9 +277,57 @@ function sizeForKey( key: string, sign: number ): number {
 		ends, as there is no line above or below them for it to meet; the target still runs their
 		whole height. */
 	&::before {
-		content: '';
 		margin-block: @spacing-50;
 		border-inline-start: @border-subtle;
+	}
+
+	/* The grip, shown once the divider is about to move, and always where no pointer can hover
+		over it to find out that it moves. */
+	&::after {
+		visibility: hidden;
+		align-self: center;
+		box-sizing: border-box;
+		inline-size: @spacing-35;
+		block-size: @size-200;
+		border: @border-width-base @border-style-base @border-color-base;
+		border-radius: @border-radius-pill;
+		background-color: @background-color-base;
+	}
+
+	@media ( hover: none ) {
+		&::after {
+			visibility: visible;
+		}
+	}
+
+	@media ( hover: hover ) {
+		&:hover {
+			background-color: @background-color-interactive;
+
+			&::after {
+				visibility: visible;
+				border-color: @border-color-interactive;
+			}
+		}
+	}
+
+	&:focus-visible::after {
+		visibility: visible;
+		border-color: @border-color-progressive--focus;
+	}
+
+	/* Doubled to outrank the hover above, which the pointer holding the divider keeps on. */
+	&&--dragging {
+		background-color: transparent;
+
+		&::before {
+			border-inline-start: @border-width-thick @border-style-base @border-color-progressive;
+		}
+
+		&::after {
+			visibility: visible;
+			border-color: @border-color-progressive;
+		}
 	}
 
 	&:focus-visible {
@@ -280,8 +335,15 @@ function sizeForKey( key: string, sign: number ): number {
 		outline-offset: -@border-width-thick;
 	}
 
+	/* Last, to outrank the hover, focus and touch screen rules above, which offer a move it
+		cannot make. */
 	&[ aria-disabled='true' ] {
+		background-color: transparent;
 		cursor: default;
+
+		&::after {
+			display: none;
+		}
 	}
 }
 
