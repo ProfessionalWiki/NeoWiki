@@ -395,6 +395,25 @@ export function stubIntersectionObserver(): ScrollStub {
 	};
 }
 
+export interface ScrollerSizes {
+	scrollTop?: number;
+	scrollHeight: number;
+	clientHeight: number;
+}
+
+/** Gives a scroller the sizes jsdom, which resolves no layout, cannot. */
+export function sized( scroller: Element, sizes: ScrollerSizes ): void {
+	Object.defineProperty( scroller, 'scrollHeight', { configurable: true, value: sizes.scrollHeight } );
+	Object.defineProperty( scroller, 'clientHeight', { configurable: true, value: sizes.clientHeight } );
+	Object.defineProperty( scroller, 'scrollTop', { configurable: true, writable: true, value: sizes.scrollTop ?? 0 } );
+}
+
+/** Scrolls a scroller holding 30px more than its 200px box 10px down. */
+export function scrollPartway( scroller: Element ): void {
+	sized( scroller, { scrollTop: 10, scrollHeight: 230, clientHeight: 200 } );
+	scroller.dispatchEvent( new Event( 'scroll' ) );
+}
+
 /**
  * Stands in for MediaWiki's `$.fn.updateTooltipAccessKeys`, naming the key in the title as core does
  * for Chromium: "Save [alt-shift-s]". Like core's, it adds no title and replaces a name it added before.

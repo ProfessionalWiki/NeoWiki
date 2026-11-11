@@ -1,6 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent, ref } from 'vue';
+import { defineComponent, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaEditorDialog, { type SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import EditableText from '@/components/common/EditableText.vue';
@@ -8,6 +8,7 @@ import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import DialogHeader from '@/components/common/DialogHeader.vue';
+import EditorPanes from '@/components/common/EditorPanes.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
@@ -18,7 +19,7 @@ import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Re
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, scrollPartway, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const $i18n = createI18nMock();
@@ -48,6 +49,13 @@ const SchemaEditorStub = defineComponent( {
 		},
 	},
 } );
+
+// The editor as far as its panes: a body the header collapses its supporting text for.
+const SchemaEditorWithPanesStub = {
+	name: 'SchemaEditor',
+	components: { EditorPanes },
+	template: '<EditorPanes><div class="detail"></div></EditorPanes>',
+};
 
 const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"></div>',
@@ -267,12 +275,45 @@ describe( 'SchemaEditorDialog', () => {
 		} );
 	} );
 
+	it( 'asks before its header\'s Close throws away a change', async () => {
+		const wrapper = mountComponent();
+		await flushPromises();
+		await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
+
+		await pressHeaderClose( wrapper );
+		await flushPromises();
+
+		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+	} );
+
 	describe( 'Close button', () => {
 		it( 'keeps its close button on wide screens', () => {
 			const wrapper = mountComponent();
 
 			expect( wrapper.findComponent( DialogHeader ).props( 'useCloseButton' ) ).toBe( true );
 		} );
+	} );
+
+	// Through the editor's own panes, which the header tells apart from the other scrollers in the dialog.
+	it( 'collapses its description while a pane of the editor is scrolled down', async () => {
+		const wrapper = mount( SchemaEditorDialog, {
+			props: { initialSchema: mockSchema, open: true, onSave },
+			global: {
+				mocks: { $i18n },
+				stubs: { ...stubs, SchemaEditor: SchemaEditorWithPanesStub },
+			},
+		} );
+		await flushPromises();
+
+		const pane = wrapper.findComponent( EditorPanes ).get( '.ext-neowiki-editor-panes__pane' ).element;
+		scrollPartway( pane );
+		await nextTick();
+
+		const supportingText = pane.closest( '.cdx-dialog' )?.querySelector( '.ext-neowiki-dialog-header__supporting-text' );
+
+		expect( supportingText?.hasAttribute( 'inert' ) ).toBe( true );
+		wrapper.unmount();
 	} );
 
 	describe( 'Close confirmation', () => {
