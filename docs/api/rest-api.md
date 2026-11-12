@@ -6,7 +6,7 @@ order: 1
 # REST API
 
 NeoWiki's REST API lives under `/rest.php/neowiki/v0/*`. Requests and responses are JSON; the RDF export endpoints
-return TriG or Turtle instead. For pages, revisions, users, and recent changes, use the
+return TriG, Turtle or RDF/XML instead. For pages, revisions, users, and recent changes, use the
 [MediaWiki API](mediawiki-api.md).
 
 **Pre-1.0.** Endpoints and payloads may change without notice; do not build third-party integrations on
@@ -78,6 +78,7 @@ A Schema defines a Subject type and its properties. For the body shape, see
 | Endpoint | Description |
 |---|---|
 | `GET /neowiki/v0/schemas` | List Schemas. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. |
+| `GET /neowiki/v0/schemas/rdfs` | Export an RDF Schema description of the Schemas you may read. For `format`, see [Schemas as RDFS](rdf-export.md#schemas-as-rdfs). |
 | `GET /neowiki/v0/schema/{schemaName}` | Fetch a Schema by name. |
 | `PUT /neowiki/v0/schema/{schemaName}` | Create or replace a Schema: `201` for a new one, `200` for a replaced one. For the body, see [Schema format](schema-format.md#rest-api). |
 | `DELETE /neowiki/v0/schema/{schemaName}` | Delete a Schema, even one that Subjects still use: `200`, `202` when the deletion completes later, or `404` when there is none. Optional body `comment`, logged as the deletion reason. |
