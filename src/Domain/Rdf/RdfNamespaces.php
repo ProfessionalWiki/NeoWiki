@@ -23,6 +23,9 @@ readonly class RdfNamespaces {
 	public const string XSD = 'http://www.w3.org/2001/XMLSchema#';
 	public const string DCTERMS = 'http://purl.org/dc/terms/';
 
+	// The ASCII characters of RFC 3987 ipchar: unreserved and sub-delims characters, ":" and "@".
+	private const string ASCII_IPCHARS = '/^[A-Za-z0-9\-._~!$&\'()*+,;=:@]*$/D';
+
 	// Local names of NeoWiki vocabulary terms under the `neo:` namespace.
 	public const string CLASS_PAGE = 'Page';
 	public const string CLASS_RELATION = 'Relation';
@@ -71,31 +74,35 @@ readonly class RdfNamespaces {
 	}
 
 	/**
-	 * One prefix per Schema whose property predicates the quads use, labelled with the Schema's name as its
-	 * predicates spell it. A label may not be a valid prefix label; a serializer leaves those out.
+	 * One prefix per Schema whose properties the quads use as predicates or describe as subjects, labelled with
+	 * the Schema's name as its predicates spell it. A url value that points at a property IRI does not use it, so
+	 * objects are left out.
 	 *
 	 * @return array<array-key, string> Prefix label to namespace IRI.
 	 */
 	public function propertyPrefixes( QuadList $quads ): array {
+		$propertyIriBase = $this->propertyIriBase();
 		$prefixes = [];
 
 		foreach ( $quads->asArray() as $quad ) {
-			$schemaLocalName = $this->schemaLocalNameOfProperty( $quad->predicate );
+			foreach ( [ $quad->subject, $quad->predicate ] as $iri ) {
+				$schemaLocalName = self::schemaLocalNameOfProperty( $iri, $propertyIriBase );
 
-			if ( $schemaLocalName !== null ) {
-				$prefixes[$schemaLocalName] = $this->propertyNamespace( $schemaLocalName );
+				if ( $schemaLocalName !== null ) {
+					$prefixes[$schemaLocalName] = $this->propertyNamespace( $schemaLocalName );
+				}
 			}
 		}
 
 		return $prefixes;
 	}
 
-	private function schemaLocalNameOfProperty( Iri $predicate ): ?string {
-		if ( !str_starts_with( $predicate->value, $this->propertyIriBase() ) ) {
+	private static function schemaLocalNameOfProperty( Iri $iri, string $propertyIriBase ): ?string {
+		if ( !str_starts_with( $iri->value, $propertyIriBase ) ) {
 			return null;
 		}
 
-		$localNames = explode( '/', substr( $predicate->value, strlen( $this->propertyIriBase() ) ) );
+		$localNames = explode( '/', substr( $iri->value, strlen( $propertyIriBase ) ) );
 
 		return count( $localNames ) === 2 ? $localNames[0] : null;
 	}
@@ -152,6 +159,14 @@ readonly class RdfNamespaces {
 	}
 
 	/**
+	 * The graph of the Schemas' RDFS description. No page graph can collide with it, since every IRI that
+	 * {@see graph()} mints ends in `/page/{id}`.
+	 */
+	public function schemaGraph(): Iri {
+		return new Iri( $this->baseUri . '/graph/schemas' );
+	}
+
+	/**
 	 * A named graph reserved for probing whether a store can be reached, so an update naming it is
 	 * harmless whatever the store holds: nothing writes to it. No page graph can collide with it,
 	 * whatever a projection is named, since every IRI that {@see graph()} mints ends in `/page/{id}`.
@@ -170,6 +185,14 @@ readonly class RdfNamespaces {
 
 	public function rdfsLabel(): Iri {
 		return new Iri( self::RDFS . 'label' );
+	}
+
+	public function rdf( string $localName ): Iri {
+		return new Iri( self::RDF . $localName );
+	}
+
+	public function rdfs( string $localName ): Iri {
+		return new Iri( self::RDFS . $localName );
 	}
 
 	public function dctermsCreated(): Iri {
@@ -192,11 +215,11 @@ readonly class RdfNamespaces {
 	 *
 	 * The rule (NativeRdfProjection.md Q7):
 	 * 1. Spaces become underscores, keeping IRIs such as `Person:Birth_date` readable.
-	 * 2. `%` and the IRIREF-illegal ASCII characters (`< > " { } | ^ \` and backtick) plus control
-	 *    characters (0x00–0x1F, 0x7F) are percent-encoded, so a name can never break out of the IRI.
-	 *    So are `/`, `#` and `?`, so a name can neither add a path segment, as in `$base/prop/{Schema}/{Property}`,
-	 *    nor start a fragment or query.
-	 * 3. Everything else, including non-ASCII Unicode, is kept raw so multilingual names stay readable.
+	 * 2. Every character outside RFC 3987 `ipchar` is percent-encoded: `%`, the IRIREF-illegal and control
+	 *    characters, so a name can never break out of the IRI; `/`, `#`, `?`, `[` and `]`, so it can neither add a
+	 *    path segment, as in `$base/prop/{Schema}/{Property}`, nor start a fragment or query; and the non-ASCII
+	 *    characters an IRI cannot hold, such as C1 controls and private-use characters.
+	 * 3. Other non-ASCII characters are kept raw, so multilingual names stay readable.
 	 *
 	 * The base URI is trusted admin config and is not encoded here.
 	 *
@@ -205,25 +228,41 @@ readonly class RdfNamespaces {
 	 * projection accepts this; disambiguation would require another scheme.
 	 */
 	public static function localName( string $name ): string {
+		$underscored = str_replace( ' ', '_', $name );
+
+		if ( preg_match( self::ASCII_IPCHARS, $underscored ) === 1 ) {
+			return $underscored;
+		}
+
 		$encoded = '';
 
-		foreach ( str_split( str_replace( ' ', '_', $name ) ) as $byte ) {
-			$encoded .= self::isIriLocalByte( $byte ) ? $byte : sprintf( '%%%02X', ord( $byte ) );
+		foreach ( mb_str_split( $underscored, 1, 'UTF-8' ) as $character ) {
+			$encoded .= self::isIpchar( $character ) ? $character : rawurlencode( $character );
 		}
 
 		return $encoded;
 	}
 
-	private static function isIriLocalByte( string $byte ): bool {
-		$code = ord( $byte );
-
-		// Control characters (0x00–0x1F and DEL) are never allowed in an IRIREF. Bytes >= 0x80 are
-		// part of a raw UTF-8 sequence and pass through, keeping Unicode readable.
-		if ( $code <= 0x1F || $code === 0x7F ) {
-			return false;
+	/**
+	 * The ucschar ranges are compared as numbers: PCRE builds disagree on a character class this large.
+	 */
+	private static function isIpchar( string $character ): bool {
+		if ( strlen( $character ) === 1 ) {
+			return preg_match( self::ASCII_IPCHARS, $character ) === 1;
 		}
 
-		return !in_array( $byte, [ '%', '<', '>', '"', '{', '}', '|', '^', '\\', '`', '/', '#', '?' ], true );
+		$codePoint = mb_ord( $character, 'UTF-8' );
+
+		return $codePoint !== false && self::isUcsChar( $codePoint );
+	}
+
+	private static function isUcsChar( int $codePoint ): bool {
+		return ( $codePoint >= 0xA0 && $codePoint <= 0xD7FF )
+			|| ( $codePoint >= 0xF900 && $codePoint <= 0xFDCF )
+			|| ( $codePoint >= 0xFDF0 && $codePoint <= 0xFFEF )
+			|| ( $codePoint >= 0x10000 && $codePoint <= 0xEFFFD
+				&& ( $codePoint & 0xFFFF ) <= 0xFFFD
+				&& !( $codePoint >= 0xE0000 && $codePoint <= 0xE0FFF ) );
 	}
 
 	/**

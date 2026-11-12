@@ -96,7 +96,7 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 
 	public function write( QuadList $quads ): string {
 		$this->checkedIris = [];
-		$this->writer->addPrefixes( $this->declarable( ( $this->prefixesForQuads )( $quads ) ) );
+		$this->writer->addPrefixes( $this->declarable( ( $this->prefixesForQuads )( $quads ), $this->schemesIn( $quads ) ) );
 
 		foreach ( $this->groupedByResource( $this->writableQuads( $quads ) ) as $quad ) {
 			$this->writer->addTriple(
@@ -111,14 +111,30 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 	}
 
 	/**
+	 * @return string[] The schemes of the IRIs the quads hold, lowercased.
+	 */
+	private function schemesIn( QuadList $quads ): array {
+		$schemes = [];
+
+		foreach ( $quads->asArray() as $quad ) {
+			foreach ( $this->writtenIris( $quad ) as $iri ) {
+				$schemes[strtolower( (string)strstr( $iri->value, ':', true ) )] = true;
+			}
+		}
+
+		return array_keys( $schemes );
+	}
+
+	/**
 	 * @param array<array-key, string> $prefixes
+	 * @param string[] $schemes Schemes of the IRIs about to be written, besides those the document always has.
 	 * @return array<string, string> The prefixes to declare, now recorded as declared.
 	 */
-	private function declarable( array $prefixes ): array {
+	private function declarable( array $prefixes, array $schemes = [] ): array {
 		$declarable = [];
 
 		foreach ( $prefixes as $label => $namespace ) {
-			if ( $this->canDeclare( (string)$label, $namespace ) ) {
+			if ( $this->canDeclare( (string)$label, $namespace, $schemes ) ) {
 				$declarable[(string)$label] = $namespace;
 				$this->prefixes[(string)$label] = $namespace;
 				$this->prefixTableLength += strlen( (string)$label ) + strlen( $namespace );
@@ -131,11 +147,13 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 	/**
 	 * A prefix left undeclared has its IRIs written in full. hardf would write every IRI whose scheme is the
 	 * label raw.
+	 *
+	 * @param string[] $schemes
 	 */
-	private function canDeclare( string $label, string $namespace ): bool {
+	private function canDeclare( string $label, string $namespace, array $schemes ): bool {
 		return !array_key_exists( $label, $this->prefixes )
 			&& preg_match( '/^' . self::NAME_PATTERN . '$/', $label ) === 1
-			&& !in_array( strtolower( $label ), $this->schemes, true )
+			&& !in_array( strtolower( $label ), [ ...$this->schemes, ...$schemes ], true )
 			&& $this->prefixTableLength + strlen( $label ) + strlen( $namespace ) <= self::MAX_PREFIX_TABLE_LENGTH;
 	}
 

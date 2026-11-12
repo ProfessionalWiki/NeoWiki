@@ -44,8 +44,9 @@ page data only through `GRAPH`. Scope each pattern by the graph holding it rathe
 `GRAPH` block: patterns sharing a block must match within a single page.
 
 In IRIs, Property and Schema names have their spaces replaced by underscores (`Birth date` → `Person:Birth_date`), and
-`/`, `#`, `?` and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick, control characters) percent-encoded.
-Non-ASCII Unicode is kept raw. **Caveat:** the space→underscore step collides when a name already contains an
+`/`, `#`, `?`, `[`, `]` and characters illegal in an IRI (`%`, `< > " { } | ^ \`, backtick, control characters)
+percent-encoded. Non-ASCII Unicode is kept raw, except characters an IRI cannot hold, such as private-use ones, which
+are percent-encoded. **Caveat:** the space→underscore step collides when a name already contains an
 underscore — `Has author` and `Has_author` share the `Book:Has_author` IRI, which the native projection accepts. The
 base URI is trusted admin config and is not encoded.
 
@@ -97,10 +98,10 @@ nothing carries a page's namespace or wiki id.
 
 ## Endpoint
 
-RDF is served per page or per Subject. Both take the same `projection` and `format` query parameters. `projection`
-selects the vocabulary: `native` (the default, described here) or the name of a Mapping page — see
-[Mapping Format](../authoring/mapping-format.md); an unknown projection returns `400`. `format` picks the serialization,
-falling back to the `Accept` header, then to TriG; a value other than `trig` or `turtle` returns `400`:
+Subject data is served as RDF per page or per Subject. Both take the same `projection` and `format` query
+parameters. `projection` selects the vocabulary: `native` (the default, described here) or the name of a Mapping page
+— see [Mapping Format](../authoring/mapping-format.md); an unknown projection returns `400`. `format` picks the
+serialization, falling back to the `Accept` header, then to TriG; a value other than `trig` or `turtle` returns `400`:
 
 | `format` | `Accept` | Content-Type | Named graph |
 |---|---|---|---|
@@ -187,6 +188,36 @@ IRI with a control that copies it.
 Content pages that exist also emit `<link rel="alternate">` autodiscovery tags (Turtle and TriG, native
 projection) in the HTML head, on a wiki with a graph database configured.
 
+## Schemas as RDFS
+
+`GET /rest.php/neowiki/v0/schemas/rdfs`
+
+Returns an [RDF Schema](https://www.w3.org/TR/rdf-schema/) description of every Schema you may read, with the native
+projection's [IRIs](#iri-scheme). `format` picks the serialization, falling back to the `Accept` header, then to
+Turtle; Turtle wins when `Accept` names both, and another `format` value returns `400`:
+
+| `format` | `Accept` | Content-Type |
+|---|---|---|
+| `turtle` (default) | `text/turtle` | `text/turtle; charset=utf-8` |
+| `rdfxml` | `application/rdf+xml` | `application/rdf+xml; charset=utf-8` |
+
+Each Schema's class (`neo-schema:Person`) is an `rdfs:Class`, with the Schema's name as `rdfs:label` and, when it has
+one, its description as `rdfs:comment`. Each of its properties (`Person:Birth_date`) is an `rdf:Property`, with:
+
+| Predicate | Value |
+|---|---|
+| `rdfs:label` | One language-tagged literal per label (`"Geburtsdatum"@de`), or the property's name, untagged, when it has none |
+| `rdfs:comment` | Its description, when it has one |
+| `rdfs:domain` | Its Schema's class |
+| `rdfs:range` | The datatype its values [project to](#iri-scheme), `xsd:decimal` for `number`, and for a `relation` whose `targetSchemas` names one Schema of this wiki, that Schema's class |
+
+A `url` property, any other `relation`, and a property of an extension's Property Type have no `rdfs:range`. Nothing
+else a Schema holds appears, such as `required`, `multiple` or `options`.
+
+```sh
+curl 'https://wiki.example/rest.php/neowiki/v0/schemas/rdfs?format=rdfxml'
+```
+
 ## Bulk dump
 
 `maintenance/DumpRdf.php` streams the projection of **every** page on the wiki to stdout as TriG, one named graph
@@ -202,4 +233,3 @@ php maintenance/run.php NeoWiki:DumpRdf --projection=EDM > dump-edm.trig
 
 - SPARQL store and live sync (the projection feeds them, but they are a separate concern).
 - RDF import.
-- RDFS/OWL self-description of Schemas.

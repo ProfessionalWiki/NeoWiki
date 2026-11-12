@@ -443,6 +443,11 @@
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetSchemaSummariesApi"
 		},
 		{
+			"path": "/neowiki/v0/schemas/rdfs",
+			"method": [ "GET" ],
+			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newExportSchemasRdfsApi"
+		},
+		{
 			"path": "/neowiki/v0/mappings",
 			"method": [ "GET" ],
 			"factory": "ProfessionalWiki\\NeoWiki\\NeoWikiExtension::newGetMappingSummariesApi"
