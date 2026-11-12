@@ -33,7 +33,6 @@ onMounted( () => notifyUnregisteredPropertyType( typeName.value ) );
 .ext-neowiki-unregistered-type-value {
 	&__raw {
 		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 
 	&__note {

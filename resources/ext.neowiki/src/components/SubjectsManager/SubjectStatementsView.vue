@@ -89,7 +89,6 @@ const resolvedProperties = computed<ResolvedProperty[]>( () => {
 	&__value {
 		margin: 0;
 		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 
 	&__empty {
