@@ -9,7 +9,9 @@
     ":ignoreModulesAndTests"
   ],
   "minimumReleaseAge": "3 days",
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "prConcurrentLimit": 5,
   "prHourlyLimit": 0,
   "major": {
