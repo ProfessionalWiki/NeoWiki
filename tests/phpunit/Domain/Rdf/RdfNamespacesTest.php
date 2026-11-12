@@ -80,16 +80,21 @@ class RdfNamespacesTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider iriDelimiterProvider
+	 * @dataProvider characterToEncodeProvider
 	 */
-	public function testPropertyIriPercentEncodesIriDelimitersInsideAName( string $propertyName, string $expectedIri ): void {
+	public function testPropertyIriPercentEncodesCharactersThatCannotStayRaw( string $propertyName, string $expectedIri ): void {
 		$this->assertSame( $expectedIri, $this->propertyIri( 'Product', $propertyName ) );
 	}
 
-	public static function iriDelimiterProvider(): iterable {
+	public static function characterToEncodeProvider(): iterable {
 		yield 'slash' => [ 'Width/height', 'https://wiki.example/prop/Product/Width%2Fheight' ];
 		yield 'question mark' => [ 'In stock?', 'https://wiki.example/prop/Product/In_stock%3F' ];
 		yield 'hash' => [ 'Rank #', 'https://wiki.example/prop/Product/Rank_%23' ];
+		yield 'square brackets' => [ 'Height [cm]', 'https://wiki.example/prop/Product/Height_%5Bcm%5D' ];
+		yield 'C1 control' => [ "Peter\u{0092}s", 'https://wiki.example/prop/Product/Peter%C2%92s' ];
+		yield 'private use' => [ "Logo\u{F8FF}", 'https://wiki.example/prop/Product/Logo%EF%A3%BF' ];
+		yield 'tag character' => [ "Flag\u{E0067}", 'https://wiki.example/prop/Product/Flag%F3%A0%81%A7' ];
+		yield 'special' => [ "Box\u{FFFC}", 'https://wiki.example/prop/Product/Box%EF%BF%BC' ];
 	}
 
 	public function testPropertyIriPercentEncodesASlashInTheSchemaName(): void {
@@ -114,6 +119,17 @@ class RdfNamespacesTest extends TestCase {
 				$this->quadWithPredicate( $this->namespaces()->property( new SchemaName( 'Annual attendance' ), 'Year' ) ),
 				$this->quadWithPredicate( $this->namespaces()->property( new SchemaName( 'Person' ), 'Birth date' ) ),
 			] ) )
+		);
+	}
+
+	public function testPropertyPrefixesCoverAPropertyDescribedAsSubject(): void {
+		$name = $this->namespaces()->property( new SchemaName( 'Person' ), 'Name' );
+
+		$this->assertSame(
+			[ 'Person' => 'https://wiki.example/prop/Person/' ],
+			$this->namespaces()->propertyPrefixes( new QuadList(
+				new Quad( $name, $this->namespaces()->rdfType(), $this->namespaces()->rdf( 'Property' ), $this->namespaces()->schemaGraph() )
+			) )
 		);
 	}
 

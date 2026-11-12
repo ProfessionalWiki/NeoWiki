@@ -26,7 +26,7 @@ readonly class HardfRdfSerializer implements RdfSerializer {
 	}
 
 	/**
-	 * Abbreviates with the namespaces' prefixes, and with a prefix per Schema whose predicates a document uses.
+	 * Abbreviates with the namespaces' prefixes, and with a prefix per Schema whose properties a document uses.
 	 */
 	public static function withNamespaces( RdfNamespaces $namespaces, LoggerInterface $logger ): self {
 		return new self( $namespaces->prefixMap(), $namespaces->propertyPrefixes( ... ), $logger );
