@@ -207,7 +207,6 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 	&__value {
 		flex: 0 1 60%;
 		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 
 	&__item:has( .ext-neowiki-dependent-subject-display, .ext-neowiki-dependent-subject-table ) {
