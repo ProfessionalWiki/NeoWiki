@@ -26,6 +26,9 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionLookup {
 
+	/** @var array<int, ?RevisionRecord> */
+	private array $readableRevisions = [];
+
 	public function __construct(
 		private readonly RevisionLookup $revisionLookup,
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
@@ -89,6 +92,16 @@ class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionL
 	}
 
 	private function getReadableRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
+		if ( array_key_exists( $pageId->id, $this->readableRevisions ) ) {
+			return $this->readableRevisions[$pageId->id];
+		}
+
+		$this->readableRevisions[$pageId->id] = $this->findReadableRevisionAtOrBefore( $pageId );
+
+		return $this->readableRevisions[$pageId->id];
+	}
+
+	private function findReadableRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
 		$revisionId = $this->findRevisionIdAtOrBefore( $pageId );
 
 		if ( $revisionId === null ) {
