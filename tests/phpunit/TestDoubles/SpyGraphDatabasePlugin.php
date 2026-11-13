@@ -46,6 +46,7 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 	 *        for a store that was there when the rebuild started and has gone since. A rebuild that has
 	 *        just watched a whole batch fail reopens the store to tell one that has gone from one refusing
 	 *        the pages it was sent, so this is what tells the two apart in a test.
+	 * @param Closure(): void|null $whileDeletingEachPage
 	 */
 	public function __construct(
 		private readonly array $refusedPageIds = [],
@@ -53,6 +54,7 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 		private readonly ?Throwable $failure = null,
 		private readonly ?Closure $whileSavingEachPage = null,
 		private readonly ?Throwable $whenReopened = null,
+		private readonly ?Closure $whileDeletingEachPage = null,
 	) {
 	}
 
@@ -77,6 +79,10 @@ class SpyGraphDatabasePlugin implements GraphDatabasePlugin {
 	}
 
 	public function deletePage( PageId $pageId ): void {
+		if ( $this->whileDeletingEachPage !== null ) {
+			( $this->whileDeletingEachPage )();
+		}
+
 		if ( $this->refusesDeletions ) {
 			throw $this->refusal();
 		}

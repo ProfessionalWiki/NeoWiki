@@ -26,6 +26,13 @@ A plain `make upgrade` then starts only the default services. If your demo ran m
 
 From then on, a plain `make upgrade` keeps them. If you already upgraded without them, run the upgrade again this way.
 
+### Breaking changes
+
+* Extensions calling `PageRebuilder::rebuild()`: it now returns whether the page has a current revision instead of a
+  `PageRefreshOutcome`, so it no longer reports skips or withdrawals. It updates the graph stores once the current
+  database transaction commits, so a graph query made right after it can still see the page's previous data. See
+  [Refreshing a page's data without an edit](https://neowiki.ai/docs/extending/page-properties#refreshing-a-page-s-data-without-an-edit).
+
 ## NeoWiki 0.1.0
 
 The first release, a beta. Highlights:

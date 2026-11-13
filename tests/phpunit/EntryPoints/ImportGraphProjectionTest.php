@@ -4,6 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
+use ImportStringSource;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -38,6 +40,37 @@ class ImportGraphProjectionTest extends NeoWikiIntegrationTestCase {
 			[ 'Imported subject' ],
 			$this->readSubjectLabels( $this->pageIdOf( 'Import target' ) )
 		);
+	}
+
+	/**
+	 * As importDump.php --no-updates imports: MediaWiki runs no secondary data updates for the revisions.
+	 */
+	public function testPageImportedWithoutUpdatesProjectsItsSubjects(): void {
+		$this->createPageWithSubjects( 'Unupdated import source', TestSubject::build( label: 'Imported without updates' ) );
+		$xml = $this->exportPageToXml( 'Unupdated import source' );
+		$this->emptyTheGraph();
+
+		$this->importXmlWithoutUpdates( str_replace( 'Unupdated import source', 'Unupdated import target', $xml ) );
+
+		$this->assertSame(
+			[ 'Imported without updates' ],
+			$this->readSubjectLabels( $this->pageIdOf( 'Unupdated import target' ) )
+		);
+	}
+
+	/**
+	 * Importing a template has MediaWiki refresh the links of the pages using it, under the import's cause.
+	 */
+	public function testImportingATemplateProjectsThePagesUsingIt(): void {
+		$this->insertPage( 'Template:Category source', '[[Category:Imported]]' );
+		$xml = $this->exportPageToXml( 'Template:Category source' );
+		$pageId = $this->insertPage( 'Page using an imported template', '{{Category target}}' )['id'];
+
+		$this->importXml( str_replace( 'Category source', 'Category target', $xml ) );
+		$this->startFreshRequest();
+		$this->runJobs();
+
+		$this->assertSame( [ 'Imported' ], $this->readPageNodeCategories( $pageId ) );
 	}
 
 	public function testImportedPageNodeUsesTheTitleItWasImportedUnder(): void {
@@ -77,6 +110,17 @@ class ImportGraphProjectionTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 1, $this->countPageNodes( $this->pageIdOf( 'Plain target' ) ) );
 	}
 
+	private function importXmlWithoutUpdates( string $xml ): void {
+		$importer = $this->getServiceContainer()->getWikiImporterFactory()->getWikiImporter(
+			new ImportStringSource( $xml ),
+			$this->getTestSysop()->getAuthority()
+		);
+		$importer->setNoUpdates( true );
+		$importer->doImport();
+
+		DeferredUpdates::doUpdates();
+	}
+
 	/**
 	 * Stands in for importing into another wiki, whose graph knows nothing of the exported page. Without
 	 * this the source page's own projection stays behind, and since Subject nodes are keyed globally, the
@@ -85,6 +129,16 @@ class ImportGraphProjectionTest extends NeoWikiIntegrationTestCase {
 	 */
 	private function emptyTheGraph(): void {
 		$this->writeGraph( 'MATCH (n) DETACH DELETE n' );
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function readPageNodeCategories( int $pageId ): array {
+		return $this->readGraph(
+			'MATCH (page:Page {id: $pageId}) RETURN page.categories AS categories',
+			[ 'pageId' => $pageId ]
+		)->first()->toRecursiveArray()['categories'] ?? [];
 	}
 
 	private function pageIdOf( string $pageName ): int {

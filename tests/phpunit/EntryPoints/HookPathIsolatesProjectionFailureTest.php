@@ -18,9 +18,7 @@ use StatusValue;
 /**
  * Guards the hook-facing write path at the wiring level: an edit, a delete and an import must survive a
  * backend that is down, and a failing backend must not starve the backends composed after it. Undeletes
- * run through the same getStoreContentUC() wiring, so they are covered by the same guard. Imports get
- * their own case: they reach that wiring through a second factory method, which could be rewired to the
- * propagating rebuild handler on its own.
+ * project through the same newCurrentPageProjector() wiring, so they are covered by the same guard.
  *
  * The counterpart of RebuildPathPropagatesProjectionFailureTest, which guards the opposite need on
  * the maintenance path. Both are wiring tests on purpose: the decorator has its own unit tests, but

@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\EntryPoints\ParserFunction;
 
 use MediaWiki\Parser\Parser;
+use ProfessionalWiki\NeoWiki\EntryPoints\GraphReads;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryException;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryLimits;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\SparqlQueryRequest;
@@ -28,6 +29,8 @@ class SparqlRawParserFunction {
 	 * @return array{0: string, noparse: true, isHTML: true}
 	 */
 	public function handle( Parser $parser, string $query ): array {
+		GraphReads::record( $parser->getOutput() );
+
 		try {
 			$result = $this->queryService->execute(
 				new SparqlQueryRequest(

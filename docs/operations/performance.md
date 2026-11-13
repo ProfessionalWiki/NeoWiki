@@ -23,7 +23,8 @@ graph grows: the rate holds flat across a 2 000-page import, and the probes agai
 slower than those against a small one.
 
 That import rate is 16.6 ms per page of ten Subjects, MediaWiki's own revision write included. Page saves project in
-the same request rather than through the job queue, so an edit does that projection work too.
+the same request once the edit has committed, rather than through the job queue, so an edit does that projection
+work too.
 
 Reference machine: a 16-core desktop (Ryzen 9 9950X, 60 GiB RAM, NVMe) running MediaWiki, MariaDB and Neo4j in one
 Docker stack, with Neo4j held to the stack's default 512 MB heap and each SPARQL engine, when configured, to 1.5 GB.
@@ -44,6 +45,11 @@ the million-node table above; this corpus is fifty times smaller and unpadded.
 | Bulk import | 402 Subjects/second | 282 Subjects/second | 206 Subjects/second |
 | Full rebuild | 1 035 Subjects/second | 415 Subjects/second | 252 Subjects/second |
 | Interactive save | 40 ms | 44–54 ms | 59–61 ms |
+
+Interactive save is how long a REST save keeps its client waiting under Apache mod_php, which holds the client until
+the page is written to the graph stores; PHP-FPM releases it before that. On the development stack (Apple M1 Max,
+mod_php, 67 000 Subjects, measured 2026-10-29), a REST Subject replace takes 87 ms without a SPARQL store, 104 ms with
+Oxigraph and 150 ms with QLever; its response, where PHP-FPM releases the client, starts after 53–54 ms in all three.
 
 The QLever column assumes you enable QLever's [automatic background index rebuild](installation.md#qlever), as the
 bundled Docker stacks do. Compared with a wiki of the same size without a SPARQL store, a save then costs 26 ms more

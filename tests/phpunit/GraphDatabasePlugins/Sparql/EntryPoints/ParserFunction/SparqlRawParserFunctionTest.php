@@ -6,6 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\GraphDatabasePlugins\Sparql\EntryPoints
 
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutput;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Application\RawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Sparql\Application\Exception\SparqlQueryFailedException;
@@ -28,6 +29,7 @@ class SparqlRawParserFunctionTest extends TestCase {
 	 */
 	private function createParser(): Parser {
 		$parser = $this->createMock( Parser::class );
+		$parser->method( 'getOutput' )->willReturn( new ParserOutput() );
 		$parser->method( 'msg' )->willReturnCallback(
 			function ( string $key, ...$params ): Message {
 				$rendered = $params === [] ? "[$key]" : '[' . $key . '|' . implode( '|', $params ) . ']';
