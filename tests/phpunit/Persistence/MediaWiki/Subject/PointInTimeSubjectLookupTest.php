@@ -7,8 +7,10 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -36,6 +38,8 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			connectionProvider: $services->getDBLoadBalancerFactory(),
 			primaryRevision: $primaryRevision,
+			revisionPolicy: new NullRevisionPolicy(),
+			viewer: $this->createStub( Authority::class ),
 		);
 	}
 

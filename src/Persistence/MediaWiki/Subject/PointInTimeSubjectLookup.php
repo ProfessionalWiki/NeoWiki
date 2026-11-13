@@ -4,10 +4,12 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -17,6 +19,11 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use Wikimedia\Rdbms\IConnectionProvider;
 
+/**
+ * The Subjects as they stood at the primary revision, which the caller has cleared for the viewer:
+ * another page is read at its newest revision at or before it, and contributes nothing when the
+ * revision policy refuses the viewer that revision.
+ */
 class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionLookup {
 
 	public function __construct(
@@ -24,6 +31,8 @@ class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionL
 		private readonly PageIdentifiersLookup $pageIdentifiersLookup,
 		private readonly IConnectionProvider $connectionProvider,
 		private readonly RevisionRecord $primaryRevision,
+		private readonly RevisionPolicy $revisionPolicy,
+		private readonly Authority $viewer,
 	) {
 	}
 
@@ -43,7 +52,7 @@ class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionL
 		$idsByHostingPage = new SubjectIdsByHostingPage( $this->pageIdentifiersLookup );
 
 		foreach ( $idsByHostingPage->group( $this->idsMissingFrom( $subjects, $subjectIds ) ) as $pageId => $idsOnPage ) {
-			$revision = $this->getRevisionAtOrBefore( new PageId( $pageId ) );
+			$revision = $this->getReadableRevisionAtOrBefore( new PageId( $pageId ) );
 
 			if ( $revision !== null ) {
 				$subjects = $subjects->union( $this->getSubjectsFromRevision( $revision, $idsOnPage ) );
@@ -56,7 +65,7 @@ class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionL
 	public function getPageSubjects( PageId $pageId ): PageSubjects {
 		$revision = $pageId->id === $this->primaryRevision->getPageId()
 			? $this->primaryRevision
-			: $this->getRevisionAtOrBefore( $pageId );
+			: $this->getReadableRevisionAtOrBefore( $pageId );
 		$content = $revision === null ? null : SubjectSlotReader::read( $revision );
 
 		return $content?->getPageSubjects() ?? PageSubjects::newEmpty();
@@ -79,14 +88,20 @@ class PointInTimeSubjectLookup implements SubjectLookup, PageSubjectsAtRevisionL
 		) );
 	}
 
-	private function getRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
+	private function getReadableRevisionAtOrBefore( PageId $pageId ): ?RevisionRecord {
 		$revisionId = $this->findRevisionIdAtOrBefore( $pageId );
 
 		if ( $revisionId === null ) {
 			return null;
 		}
 
-		return $this->revisionLookup->getRevisionById( $revisionId );
+		$revision = $this->revisionLookup->getRevisionById( $revisionId );
+
+		if ( $revision === null || !$this->revisionPolicy->revisionIsReadableBy( $revision, $this->viewer ) ) {
+			return null;
+		}
+
+		return $revision;
 	}
 
 	private function findRevisionIdAtOrBefore( PageId $pageId ): ?int {

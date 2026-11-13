@@ -31,8 +31,9 @@ channel](../operations/installation.md#logging).
   reads answer not-found for it, and leaves its Subjects out of every referencing list, the Subject list, suggestions,
   counts and `GET /neowiki/v0/recently-edited-subjects`. A policy that throws counts as returning `null`, with the
   error logged. It runs on every page save and rebuild and on every read above, so keep it cheap.
-- `revisionIsReadableBy()` is asked when a REST caller names a `revisionId` or asks for `latest`
-  ([REST API](../api/rest-api.md)); a refusal answers exactly like a revision that does not exist.
+- `revisionIsReadableBy()` is asked about the revision a REST caller requests with `revisionId` or `latest`
+  ([REST API](../api/rest-api.md)), and, on a `revisionId` read, about every revision of another page it takes
+  Subjects from; a refusal answers exactly like a revision that does not exist.
 
 Approval changes outside an edit reach the graph stores and the subject indexes only through
 [`rebuild()`](page-properties.md#refreshing-a-pages-data-without-an-edit). A newly registered policy reaches the graph
@@ -46,6 +47,5 @@ projection; pages reach it as they are next saved or rebuilt
 ([#1392](https://github.com/ProfessionalWiki/NeoWiki/issues/1392)).
 
 Editing reads the latest revision. So do `?action=subjects`, `GET /neowiki/v0/page/{pageId}/subjects`,
-`GET /neowiki/v0/page/{pageId}/mainSubject`, the referenced Subjects on a `revisionId` read
-([#1390](https://github.com/ProfessionalWiki/NeoWiki/issues/1390)), the parse-time accessors, and the wiki's search
-index, which holds a page's Subjects the way MediaWiki holds its wikitext.
+`GET /neowiki/v0/page/{pageId}/mainSubject`, the parse-time accessors, and the wiki's search index, which holds a
+page's Subjects the way MediaWiki holds its wikitext.
