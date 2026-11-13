@@ -43,7 +43,7 @@ extension point to the file that demonstrates it.
 
 RedHerb carries its own lint setup so the example is self-contained and can be lifted into a
 real extension. Everything lives in this directory: [`package.json`](package.json) (dev
-dependencies and scripts), [`.eslintrc.json`](.eslintrc.json) (the Wikimedia plain-JavaScript
+dependencies and scripts), [`eslint.config.js`](eslint.config.js) (the Wikimedia plain-JavaScript
 profile, `wikimedia/client` plus `wikimedia/mediawiki`, for the `.js` and Vue SFC resources),
 and [`.stylelintrc.json`](.stylelintrc.json) (`stylelint-config-wikimedia` for the
 `<style lang="less">` blocks). NeoWiki's own TypeScript frontend under `resources/ext.neowiki`
@@ -62,10 +62,10 @@ npm install
 npm run lint        # ESLint, Stylelint, and banana-checker (i18n)
 ```
 
-Three rules are disabled. `max-len` (`.eslintrc.json`) and `no-descending-specificity`
+Three rules are disabled. `max-len` (`eslint.config.js`) and `no-descending-specificity`
 (`.stylelintrc.json`) are off in `ext.neowiki`'s config too: the example's Vue templates and
 MediaWiki service calls have some long lines, and `no-descending-specificity` is noisy with the
-nested BEM-style LESS these components use. `compat/compat` (`.eslintrc.json`) is off because
+nested BEM-style LESS these components use. `compat/compat` (`eslint.config.js`) is off because
 NeoWiki targets a modern browser baseline above the `browserslist-config-wikimedia` floor the
 rule checks against (`queueMicrotask` and similar APIs are used throughout NeoWiki); it comes
 from the `wikimedia/mediawiki` profile, which `ext.neowiki`'s TypeScript setup does not include,
