@@ -85,11 +85,11 @@ Subject, relation, and option IDs:
 
 ## SPARQL gotchas
 
-- Schema and property names become IRIs with their spaces as underscores. A relation is a triple
-  straight to the target Subject:
+- Schema and property names become IRIs with their spaces as underscores. Each Schema has its own property
+  predicates, prefixed with its name. A relation is a triple straight to the target Subject:
 
   ```sparql
-  SELECT DISTINCT ?Museum ?City WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:City ?c . ?c rdfs:label ?City }
+  SELECT DISTINCT ?Museum ?City WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; Museum:City ?c . ?c rdfs:label ?City }
   ```
 
 - Select `DISTINCT`: on Oxigraph, a Subject whose Schema has an EDM mapping has its `rdfs:label` in both
@@ -103,7 +103,7 @@ Subject, relation, and option IDs:
 
 | Module | Purpose | Example invocation |
 |---|---|---|
-| `Module:NeoWikiDemo` `query` | Renders SPARQL results as a wikitable, a column per selected variable, an underscore in its name shown as a space. The query may use the `rdfs:`, `neo-subj:`, `neo-prop:` and `neo-schema:` prefixes without declaring them. `linkColumns=Col1` wraps the cells of the columns it names, as headed, in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|SELECT DISTINCT ?Museum ?Founded WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; neo-prop:Founded ?Founded }\|linkColumns=Museum}}` |
+| `Module:NeoWikiDemo` `query` | Renders SPARQL results as a wikitable, a column per selected variable, an underscore in its name shown as a space. The query may use the `rdfs:`, `neo-subj:` and `neo-schema:` prefixes, and a capitalized Schema name as the prefix of its properties, without declaring them. `linkColumns=Col1` wraps the cells of the columns it names, as headed, in `[[...]]`. | `{{#invoke:NeoWikiDemo\|query\|SELECT DISTINCT ?Museum ?Founded WHERE { ?m a neo-schema:Museum ; rdfs:label ?Museum ; Museum:Founded ?Founded }\|linkColumns=Museum}}` |
 | `Module:NeoWikiDemo` `subjectTable` | Builds a wikitable from the current page's Subjects (via `mw.neowiki.getSubjects`). Avoids a query when the data is page-local. Optional `schema=` filter, `sortBy=`/`sortDir=` (default `desc`), `numberColumns=` for thousand-separator formatting. | `{{#invoke:NeoWikiDemo\|subjectTable\|schema=Annual attendance\|columns=Year, Visitors\|sortBy=Year\|numberColumns=Visitors}}` |
 | `Module:SubjectRow` | Renders a row of Subject views in a centered, scrollable container. Optional `layout=` named arg sets a row default. Append `@LayoutName` to a subject ID to override per view. | `{{#invoke:SubjectRow\|render\|<id1>\|<id2>@LayoutName}}` |
 | `Module:Card` | Renders a row of styled cards (used by `Main_Page`). | `{{#invoke:Card\|cards\|card1_title=...\|card1_link=...}}` |

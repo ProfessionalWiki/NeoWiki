@@ -2,7 +2,7 @@ A fictional company that demonstrates NeoWiki's structured-data features in a co
 
 == Which departments are largest by headcount? ==
 
-{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Department ?Headcount WHERE { ?d a neo-schema:Department ; rdfs:label ?Department . OPTIONAL { ?d neo-prop:Headcount ?Headcount } } ORDER BY DESC(?Headcount)|linkColumns=Department}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Department ?Headcount WHERE { ?d a neo-schema:Department ; rdfs:label ?Department . OPTIONAL { ?d Department:Headcount ?Headcount } } ORDER BY DESC(?Headcount)|linkColumns=Department}}
 
 == Browse ==
 

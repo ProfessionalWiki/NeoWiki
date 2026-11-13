@@ -734,7 +734,7 @@ class OntologyMappingProjectorTest extends TestCase {
 	 * @param array<string, string> $extraPrefixes
 	 */
 	private function serializer( array $extraPrefixes = [] ): HardfRdfSerializer {
-		return new HardfRdfSerializer(
+		return HardfRdfSerializer::withPrefixes(
 			array_merge( $this->ns->prefixMap(), [ 'edm' => self::EDM, 'dc' => self::DC ], $extraPrefixes ),
 			new NullLogger()
 		);
