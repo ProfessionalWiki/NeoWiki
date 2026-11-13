@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepos
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectPageApi
@@ -49,6 +50,15 @@ class CreateSubjectPageApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame(
 			$body['subjectId'],
 			$this->mainSubjectIdOf( 'Amsterdam' )
+		);
+	}
+
+	public function testCreatedResponseCarriesTheRevisionTheSubjectIsAt(): void {
+		$body = $this->bodyOf( $this->create( [ 'label' => 'Rotterdam' ] ) );
+
+		$this->assertSame(
+			Title::newFromText( 'Rotterdam' )->getLatestRevID( IDBAccessObject::READ_LATEST ),
+			$body['revisionId']
 		);
 	}
 

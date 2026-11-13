@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseIt
 class RestGetSubjectPresenter implements GetSubjectPresenter {
 
 	private array $apiResponse = [];
+	private ?int $revisionId = null;
 	private readonly SubjectPresentationSerializer $subjectSerializer;
 
 	public function __construct() {
@@ -21,11 +22,22 @@ class RestGetSubjectPresenter implements GetSubjectPresenter {
 		return $this->apiResponse;
 	}
 
+	/**
+	 * The revision of its page the requested Subject is read from, served beside it for a write to be based on.
+	 */
+	public function setRevisionId( int $revisionId ): void {
+		$this->revisionId = $revisionId;
+	}
+
 	public function presentSubject( GetSubjectResponse $response ): void {
 		$this->apiResponse = [
 			'requestedId' => $response->requestedId,
 			'subjects' => $this->buildSubjectsMap( $response->subjects ),
 		];
+
+		if ( $this->revisionId !== null ) {
+			$this->apiResponse['revisionId'] = $this->revisionId;
+		}
 	}
 
 	/**

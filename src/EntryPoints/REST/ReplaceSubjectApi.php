@@ -19,6 +19,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ReplaceSubjectApi extends SimpleHandler {
 
+	use TakesBaseRevision;
 	use TakesDependentSubjects;
 
 	public function __construct(
@@ -40,6 +41,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 			$extension = NeoWikiExtension::getInstance();
 			$extension->newReplaceSubjectAction( $presenter, $this->getAuthority() )->replace(
 				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),
+				$this->baseRevisionIdOf( $body ),
 				$body['label'] ?? null,
 				$body['statements'],
 				$body['comment'] ?? null,
@@ -64,9 +66,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 			] );
 		}
 
-		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
-		$response->setStatus( $presenter->getStatusCode() );
-		return $response;
+		return $this->writeResponse( $presenter );
 	}
 
 	public function getParamSettings(): array {
@@ -102,7 +102,7 @@ class ReplaceSubjectApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
-		] + $this->dependentSubjectsParamSettings();
+		] + $this->baseRevisionParamSettings() + $this->dependentSubjectsParamSettings();
 	}
 
 }

@@ -300,4 +300,32 @@ class SubjectMapTest extends TestCase {
 		] );
 	}
 
+	public function testMapsWithTheSameSubjectsInAnotherOrderHaveTheSameContent(): void {
+		$this->assertTrue(
+			( new SubjectMap( TestSubject::build( self::GUID_123, 'First' ), TestSubject::build( self::GUID_456, 'Second' ) ) )
+				->hasSameContentAs( new SubjectMap( TestSubject::build( self::GUID_456, 'Second' ), TestSubject::build( self::GUID_123, 'First' ) ) )
+		);
+	}
+
+	public function testASubjectWithOtherContentMakesTheMapsDiffer(): void {
+		$this->assertFalse(
+			( new SubjectMap( TestSubject::build( self::GUID_123, 'First' ), TestSubject::build( self::GUID_456, 'Second' ) ) )
+				->hasSameContentAs( new SubjectMap( TestSubject::build( self::GUID_123, 'First' ), TestSubject::build( self::GUID_456, 'Renamed' ) ) )
+		);
+	}
+
+	public function testAnExtraSubjectMakesTheMapsDiffer(): void {
+		$this->assertFalse(
+			( new SubjectMap( TestSubject::build( self::GUID_123 ) ) )
+				->hasSameContentAs( new SubjectMap( TestSubject::build( self::GUID_123 ), TestSubject::build( self::GUID_456 ) ) )
+		);
+	}
+
+	public function testAnotherSubjectInPlaceOfOneMakesTheMapsDiffer(): void {
+		$this->assertFalse(
+			( new SubjectMap( TestSubject::build( self::GUID_123 ), TestSubject::build( self::GUID_456 ) ) )
+				->hasSameContentAs( new SubjectMap( TestSubject::build( self::GUID_123 ), TestSubject::build( self::GUID_789 ) ) )
+		);
+	}
+
 }

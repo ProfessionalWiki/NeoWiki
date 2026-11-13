@@ -100,6 +100,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
+use ProfessionalWiki\NeoWiki\Application\EditConflictCheck;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
@@ -2213,6 +2214,8 @@ class NeoWikiExtension {
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
 			dependentSubjectBuilder: $this->newDependentSubjectBuilder(),
 			dependentSubjectValidator: $this->newDependentSubjectValidator( $authority ),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
+			editConflictCheck: new EditConflictCheck( $this->getSubjectRepository() ),
 			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),
@@ -2227,6 +2230,8 @@ class NeoWikiExtension {
 			statementListBuilder: $this->getStatementListBuilder(),
 			schemaResolver: $this->getSchemaResolver(),
 			proposedSubjectValidator: $this->newProposedSubjectValidator( $authority ),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
+			editConflictCheck: new EditConflictCheck( $this->getSubjectRepository() ),
 			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
 			presenter: $presenter,
 			validationEnforced: $this->isValidationEnforced(),

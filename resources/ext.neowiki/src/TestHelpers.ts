@@ -24,6 +24,7 @@ interface NewTestSubjectOptions {
 	statements?: StatementList;
 	pageIdentifiers?: PageIdentifiers;
 	hostSubject?: HostSubject | null;
+	revisionId?: number | null;
 }
 
 export function newSubject( {
@@ -35,6 +36,7 @@ export function newSubject( {
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
 	hostSubject = null,
+	revisionId = null,
 }: NewTestSubjectOptions = {} ): Subject {
 	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
@@ -46,6 +48,7 @@ export function newSubject( {
 		statements,
 		pageIdentifiers,
 		hostSubject,
+		revisionId,
 	);
 }
 

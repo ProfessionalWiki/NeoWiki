@@ -47,6 +47,8 @@ export interface SubjectWriteResult {
 	 * property the Schema gained out of band. Null when the server could not resolve it.
 	 */
 	schema: Schema | null;
+	/** The revision the Subject is at after the write, also when subject is null. */
+	revisionId: number | null;
 }
 
 /**
@@ -153,9 +155,13 @@ export interface SubjectRepository {
 	/**
 	 * Writes the dependentSubjects to the Subject's page in the same revision, each creating or replacing the
 	 * Subject with its id. The write removes the Dependent Subjects it leaves unreached.
+	 *
+	 * Throws EditConflictError, writing nothing, when the Subject or one of its Dependent Subjects changed after
+	 * baseRevisionId, the revision the edit was made from.
 	 */
 	updateSubject(
 		id: SubjectId,
+		baseRevisionId: number,
 		label: string | null,
 		statements: StatementList,
 		dependentSubjects: readonly Subject[],
@@ -241,18 +247,18 @@ export class StubSubjectRepository implements SubjectRepository {
 	}
 
 	public createMainSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
-		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements ) );
+		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111111' ), pageId, label, schemaName, statements, 1 ) );
 	}
 
 	public createOtherSubject( pageId: number, label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, id?: SubjectId ): Promise<SubjectWriteResult> {
-		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements ) );
+		return Promise.resolve( this.newWriteResult( id ?? new SubjectId( 's11111111111112' ), pageId, label, schemaName, statements, 1 ) );
 	}
 
 	public createSubjectPage( label: string | null, schemaName: string, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string, pageTitle?: string, id?: SubjectId ): Promise<SubjectPageWriteResult> {
 		const createdId = id ?? new SubjectId( 's11111111111113' );
 
 		return Promise.resolve( {
-			...this.newWriteResult( createdId, 1, label, schemaName, statements ),
+			...this.newWriteResult( createdId, 1, label, schemaName, statements, 1 ),
 			pageTitle: pageTitle ?? label ?? createdId.text,
 			pageId: 1,
 		} );
@@ -262,10 +268,10 @@ export class StubSubjectRepository implements SubjectRepository {
 		return Promise.resolve( new SubjectId( 'smintedAAAAAAA1' ) );
 	}
 
-	public async updateSubject( id: SubjectId, label: string | null, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string ): Promise<SubjectWriteResult> {
+	public async updateSubject( id: SubjectId, baseRevisionId: number, label: string | null, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string ): Promise<SubjectWriteResult> {
 		const existing = await this.getSubject( id );
 
-		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements );
+		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements, baseRevisionId + 1 );
 	}
 
 	private newWriteResult(
@@ -274,11 +280,13 @@ export class StubSubjectRepository implements SubjectRepository {
 		label: string | null,
 		schemaName: string,
 		statements: StatementList,
+		revisionId: number,
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), null ),
+			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), null, revisionId ),
 			schema: null,
+			revisionId,
 		};
 	}
 

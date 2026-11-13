@@ -18,7 +18,6 @@ use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
-use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 use stdClass;
@@ -151,10 +150,10 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 
 		$before = $this->subjectsOf( $this->revisionLookup->getPreviousRevision( $revision ) )?->getAllSubjects();
 
+		// Compared by content rather than as stored bytes, which an import or Special:NeoJson writes in a form of its own.
 		return array_filter(
 			$after->getAllSubjects()->asArray(),
-			static fn ( Subject $subject ): bool =>
-				self::dataOf( $before?->getSubject( $subject->id ) ) !== self::dataOf( $subject )
+			static fn ( Subject $subject ): bool => $before?->getSubject( $subject->id )?->hasSameContentAs( $subject ) !== true
 		);
 	}
 
@@ -171,24 +170,6 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			// A Subject or Statement stored as something other than an object fails on a parameter type.
 			return null;
 		}
-	}
-
-	/**
-	 * Compared rather than the stored bytes, which an import or Special:NeoJson writes in a form of its own.
-	 * @return ?array<int, mixed>
-	 */
-	private static function dataOf( ?Subject $subject ): ?array {
-		if ( $subject === null ) {
-			return null;
-		}
-
-		$statements = array_map(
-			static fn ( Statement $statement ): array => [ $statement->getPropertyType(), $statement->getValue()->toScalars() ],
-			$subject->getStatements()->asArray()
-		);
-		ksort( $statements, SORT_STRING );
-
-		return [ $subject->getLabel()?->text, $subject->getSchemaReference()->toJson(), $statements ];
 	}
 
 	private function newSummary( Subject $subject, PageSubjects $pageSubjects, RevisionRecord $published, stdClass $change ): SubjectSummary {

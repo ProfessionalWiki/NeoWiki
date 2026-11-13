@@ -19,16 +19,28 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 interface SubjectRepository extends SubjectLookup {
 
 	/**
-	 * Puts $subject and $dependentSubjects on $subject's page in one revision, each replacing the Subject with
-	 * its id. Answers ERROR when no page holds $subject.
+	 * Puts $subject and $dependentSubjects onto revision $parentRevisionId of $subject's page, in one revision,
+	 * each replacing the Subject with its id. Answers CONFLICT, writing nothing, when the page has a newer
+	 * revision, and ERROR when $parentRevisionId does not hold $subject.
 	 *
 	 * @throws DependentSubjectRulesViolatedException
 	 */
 	public function updateSubject(
 		Subject $subject,
-		?string $comment = null,
-		SubjectMap $dependentSubjects = new SubjectMap()
+		int $parentRevisionId,
+		?string $comment,
+		SubjectMap $dependentSubjects
 	): PageContentSavingStatus;
+
+	/**
+	 * Null for a page that does not exist.
+	 */
+	public function getLatestRevisionId( PageId $pageId ): ?int;
+
+	/**
+	 * Null when $revisionId is not a revision of the page.
+	 */
+	public function getSubjectsAtRevision( PageId $pageId, int $revisionId ): ?PageSubjects;
 
 	/**
 	 * Removing a Dependent Subject also removes the Relations on its page that point at it.

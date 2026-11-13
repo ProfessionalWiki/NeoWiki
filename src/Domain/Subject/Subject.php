@@ -31,6 +31,12 @@ class Subject {
 		return $this->id->equals( $subject->id );
 	}
 
+	public function hasSameContentAs( self $subject ): bool {
+		return $this->label?->text === $subject->label?->text
+			&& $this->schema->equals( $subject->schema )
+			&& $this->statements->equals( $subject->statements );
+	}
+
 	public function getId(): SubjectId {
 		return $this->id;
 	}

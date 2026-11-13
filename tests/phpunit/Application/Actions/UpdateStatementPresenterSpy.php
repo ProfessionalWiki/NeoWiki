@@ -24,11 +24,23 @@ class UpdateStatementPresenterSpy implements UpdateStatementPresenter {
 
 	public ?string $saveFailure = null;
 
-	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
+	public ?int $revisionId = null;
+
+	public ?GetSubjectResponseItem $conflictingSubject = null;
+
+	public ?int $conflictRevisionId = null;
+
+	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->subjectId = $subject->id;
 		$this->subject = $subject;
 		$this->schema = $schema;
 		$this->violations = $violations;
+		$this->revisionId = $revisionId;
+	}
+
+	public function presentConflict( GetSubjectResponseItem $currentSubject, int $currentRevisionId ): void {
+		$this->conflictingSubject = $currentSubject;
+		$this->conflictRevisionId = $currentRevisionId;
 	}
 
 	public function presentValidationFailed( array $violations ): void {

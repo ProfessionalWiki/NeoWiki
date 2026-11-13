@@ -27,6 +27,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
  */
 class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 
+	use WritesOnTheCurrentRevision;
+
 	use HandlerTestTrait;
 	use NeoWikiMockAuthorityTrait;
 
@@ -69,7 +71,7 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 				'subjectId' => $subjectId,
 				'propertyName' => $propertyName,
 			],
-			'bodyContents' => json_encode( $body ),
+			'bodyContents' => json_encode( $this->onTheCurrentRevision( $subjectId, $body ) ),
 			'headers' => [ 'Content-Type' => 'application/json' ],
 		] );
 	}
@@ -103,6 +105,45 @@ class RemoveStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( 'updated', $responseData['status'] );
 		$this->assertSame( self::SUBJECT_ID, $responseData['subjectId'] );
+	}
+
+	public function testARequestWithoutABodyIsRefused(): void {
+		$this->createSubjectPage();
+
+		$exception = $this->executeHandlerAndGetHttpException(
+			$this->newRemoveStatementApi(),
+			new RequestData( [
+				'method' => 'DELETE',
+				'pathParams' => [ 'subjectId' => self::SUBJECT_ID, 'propertyName' => 'Website' ],
+			] )
+		);
+
+		$this->assertSame( 400, $exception->getCode() );
+		$this->assertSame( [ 'Website', 'Founded at' ], $this->getStoredPropertyNames() );
+	}
+
+	public function testAStaleBaseRevisionAnswers409(): void {
+		$this->createSubjectPage();
+		$base = $this->currentRevisionOf( self::SUBJECT_ID );
+		$this->changeSubjectsOfPage(
+			'RemoveStatementApiTest',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: new SubjectLabel( 'Professional Wiki' ),
+				schemaName: new SchemaName( 'RemoveStatementSchema' ),
+				statements: new StatementList( [
+					TestStatement::build( property: 'Website', value: 'https://changed.example', propertyType: 'url' ),
+				] ),
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newRemoveStatementApi(),
+			$this->newRequest( 'Website', [ 'baseRevisionId' => $base ] )
+		);
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( [ 'Website' ], $this->getStoredPropertyNames() );
 	}
 
 	public function testOnlyTheNamedStatementIsRemoved(): void {

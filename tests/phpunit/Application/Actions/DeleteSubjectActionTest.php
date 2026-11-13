@@ -15,7 +15,9 @@ use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundExcept
 use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectRepository;
@@ -175,7 +177,7 @@ class DeleteSubjectActionTest extends TestCase {
 
 	private function newRepositoryWithSubject(): InMemorySubjectRepository {
 		$repository = new InMemorySubjectRepository();
-		$repository->updateSubject( TestSubject::build( id: self::SUBJECT_ID ) );
+		$repository->savePageSubjects( new PageSubjects( TestSubject::build( id: self::SUBJECT_ID ), new SubjectMap() ), new PageId( 1 ) );
 		return $repository;
 	}
 

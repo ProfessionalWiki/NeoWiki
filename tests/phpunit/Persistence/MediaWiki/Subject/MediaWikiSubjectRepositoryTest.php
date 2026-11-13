@@ -26,6 +26,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use RuntimeException;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository
@@ -342,7 +343,7 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 		);
 
 		$pageContentSaver = $this->createMock( PageContentSaver::class );
-		$pageContentSaver->expects( $this->never() )->method( 'saveContent' );
+		$pageContentSaver->expects( $this->never() )->method( 'saveContentOnto' );
 
 		$repository = new MediaWikiSubjectRepository(
 			pageIdentifiersLookup: $pageIdentifiersLookup,
@@ -357,17 +358,97 @@ class MediaWikiSubjectRepositoryTest extends NeoWikiIntegrationTestCase {
 
 		$this->expectException( RuntimeException::class );
 
-		$repository->updateSubject( TestSubject::build( id: 'sTestMSR1111121' ) );
+		$repository->updateSubject( TestSubject::build( id: 'sTestMSR1111121' ), 1, null, new SubjectMap() );
 	}
 
 	private function revisionLookupWithSlotContent( Content $content ): RevisionLookup {
 		$revision = $this->createStub( RevisionRecord::class );
 		$revision->method( 'getContent' )->willReturn( $content );
+		$revision->method( 'getPageId' )->willReturn( 42 );
 
 		$revisionLookup = $this->createStub( RevisionLookup::class );
 		$revisionLookup->method( 'getRevisionByPageId' )->willReturn( $revision );
+		$revisionLookup->method( 'getRevisionById' )->willReturn( $revision );
 
 		return $revisionLookup;
+	}
+
+	public function testUpdateSubjectReportsTheRevisionItCreated(): void {
+		$base = $this->createPageWithSubjects( 'UpdateTarget', mainSubject: TestSubject::build( id: 'sTestMSR1111131', label: 'Before' ) );
+
+		$status = $this->newRepository()->updateSubject(
+			TestSubject::build( id: 'sTestMSR1111131', label: 'After' ),
+			$base->getId(),
+			null,
+			new SubjectMap()
+		);
+
+		$this->assertSame( PageContentSavingStatus::REVISION_CREATED, $status->status );
+		$this->assertSame( $this->latestRevisionId( 'UpdateTarget' ), $status->revisionId );
+	}
+
+	public function testUpdateSubjectOntoARevisionThePageHasMovedOnFromWritesNothing(): void {
+		$base = $this->createPageWithSubjects(
+			'MovedOnTarget',
+			mainSubject: TestSubject::build( id: 'sTestMSR1111133', label: 'Base' ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: 'sTestMSR1111134', label: 'Neighbour' ) )
+		);
+		$newer = $this->changeSubjectsOfPage(
+			'MovedOnTarget',
+			mainSubject: TestSubject::build( id: 'sTestMSR1111133', label: 'Base' ),
+			otherSubjects: new SubjectMap( TestSubject::build( id: 'sTestMSR1111134', label: 'Renamed elsewhere' ) )
+		);
+
+		$status = $this->newRepository()->updateSubject(
+			TestSubject::build( id: 'sTestMSR1111133', label: 'Stale write' ),
+			$base->getId(),
+			null,
+			new SubjectMap()
+		);
+
+		$this->assertSame( PageContentSavingStatus::CONFLICT, $status->status );
+		$this->assertSame( $newer->getId(), $this->latestRevisionId( 'MovedOnTarget' ) );
+	}
+
+	public function testGetLatestRevisionIdIsThePagesCurrentRevision(): void {
+		$this->createPageWithSubjects( 'LatestTarget', mainSubject: TestSubject::build( id: 'sTestMSR1111135' ) );
+		$latest = $this->changeSubjectsOfPage( 'LatestTarget', mainSubject: TestSubject::build( id: 'sTestMSR1111135', label: 'Changed' ) );
+
+		$this->assertSame( $latest->getId(), $this->newRepository()->getLatestRevisionId( $this->getPageId( 'LatestTarget' ) ) );
+	}
+
+	public function testGetLatestRevisionIdOfAMissingPageIsNull(): void {
+		$this->assertNull( $this->newRepository()->getLatestRevisionId( new PageId( 404404404 ) ) );
+	}
+
+	public function testGetSubjectsAtRevisionReadsThatRevision(): void {
+		$old = $this->createPageWithSubjects( 'HistoryTarget', mainSubject: TestSubject::build( id: 'sTestMSR1111136', label: 'Old' ) );
+		$this->changeSubjectsOfPage( 'HistoryTarget', mainSubject: TestSubject::build( id: 'sTestMSR1111136', label: 'New' ) );
+
+		$this->assertSame(
+			'Old',
+			$this->newRepository()->getSubjectsAtRevision( $this->getPageId( 'HistoryTarget' ), $old->getId() )
+				?->getMainSubject()?->getLabel()?->text
+		);
+	}
+
+	public function testGetSubjectsAtARevisionOfAnotherPageIsNull(): void {
+		$this->createPageWithSubjects( 'AskedPage', mainSubject: TestSubject::build( id: 'sTestMSR1111137' ) );
+		$otherPageRevision = $this->createPageWithSubjects( 'OtherPage', mainSubject: TestSubject::build( id: 'sTestMSR1111138' ) );
+
+		$this->assertNull(
+			$this->newRepository()->getSubjectsAtRevision( $this->getPageId( 'AskedPage' ), $otherPageRevision->getId() )
+		);
+	}
+
+	public function testGetSubjectsAtARevisionThatDoesNotExistIsNull(): void {
+		$this->createPageWithSubjects( 'AskedPage', mainSubject: TestSubject::build( id: 'sTestMSR1111139' ) );
+
+		$this->assertNull( $this->newRepository()->getSubjectsAtRevision( $this->getPageId( 'AskedPage' ), 404404404 ) );
+	}
+
+	private function latestRevisionId( string $pageName ): int {
+		return Title::newFromText( $pageName )->getLatestRevID( IDBAccessObject::READ_LATEST );
 	}
 
 	private function getPageId( string $pageName ): PageId {

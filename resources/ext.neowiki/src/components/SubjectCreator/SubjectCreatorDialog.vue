@@ -791,6 +791,7 @@ function openSubjectStep( schema: Schema, id: SubjectId ): void {
 		schema.getName(),
 		new StatementList( [] ),
 		UNANSWERED_PAGE,
+		null,
 		null
 	);
 }
@@ -905,7 +906,8 @@ function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageI
 		subject.getSchemaName(),
 		subject.getStatements(),
 		new PageIdentifiers( written.pageId ?? 0, written.pageTitle ?? '' ),
-		subject.getHostSubject()
+		subject.getHostSubject(),
+		subject.getRevisionId()
 	);
 }
 

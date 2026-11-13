@@ -266,7 +266,12 @@ describe( 'Infobox', () => {
 			] ),
 		} );
 		// What the editor hands to onSave, here without the statement the server ends up storing.
-		const clientCopy = mockSubject.withStatements( new StatementList( [] ) );
+		const clientCopy = newSubject( {
+			id: mockSubject.getId(),
+			label: 'Test Subject',
+			schemaName: 'TestSchema',
+			revisionId: 1,
+		} );
 		const persistedSubject = newSubject( {
 			id: mockSubject.getId(),
 			label: 'Test Subject',

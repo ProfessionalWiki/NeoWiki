@@ -13,7 +13,7 @@ interface CreateSubjectPagePresenter {
 
 	/**
 	 * Receives the persisted Subject and the page created for it. A null Schema means the Subject
-	 * names a Schema that does not exist.
+	 * names a Schema that does not exist. $revisionId is the revision the Subject is now at.
 	 *
 	 * @param Violation[] $violations
 	 */
@@ -21,7 +21,8 @@ interface CreateSubjectPagePresenter {
 		GetSubjectResponseItem $subject,
 		PageIdentifiers $page,
 		?Schema $schema,
-		array $violations
+		array $violations,
+		int $revisionId
 	): void;
 
 	/**

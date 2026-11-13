@@ -131,4 +131,23 @@ class SubjectMap implements Countable {
 		return count( $this->subjects );
 	}
 
+	/**
+	 * In any order.
+	 */
+	public function hasSameContentAs( self $subjectMap ): bool {
+		if ( $this->count() !== $subjectMap->count() ) {
+			return false;
+		}
+
+		foreach ( $this->subjects as $subject ) {
+			$counterpart = $subjectMap->getSubject( $subject->id );
+
+			if ( $counterpart === null || !$subject->hasSameContentAs( $counterpart ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 }
