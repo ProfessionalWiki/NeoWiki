@@ -17,6 +17,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 
 /**
  * Runs the handler against pages saved through MediaWiki, which is where the page's title and the
@@ -125,6 +126,32 @@ JSON,
 			'{"pageId":' . $pageId . ',"subject":null}',
 			$response->getBody()->getContents()
 		);
+	}
+
+	public function testServesTheMainSubjectThePagePublishes(): void {
+		$published = $this->createPageWithSubjects(
+			'GetMainSubjectApiTest_Published',
+			mainSubject: TestSubject::build(
+				id: 'sTestGMS1111151',
+				label: new SubjectLabel( 'published label' ),
+				schemaName: new SchemaName( 'GetMainSubjectApiTestSchema' )
+			)
+		);
+
+		$this->createPageWithSubjects(
+			'GetMainSubjectApiTest_Published',
+			mainSubject: TestSubject::build(
+				id: 'sTestGMS1111151',
+				label: new SubjectLabel( 'draft label' ),
+				schemaName: new SchemaName( 'GetMainSubjectApiTestSchema' )
+			)
+		);
+
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $published ) );
+
+		$body = json_decode( $this->getMainSubject( $published->getPageId() )->getBody()->getContents(), true );
+
+		$this->assertSame( 'published label', $body['subject']['label'] );
 	}
 
 	private function getMainSubject( int $pageId, ?Authority $authority = null ): Response {

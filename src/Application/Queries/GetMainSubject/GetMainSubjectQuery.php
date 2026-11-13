@@ -6,7 +6,7 @@ namespace ProfessionalWiki\NeoWiki\Application\Queries\GetMainSubject;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -17,7 +17,7 @@ readonly class GetMainSubjectQuery {
 
 	public function __construct(
 		private GetMainSubjectPresenter $presenter,
-		private PageSubjectsLookup $pageSubjectsLookup,
+		private PageSubjectsAtRevisionLookup $pageSubjectsLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private PageReadAuthorizer $readAuthorizer,
 	) {

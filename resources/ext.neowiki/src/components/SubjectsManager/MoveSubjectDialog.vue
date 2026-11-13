@@ -152,7 +152,7 @@ async function onTargetSelected( choice: PageChoice | null ): Promise<void> {
 	// listing into it would replace that.
 	try {
 		const { pageSubjects } = await NeoWikiExtension.getInstance()
-			.getSubjectRepository().getPageSubjects( choice.pageId );
+			.getSubjectRepository().getPageSubjectsForEditing( choice.pageId );
 		const mainSubjectId = pageSubjects.getMainSubjectId();
 		const mainSubject = mainSubjectId === null ? undefined : pageSubjects.getSubject( mainSubjectId );
 

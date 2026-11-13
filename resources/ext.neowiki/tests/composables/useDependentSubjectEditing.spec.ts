@@ -29,7 +29,7 @@ function mountEditor(
 ): Mounted {
 	const mounted = {} as Mounted;
 	const loader = new DependentSubjectLoader(
-		{ getPageSubjects: vi.fn(), mintSubjectId },
+		{ getPageSubjectsForEditing: vi.fn(), mintSubjectId },
 		new InMemorySchemaLookup( [ birthSchema, placeSchema ] ),
 		async () => [],
 	);

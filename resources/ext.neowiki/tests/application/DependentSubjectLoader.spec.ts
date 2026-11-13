@@ -82,7 +82,7 @@ class FakeSubjectRepository {
 		this.subjects = new Map( subjects.map( ( subject ) => [ subject.getId().text, subject ] ) );
 	}
 
-	public async getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
+	public async getPageSubjectsForEditing( pageId: number ): Promise<DeserializedPageSubjects> {
 		this.pageReads.push( pageId );
 
 		if ( !Number.isInteger( pageId ) ) {

@@ -8,6 +8,7 @@ import { PageSubjects } from '@/domain/PageSubjects.ts';
 import { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SubjectWriteResult } from '@/domain/SubjectRepository.ts';
+import type { DeserializedPageSubjects } from '@/persistence/PageSubjectsDeserializer.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError.ts';
 
@@ -204,13 +205,13 @@ export const useSubjectStore = defineStore( 'subject', {
 				const before = this.subjects.get( subjectId.text );
 
 				try {
-					await this.loadPageSubjects( this.pageSubjects.getPageId() );
+					await this.loadPageSubjectsForEditing( this.pageSubjects.getPageId() );
 				} catch ( error ) {
 					console.error( `Failed to refresh page subjects after ${ operation }:`, error );
 					return;
 				}
 
-				// loadPageSubjects has its own epoch guard (ADR 30 rule 3): a mutation landing while
+				// The page read has its own epoch guard (ADR 30 rule 3): a mutation landing while
 				// the re-sync was in flight discards its write-back, leaving the stale listing that
 				// still names this id. Leave the registry alone then too.
 				if ( this.pageSubjects?.getSubject( subjectId ) !== undefined ) {
@@ -335,7 +336,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		 */
 		async reloadWrittenPage( pageId: number ): Promise<void> {
 			try {
-				await this.loadPageSubjects( pageId );
+				await this.loadPageSubjectsForEditing( pageId );
 			} catch ( error ) {
 				console.error( 'Failed to read the page\'s subjects again after a write:', error );
 			}
@@ -369,15 +370,27 @@ export const useSubjectStore = defineStore( 'subject', {
 			this.subjectCreatorOpen = false;
 		},
 
+		async loadPageSubjects( pageId: number ): Promise<void> {
+			await this.loadPageSubjectsFrom( pageId, () => NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjects( pageId ) );
+		},
+
+		/**
+		 * For a viewer who changes the page's Subjects, and after the session's own writes: the page's
+		 * current revision rather than the one the wiki publishes.
+		 */
+		async loadPageSubjectsForEditing( pageId: number ): Promise<void> {
+			await this.loadPageSubjectsFrom( pageId, () => NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjectsForEditing( pageId ) );
+		},
+
 		/**
 		 * Drops the Subjects of that page the read no longer lists. Replaces the page listing only where
 		 * it is that page's or there is none yet.
 		 */
-		async loadPageSubjects( pageId: number ): Promise<void> {
+		async loadPageSubjectsFrom( pageId: number, read: () => Promise<DeserializedPageSubjects> ): Promise<void> {
 			const schemaStore = useSchemaStore();
 			const epoch = this.mutationEpoch;
 			const schemaEpoch = schemaStore.mutationEpoch;
-			const result = await NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjects( pageId );
+			const result = await read();
 
 			if ( epoch === this.mutationEpoch ) {
 				const listedIds = new Set( result.pageSubjects.getSubjects().map( ( subject ) => subject.getId().text ) );
@@ -405,7 +418,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		async setPageMainSubject( pageId: number, subjectId: SubjectId | null, comment?: string ): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().setMainSubject( pageId, subjectId, comment );
 			this.mutationEpoch++;
-			await this.loadPageSubjects( pageId );
+			await this.loadPageSubjectsForEditing( pageId );
 		},
 
 		async setPageSubjectsOrdering(
@@ -416,7 +429,7 @@ export const useSubjectStore = defineStore( 'subject', {
 		): Promise<void> {
 			await NeoWikiExtension.getInstance().getSubjectRepository().setSubjectsOrdering( pageId, mainSubjectId, otherSubjectIds, comment );
 			this.mutationEpoch++;
-			await this.loadPageSubjects( pageId );
+			await this.loadPageSubjectsForEditing( pageId );
 		},
 	},
 } );

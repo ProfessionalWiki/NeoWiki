@@ -34,7 +34,7 @@
 		if ( !pageId ) {
 			return Promise.resolve( null );
 		}
-		return nw.NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjects( pageId )
+		return nw.NeoWikiExtension.getInstance().getSubjectRepository().getPageSubjectsForEditing( pageId )
 			.then( ( result ) => {
 				const mainSubjectId = result.pageSubjects.getMainSubjectId();
 				return mainSubjectId === null ? null : mainSubjectId.text;

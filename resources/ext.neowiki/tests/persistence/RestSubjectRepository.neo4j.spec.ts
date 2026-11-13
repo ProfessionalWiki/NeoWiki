@@ -555,6 +555,22 @@ describe( 'RestSubjectRepository', () => {
 			expect( notFoundTargetIds ).toEqual( [] );
 		} );
 
+		it( 'reads the page\'s current revision when reading for editing', async () => {
+			const pageUrl = `https://example.com/rest.php/neowiki/v0/page/${ pageId }/subjects?expand=schemas%7Crelations`;
+			const listing = ( id: string ): Response => new Response(
+				JSON.stringify( { pageId, mainSubjectId: id, subjects: { [ id ]: subjectJson( id ) }, referencedSubjects: {}, schemas: {} } ),
+				{ status: 200 },
+			);
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ pageUrl ]: listing( pageSubjectId ),
+				[ pageUrl + '&latest=1' ]: listing( otherPageSubjectId ),
+			} ) );
+
+			const { pageSubjects } = await repository.getPageSubjectsForEditing( pageId );
+
+			expect( pageSubjects.getMainSubjectId() ).toEqual( new SubjectId( otherPageSubjectId ) );
+		} );
+
 	} );
 
 	describe( 'createMainSubject', () => {

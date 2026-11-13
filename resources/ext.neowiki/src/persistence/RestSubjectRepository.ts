@@ -128,9 +128,17 @@ export class RestSubjectRepository implements SubjectRepository {
 		};
 	}
 
-	public async getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
+	public getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {
+		return this.fetchPageSubjects( pageId, false );
+	}
+
+	public getPageSubjectsForEditing( pageId: number ): Promise<DeserializedPageSubjects> {
+		return this.fetchPageSubjects( pageId, true );
+	}
+
+	private async fetchPageSubjects( pageId: number, latest: boolean ): Promise<DeserializedPageSubjects> {
 		const response = await this.httpClient.get(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects?expand=schemas%7Crelations`,
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/page/${ pageId }/subjects?expand=schemas%7Crelations${ latest ? '&latest=1' : '' }`,
 		);
 
 		if ( !response.ok ) {
