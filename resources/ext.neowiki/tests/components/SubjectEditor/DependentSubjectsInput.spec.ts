@@ -129,7 +129,7 @@ function mountInput( {
 	mintSubjectId = mintingInOrder(),
 }: MountOptions = {} ): VueWrapper {
 	const loader = new DependentSubjectLoader(
-		{ getPageSubjects: vi.fn(), mintSubjectId },
+		{ getPageSubjectsForEditing: vi.fn(), mintSubjectId },
 		new InMemorySchemaLookup( SCHEMAS ),
 		async () => [],
 	);

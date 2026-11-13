@@ -626,7 +626,7 @@ async function onPageSelected( choice: PageChoice | null ): Promise<void> {
 	// Read straight from the repository, not the store: the store's pageSubjects belongs to the
 	// page being viewed, if any.
 	try {
-		const { pageSubjects } = await subjectRepository().getPageSubjects( choice.pageId );
+		const { pageSubjects } = await subjectRepository().getPageSubjectsForEditing( choice.pageId );
 		const mainSubjectId = pageSubjects.getMainSubjectId();
 		const mainSubject = mainSubjectId === null ? undefined : pageSubjects.getSubject( mainSubjectId );
 

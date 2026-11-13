@@ -790,7 +790,7 @@ class GetPageSubjectsQueryTest extends TestCase {
 
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
-			subjectRepository: $repository,
+			pageSubjectsLookup: new PageSubjectsLookup( $repository ),
 			responseItemFactory: TestNaming::newResponseItemFactory( $repository, $schemaLookup ),
 			subjectLookup: $subjectLookup ?? new InMemorySubjectLookup(),
 			schemaLookup: $schemaLookup,

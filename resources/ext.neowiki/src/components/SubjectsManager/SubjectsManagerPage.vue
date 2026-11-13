@@ -364,7 +364,11 @@ function copySubjectLink( subject: Subject ): Promise<void> {
 async function loadSubjects(): Promise<void> {
 	loading.value = true;
 	try {
-		await subjectStore.loadPageSubjects( pageId );
+		if ( canEdit.value ) {
+			await subjectStore.loadPageSubjectsForEditing( pageId );
+		} else {
+			await subjectStore.loadPageSubjects( pageId );
+		}
 	} catch ( error ) {
 		console.error( 'Failed to load subjects:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-load-error' ), { type: 'error' } );

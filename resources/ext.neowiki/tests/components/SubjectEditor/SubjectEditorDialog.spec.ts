@@ -3998,26 +3998,26 @@ describe( 'SubjectEditorDialog', () => {
 
 		interface Wiki {
 			provide: Record<string, unknown>;
-			getPageSubjects: Mock;
+			getPageSubjectsForEditing: Mock;
 			getSubjectForEditing: Mock;
 		}
 
 		// What the dialog reads through: the wiki's Schemas, and the Subjects on the page of the one it edits. Every
 		// id it mints is MINTED_ID.
 		function wikiHolding( schemas: Schema[], pageSubjects: Subject[] ): Wiki {
-			const getPageSubjects = vi.fn( ( pageId: number ) => Promise.resolve( pageHolding( pageId, pageSubjects ) ) );
+			const getPageSubjectsForEditing = vi.fn( ( pageId: number ) => Promise.resolve( pageHolding( pageId, pageSubjects ) ) );
 			const getSubjectForEditing = vi.fn();
 
 			return {
 				provide: {
 					[ Service.SubjectRepository ]: {
-						getPageSubjects,
+						getPageSubjectsForEditing,
 						getSubjectForEditing,
 						mintSubjectId: () => Promise.resolve( new SubjectId( MINTED_ID ) ),
 					},
 					[ Service.SchemaRepository ]: new InMemorySchemaLookup( schemas ),
 				},
-				getPageSubjects,
+				getPageSubjectsForEditing,
 				getSubjectForEditing,
 			};
 		}
@@ -4029,7 +4029,7 @@ describe( 'SubjectEditorDialog', () => {
 			const held: ( () => void )[] = [];
 			let released = false;
 
-			wiki.getPageSubjects.mockImplementation( ( pageId: number ) => {
+			wiki.getPageSubjectsForEditing.mockImplementation( ( pageId: number ) => {
 				const answer = (): unknown => pageHolding( pageId, [ hostPointingAtBirth, birthBorn( '1881' ) ] );
 
 				return released ? Promise.resolve( answer() ) : new Promise( ( resolve ) => {
@@ -4447,7 +4447,7 @@ describe( 'SubjectEditorDialog', () => {
 		it( 'closes, saying so, when the Dependent Subjects of the Subject it edits cannot be read', async () => {
 			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
-			wiki.getPageSubjects.mockRejectedValue( new Error( 'read failed' ) );
+			wiki.getPageSubjectsForEditing.mockRejectedValue( new Error( 'read failed' ) );
 
 			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
 			await flushPromises();
@@ -4460,7 +4460,7 @@ describe( 'SubjectEditorDialog', () => {
 			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 			let failPage!: () => void;
 			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
-			wiki.getPageSubjects.mockImplementation( () => new Promise( ( _resolve, reject ) => {
+			wiki.getPageSubjectsForEditing.mockImplementation( () => new Promise( ( _resolve, reject ) => {
 				failPage = () => reject( new Error( 'read failed' ) );
 			} ) );
 			const wrapper = mountComponent( true, {}, undefined, hostSchema, wiki.provide, hostPointingAtBirth );
@@ -4478,7 +4478,7 @@ describe( 'SubjectEditorDialog', () => {
 			const firstRoot = newSubject( { id: 's1firstAAAAAAA1', label: 'First root', pageIdentifiers: hostPage } );
 			const secondRoot = newSubject( { id: 's1secondAAAAAA1', label: 'Second root', pageIdentifiers: new PageIdentifiers( 77, 'Other page' ) } );
 			const wiki = wikiHolding( [ hostSchema, birthSchema ], [] );
-			wiki.getPageSubjects.mockImplementation( ( pageId: number ) => pageId === hostPage.getPageId() ?
+			wiki.getPageSubjectsForEditing.mockImplementation( ( pageId: number ) => pageId === hostPage.getPageId() ?
 				new Promise( ( resolve ) => {
 					releaseFirstPage = () => resolve( pageHolding( pageId, [ firstRoot ] ) );
 				} ) :

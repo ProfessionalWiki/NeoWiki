@@ -5,11 +5,11 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects;
 
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
+use ProfessionalWiki\NeoWiki\Application\PageSubjectsAtRevisionLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
-use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
@@ -24,7 +24,7 @@ readonly class GetPageSubjectsQuery {
 
 	public function __construct(
 		private GetPageSubjectsPresenter $presenter,
-		private SubjectRepository $subjectRepository,
+		private PageSubjectsAtRevisionLookup $pageSubjectsLookup,
 		private SubjectResponseItemFactory $responseItemFactory,
 		private SubjectLookup $subjectLookup,
 		private SchemaLookup $schemaLookup,
@@ -40,7 +40,7 @@ readonly class GetPageSubjectsQuery {
 		// A denied page takes exactly the path a page without Subjects takes, so the response
 		// is byte-identical to absence and cannot be used to probe page readability (#1046).
 		$pageSubjects = $this->readAuthorizer->authorizeReadByPageId( $id )
-			? $this->subjectRepository->getSubjectsByPageId( $id )
+			? $this->pageSubjectsLookup->getPageSubjects( $id )
 			: PageSubjects::newEmpty();
 
 		$subjectsOnPage = $pageSubjects->getAllSubjects();

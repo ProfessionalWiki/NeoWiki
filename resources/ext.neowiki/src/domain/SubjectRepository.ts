@@ -86,6 +86,13 @@ export interface SubjectRepository {
 
 	getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects>;
 
+	/**
+	 * The page's Subjects as an editor must see them: its current revision, rather than the revision
+	 * the wiki publishes. Changing the page's Subjects on what getPageSubjects returns there would
+	 * act on the approved Subjects and lose the draft's.
+	 */
+	getPageSubjectsForEditing( pageId: number ): Promise<DeserializedPageSubjects>;
+
 	setMainSubject( pageId: number, subjectId: SubjectId | null, comment?: string ): Promise<void>;
 
 	setSubjectsOrdering(
@@ -216,6 +223,10 @@ export class StubSubjectRepository implements SubjectRepository {
 
 	public getReferencingSubjects( _id: SubjectId ): Promise<ReferencingSubjects> {
 		return Promise.resolve( { subjects: [], truncated: false } );
+	}
+
+	public getPageSubjectsForEditing( pageId: number ): Promise<DeserializedPageSubjects> {
+		return this.getPageSubjects( pageId );
 	}
 
 	public getPageSubjects( pageId: number ): Promise<DeserializedPageSubjects> {

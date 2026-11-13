@@ -207,6 +207,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchHitLookup
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\LatestSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\DatabaseRecentlyEditedSubjectLookup;
@@ -2111,18 +2112,30 @@ class NeoWikiExtension {
 	public function newGetMainSubjectQuery( GetMainSubjectPresenter $presenter, Authority $authority ): GetMainSubjectQuery {
 		return new GetMainSubjectQuery(
 			presenter: $presenter,
-			pageSubjectsLookup: $this->newPageSubjectsLookup(),
+			pageSubjectsLookup: $this->newPublishedSubjectLookup(),
 			pageIdentifiersResolver: $this->getPageIdentifiersResolver(),
 			readAuthorizer: $this->newPageReadAuthorizer( $authority ),
 		);
 	}
 
 	public function newGetPageSubjectsQuery( GetPageSubjectsPresenter $presenter, Authority $authority ): GetPageSubjectsQuery {
+		return $this->newGetPageSubjectsQueryReading( $this->newPublishedSubjectLookup(), $presenter, $authority );
+	}
+
+	public function newGetLatestPageSubjectsQuery( GetPageSubjectsPresenter $presenter, Authority $authority ): GetPageSubjectsQuery {
+		return $this->newGetPageSubjectsQueryReading( $this->newLatestSubjectLookup( $authority ), $presenter, $authority );
+	}
+
+	private function newGetPageSubjectsQueryReading(
+		SubjectLookup&PageSubjectsAtRevisionLookup $subjectLookup,
+		GetPageSubjectsPresenter $presenter,
+		Authority $authority
+	): GetPageSubjectsQuery {
 		return new GetPageSubjectsQuery(
 			presenter: $presenter,
-			subjectRepository: $this->getSubjectRepository(),
-			responseItemFactory: $this->newSubjectResponseItemFactory( $this->newPageSubjectsLookup() ),
-			subjectLookup: $this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
+			pageSubjectsLookup: $subjectLookup,
+			responseItemFactory: $this->newSubjectResponseItemFactory( $subjectLookup ),
+			subjectLookup: $this->getSourceRoutingSubjectLookup( $subjectLookup ),
 			schemaLookup: $this->getSchemaLookup(),
 			schemaSerializer: $this->getSchemaPresentationSerializer(),
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
@@ -2135,6 +2148,15 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 			revisionPolicy: $this->getRevisionPolicy(),
+		);
+	}
+
+	private function newLatestSubjectLookup( Authority $viewer ): LatestSubjectLookup {
+		return new LatestSubjectLookup(
+			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
+			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
+			revisionPolicy: $this->getRevisionPolicy(),
+			viewer: $viewer,
 		);
 	}
 
