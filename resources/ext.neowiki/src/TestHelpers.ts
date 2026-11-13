@@ -25,6 +25,7 @@ interface NewTestSubjectOptions {
 	pageIdentifiers?: PageIdentifiers;
 	hostSubject?: HostSubject | null;
 	schemaLabels?: Readonly<Record<string, string>>;
+	revisionId?: number | null;
 }
 
 export function newSubject( {
@@ -37,6 +38,7 @@ export function newSubject( {
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
 	hostSubject = null,
 	schemaLabels,
+	revisionId = null,
 }: NewTestSubjectOptions = {} ): Subject {
 	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
@@ -49,6 +51,7 @@ export function newSubject( {
 		pageIdentifiers,
 		hostSubject,
 		schemaLabels,
+		revisionId,
 	);
 }
 

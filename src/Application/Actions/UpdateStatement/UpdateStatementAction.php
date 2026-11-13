@@ -4,8 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement;
 
+use Closure;
 use InvalidArgumentException;
-use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\EditConflictCheck;
+use ProfessionalWiki\NeoWiki\Application\SubjectAtRevision;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
@@ -16,13 +18,16 @@ use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\SubjectWriteAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
@@ -39,6 +44,8 @@ readonly class UpdateStatementAction {
 		private StatementListBuilder $statementListBuilder,
 		private SchemaResolver $schemaResolver,
 		private ProposedSubjectValidator $proposedSubjectValidator,
+		private DependentSubjectRules $dependentSubjectRules,
+		private EditConflictCheck $editConflictCheck,
 		private SubjectResponseItemFactory $responseItemFactory,
 		private UpdateStatementPresenter $presenter,
 		private bool $validationEnforced,
@@ -46,6 +53,8 @@ readonly class UpdateStatementAction {
 	}
 
 	/**
+	 * @param int $baseRevisionId The revision the request was made from. The write is refused when the
+	 *  Statement changed after it; changes to the Subject's other Statements and to other Subjects pass.
 	 * @param mixed $propertyType The writer's type for the value, as the caller supplied it. Falls
 	 *  back to the type the Subject's Schema currently gives the property when null. Taken raw
 	 *  rather than as a string because the request body it comes from is unvalidated below its top
@@ -58,43 +67,111 @@ readonly class UpdateStatementAction {
 	 */
 	public function setStatement(
 		SubjectId $subjectId,
+		int $baseRevisionId,
 		PropertyName $propertyName,
 		mixed $propertyType,
 		mixed $value,
 		?string $comment
 	): void {
-		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
-		$subject = $this->getSubject( $subjectId );
-		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
+		$this->write(
+			$subjectId,
+			$baseRevisionId,
+			$propertyName,
+			$comment,
+			function ( Subject $subject, ?Schema $schema ) use ( $propertyName, $propertyType, $value ): StatementList {
+				$statement = $this->buildStatement( $schema, $propertyName, $propertyType, $value );
 
-		$statement = $this->buildStatement( $schema, $propertyName, $propertyType, $value );
-
-		$this->save(
-			$subject,
-			$statement === null
-				? $subject->getStatements()->withoutStatement( $propertyName )
-				: $subject->getStatements()->withStatement( $statement ),
-			$schema,
-			$pageIdentifiers,
-			$comment
+				return $statement === null
+					? $subject->getStatements()->withoutStatement( $propertyName )
+					: $subject->getStatements()->withStatement( $statement );
+			}
 		);
 	}
 
 	/**
+	 * @param int $baseRevisionId As for {@see self::setStatement()}.
+	 *
 	 * @throws SubjectNotFoundException
 	 * @throws SubjectEditNotAuthorizedException
 	 */
-	public function removeStatement( SubjectId $subjectId, PropertyName $propertyName, ?string $comment ): void {
-		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
-		$subject = $this->getSubject( $subjectId );
-
-		$this->save(
-			$subject,
-			$subject->getStatements()->withoutStatement( $propertyName ),
-			$this->schemaResolver->getSchema( $subject->getSchemaReference() ),
-			$pageIdentifiers,
-			$comment
+	public function removeStatement( SubjectId $subjectId, int $baseRevisionId, PropertyName $propertyName, ?string $comment ): void {
+		$this->write(
+			$subjectId,
+			$baseRevisionId,
+			$propertyName,
+			$comment,
+			static fn ( Subject $subject ): StatementList => $subject->getStatements()->withoutStatement( $propertyName )
 		);
+	}
+
+	/**
+	 * @param Closure(Subject, ?Schema): StatementList $changeStatements
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws SubjectNotFoundException
+	 * @throws SubjectEditNotAuthorizedException
+	 */
+	private function write(
+		SubjectId $subjectId,
+		int $baseRevisionId,
+		PropertyName $propertyName,
+		?string $comment,
+		Closure $changeStatements
+	): void {
+		$pageIdentifiers = $this->getPageOfSubjectToEdit( $subjectId );
+
+		$landed = $this->editConflictCheck->attemptUntilLanded(
+			fn (): bool => $this->writeOnLatestRevision( $subjectId, $baseRevisionId, $propertyName, $pageIdentifiers, $comment, $changeStatements )
+		);
+
+		if ( !$landed ) {
+			$this->presenter->presentSaveFailed( EditConflictCheck::PAGE_KEPT_CHANGING );
+		}
+	}
+
+	/**
+	 * @param Closure(Subject, ?Schema): StatementList $changeStatements
+	 *
+	 * @return bool False when another save landed after the read, so nothing was written or presented.
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws SubjectNotFoundException
+	 */
+	private function writeOnLatestRevision(
+		SubjectId $subjectId,
+		int $baseRevisionId,
+		PropertyName $propertyName,
+		PageIdentifiers $pageIdentifiers,
+		?string $comment,
+		Closure $changeStatements
+	): bool {
+		$latest = $this->editConflictCheck->readLatest( $pageIdentifiers->getId(), $subjectId );
+		$overwritten = fn ( Subject $subject, PageSubjects $pageSubjects ): SubjectMap =>
+			$this->statementWithDependentSubjects( $subject, $propertyName, $pageSubjects );
+
+		if ( $this->editConflictCheck->changedSince( $baseRevisionId, $latest, $pageIdentifiers->getId(), $overwritten ) ) {
+			$this->presenter->presentConflict(
+				$this->responseItemFactory->createResponseItem( $latest->subject, $pageIdentifiers, $latest->pageSubjects ),
+				$latest->revisionId
+			);
+			return true;
+		}
+
+		$schema = $this->schemaResolver->getSchema( $latest->subject->getSchemaReference() );
+
+		return $this->save( $latest, $changeStatements( $latest->subject, $schema ), $schema, $pageIdentifiers, $comment );
+	}
+
+	/**
+	 * The Statement, on a Subject holding nothing else, and the Dependent Subjects it reaches, which a write that
+	 * drops the Statement removes with it.
+	 */
+	private function statementWithDependentSubjects( Subject $subject, PropertyName $propertyName, PageSubjects $pageSubjects ): SubjectMap {
+		$statement = $subject->getStatements()->getStatement( $propertyName );
+		$holder = Subject::newSubject( $subject->id, null, $subject->getSchemaReference() )
+			->withStatements( new StatementList( $statement === null ? [] : [ $statement ] ) );
+
+		return $this->dependentSubjectRules->dependentSubjectsReachedFrom( $holder, $pageSubjects )->prepend( $holder );
 	}
 
 	private function getPageOfSubjectToEdit( SubjectId $subjectId ): PageIdentifiers {
@@ -109,16 +186,6 @@ readonly class UpdateStatementAction {
 		}
 
 		return $pageIdentifiers;
-	}
-
-	private function getSubject( SubjectId $subjectId ): Subject {
-		$subject = $this->subjectRepository->getSubject( $subjectId );
-
-		if ( $subject === null ) {
-			throw SubjectNotFoundException::forId( $subjectId );
-		}
-
-		return $subject;
 	}
 
 	/**
@@ -155,16 +222,19 @@ readonly class UpdateStatementAction {
 		);
 	}
 
+	/**
+	 * @return bool False when another save landed after the read, so nothing was written or presented.
+	 */
 	private function save(
-		Subject $subject,
+		SubjectAtRevision $latest,
 		StatementList $statements,
 		?Schema $schema,
 		PageIdentifiers $pageIdentifiers,
 		?string $comment
-	): void {
-		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
+	): bool {
+		$priorViolations = $this->proposedSubjectValidator->validate( $latest->subject );
 
-		$proposedSubject = $subject->withStatements( $statements );
+		$proposedSubject = $latest->subject->withStatements( $statements );
 		$proposedViolations = $this->proposedSubjectValidator->validate( $proposedSubject );
 
 		$newBlockingViolations = array_filter(
@@ -174,37 +244,34 @@ readonly class UpdateStatementAction {
 
 		if ( $this->validationEnforced && $newBlockingViolations !== [] ) {
 			$this->presenter->presentValidationFailed( $proposedViolations );
-			return;
+			return true;
 		}
 
 		try {
-			$status = $this->subjectRepository->updateSubject( $proposedSubject, $comment );
+			$status = $this->subjectRepository->updateSubject( $proposedSubject, $latest->revisionId, $comment, new SubjectMap() );
 		} catch ( DependentSubjectRulesViolatedException $exception ) {
 			$this->presenter->presentValidationFailed( array_merge( $proposedViolations, $exception->violations ) );
-			return;
+			return true;
+		}
+
+		if ( $status->status === PageContentSavingStatus::CONFLICT ) {
+			return false;
 		}
 
 		if ( $status->status === PageContentSavingStatus::ERROR ) {
 			$this->presenter->presentSaveFailed( $status->errorMessage );
-			return;
+			return true;
 		}
 
-		// The proposed Subject is the persisted state.
+		// The proposed Subject is the persisted state. Which Subject the page treats as its own topic
+		// decides what a Subject without a label is called, and setting a Statement cannot change it.
 		$this->presenter->presentUpdated(
-			$this->newResponseItem( $proposedSubject, $pageIdentifiers ),
+			$this->responseItemFactory->createResponseItem( $proposedSubject, $pageIdentifiers, $latest->pageSubjects ),
 			$schema,
-			$proposedViolations
+			$proposedViolations,
+			$status->revisionId ?? $latest->revisionId
 		);
-	}
-
-	/**
-	 * Which Subject the page treats as its own topic decides what a Subject without a label is called.
-	 * Only the page knows that. Setting a Statement cannot change it.
-	 */
-	private function newResponseItem( Subject $subject, PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
-
-		return $this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects );
+		return true;
 	}
 
 }

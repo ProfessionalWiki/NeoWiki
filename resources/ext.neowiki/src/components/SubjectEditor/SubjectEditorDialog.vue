@@ -49,7 +49,8 @@
 			</template>
 
 			<!-- The panes container is deliberately unkeyed: a pane must never unmount, because its
-				unsaved values live in the ValueInput refs inside it. -->
+				unsaved values live in the ValueInput refs inside it. Putting the choices made in an edit
+				conflict into it is the exception: they replace what was typed. -->
 			<div
 				ref="content"
 				class="ext-neowiki-subject-editor-dialog__content"
@@ -58,7 +59,19 @@
 			>
 				<EditNoticeList :notices="notices" />
 
+				<EditConflictEditor
+					v-if="conflict !== null"
+					class="ext-neowiki-subject-editor-dialog__conflict"
+					:conflict="conflict.editConflict"
+					:subject-name="conflict.subjectName"
+					:choices="conflict.choices"
+					:name-of="conflictSubjectName"
+					:property-definition-of="conflictPropertyOf"
+					@choose="chooseInConflict"
+				/>
+
 				<EditorPanes
+					v-show="conflict === null"
 					ref="editorPanes"
 					class="ext-neowiki-subject-editor-dialog__panes"
 					:start-pane="{ ...NAVIGATOR_SIZE, resizeLabel: $i18n( 'neowiki-subject-editor-resize-open-subjects' ).text() }"
@@ -85,7 +98,7 @@
 							v-for="pane in panes"
 							v-show="pane.id === activePaneId"
 							:id="`ext-neowiki-panel-${ pane.id }`"
-							:key="pane.id"
+							:key="paneKey( pane.id )"
 							tabindex="-1"
 						>
 							<SubjectEditPane
@@ -93,6 +106,7 @@
 								:subject="pane.subject"
 								:schema="pane.schema"
 								:nested="pane.id !== rootPaneId"
+								:starts-changed="changedPaneIds.has( pane.id )"
 								:is-new="pane.isNew"
 								:unsaved-target-ids="unsavedTargetIds"
 								@edit-relation-target="openRelationTargetFromForm"
@@ -123,12 +137,22 @@
 
 				<SummaryAction
 					help-text=""
-					:footer-text="saveScopeText"
+					:footer-text="conflict === null ? saveScopeText : choicesLeftText"
 					compact-save-button
 					:save-button-label="saveButtonLabel"
-					:save-disabled="!anyChanged || saving || props.saveDisabled === true || blockingIds.length > 0"
+					:save-disabled="!anyChanged || saving || choicesLeft > 0 || props.saveDisabled === true || blockingIds.length > 0"
 					@save="handleSave"
-				/>
+				>
+					<template #actions>
+						<CdxButton
+							v-if="conflict !== null"
+							:disabled="saving || choicesLeft > 0"
+							@click="editInTheForm"
+						>
+							{{ $i18n( 'neowiki-subject-editor-edit-conflict-edit-in-form' ).text() }}
+						</CdxButton>
+					</template>
+				</SummaryAction>
 			</template>
 		</CdxDialog>
 
@@ -156,7 +180,7 @@ import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
-import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
+import { CdxButton, CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
@@ -177,6 +201,11 @@ import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { EditConflictError } from '@/persistence/EditConflictError';
+import { EditConflict, relationTargetIdsOf, type Choice } from '@/domain/EditConflict';
+import { dependentSubjectEntryName } from '@/presentation/dependentSubjectEntryName';
+import { propertyDisplayName } from '@/presentation/propertyDisplayName';
+import EditConflictEditor from '@/components/SubjectEditor/EditConflictEditor.vue';
 import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -186,10 +215,11 @@ import { isSubjectFirst } from '@/wikiMode.ts';
 import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
-import { DependentSubjectLoader, loadedSchemasOf } from '@/application/DependentSubjectLoader.ts';
+import { DependentSubjectLoader, loadedSchemasOf, type DependentSubjectsForEditing } from '@/application/DependentSubjectLoader.ts';
+import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition';
 import { useDependentSubjectEditing } from '@/composables/useDependentSubjectEditing.ts';
 import { focusFirstValueControl } from '@/components/common/valueControlFocus.ts';
-import type { DependentSubjects } from '@/stores/SubjectStore.ts';
+import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 /**
@@ -314,6 +344,39 @@ const activePaneId = ref<string>( rootPaneId.value );
 // Set when a save wrote some Subjects and then failed: the toast that says so vanishes,
 // and the dialog is still open.
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
+
+interface ConflictReview {
+	paneId: string;
+	subjectName: string;
+	editConflict: EditConflict;
+	choices: ReadonlyMap<string, Choice>;
+	theirSubject: Subject;
+	theirDependentSubjects: DependentSubjectsForEditing;
+}
+
+// Set when a save was refused because someone else changed the same fields since the Subject was read. The list of
+// the changes stands in for the form until the choices it asks for go into the pane.
+const conflict = shallowRef<ConflictReview | null>( null );
+
+const choicesLeft = computed( (): number => conflict.value === null ? 0 :
+	conflict.value.editConflict.bothChanged.filter( ( change ) => !conflict.value?.choices.has( change.key ) ).length );
+
+const choicesLeftText = computed( (): string => choicesLeft.value === 0 ? '' :
+	mw.message( 'neowiki-subject-editor-edit-conflict-to-choose', choicesLeft.value ).text() );
+
+// Panes holding choices made in an edit conflict, which the save writes although nothing was typed into them.
+const changedPaneIds = shallowReactive( new Set<string>() );
+
+// What a pane's next conflict is judged against once its choices went in: their version they were made on, which the
+// pane's next save is based on, rather than the resolved version the pane now starts from.
+const conflictBases = new Map<string, Subject[]>();
+
+// How often each pane's Subject was loaded again, which starts the pane over.
+const paneReloads = shallowReactive( new Map<string, number>() );
+
+function paneKey( paneId: string ): string {
+	return `${ paneId }:${ paneReloads.get( paneId ) ?? 0 }`;
+}
 
 const panes = computed( (): EditPane[] => loadedRoot.value === null ? [] : [
 	{
@@ -650,7 +713,8 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 				new StatementList( [] ),
 				page,
 				null,
-				schema.getLabels()
+				schema.getLabels(),
+				null
 			),
 			schema,
 			dependentSubjectEditing.schemas
@@ -744,6 +808,10 @@ function startSession(): void {
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
+	conflict.value = null;
+	changedPaneIds.clear();
+	conflictBases.clear();
+	paneReloads.clear();
 	loadedRoot.value = null;
 	readingLong.value = false;
 	clearTimeout( pendingTimer );
@@ -885,12 +953,14 @@ const saveScopeText = computed( (): string => {
 } );
 
 // A pane stops being new the moment its Subject exists on the wiki, so a save that fails further
-// down re-runs as an update rather than offering the same id to the server a second time. The
-// panes are a shallowRef, so the flag is cleared by replacing the entry rather than mutating it.
+// down re-runs as an update rather than offering the same id to the server a second time.
 function markPaneWritten( id: string ): void {
-	extraPanes.value = extraPanes.value.map(
-		( pane ) => pane.id === id ? { ...pane, isNew: false } : pane
-	);
+	changeExtraPane( id, { isNew: false } );
+}
+
+// The panes are a shallowRef, so an entry is changed by replacing it rather than mutating it.
+function changeExtraPane( id: string, change: Partial<EditPane> ): void {
+	extraPanes.value = extraPanes.value.map( ( pane ) => pane.id === id ? { ...pane, ...change } : pane );
 }
 
 // A Subject this session invented has to be created rather than replaced, on the page its pane
@@ -927,6 +997,13 @@ async function writeSubject(
 }
 
 async function writeDirtyPanes( summary: string ): Promise<void> {
+	await writePanes( summary, true );
+}
+
+// A conflict that leaves nothing to choose, such as one over a move of the Subject, is written onto their version
+// once without asking, as a merge the server makes is.
+async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<void> {
+	await applyConflictChoices();
 	await nextTick();
 
 	partialSave.value = null;
@@ -997,6 +1074,7 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
 	// reported once, below.
 	let failed = false;
+	const writtenPaneIds: string[] = [];
 
 	for ( const { id, pane, subject: updatedSubject, dependentSubjectsToWrite } of orderedTargets ) {
 		const subjectName = subjectDisplayName( updatedSubject );
@@ -1004,12 +1082,14 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 		try {
 			await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
 			paneRefs.get( id )?.markWritten();
+			changedPaneIds.delete( id );
+			writtenPaneIds.push( id );
 			savedNames.push( subjectName );
 		} catch ( error ) {
 			failed = true;
 			// The toast naming the refused Subject vanishes; its pane is what stays.
 			await showSubject( id );
-			reportWriteFailure( error, id, subjectName );
+			await reportWriteFailure( error, id, subjectName );
 
 			break;
 		}
@@ -1018,6 +1098,12 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	if ( failed ) {
 		if ( savedNames.length > 0 ) {
 			partialSave.value = { written: savedNames.length, attempted: targets.length };
+		}
+
+		startOverFromWhatTheWritesStored( writtenPaneIds );
+
+		if ( mayWriteUnasked && conflict.value?.editConflict.bothChanged.length === 0 ) {
+			await writePanes( summary, false );
 		}
 		return;
 	}
@@ -1042,9 +1128,28 @@ async function writeDirtyPanes( summary: string ): Promise<void> {
 	close();
 }
 
-function reportWriteFailure( error: unknown, paneId: string, subjectName: string ): void {
+// A write the server merged holds what changed since beside the pane's edit, which the pane's form lacks: a pane left
+// open after a partial save starts over from what its write stored, so a later save of it keeps that.
+function startOverFromWhatTheWritesStored( paneIds: readonly string[] ): void {
+	for ( const paneId of paneIds ) {
+		const pane = panes.value.find( ( candidate ) => candidate.id === paneId );
+		const written = pane === undefined ? undefined : useSubjectStore().writtenSubject( pane.subject.getId() );
+
+		if ( written !== undefined ) {
+			replacePaneSubject( paneId, written );
+			paneReloads.set( paneId, ( paneReloads.get( paneId ) ?? 0 ) + 1 );
+		}
+	}
+}
+
+async function reportWriteFailure( error: unknown, paneId: string, subjectName: string ): Promise<void> {
 	// The host has said why, where it can be answered.
 	if ( error instanceof WriteRefusedError ) {
+		return;
+	}
+
+	if ( error instanceof EditConflictError ) {
+		await reviewConflict( paneId, subjectName );
 		return;
 	}
 
@@ -1061,6 +1166,178 @@ function reportWriteFailure( error: unknown, paneId: string, subjectName: string
 			type: 'error'
 		}
 	);
+}
+
+// Their version, read again, beside the form's and the one the editor started from. The Dependent Subjects the
+// editor started from are those it read, which it still holds as they were.
+async function reviewConflict( paneId: string, subjectName: string ): Promise<void> {
+	const pane = panes.value.find( ( candidate ) => candidate.id === paneId );
+	const instance = paneRefs.get( paneId );
+	const yours = instance?.buildUpdatedSubject() ?? null;
+
+	if ( pane === undefined || instance === undefined || yours === null ) {
+		return;
+	}
+
+	const epoch = openEpoch.value;
+
+	try {
+		const theirs = await subjectRepository.getSubjectForEditing( pane.subject.getId() );
+		const theirDependentSubjects = await dependentSubjectLoader.loadFor( theirs, pane.schema, dependentSubjectEditing.schemas );
+
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		const yourDependentSubjects = instance.buildDependentSubjects();
+		const editConflict = EditConflict.between(
+			conflictBases.get( paneId ) ??
+				[ pane.subject, ...startingDependentSubjects( [ ...yourDependentSubjects, ...theirDependentSubjects.subjects ] ) ],
+			[ theirs, ...theirDependentSubjects.subjects ],
+			[ yours, ...yourDependentSubjects ]
+		);
+
+		await loadRelationTargets( editConflict, theirDependentSubjects.subjects, yourDependentSubjects );
+
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		conflict.value = {
+			paneId,
+			subjectName,
+			editConflict,
+			choices: new Map(),
+			theirSubject: theirs,
+			theirDependentSubjects
+		};
+	} catch ( error ) {
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		console.error( 'Failed to load the subject again:', error );
+		mw.notify( mw.msg( 'neowiki-subject-editor-load-error' ), { type: 'error' } );
+	}
+}
+
+// A relation shows its targets by name only once they are read, and the list may hold targets the form never showed.
+// Your Dependent Subjects their version lacks are left unread: new or removed, the wiki would answer each as missing.
+async function loadRelationTargets(
+	editConflict: EditConflict,
+	theirDependentSubjects: readonly Subject[],
+	yourDependentSubjects: readonly Subject[]
+): Promise<void> {
+	const subjectStore = useSubjectStore();
+	const theirsById = new Map( theirDependentSubjects.map( ( subject ) => [ subject.getId().text, subject ] ) );
+	const onlyYours = new Set( yourDependentSubjects.map( ( subject ) => subject.getId().text ).filter( ( id ) => !theirsById.has( id ) ) );
+	const targetIds = relationTargetIdsOf( editConflict.bothChanged ).filter( ( id ) => !onlyYours.has( id ) );
+
+	// A target that cannot be read shows as the relation display shows any missing target.
+	await Promise.all( targetIds.map( async ( id ) => {
+		const dependentSubject = theirsById.get( id );
+
+		if ( dependentSubject !== undefined ) {
+			subjectStore.setSubject( dependentSubject );
+			return;
+		}
+
+		await subjectStore.getOrFetchSubject( new SubjectId( id ) ).catch( () => undefined );
+	} ) );
+}
+
+function startingDependentSubjects( subjects: readonly Subject[] ): Subject[] {
+	return [ ...new Set( subjects.map( ( subject ) => subject.getId().text ) ) ]
+		.filter( ( id ) => !dependentSubjectEditing.isNew( id ) )
+		.map( ( id ) => dependentSubjectEditing.subject( id ) )
+		.filter( ( subject ): subject is Subject => subject !== undefined );
+}
+
+function chooseInConflict( key: string, choice: Choice ): void {
+	if ( conflict.value !== null ) {
+		conflict.value = { ...conflict.value, choices: new Map( conflict.value.choices ).set( key, choice ) };
+	}
+}
+
+// Dependent Subjects held by the same property share their display name, so the list tells them apart by a field.
+function conflictSubjectName( subjectId: string ): string {
+	const review = conflict.value;
+	const subject = review?.editConflict.subjectFor( subjectId );
+
+	if ( review === null || subject === undefined ) {
+		return subjectId;
+	}
+
+	const holder = review.editConflict.holderOf( subjectId );
+	const holdingProperty = holder === undefined ? undefined : conflictPropertyOf( holder.subjectId, holder.propertyName );
+
+	return holdingProperty === undefined ?
+		subjectDisplayName( subject ) :
+		dependentSubjectEntryName( propertyDisplayName( holdingProperty ), subject, conflictSchemaOf( subject, review ) );
+}
+
+function conflictPropertyOf( subjectId: string, propertyName: string ): PropertyDefinition | undefined {
+	const review = conflict.value;
+	const subject = review?.editConflict.subjectFor( subjectId );
+
+	if ( review === null || subject === undefined ) {
+		return undefined;
+	}
+
+	const schema = subjectId === review.editConflict.hostId ?
+		panes.value.find( ( pane ) => pane.id === review.paneId )?.schema :
+		conflictSchemaOf( subject, review );
+
+	return schema?.getPropertyDefinitions().has( new PropertyName( propertyName ) ) ?
+		schema.getPropertyDefinition( new PropertyName( propertyName ) ) :
+		undefined;
+}
+
+function conflictSchemaOf( subject: Subject, review: ConflictReview ): Schema | undefined {
+	return review.theirDependentSubjects.schemas.find( ( candidate ) => candidate.getName() === subject.getSchemaName() ) ??
+		dependentSubjectEditing.schemas.get( subject.getSchemaName() );
+}
+
+// Their version with your changes and the choices made goes into the pane, which starts over from it as changed. Its
+// Dependent Subjects are all written, so none is left as either side had it; those their version lacks are new to it.
+async function applyConflictChoices(): Promise<void> {
+	const review = conflict.value;
+
+	if ( review === null ) {
+		return;
+	}
+
+	const [ subject, ...dependentSubjects ] = review.editConflict.resolve( review.choices, conflictPropertyOf );
+	const theirIds = new Set( review.theirDependentSubjects.subjects.map( ( theirs ) => theirs.getId().text ) );
+	const schemas = review.theirDependentSubjects.schemas;
+
+	dependentSubjectEditing.include( { subjects: dependentSubjects.filter( ( dependent ) => theirIds.has( dependent.getId().text ) ), schemas }, false );
+	dependentSubjectEditing.include( { subjects: dependentSubjects.filter( ( dependent ) => !theirIds.has( dependent.getId().text ) ), schemas }, true );
+	dependentSubjects.forEach( ( dependentSubject ) => dependentSubjectEditing.markChanged( dependentSubject.getId().text ) );
+	conflictBases.set( review.paneId, [ review.theirSubject, ...review.theirDependentSubjects.subjects ] );
+	replacePaneSubject( review.paneId, subject );
+	changedPaneIds.add( review.paneId );
+	paneReloads.set( review.paneId, ( paneReloads.get( review.paneId ) ?? 0 ) + 1 );
+	conflict.value = null;
+	await nextTick();
+}
+
+async function editInTheForm(): Promise<void> {
+	const paneId = conflict.value?.paneId;
+	await applyConflictChoices();
+
+	if ( paneId !== undefined ) {
+		await focusPane( paneId );
+	}
+}
+
+function replacePaneSubject( paneId: string, subject: Subject ): void {
+	if ( paneId === rootPaneId.value ) {
+		loadedRoot.value = subject;
+		return;
+	}
+
+	changeExtraPane( paneId, { subject } );
 }
 
 // Said of the write it is attached to, not of the save as a whole: one save can create a Subject
@@ -1187,6 +1464,12 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 
 	&__partial-save {
 		margin: 0 0 @spacing-50;
+	}
+
+	/* In the panes' row while they are hidden, so it scrolls itself as they do, with the inset of a pane. */
+	&__conflict {
+		overflow-y: auto;
+		padding: @spacing-50 @spacing-150 @spacing-100;
 	}
 }
 </style>

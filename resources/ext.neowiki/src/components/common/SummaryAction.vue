@@ -44,6 +44,8 @@
 				{{ props.footerText }}
 			</p>
 
+			<slot name="actions" />
+
 			<CdxButton
 				ref="saveButton"
 				:action="props.saveButtonAction"

@@ -213,6 +213,7 @@ export class DependentSubjectLoader {
 			page,
 			null,
 			schema.getLabels(),
+			null,
 		);
 
 		const started = await this.withStartingDependentSubjects( blank, schema, schemas, ancestorSchemaNames );

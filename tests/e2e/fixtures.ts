@@ -2,12 +2,14 @@ import { test as base, expect, type Page, type Response } from '@playwright/test
 
 /**
  * Every test fails if a page it visits throws, logs an error, gets an error response from the wiki,
- * or shows a ⧼key⧽ placeholder for a message missing from its ResourceLoader module.
+ * or shows a ⧼key⧽ placeholder for a message missing from its ResourceLoader module. A test that
+ * provokes an error response on purpose names its status in expectedErrorStatus.
  */
-export const test = base.extend( {
-	page: async ( { page }, use ) => {
+export const test = base.extend<{ expectedErrorStatus: number | null }>( {
+	expectedErrorStatus: [ null, { option: true } ],
+	page: async ( { page, expectedErrorStatus }, use ) => {
 		const problems: string[] = [];
-		await recordProblems( page, problems );
+		await recordProblems( page, problems, expectedErrorStatus );
 
 		await use( page );
 
@@ -17,7 +19,7 @@ export const test = base.extend( {
 
 export { expect };
 
-async function recordProblems( page: Page, problems: string[] ): Promise<void> {
+async function recordProblems( page: Page, problems: string[], expectedErrorStatus: number | null ): Promise<void> {
 	page.on( 'pageerror', ( error ) => problems.push( `Uncaught error: ${ error.message }` ) );
 
 	page.on( 'console', ( message ) => {
@@ -28,7 +30,7 @@ async function recordProblems( page: Page, problems: string[] ): Promise<void> {
 	} );
 
 	page.on( 'response', ( response ) => {
-		if ( isUnexpectedErrorResponse( response ) ) {
+		if ( response.status() !== expectedErrorStatus && isUnexpectedErrorResponse( response ) ) {
 			problems.push( `HTTP ${ response.status() }: ${ response.request().method() } ${ response.url() }` );
 		}
 	} );

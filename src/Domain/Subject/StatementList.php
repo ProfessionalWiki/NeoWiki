@@ -115,4 +115,23 @@ readonly class StatementList {
 		return new self( $statements );
 	}
 
+	/**
+	 * In any order.
+	 */
+	public function equals( self $other ): bool {
+		if ( count( $this->statements ) !== count( $other->statements ) ) {
+			return false;
+		}
+
+		foreach ( $this->statements as $statement ) {
+			$otherStatement = $other->getStatement( $statement->getPropertyName() );
+
+			if ( $otherStatement === null || !$statement->equals( $otherStatement ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 }

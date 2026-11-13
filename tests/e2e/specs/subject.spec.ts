@@ -1,6 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
-import { createSchema, createSubjectPage, uniqueName } from '../wikiApi';
+import { createSchema, createSubjectPage, setStatement, uniqueName } from '../wikiApi';
 
 const companyProperties = {
 	Founded: { type: 'number' },
@@ -53,6 +53,66 @@ test( 'an edited Subject shows and keeps its new value without losing the rest',
 	await expect( infoboxValue( page, 'Founded' ) ).toHaveText( '2001' );
 	await expect( infoboxValue( page, 'Motto' ) ).toHaveText( 'Make things' );
 	await expect( page.getByRole( 'heading', { name: 'Acme Corporation' } ) ).toBeVisible();
+} );
+
+test.describe( 'a Subject saved elsewhere while it is being edited', () => {
+	async function editFoundedWhileChangedElsewhere(
+		page: Page,
+		request: APIRequestContext,
+		propertyName: string,
+		statement: object
+	): Promise<Locator> {
+		const schemaName = uniqueName( 'Company' );
+		const pageTitle = uniqueName( 'Acme' );
+		await createSchema( request, schemaName, companyProperties );
+		const subjectId = await createSubjectPage( request, {
+			pageTitle,
+			label: 'Acme Corporation',
+			schema: schemaName,
+			statements: {
+				Founded: { propertyType: 'number', value: 1999 },
+				Motto: { propertyType: 'text', value: [ 'Make things' ] }
+			}
+		} );
+
+		await page.goto( `index.php?title=${ encodeURIComponent( pageTitle ) }` );
+		await page.getByRole( 'button', { name: 'Edit', exact: true } ).click();
+		const dialog = page.getByRole( 'dialog', { name: 'Edit subject' } );
+		await dialog.getByRole( 'spinbutton', { name: 'Founded (optional)' } ).fill( '2001' );
+
+		await setStatement( request, subjectId, propertyName, statement );
+
+		await dialog.getByRole( 'button', { name: 'Save changes' } ).click();
+
+		return dialog;
+	}
+
+	test( 'keeps a change made elsewhere to another field beside the save', async ( { page, request } ) => {
+		const dialog = await editFoundedWhileChangedElsewhere( page, request, 'Motto', { propertyType: 'text', value: [ 'Changed elsewhere' ] } );
+
+		await expect( dialog ).toBeHidden();
+		await page.reload();
+
+		await expect( infoboxValue( page, 'Founded' ) ).toHaveText( '2001' );
+		await expect( infoboxValue( page, 'Motto' ) ).toHaveText( 'Changed elsewhere' );
+	} );
+
+	test.describe( 'when both changed the same field', () => {
+		// The first save is refused with this status.
+		test.use( { expectedErrorStatus: 409 } );
+
+		test( 'saves the value chosen', async ( { page, request } ) => {
+			const dialog = await editFoundedWhileChangedElsewhere( page, request, 'Founded', { propertyType: 'number', value: 2002 } );
+			await expect( dialog.getByText( 'Acme Corporation changed while you were editing' ) ).toBeVisible();
+
+			await dialog.locator( 'label', { hasText: 'Yours' } ).click();
+			await dialog.getByRole( 'button', { name: 'Save changes' } ).click();
+			await expect( dialog ).toBeHidden();
+			await page.reload();
+
+			await expect( infoboxValue( page, 'Founded' ) ).toHaveText( '2001' );
+		} );
+	} );
 } );
 
 // The infobox lists its values in plain elements, with no table or list roles to find them by.

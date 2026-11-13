@@ -20,7 +20,9 @@ import { Service } from '@/NeoWikiServices.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
-import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
+import SubjectEditPane, { type SubjectEditPaneExposes } from '@/components/SubjectEditor/SubjectEditPane.vue';
+import EditConflictEditor from '@/components/SubjectEditor/EditConflictEditor.vue';
+import type { Choice, EditConflict } from '@/domain/EditConflict';
 import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectEditor.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import PaneDivider from '@/components/common/PaneDivider.vue';
@@ -32,10 +34,11 @@ import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, pressHeaderClose, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { EditNotice } from '@/domain/EditNotice';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
-import { newSubject, unresolvedPage, newSchema } from '@/TestHelpers.ts';
+import { newRelationStatements, newSubject, unresolvedPage, newSchema } from '@/TestHelpers.ts';
 import { StubSubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
@@ -88,7 +91,7 @@ const SubjectEditorStub = {
 };
 
 const SummaryActionStub = {
-	template: '<div class="edit-summary-stub"></div>',
+	template: '<div class="edit-summary-stub"><slot name="actions" /></div>',
 	props: [ 'helpText', 'footerText', 'saveButtonLabel', 'saveDisabled' ],
 	emits: [ 'save' ],
 };
@@ -841,6 +844,226 @@ describe( 'SubjectEditorDialog', () => {
 					type: 'error',
 				} ),
 			] );
+		} );
+	} );
+
+	describe( 'EditConflictError handling', () => {
+		const theirs = newSubject( {
+			id: mockSubject.getId().text,
+			label: 'Their label',
+			schemaName: 'TestSchema',
+			pageIdentifiers: unresolvedPage(),
+			revisionId: 43,
+		} );
+
+		async function mountAndSaveIntoAConflict( {
+			onSave = vi.fn().mockRejectedValue( new EditConflictError( rootSubjectId ) ),
+			getSubjectForEditing = vi.fn().mockResolvedValue( theirs ),
+			yourLabel,
+		}: { onSave?: Mock; getSubjectForEditing?: Mock; yourLabel?: string } = {} ): Promise<VueWrapper> {
+			const subjectRepository = new StubSubjectRepository( [] );
+			subjectRepository.getSubjectForEditing = getSubjectForEditing;
+			const wrapper = mountComponent(
+				true,
+				validationTestStubs,
+				onSave,
+				mockSchema,
+				{ [ Service.SubjectRepository ]: subjectRepository },
+			);
+			await flushPromises();
+
+			if ( yourLabel !== undefined ) {
+				( wrapper.findComponent( SubjectEditPane ).vm as unknown as SubjectEditPaneExposes ).setLabel( yourLabel );
+			}
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await flushPromises();
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			return wrapper;
+		}
+
+		function editInTheFormButton( wrapper: VueWrapper ): DOMWrapper<HTMLButtonElement> {
+			return wrapper.findAll( 'button' ).find(
+				( button ) => button.text().includes( 'neowiki-subject-editor-edit-conflict-edit-in-form' ),
+			)!;
+		}
+
+		async function chooseForLabel( wrapper: VueWrapper, choice: Choice ): Promise<void> {
+			const editor = wrapper.findComponent( EditConflictEditor );
+			const label = ( editor.props( 'conflict' ) as EditConflict ).bothChanged.find( ( change ) => change.kind === 'label' );
+			await editor.vm.$emit( 'choose', label?.key, choice );
+		}
+
+		async function saveAgain( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+		}
+
+		it( 'says the Subject changed while it was being edited, and stays open', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			expect( wrapper.text() ).toContain( 'neowiki-subject-editor-edit-conflict-title' );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'shows the changes in place of the form', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			expect( wrapper.findComponent( EditConflictEditor ).exists() ).toBe( true );
+			expect( wrapper.findComponent( EditorPanes ).isVisible() ).toBe( false );
+		} );
+
+		it( 'holds Save back until a value is chosen for each field both changed', async () => {
+			const wrapper = await mountAndSaveIntoAConflict( { yourLabel: 'My label' } );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+
+			await chooseForLabel( wrapper, 'yours' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'saves the value chosen beside their other changes, on their revision', async () => {
+			const onSave = vi.fn()
+				.mockRejectedValueOnce( new EditConflictError( rootSubjectId ) )
+				.mockResolvedValue( undefined );
+			const wrapper = await mountAndSaveIntoAConflict( { onSave, yourLabel: 'My label' } );
+			await chooseForLabel( wrapper, 'theirs' );
+			await flushPromises();
+
+			await saveAgain( wrapper );
+
+			const saved = onSave.mock.calls[ 1 ][ 0 ] as Subject;
+			expect( saved.getLabel() ).toBe( 'Their label' );
+			expect( saved.getRevisionId() ).toBe( 43 );
+		} );
+
+		it( 'puts their changes into the form, ready to save, on Edit in the form', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			await editInTheFormButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( ( wrapper.findComponent( SubjectEditPane ).props( 'subject' ) as Subject ).getLabel() ).toBe( 'Their label' );
+			expect( wrapper.findComponent( EditConflictEditor ).exists() ).toBe( false );
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'reads the Subjects the choices point at before showing them', async () => {
+			const fetched = vi.spyOn( useSubjectStore(), 'getOrFetchSubject' ).mockResolvedValue( theirs );
+			editorStatementsBySchema = { TestSchema: [ ...newRelationStatements( 'Product', 's22222222222222' ) ] };
+
+			await mountAndSaveIntoAConflict( { getSubjectForEditing: vi.fn().mockResolvedValue( newSubject( {
+				id: rootSubjectId,
+				label: 'Test Subject',
+				schemaName: 'TestSchema',
+				pageIdentifiers: unresolvedPage(),
+				statements: newRelationStatements( 'Product', 's33333333333333' ),
+				revisionId: 43,
+			} ) ) } );
+
+			expect( fetched.mock.calls.map( ( [ id ] ) => id.text ) ).toContain( 's33333333333333' );
+		} );
+
+		it( 'leaves unread the Dependent Subjects of yours their version lacks, which the wiki cannot answer for', async () => {
+			const added = 's44444444444444';
+			const fetched = vi.spyOn( useSubjectStore(), 'getOrFetchSubject' ).mockResolvedValue( theirs );
+			editorStatementsBySchema = { TestSchema: [ ...newRelationStatements( 'Product', added ) ] };
+			editorDependentSubjectsBySchema = { TestSchema: [ newSubject( { id: added, label: null, schemaName: 'Attendance' } ) ] };
+
+			await mountAndSaveIntoAConflict( { getSubjectForEditing: vi.fn().mockResolvedValue( newSubject( {
+				id: rootSubjectId,
+				label: 'Test Subject',
+				schemaName: 'TestSchema',
+				pageIdentifiers: unresolvedPage(),
+				statements: newRelationStatements( 'Product', 's33333333333333' ),
+				revisionId: 43,
+			} ) ) } );
+
+			expect( fetched.mock.calls.map( ( [ id ] ) => id.text ) ).toEqual( [ 's33333333333333' ] );
+		} );
+
+		it( 'asks again about a field changed once more while the choices were being saved', async () => {
+			const onSave = vi.fn()
+				.mockRejectedValueOnce( new EditConflictError( rootSubjectId ) )
+				.mockRejectedValueOnce( new EditConflictError( rootSubjectId ) )
+				.mockResolvedValue( undefined );
+			const getSubjectForEditing = vi.fn()
+				.mockResolvedValueOnce( theirs )
+				.mockResolvedValue( newSubject( {
+					id: rootSubjectId,
+					label: 'Newer label',
+					schemaName: 'TestSchema',
+					pageIdentifiers: unresolvedPage(),
+					revisionId: 44,
+				} ) );
+			const wrapper = await mountAndSaveIntoAConflict( { onSave, getSubjectForEditing, yourLabel: 'My label' } );
+			await chooseForLabel( wrapper, 'yours' );
+			await flushPromises();
+
+			await saveAgain( wrapper );
+
+			expect( onSave ).toHaveBeenCalledTimes( 2 );
+			expect( ( wrapper.findComponent( EditConflictEditor ).props( 'conflict' ) as EditConflict ).bothChanged ).toHaveLength( 1 );
+		} );
+
+		it( 'writes onto their version without asking when nothing needs a choice', async () => {
+			const onSave = vi.fn()
+				.mockRejectedValueOnce( new EditConflictError( rootSubjectId ) )
+				.mockResolvedValue( undefined );
+
+			await mountAndSaveIntoAConflict( { onSave } );
+
+			expect( onSave ).toHaveBeenCalledTimes( 2 );
+			expect( ( onSave.mock.calls[ 1 ][ 0 ] as Subject ).getRevisionId() ).toBe( 43 );
+		} );
+
+		it( 'keeps a Dependent Subject added in the editor new once the choices go into the form', async () => {
+			const added = 's44444444444444';
+			editorStatementsBySchema = { TestSchema: [ new Statement(
+				new PropertyName( 'Attendance' ),
+				'relation',
+				new RelationValue( [ newRelation( 'r44444444444444', added ) ] ),
+			) ] };
+			editorDependentSubjectsBySchema = { TestSchema: [ newSubject( { id: added, label: null, schemaName: 'Attendance' } ) ] };
+			const wrapper = await mountAndSaveIntoAConflict( { yourLabel: 'My label' } );
+			await chooseForLabel( wrapper, 'yours' );
+			await flushPromises();
+
+			await editInTheFormButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditPane ).props( 'unsavedTargetIds' ) ).toContain( added );
+		} );
+
+		it( 'says so when their version cannot be loaded', async () => {
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			await mountAndSaveIntoAConflict( { getSubjectForEditing: vi.fn().mockRejectedValue( new Error( 'network down' ) ) } );
+
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				expect.stringContaining( 'neowiki-subject-editor-load-error' ),
+				{ type: 'error' },
+			] );
+		} );
+
+		it( 'lets the user save again when their version cannot be loaded', async () => {
+			// The Subject may have been deleted meanwhile: the other panes must not stay unsaveable.
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			const wrapper = await mountAndSaveIntoAConflict( { getSubjectForEditing: vi.fn().mockRejectedValue( new Error( 'gone' ) ) } );
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'drops the conflict when the editor opens again', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.text() ).not.toContain( 'neowiki-subject-editor-edit-conflict-title' );
 		} );
 	} );
 
@@ -2304,6 +2527,30 @@ describe( 'SubjectEditorDialog', () => {
 
 				const retried = onSave.mock.calls.slice( 2 ).map( ( call ) => call[ 0 ].getId().text );
 				expect( retried ).toContain( rootSubjectId );
+			} );
+
+			it( 'keeps a change the server merged into a written subject when it is saved again after a partial failure', async () => {
+				const onSave = vi.fn()
+					.mockImplementationOnce( async ( written: Subject ) => {
+						useSubjectStore().recordWriteResult( {
+							subjectId: written.getId(),
+							subject: newSubject( { id: written.getId().text, label: 'Renamed meanwhile', revisionId: 50 } ),
+							schema: null,
+							revisionId: 50,
+						}, 0 );
+					} )
+					.mockRejectedValueOnce( new ValidationFailedError( [] ) )
+					.mockResolvedValue( undefined );
+				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+				await triggerSave( wrapper, '' );
+
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, '' );
+
+				const retriedRoot = onSave.mock.calls.slice( 2 ).find( ( call ) => call[ 0 ].getId().text === rootSubjectId );
+				expect( ( retriedRoot?.[ 0 ] as Subject ).getLabel() ).toBe( 'Renamed meanwhile' );
 			} );
 
 			// A Subject may store no label (ADR 31), so what a blanked field writes is no label
@@ -4314,6 +4561,32 @@ describe( 'SubjectEditorDialog', () => {
 				await save( wrapper );
 
 				expect( idsWrittenAlong( onSave ) ).toEqual( [ BIRTH_ID ] );
+			} );
+
+			it( 'writes a Dependent Subject edited in the form along once an edit conflict over it is resolved', async () => {
+				const onSave = vi.fn().mockRejectedValueOnce( new EditConflictError( rootSubjectId ) ).mockResolvedValue( undefined );
+				const host = newSubject( {
+					id: rootSubjectId,
+					label: 'Test Subject',
+					statements: new StatementList( [ relationTo( 'Births', BIRTH_ID ) ] ),
+					pageIdentifiers: hostPage,
+				} );
+				const wiki = wikiHolding( [ hostOfBirthsSchema, birthWithRecordSchema, recordSchema ], [ host, storedBirth( BIRTH_ID, '1881' ) ] );
+				wiki.getSubjectForEditing.mockResolvedValue( host );
+				const wrapper = mountComponent( true, {}, onSave, hostOfBirthsSchema, wiki.provide, host );
+				await flushPromises();
+				await typeInto( controlOf( wrapper, 'Date', 'input' ), '25 October 1881' );
+				wiki.getPageSubjects.mockImplementation( ( pageId: number ) =>
+					Promise.resolve( pageHolding( pageId, [ host, storedBirth( BIRTH_ID, '1882' ) ] ) ) );
+				await save( wrapper );
+				const editor = wrapper.findComponent( EditConflictEditor );
+				await editor.vm.$emit( 'choose', ( editor.props( 'conflict' ) as EditConflict ).bothChanged[ 0 ].key, 'yours' );
+
+				await save( wrapper );
+
+				const written = callsTo( onSave, 'save' )[ 1 ].dependentSubjects as Subject[];
+				expect( written.map( ( subject ) => subject.getId().text ) ).toEqual( [ BIRTH_ID ] );
+				expect( written[ 0 ].getStatementValue( new PropertyName( 'Date' ) ) ).toEqual( newStringValue( '25 October 1881' ) );
 			} );
 
 			it( 'writes a Dependent Subject edited inside one left as it was, without the one around it', async () => {

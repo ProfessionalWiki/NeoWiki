@@ -6,11 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject;
 
 use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
-use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\EditConflictCheck;
+use ProfessionalWiki\NeoWiki\Application\SubjectAtRevision;
 use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectIdInUseException;
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
@@ -25,6 +27,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMerge;
 use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 
 readonly class ReplaceSubjectAction {
@@ -38,6 +42,8 @@ readonly class ReplaceSubjectAction {
 		private ProposedSubjectValidator $proposedSubjectValidator,
 		private DependentSubjectBuilder $dependentSubjectBuilder,
 		private DependentSubjectValidator $dependentSubjectValidator,
+		private DependentSubjectRules $dependentSubjectRules,
+		private EditConflictCheck $editConflictCheck,
 		private SubjectResponseItemFactory $responseItemFactory,
 		private ReplaceSubjectPresenter $presenter,
 		private bool $validationEnforced,
@@ -48,6 +54,8 @@ readonly class ReplaceSubjectAction {
 	 * Full replacement: a null label clears the stored one, exactly as an omitted property name
 	 * deletes its Statement.
 	 *
+	 * @param int $baseRevisionId The revision the request was made from. What changed after it is kept beside the
+	 *  write, which is refused when it changes the same label, Statement or Dependent Subject.
 	 * @param array<string, mixed> $statements
 	 *
 	 * @throws InvalidArgumentException When the request holds a value or a Dependent Subject that cannot be built.
@@ -57,6 +65,7 @@ readonly class ReplaceSubjectAction {
 	 */
 	public function replace(
 		SubjectId $subjectId,
+		int $baseRevisionId,
 		?string $label,
 		array $statements,
 		?string $comment,
@@ -72,20 +81,38 @@ readonly class ReplaceSubjectAction {
 			throw new SubjectEditNotAuthorizedException();
 		}
 
-		$subject = $this->subjectRepository->getSubject( $subjectId );
+		$request = new ReplaceSubjectRequest( $subjectId, $baseRevisionId, $label, $statements, $comment, $dependentSubjects );
 
-		if ( $subject === null ) {
-			throw SubjectNotFoundException::forId( $subjectId );
+		if ( !$this->editConflictCheck->attemptUntilLanded( fn (): bool => $this->replaceOnLatestRevision( $request, $pageIdentifiers ) ) ) {
+			$this->presenter->presentSaveFailed( EditConflictCheck::PAGE_KEPT_CHANGING );
+		}
+	}
+
+	/**
+	 * @return bool False when another save landed after the read, so nothing was written or presented.
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws SubjectIdInUseException
+	 * @throws SubjectNotFoundException
+	 */
+	private function replaceOnLatestRevision( ReplaceSubjectRequest $request, PageIdentifiers $pageIdentifiers ): bool {
+		$latest = $this->editConflictCheck->readLatest( $pageIdentifiers->getId(), $request->subjectId );
+		$pageSubjects = $latest->pageSubjects;
+
+		$merged = $this->mergedWithChangesSinceBase( $request, $latest, $pageIdentifiers );
+
+		if ( $merged === null ) {
+			$this->presenter->presentConflict(
+				$this->responseItemFactory->createResponseItem( $latest->subject, $pageIdentifiers, $pageSubjects ),
+				$latest->revisionId
+			);
+			return true;
 		}
 
-		$pageSubjects = $dependentSubjects === [] ?
-			PageSubjects::newEmpty() : $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
-		$newDependentSubjects = $this->dependentSubjectBuilder->build( $dependentSubjects, $subjectId, $pageSubjects );
+		$subject = $merged->getSubject( $request->subjectId ) ?? throw SubjectNotFoundException::forId( $request->subjectId );
+		$newDependentSubjects = $merged->without( $request->subjectId );
 
-		$priorViolations = $this->proposedSubjectValidator->validate( $subject );
-
-		$subject->setLabel( SubjectLabel::fromText( $label ) );
-		$subject->setStatements( $this->statementListBuilder->build( $statements ) );
+		$priorViolations = $this->proposedSubjectValidator->validate( $latest->subject );
 
 		$proposedViolations = $this->proposedSubjectValidator->validate( $subject, $newDependentSubjects );
 		$dependentSubjectViolations = $this->dependentSubjectValidator->validate(
@@ -101,38 +128,87 @@ readonly class ReplaceSubjectAction {
 			&& $dependentSubjectViolations->blockTheWriteWith( ViolationDiff::newViolations( $proposedViolations, $priorViolations ) )
 		) {
 			$this->presenter->presentValidationFailed( $allViolations );
-			return;
+			return true;
 		}
 
 		try {
-			$status = $this->subjectRepository->updateSubject( $subject, $comment, $newDependentSubjects );
+			$status = $this->subjectRepository->updateSubject( $subject, $latest->revisionId, $request->comment, $newDependentSubjects );
 		} catch ( DependentSubjectRulesViolatedException $exception ) {
 			$this->presenter->presentValidationFailed( array_merge( $allViolations, $exception->violations ) );
-			return;
+			return true;
+		}
+
+		if ( $status->status === PageContentSavingStatus::CONFLICT ) {
+			return false;
 		}
 
 		if ( $status->status === PageContentSavingStatus::ERROR ) {
 			$this->presenter->presentSaveFailed( $status->errorMessage );
-			return;
+			return true;
 		}
 
-		// The mutated Subject is the persisted state: the builder above already normalized what the
-		// request supplied.
+		// The merged Subject is the persisted state: the builders already normalized what the request
+		// supplied. Which Subject the page treats as its own topic decides what a Subject
+		// without a label is called, and a replace cannot change it.
 		$this->presenter->presentUpdated(
-			$this->newResponseItem( $subject, $pageIdentifiers ),
+			$this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects ),
 			$this->schemaResolver->getSchema( $subject->getSchemaReference() ),
-			$proposedViolations
+			$proposedViolations,
+			$status->revisionId ?? $latest->revisionId
 		);
+		return true;
 	}
 
 	/**
-	 * Which Subject the page treats as its own topic decides what a Subject without a label is called.
-	 * Only the page knows that. A replace cannot change it, so reading it after the write is safe.
+	 * The Subject and its Dependent Subjects as the write sets them, with what changed since its base revision.
+	 *
+	 * @return SubjectMap|null Null when the write and those changes set the same field differently, or the base
+	 *  revision does not hold the Subject.
+	 *
+	 * @throws InvalidArgumentException
+	 * @throws SubjectIdInUseException
 	 */
-	private function newResponseItem( Subject $subject, PageIdentifiers $pageIdentifiers ): GetSubjectResponseItem {
-		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( $pageIdentifiers->getId() );
+	private function mergedWithChangesSinceBase(
+		ReplaceSubjectRequest $request,
+		SubjectAtRevision $latest,
+		PageIdentifiers $pageIdentifiers
+	): ?SubjectMap {
+		$subject = new Subject(
+			id: $request->subjectId,
+			label: SubjectLabel::fromText( $request->label ),
+			schema: $latest->subject->getSchemaReference(),
+			statements: $this->statementListBuilder->build( $request->statements ),
+		);
+		$sentDependentSubjects = $this->dependentSubjectBuilder->build(
+			$request->dependentSubjects,
+			$request->subjectId,
+			$latest->pageSubjects
+		);
 
-		return $this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects );
+		if ( $request->baseRevisionId === $latest->revisionId ) {
+			return $sentDependentSubjects->prepend( $subject );
+		}
+
+		$base = $this->editConflictCheck->readAt( $request->baseRevisionId, $pageIdentifiers->getId(), $request->subjectId );
+
+		if ( $base === null ) {
+			return null;
+		}
+
+		// A write sends only the Dependent Subjects it changed: one it leaves out but still reaches is as it was at
+		// the base revision. One it sends stays even unreached, so the write is refused for it as without a merge.
+		return SubjectMerge::merge(
+			$this->withDependentSubjects( $base->subject, $base->pageSubjects ),
+			$this->withDependentSubjects( $latest->subject, $latest->pageSubjects ),
+			$this->withDependentSubjects(
+				$subject,
+				new PageSubjects( null, $base->pageSubjects->getAllSubjects()->union( $sentDependentSubjects ) )
+			)->union( $sentDependentSubjects )
+		);
+	}
+
+	private function withDependentSubjects( Subject $subject, PageSubjects $pageSubjects ): SubjectMap {
+		return $this->dependentSubjectRules->dependentSubjectsReachedFrom( $subject, $pageSubjects )->prepend( $subject );
 	}
 
 }

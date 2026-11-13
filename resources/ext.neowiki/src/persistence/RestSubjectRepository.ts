@@ -22,6 +22,7 @@ import type { Subject } from '@/domain/Subject';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
@@ -85,6 +86,8 @@ export type SubjectJson = {
 
 type SubjectBundleJson = {
 	requestedId: string;
+	/** The revision of its page the requested Subject was read from. */
+	revisionId?: number;
 	subjects: Record<string, SubjectJson>;
 };
 
@@ -95,6 +98,8 @@ type ReferencingSubjectsJson = {
 
 type SubjectWriteResponseJson = {
 	subject: SubjectJson;
+	/** The revision the Subject is at after the write. */
+	revisionId?: number;
 	schema?: Record<string, unknown>;
 };
 
@@ -123,10 +128,11 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		return {
 			subjectId: new SubjectId( json.subject.id ),
-			subject: hasPageContext ? this.subjectDeserializer.deserialize( json.subject ) : null,
+			subject: hasPageContext ? this.subjectDeserializer.deserialize( json.subject, json.revisionId ?? null ) : null,
 			schema: json.schema === undefined ?
 				null :
 				this.schemaDeserializer.deserialize( schemaReferenceName( json.subject.schema ), json.schema ),
+			revisionId: json.revisionId ?? null,
 		};
 	}
 
@@ -186,7 +192,7 @@ export class RestSubjectRepository implements SubjectRepository {
 	}
 
 	private deserializeRequested( bundle: SubjectBundleJson ): Subject {
-		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ] );
+		return this.subjectDeserializer.deserialize( bundle.subjects[ bundle.requestedId ], bundle.revisionId ?? null );
 	}
 
 	/**
@@ -279,13 +285,13 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( 'Error fetching subject' );
 		}
 
-		const data = await response.json() as { requestedId?: string; subjects?: Record<string, SubjectJson> };
+		const data = await response.json() as Partial<SubjectBundleJson>;
 
 		if ( !data.requestedId || !data.subjects || !data.subjects[ data.requestedId ] ) {
 			throw new SubjectNotFoundError( id.text );
 		}
 
-		return { requestedId: data.requestedId, subjects: data.subjects };
+		return { requestedId: data.requestedId, revisionId: data.revisionId, subjects: data.subjects };
 	}
 
 	/**
@@ -437,9 +443,13 @@ export class RestSubjectRepository implements SubjectRepository {
 
 	/**
 	 * A full replacement: a null label clears whatever label the Subject had.
+	 *
+	 * Both an edit conflict and a Dependent Subject taking an id in use answer 409, and only the
+	 * conflict names the revision the Subject is at now.
 	 */
 	public async updateSubject(
 		id: SubjectId,
+		baseRevisionId: number,
 		label: string | null,
 		statements: StatementList,
 		dependentSubjects: readonly Subject[],
@@ -451,11 +461,16 @@ export class RestSubjectRepository implements SubjectRepository {
 				label,
 				statements: statementsToJson( statements ),
 				comment,
+				baseRevisionId,
 				...dependentSubjectsField( dependentSubjects ),
 			},
 		);
 
 		await throwOn422IfPossible( response );
+
+		if ( response.status === 409 && await this.numberFieldOf( response, 'revisionId' ) !== null ) {
+			throw new EditConflictError( id.text );
+		}
 
 		// A refusal, such as of a Controlled Subject the user may not edit, carries the server's reason, not a status code.
 		if ( !response.ok ) {
@@ -508,12 +523,22 @@ export class RestSubjectRepository implements SubjectRepository {
 	 * an error response need not carry JSON at all. The body stays readable for the next field.
 	 */
 	private async stringFieldOf( response: Response, field: string ): Promise<string | null> {
-		try {
-			const value = ( await response.clone().json() as Record<string, unknown> )?.[ field ];
+		const value = await this.fieldOf( response, field );
 
-			return typeof value === 'string' ? value : null;
+		return typeof value === 'string' ? value : null;
+	}
+
+	private async numberFieldOf( response: Response, field: string ): Promise<number | null> {
+		const value = await this.fieldOf( response, field );
+
+		return typeof value === 'number' ? value : null;
+	}
+
+	private async fieldOf( response: Response, field: string ): Promise<unknown> {
+		try {
+			return ( await response.clone().json() as Record<string, unknown> )?.[ field ];
 		} catch {
-			return null;
+			return undefined;
 		}
 	}
 

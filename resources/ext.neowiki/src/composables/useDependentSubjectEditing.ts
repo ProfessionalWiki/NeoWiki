@@ -29,6 +29,9 @@ export interface UseDependentSubjectEditing {
 	 */
 	unsavedTargetIds: ComputedRef<string[]>;
 	schemas: ReadonlyMap<string, Schema>;
+	subject: DependentSubjectEditing[ 'subject' ];
+	isNew: DependentSubjectEditing[ 'isNew' ];
+	markChanged: DependentSubjectEditing[ 'markChanged' ];
 }
 
 interface HeldDependentSubject {
@@ -138,5 +141,15 @@ export function useDependentSubjectEditing(
 
 	provide( DependentSubjectEditingKey, editing );
 
-	return { startFrom, include, markWritten, edited, unsavedTargetIds, schemas };
+	return {
+		startFrom,
+		include,
+		markWritten,
+		edited,
+		unsavedTargetIds,
+		schemas,
+		subject: editing.subject,
+		isNew: editing.isNew,
+		markChanged: editing.markChanged,
+	};
 }
