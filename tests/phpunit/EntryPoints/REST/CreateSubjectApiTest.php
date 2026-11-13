@@ -25,6 +25,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\CreateSubjectApi
@@ -63,6 +64,18 @@ class CreateSubjectApiTest extends NeoWikiIntegrationTestCase {
 				TestStatement::build( property: 'fluff', value: new NumberValue( 9001 ), propertyType: 'number' ),
 			] ),
 			$subject->getStatements()
+		);
+	}
+
+	public function testCreatedResponseCarriesTheRevisionTheSubjectIsAt(): void {
+		$this->createSchema( 'Employee' );
+
+		$response = $this->executeHandler( $this->newCreateSubjectApi(), $this->createValidRequestData() );
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame(
+			Title::newFromID( $responseData['subject']['pageId'] )->getLatestRevID( IDBAccessObject::READ_LATEST ),
+			$responseData['revisionId']
 		);
 	}
 

@@ -41,11 +41,13 @@ class RestCreateSubjectPagePresenter implements CreateSubjectPagePresenter {
 		GetSubjectResponseItem $subject,
 		PageIdentifiers $page,
 		?Schema $schema,
-		array $violations
+		array $violations,
+		int $revisionId
 	): void {
 		$this->apiResponse = [
 			'status' => 'created',
 			'subjectId' => $subject->id,
+			'revisionId' => $revisionId,
 			'pageId' => $page->getId()->id,
 			'pageTitle' => $page->getTitle(),
 			'violations' => ViolationSerializer::serializeMany( $violations ),

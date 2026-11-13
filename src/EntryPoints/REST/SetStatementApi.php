@@ -20,6 +20,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class SetStatementApi extends SimpleHandler {
 
+	use TakesBaseRevision;
+
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
 	) {
@@ -53,6 +55,7 @@ class SetStatementApi extends SimpleHandler {
 			$extension = NeoWikiExtension::getInstance();
 			$extension->newUpdateStatementAction( $presenter, $this->getAuthority() )->setStatement(
 				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),
+				$this->baseRevisionIdOf( $body ),
 				new PropertyName( $propertyName ),
 				$statement['propertyType'] ?? null,
 				$statement['value'] ?? null,
@@ -75,9 +78,7 @@ class SetStatementApi extends SimpleHandler {
 			] );
 		}
 
-		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
-		$response->setStatus( $presenter->getStatusCode() );
-		return $response;
+		return $this->writeResponse( $presenter );
 	}
 
 	public function getParamSettings(): array {
@@ -111,7 +112,7 @@ class SetStatementApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
-		];
+		] + $this->baseRevisionParamSettings();
 	}
 
 }

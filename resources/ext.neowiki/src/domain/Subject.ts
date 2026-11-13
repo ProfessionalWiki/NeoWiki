@@ -21,6 +21,7 @@ export class Subject {
 		 * Those of the Schema, keyed by lowercase language tag. Absent when it has none the reader may read.
 		 */
 		private readonly schemaLabels: Readonly<Record<string, string>> | undefined,
+		private readonly revisionId: number | null,
 	) {
 	}
 
@@ -81,6 +82,14 @@ export class Subject {
 		return this.pageIdentifiers;
 	}
 
+	/**
+	 * The revision of its page this Subject was read from, and an edit of it is based on. Null for one not read
+	 * that way, such as a Subject this session made up.
+	 */
+	public getRevisionId(): number | null {
+		return this.revisionId;
+	}
+
 	public getStatementValue( propertyName: PropertyName ): Value | undefined {
 		return this.statements.get( propertyName ).value;
 	}
@@ -106,6 +115,7 @@ export class Subject {
 			this.pageIdentifiers,
 			this.hostSubject,
 			this.schemaLabels,
+			this.revisionId,
 		);
 	}
 
@@ -120,6 +130,7 @@ export class Subject {
 			this.pageIdentifiers,
 			this.hostSubject,
 			this.schemaLabels,
+			this.revisionId,
 		);
 	}
 

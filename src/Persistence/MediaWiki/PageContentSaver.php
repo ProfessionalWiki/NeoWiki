@@ -25,7 +25,22 @@ class PageContentSaver {
 	 * @param array<string, Content> $contentBySlot Keys are slot names, values are Content objects
 	 */
 	public function saveContent( PageIdentity|PageId $page, array $contentBySlot, CommentStoreComment $comment ): PageContentSavingStatus {
-		return $this->save( $page, $contentBySlot, $comment, 0 );
+		return $this->save( $page, $contentBySlot, $comment, 0, null );
+	}
+
+	/**
+	 * The same, for content derived from revision $parentRevisionId: CONFLICT, and nothing written, when
+	 * the page has a newer revision by the time the write lands.
+	 *
+	 * @param array<string, Content> $contentBySlot Keys are slot names, values are Content objects
+	 */
+	public function saveContentOnto(
+		PageId $page,
+		int $parentRevisionId,
+		array $contentBySlot,
+		CommentStoreComment $comment
+	): PageContentSavingStatus {
+		return $this->save( $page, $contentBySlot, $comment, 0, $parentRevisionId );
 	}
 
 	/**
@@ -36,7 +51,7 @@ class PageContentSaver {
 	 * @param array<string, Content> $contentBySlot Keys are slot names, values are Content objects
 	 */
 	public function createPage( PageIdentity $page, array $contentBySlot, CommentStoreComment $comment ): PageContentSavingStatus {
-		return $this->save( $page, $contentBySlot, $comment, EDIT_NEW );
+		return $this->save( $page, $contentBySlot, $comment, EDIT_NEW, null );
 	}
 
 	/**
@@ -46,7 +61,8 @@ class PageContentSaver {
 		PageIdentity|PageId $page,
 		array $contentBySlot,
 		CommentStoreComment $comment,
-		int $flags
+		int $flags,
+		?int $parentRevisionId
 	): PageContentSavingStatus {
 		$wikiPage = $this->wikiPageFromPageId( $page );
 
@@ -56,7 +72,15 @@ class PageContentSaver {
 
 		$updater = $wikiPage->newPageUpdater( $this->performer );
 
+		if ( $parentRevisionId !== null && $updater->hasEditConflict( $parentRevisionId ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::CONFLICT );
+		}
+
 		$this->saveContentViaUpdater( $updater, $contentBySlot, $comment, $flags );
+
+		if ( $parentRevisionId !== null && $updater->getStatus()->hasMessage( 'edit-conflict' ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::CONFLICT );
+		}
 
 		return $this->buildStatusFromUpdater( $updater );
 	}
@@ -86,7 +110,8 @@ class PageContentSaver {
 			if ( $newRevision !== null ) {
 				return new PageContentSavingStatus(
 					PageContentSavingStatus::REVISION_CREATED,
-					pageId: new PageId( $newRevision->getPageId() )
+					pageId: new PageId( $newRevision->getPageId() ),
+					revisionId: $newRevision->getId()
 				);
 			}
 

@@ -29,6 +29,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
  */
 class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 
+	use WritesOnTheCurrentRevision;
+
 	use HandlerTestTrait;
 	use NeoWikiMockAuthorityTrait;
 
@@ -72,7 +74,7 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 				'subjectId' => $subjectId,
 				'propertyName' => $propertyName,
 			],
-			'bodyContents' => json_encode( $body ),
+			'bodyContents' => json_encode( $this->onTheCurrentRevision( $subjectId, $body ) ),
 			'headers' => [ 'Content-Type' => 'application/json' ],
 		] );
 	}
@@ -118,6 +120,49 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertSame( self::SUBJECT_ID, $responseData['subjectId'] );
 		$this->assertSame( [ 'https://pro.wiki' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	public function testUpdatedResponseCarriesTheRevisionTheSubjectIsNowAt(): void {
+		$this->createSubjectPage();
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [ 'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ] ] )
+		);
+
+		$this->assertSame(
+			$this->currentRevisionOf( self::SUBJECT_ID ),
+			json_decode( $response->getBody()->getContents(), true )['revisionId']
+		);
+	}
+
+	public function testAStaleBaseRevisionAnswers409WithTheSubjectAsItIsNow(): void {
+		$this->createSubjectPage();
+		$base = $this->currentRevisionOf( self::SUBJECT_ID );
+		$this->changeSubjectsOfPage(
+			'SetStatementApiTest',
+			mainSubject: TestSubject::build(
+				id: self::SUBJECT_ID,
+				label: new SubjectLabel( 'Professional Wiki' ),
+				schemaName: new SchemaName( 'SetStatementSchema' ),
+				statements: new StatementList( [
+					TestStatement::build( property: 'Website', value: 'https://changed.example', propertyType: 'url' ),
+				] ),
+			)
+		);
+
+		$response = $this->executeHandler(
+			$this->newSetStatementApi(),
+			$this->newRequest( 'Website', [
+				'statement' => [ 'propertyType' => 'url', 'value' => [ 'https://pro.wiki' ] ],
+				'baseRevisionId' => $base,
+			] )
+		);
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( $this->currentRevisionOf( self::SUBJECT_ID ), $responseData['revisionId'] );
+		$this->assertSame( [ 'https://changed.example' ], $responseData['subject']['statements']['Website']['value'] );
 	}
 
 	public function testHappyPathReturns200WithUpdatedStatus(): void {

@@ -18,6 +18,8 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class RemoveStatementApi extends SimpleHandler {
 
+	use TakesBaseRevision;
+
 	public function __construct(
 		private readonly CsrfValidator $csrfValidator
 	) {
@@ -29,8 +31,7 @@ class RemoveStatementApi extends SimpleHandler {
 	public function run( string $subjectId, string $propertyName ): Response {
 		$this->csrfValidator->verifyCsrfToken();
 
-		// getValidatedBody() returns null when the request has no body.
-		$body = $this->getValidatedBody() ?? [];
+		$body = $this->getValidatedBody();
 
 		$presenter = new RestUpdateStatementPresenter();
 
@@ -38,6 +39,7 @@ class RemoveStatementApi extends SimpleHandler {
 			$extension = NeoWikiExtension::getInstance();
 			$extension->newUpdateStatementAction( $presenter, $this->getAuthority() )->removeStatement(
 				$extension->getSubjectIdParser()->parseOrThrow( $subjectId ),
+				$this->baseRevisionIdOf( $body ),
 				new PropertyName( $propertyName ),
 				$body['comment'] ?? null
 			);
@@ -58,9 +60,7 @@ class RemoveStatementApi extends SimpleHandler {
 			] );
 		}
 
-		$response = $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
-		$response->setStatus( $presenter->getStatusCode() );
-		return $response;
+		return $this->writeResponse( $presenter );
 	}
 
 	public function getParamSettings(): array {
@@ -88,7 +88,7 @@ class RemoveStatementApi extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_DESCRIPTION => 'Optional edit summary.',
 			],
-		];
+		] + $this->baseRevisionParamSettings();
 	}
 
 }

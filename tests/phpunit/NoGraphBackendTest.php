@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi;
@@ -93,7 +94,9 @@ class NoGraphBackendTest extends NeoWikiIntegrationTestCase {
 
 			$repository->updateSubject(
 				$this->mottoSubject( 'Rewritten' ),
-				'no-backend subject edit'
+				Title::newFromText( 'NoBackendEditedSubjectPage' )->getLatestRevID(),
+				'no-backend subject edit',
+				new SubjectMap()
 			);
 
 			$this->assertSame( 'Rewritten', $this->mottoOfIndexedSubject() );
