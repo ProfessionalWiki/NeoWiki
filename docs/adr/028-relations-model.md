@@ -10,7 +10,7 @@ Relations are the values that point to a Subject: Pablo Picasso's "Birth place" 
 ([#630](https://github.com/ProfessionalWiki/NeoWiki/issues/630)) collected questions about them that NeoWiki's initial
 model left open:
 
-- Can a Relation hold data of its own, such as a source for Picasso's birth place?
+- Can a Relation hold data of its own, such as a source for Picasso's birthplace?
 - Can a relation Property Definition list several target Schemas, such as Person and Group for a Creator?
 - What happens when a Relation points to a Subject that does not exist?
 - Does a relation Property Definition need a second name for its graph edges?
@@ -18,26 +18,23 @@ model left open:
 
 ## Decision
 
-### 1. Relations hold no data of their own
+### 1. We removed property-value pairs from Relations.
 
 A Relation is just an ID and a target. Its property-value pairs are removed
 ([#1119](https://github.com/ProfessionalWiki/NeoWiki/issues/1119)): they were a second way to add context, only for
 links, and had no Schema and no editor.
 
 Context on a link goes into a Subject in between, as context on any other value already does
-([Qualifiers and References](../qualifiers-and-references.md)). If Picasso's birth place needs a source, Picasso points
+([Qualifiers and References](../qualifiers-and-references.md)). If Picasso's birthplace needs a source, Picasso points
 to a Birth that holds the place and the source. The Birth's Schema can declare its Subjects dependent, so that the Birth
 is edited, stored and removed with Picasso ([ADR 35](035-dependent-subjects.md)).
 
 The ID stays, so that the graph and Mappings can keep track of a link across edits
 ([ADR 10](010-add-guids-to-relations.md)).
 
-### 2. A relation Property Definition lists one or more target Schemas
+### 2. We add Support for multiple target Schemas
 
-A relation Property Definition lists one or more target Schemas
-([#991](https://github.com/ProfessionalWiki/NeoWiki/issues/991)). A Relation to a Subject of another Schema is
-[`relation-target-schema-mismatch`](../api/validation-codes.md#relation-target-schema-mismatch), an error that can block
-the save ([ADR 26](026-validation-severity-levels.md)).
+We add [support for multiple target schemas](https://github.com/ProfessionalWiki/NeoWiki/issues/991).
 
 ### 3. Missing targets are red links
 
@@ -54,7 +51,7 @@ A relation Property Definition's `relation` field is removed: graph edges and RD
 other properties' RDF predicates already do, so a link has the same name everywhere
 ([#1553](https://github.com/ProfessionalWiki/NeoWiki/issues/1553)).
 
-### 5. Subjects on one page are not related automatically
+### 5. Subjects on one page are not automatically related
 
 Subjects that share a page are related only through Relations, as Subjects on different pages are
 ([#959](https://github.com/ProfessionalWiki/NeoWiki/issues/959)).
