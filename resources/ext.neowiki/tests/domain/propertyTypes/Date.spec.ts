@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	newDateProperty,
 	DateType,
-	formatDateForDisplay,
-	parseStrictDate,
 } from '@/domain/propertyTypes/Date';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue } from '@/domain/Value';
@@ -68,59 +66,32 @@ describe( 'createPropertyDefinitionFromJson', () => {
 		expect( property.minimum ).toBeUndefined();
 		expect( property.maximum ).toBeUndefined();
 	} );
-} );
 
-describe( 'parseStrictDate', () => {
+	it( 'keeps minPrecision, so saving the Schema does not drop it', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minPrecision: 'month' },
+		);
 
-	it( 'returns a UTC-midnight millisecond timestamp for a valid date', () => {
-		const result = parseStrictDate( '2025-06-15' );
-
-		expect( result ).toBe( Date.parse( '2025-06-15T00:00:00Z' ) );
+		expect( property.minPrecision ).toBe( 'month' );
 	} );
 
-	it( 'returns null for a calendar-overflow date that Date silently rolls over', () => {
-		expect( parseStrictDate( '2025-02-30' ) ).toBeNull();
+	it( 'drops a bound that is not a string, which the backend cannot read either', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minimum: 1984, maximum: '1990' },
+		);
+
+		expect( property.minimum ).toBeUndefined();
+		expect( property.maximum ).toBe( '1990' );
 	} );
 
-	it( 'returns null for a value with a time component', () => {
-		expect( parseStrictDate( '2025-06-15T12:00:00Z' ) ).toBeNull();
+	it( 'normalizes null minPrecision to undefined', () => {
+		const property = dateType.createPropertyDefinitionFromJson(
+			{ name: new PropertyName( 'Date' ), type: 'date', description: '', required: false },
+			{ type: 'date', minPrecision: null },
+		);
+
+		expect( property.minPrecision ).toBeUndefined();
 	} );
-
-	it( 'returns null for completely malformed input', () => {
-		expect( parseStrictDate( 'not-a-date' ) ).toBeNull();
-	} );
-
-} );
-
-describe( 'formatDateForDisplay', () => {
-
-	it( 'returns the raw input when the value cannot be parsed', () => {
-		expect( formatDateForDisplay( 'not-a-date' ) ).toBe( 'not-a-date' );
-	} );
-
-	it( 'returns the raw input when given an empty string', () => {
-		expect( formatDateForDisplay( '' ) ).toBe( '' );
-	} );
-
-	it( 'renders a parsed date as a non-ISO human-readable string', () => {
-		const result = formatDateForDisplay( '2025-06-15' );
-
-		expect( result ).not.toBe( '2025-06-15' );
-		expect( result ).not.toMatch( /^\d{4}-\d{2}-\d{2}$/ );
-	} );
-
-	it( 'includes the year of the date', () => {
-		expect( formatDateForDisplay( '2025-06-15' ) ).toContain( '2025' );
-	} );
-
-	it( 'renders the stored calendar day regardless of host timezone', () => {
-		// Interpreted as UTC and rendered with timeZone: 'UTC', so the day
-		// component is always 15 and never rolls to 14 or 16.
-		expect( formatDateForDisplay( '2025-06-15' ) ).toContain( '15' );
-	} );
-
-	it( 'does not append a time component', () => {
-		expect( formatDateForDisplay( '2025-06-15' ) ).not.toMatch( /\d{2}:\d{2}/ );
-	} );
-
 } );

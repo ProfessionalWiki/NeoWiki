@@ -144,7 +144,50 @@ class Neo4jValueBuilderRegistryTest extends TestCase {
 		);
 	}
 
-	public function testDateBuilderDropsValuesThatAreNotStrictIsoDates(): void {
+	public function testDateBuilderUsesTheEarliestDayOfYearAndMonthPrecisionDates(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertEquals(
+			[
+				new Date( 5113 ), // 1984-01-01
+				new Date( 5265 ), // 1984-06-01
+				new Date( 5279 ), // 1984-06-15
+			],
+			$registry->buildNeo4jValue( 'date', new StringValue( '1984', '1984-06', '1984-06-15' ) )
+		);
+	}
+
+	public function testDateCompanionHoldsTheLatestDayOfEachDate(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertEquals(
+			[
+				'_latest' => [
+					new Date( 5478 ), // 1984-12-31
+					new Date( 5294 ), // 1984-06-30
+					new Date( 5279 ), // 1984-06-15
+				],
+			],
+			$registry->buildCompanionValues( 'date', new StringValue( '1984', '1984-06', '1984-06-15' ) )
+		);
+	}
+
+	public function testDateCompanionDropsTheSameValuesAsTheDateBuilder(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertEquals(
+			[ '_latest' => [ new Date( 5478 ), new Date( 5294 ) ] ],
+			$registry->buildCompanionValues( 'date', new StringValue( '1984', 'not a date', '1984-06' ) )
+		);
+	}
+
+	public function testTypesWithoutCompanionBuildersHaveNoCompanionValues(): void {
+		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
+
+		$this->assertSame( [], $registry->buildCompanionValues( 'text', new StringValue( 'hello' ) ) );
+	}
+
+	public function testDateBuilderDropsValuesThatAreNotIsoDates(): void {
 		$registry = Neo4jValueBuilderRegistry::withCoreBuilders();
 
 		$this->assertEquals(

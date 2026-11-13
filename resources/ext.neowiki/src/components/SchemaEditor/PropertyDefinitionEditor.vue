@@ -203,6 +203,10 @@ const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 // The type-specific Constraints go, and their severities with them; required is
 // shared by every type, so it keeps its severity along with its value.
 function changePropertyType( type: string ): void {
+	if ( type === localProperty.value.type ) {
+		return;
+	}
+
 	const requiredSeverity = localProperty.value.constraintSeverities?.required;
 
 	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinition(
