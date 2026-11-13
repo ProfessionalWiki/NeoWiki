@@ -1844,15 +1844,12 @@ class NeoWikiExtension {
 	}
 
 	/**
-	 * Kept for the request: links find only what a list read up front through this same instance.
+	 * Kept for the request, so links find what a list read up front through this same instance.
 	 */
 	public function getSubjectInPlaceOfPageTitleLookup(): SubjectInPlaceOfPageTitleLookup {
 		$this->subjectInPlaceOfPageTitleLookup ??= new SubjectInPlaceOfPageTitleLookup(
-			MediaWikiServices::getInstance()->getRevisionStore(),
 			MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase(),
-			$this->getRevisionPolicy(),
-			fn ( Authority $reader ): PageReadAuthorizer => $this->newPageReadAuthorizer( $reader ),
-			maxPages: 250
+			fn ( Authority $reader ): PageReadAuthorizer => $this->newPageReadAuthorizer( $reader )
 		);
 
 		return $this->subjectInPlaceOfPageTitleLookup;

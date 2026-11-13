@@ -13,8 +13,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 
 /**
  * A Subject's label with its id beside it, where the label stands in for a title: the heading of a page
- * titled by a Subject id and of Special:Subject, and links to such a page in Recent changes and
- * watchlists. The id tells apart Subjects that share a label, and names one that has none.
+ * titled by a Subject id and of Special:Subject, and links to such a page outside page content. The id
+ * tells apart Subjects that share a label, and names one that has none.
  */
 class SubjectLabelHtml {
 
