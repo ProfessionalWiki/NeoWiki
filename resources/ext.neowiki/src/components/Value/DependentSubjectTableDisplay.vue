@@ -27,7 +27,10 @@
 					:id="captionId"
 					class="ext-neowiki-dependent-subject-table__caption"
 				>
-					<SchemaNameDisplay :schema-name="props.schema.getName()" />
+					<SchemaNameDisplay
+						:schema-name="props.schema.getName()"
+						:display-name="schemaDisplayName( props.schema )"
+					/>
 				</caption>
 				<thead>
 					<tr>
@@ -56,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useGeneratedId, useResizeObserver } from '@wikimedia/codex';
 import type { Schema } from '@/domain/Schema';

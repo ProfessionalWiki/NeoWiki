@@ -75,6 +75,8 @@ export type SubjectJson = {
 	statements: Record<string, unknown>;
 	/** A name for a Schema of this wiki, the `{source, name}` object for one from elsewhere (ADR 23). */
 	schema: SchemaReference;
+	/** Those of the Schema, keyed by language tag; absent when it has none the reader may read. */
+	schemaLabels?: Record<string, string>;
 	pageId: number;
 	pageTitle: string;
 	requestedId: string;

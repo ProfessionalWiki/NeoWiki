@@ -116,6 +116,7 @@ class GetSubjectQueryTest extends TestCase {
 						pageTitle: null,
 						pageNamespaceId: null,
 						hostSubject: null,
+						schemaLabels: [],
 					)
 				]
 			),
@@ -239,6 +240,23 @@ class GetSubjectQueryTest extends TestCase {
 		$this->assertNull( $spyPresenter->response->subjects['s11111111111ca1']->label );
 		$this->assertSame( 'Attendance', $spyPresenter->response->subjects['s11111111111ca1']->displayName );
 		$this->assertTrue( $spyPresenter->response->subjects['s11111111111ca1']->displayNameIsGenerated );
+	}
+
+	public function testCarriesTheLabelsOfTheSubjectsSchema(): void {
+		$spyPresenter = $this->getSpyPresenter();
+		$schemaLookup = new InMemorySchemaLookup( TestSchema::build( name: 'Company', labels: [ 'de' => 'Unternehmen' ] ) );
+
+		$this->newQuery(
+			$spyPresenter,
+			new InMemorySubjectLookup( TestSubject::build( id: 's11111111111ca1', schemaName: new SchemaName( 'Company' ) ) ),
+			responseItemFactory: TestNaming::newResponseItemFactory( new InMemorySubjectRepository(), $schemaLookup ),
+		)->execute(
+			subjectId: 's11111111111ca1',
+			includePageIdentifiers: false,
+			includeReferencedSubjects: false
+		);
+
+		$this->assertSame( [ 'de' => 'Unternehmen' ], $spyPresenter->response->subjects['s11111111111ca1']->schemaLabels );
 	}
 
 	public function testLabellessMainSubjectOfAPageTitledByAnotherSubjectsIdIsNamedAfterItsSchema(): void {

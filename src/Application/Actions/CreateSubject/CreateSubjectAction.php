@@ -114,14 +114,17 @@ readonly class CreateSubjectAction {
 
 		$pageName = $pageIdentifiers?->getTitle() ?? '';
 
+		$schema = $this->schemaResolver->getSchema( $schemaReference );
+
 		$this->presenter->presentCreated(
 			GetSubjectResponseItem::fromSubject(
 				$subject,
 				$pageIdentifiers,
 				SubjectDisplayName::labelOrPageName( $subject, $pageSubjects, $pageName ),
-				hostSubject: null
+				hostSubject: null,
+				schema: $schema
 			),
-			$this->schemaResolver->getSchema( $schemaReference ),
+			$schema,
 			$violations
 		);
 	}

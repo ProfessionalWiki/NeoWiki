@@ -5,6 +5,9 @@ import {
 } from '@/presentation/subjectSummaryTable.ts';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
 
+// Names every Schema by its name, as for a wiki whose Schemas have no labels.
+const NAMES = ( schemaName: string ): string => schemaName;
+
 const SUMMARY: SubjectSummary = {
 	id: 's1demo1aaaaaaa1', displayName: 'ZX Spectrum 48K', displayNameIsGenerated: false, hostSubject: null,
 	schema: 'Computer', pageId: 7, pageTitle: 'Sinclair ZX Spectrum', lastEdited: '2026-10-01T14:02:00Z',
@@ -19,7 +22,7 @@ function inWords( value: number, unit: Intl.RelativeTimeFormatUnit ): string {
 
 function onWiki( subjectFirst: boolean ): void {
 	setupMwMock( {
-		functions: [ 'config', 'msg', 'util' ],
+		functions: [ 'config', 'msg', 'util', 'language' ],
 		config: { wgNeoWikiSubjectFirst: subjectFirst },
 	} );
 }
@@ -75,6 +78,23 @@ describe( 'subjectSummaryTable', () => {
 		} ) ).toBe( 'Expansion card of ZX Spectrum 48K' );
 	} );
 
+	it( 'names a Dependent Subject after the label of its Schema in the reader\'s language', () => {
+		expect( summaryName( {
+			...SUMMARY,
+			displayName: 'Expansion card',
+			displayNameIsGenerated: true,
+			schema: 'Expansion card',
+			schemaLabels: { en: 'Add-on board' },
+			hostSubject: {
+				id: 's1demo1aaaaaaa2',
+				schemaName: 'Computer',
+				displayName: 'ZX Spectrum 48K',
+				displayNameIsGenerated: false,
+				hostSubject: null,
+			},
+		} ) ).toBe( 'Add-on board of ZX Spectrum 48K' );
+	} );
+
 	it( 'links to the Subject on a subject-first wiki', () => {
 		onWiki( true );
 
@@ -106,11 +126,17 @@ describe( 'subjectSummaryTable', () => {
 	} );
 
 	it( 'puts the selected Schema among the menu\'s names, in order, when the Schema list lacks it', () => {
-		expect( schemaMenuNames( [ 'Zebra', 'Ant' ], 'Mouse' ) ).toEqual( [ 'Ant', 'Mouse', 'Zebra' ] );
+		expect( schemaMenuNames( [ 'Zebra', 'Ant' ], 'Mouse', NAMES ) ).toEqual( [ 'Ant', 'Mouse', 'Zebra' ] );
 	} );
 
 	it( 'lists a selected Schema the Schema list has only once', () => {
-		expect( schemaMenuNames( [ 'Zebra', 'Ant' ], 'Zebra' ) ).toEqual( [ 'Ant', 'Zebra' ] );
+		expect( schemaMenuNames( [ 'Zebra', 'Ant' ], 'Zebra', NAMES ) ).toEqual( [ 'Ant', 'Zebra' ] );
+	} );
+
+	it( 'orders the menu\'s names by what the reader sees the Schemas called', () => {
+		const names = ( schemaName: string ): string => schemaName === 'Zebra' ? 'Aardvark' : schemaName;
+
+		expect( schemaMenuNames( [ 'Ant', 'Zebra' ], null, names ) ).toEqual( [ 'Zebra', 'Ant' ] );
 	} );
 
 	it( 'says no Subject matches a search', () => {

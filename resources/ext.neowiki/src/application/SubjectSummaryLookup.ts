@@ -23,6 +23,8 @@ export interface SubjectSummary {
 	/** Null except for a Dependent Subject nobody named, which is named after it. */
 	hostSubject: HostSubject | null;
 	schema: string;
+	/** Those of the Schema, as on a HostSubject. */
+	schemaLabels?: Readonly<Record<string, string>>;
 	pageId: number;
 	pageTitle: string;
 	/** ISO 8601, UTC: when the Subject was last edited, which getSubjectSummaries takes from the page's last edit. */

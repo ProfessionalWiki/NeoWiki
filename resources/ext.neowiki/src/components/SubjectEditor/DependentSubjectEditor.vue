@@ -12,6 +12,7 @@
 		>
 			<SchemaNameDisplay
 				:schema-name="props.schema.getName()"
+				:display-name="schemaDisplayName( props.schema )"
 				link="none"
 			/>
 		</div>
@@ -70,6 +71,7 @@ export interface DependentSubjectEditorExposes {
 </script>
 
 <script setup lang="ts">
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { computed, inject, ref, watch } from 'vue';
 import { CdxButton, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import { cdxIconClose } from '@wikimedia/codex-icons';

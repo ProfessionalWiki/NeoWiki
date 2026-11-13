@@ -9,7 +9,7 @@
 					:id="headingId"
 					class="ext-neowiki-schema-card__name"
 				>
-					<a :href="schemaUrl">{{ summary.name }}</a>
+					<a :href="schemaUrl">{{ displayName }}</a>
 				</h2>
 				<span
 					v-if="canEdit || canDuplicate || canDelete"
@@ -109,6 +109,7 @@ import SchemaActionsMenu from './SchemaActionsMenu.vue';
 import { subjectListLinkText } from '@/composables/useSubjectCounts.ts';
 import { SUBJECT_PREVIEW_SIZE, type SubjectPreview, SubjectPreviews } from './SubjectPreviews.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps<{
 	summary: SchemaSummary;
@@ -144,12 +145,13 @@ const subjectsNote = computed( () => {
 		case 'failed':
 			return mw.msg( 'neowiki-subjects-load-error' );
 		case 'loaded':
-			return mw.msg( 'neowiki-subjects-empty-schema', props.summary.name );
+			return mw.msg( 'neowiki-subjects-empty-schema', displayName.value );
 		default:
 			return null;
 	}
 } );
 
+const displayName = computed( () => schemaDisplayName( props.summary ) );
 const schemaUrl = computed( () => mw.util.getUrl( `Schema:${ props.summary.name }` ) );
 const subjectListUrl = computed( () => mw.util.getUrl( `Special:Subjects/${ props.summary.name }` ) );
 

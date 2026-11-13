@@ -13,6 +13,10 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySearchTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSchema;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectSummaryLookup;
@@ -75,10 +79,21 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 					pageTitle: 'Help:Sinclair ZX Spectrum',
 					lastEdited: '2026-10-01T14:02:00Z',
 					hostSubject: null,
+					schemaLabels: [],
 				),
 			],
 			$this->summaries()->summaries
 		);
+	}
+
+	public function testASummaryCarriesTheLabelsOfItsSchema(): void {
+		$this->savePage( 'Page one', [ self::subject( self::OLDEST, 'ZX Spectrum 48K' ) ] );
+
+		$summaries = $this->summaries( schemaResolver: TestSources::newSchemaResolver( new InMemorySchemaLookup(
+			TestSchema::build( name: 'Computer', labels: [ 'de' => 'Rechner' ] )
+		) ) );
+
+		$this->assertSame( [ 'de' => 'Rechner' ], $summaries->summaries[0]->schemaLabels );
 	}
 
 	public function testAnUnlabelledSubjectThatIsNotMainIsNamedAfterItsSchema(): void {
@@ -532,6 +547,7 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 		?PageReadAuthorizer $readAuthorizer = null,
 		int $scanBound = 1000,
 		?IConnectionProvider $connectionProvider = null,
+		?SchemaReferenceResolver $schemaResolver = null,
 	): SubjectSummaries {
 		$lookup = new DatabaseSubjectSummaryLookup(
 			connectionProvider: $connectionProvider ?? $this->getServiceContainer()->getConnectionProvider(),
@@ -539,6 +555,7 @@ class DatabaseSubjectSummaryLookupTest extends NeoWikiIntegrationTestCase {
 			titleFactory: $this->getServiceContainer()->getTitleFactory(),
 			scanBound: $scanBound,
 			searchTimeLimit: 0,
+			schemaResolver: $schemaResolver ?? TestSources::newSchemaResolver(),
 		);
 
 		return $lookup->getSubjectSummaries( new SubjectSummaryQuery(

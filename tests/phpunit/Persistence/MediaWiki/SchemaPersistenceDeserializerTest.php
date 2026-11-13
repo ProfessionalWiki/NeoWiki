@@ -126,6 +126,12 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'not a boolean' => [ '{"subjectsAreDependent": "yes", "propertyDefinitions": {}}' ];
 	}
 
+	public function testReadsLabelsTrimmedUnderLowercaseTagsWithoutEmptyOnes(): void {
+		$json = '{"labels": {"zh-Hant": " 公司 ", "de": "  ", "nl": 42}, "propertyDefinitions": {}}';
+
+		$this->assertSame( [ 'zh-hant' => '公司' ], $this->deserialize( $json )->getLabels() );
+	}
+
 	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {
 		return ( new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry() ) )
 			->deserialize( new SchemaName( 'TestSchema' ), $json );

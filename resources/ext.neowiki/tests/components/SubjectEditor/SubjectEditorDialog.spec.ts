@@ -106,7 +106,7 @@ describe( 'SubjectEditorDialog', () => {
 		wikiConfig = { wgNeoWikiValidationDebounceMs: 0, wgArticleId: 42 };
 		setupMwMock( {
 			// 'util' for the relation fields and a nested pane's storage line: both call mw.util.getUrl.
-			functions: [ 'message', 'msg', 'notify', 'config', 'util' ],
+			functions: [ 'message', 'msg', 'notify', 'config', 'util', 'language' ],
 			config: wikiConfig,
 		} );
 		stubUpdateTooltipAccessKeys();
@@ -308,6 +308,13 @@ describe( 'SubjectEditorDialog', () => {
 		await flushPromises();
 
 		expect( schemaBesideTitle( wrapper ) ).toBe( 'TestSchema' );
+	} );
+
+	it( 'shows the schema beside the title under its label in the reader\'s language', async () => {
+		const wrapper = mountComponent( true, {}, undefined, mockSchema.withLabels( { en: 'Test type' } ) );
+		await flushPromises();
+
+		expect( schemaBesideTitle( wrapper ) ).toBe( 'Test type' );
 	} );
 
 	// The badge is a link to the Schema page whoever is looking, so it carries its own

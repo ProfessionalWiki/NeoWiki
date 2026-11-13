@@ -33,6 +33,7 @@
 					<SchemaNameDisplay
 						v-if="activePane !== undefined"
 						:schema-name="activePane.subject.getSchemaName()"
+						:display-name="schemaDisplayName( activePane.schema )"
 						link="new-tab"
 						:inert="saving || undefined"
 						@click="openSchemaEditor"
@@ -189,6 +190,7 @@ import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import { isPlainLeftClick } from '@/presentation/plainLeftClick.ts';
 import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
@@ -639,7 +641,8 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 				schemaName,
 				new StatementList( [] ),
 				page,
-				null
+				null,
+				schema.getLabels()
 			),
 			schema,
 			dependentSubjectEditing.schemas
