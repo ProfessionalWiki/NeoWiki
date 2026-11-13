@@ -168,7 +168,8 @@ Dependent Subject too. The rows of the Subject lists carry `hostSubject` as well
   Dependent Subjects target; see [REST API](rest-api.md#the-expand-parameter) for the shape.
 - `?revisionId=` returns the Subject as of that MediaWiki revision; an unknown or unreadable revision returns `404`.
 - `?latest=1` returns the Subject as of the hosting page's current revision rather than the one the wiki publishes,
-  for editing, when the viewer may see that revision. Combined with `revisionId` or `expand=relations` it returns `400`.
+  for editing, when the viewer may see that revision, and that revision's id as a top-level `revisionId`. Combined
+  with `revisionId` or `expand=relations` it returns `400`.
 
 ### Referencing Subjects
 
@@ -211,6 +212,7 @@ main-namespace title. A subject-first wiki titles it by the Subject's ID, in the
       "value": 2019
     }
   },
+  "baseRevisionId": 1234,
   "comment": "Optional edit summary"
 }
 ```
@@ -219,6 +221,7 @@ main-namespace title. A subject-first wiki titles it by the Subject's ID, in the
 |-------|----------|-------|
 | `label` | No | Replaces the stored label. Omitted or whitespace-only clears any label the Subject has. |
 | `statements` | Yes | Map of property name to Statement; omitted names are deleted. Pass `{}` to clear all. |
+| `baseRevisionId` | Yes | The `revisionId` of the `?latest=1` read or the write response the change was made from, not one looked up just before writing. See [Edit conflicts](#edit-conflicts). |
 | `dependentSubjects` | No | See [Dependent Subjects](#dependent-subjects). |
 | `comment` | No | Edit summary. |
 
@@ -243,6 +246,7 @@ Subject's label and its other Statements as they are:
     "propertyType": "url",
     "value": ["https://example.com"]
   },
+  "baseRevisionId": 1234,
   "comment": "Optional edit summary"
 }
 ```
@@ -250,16 +254,44 @@ Subject's label and its other Statements as they are:
 | Field | Required | Notes |
 |-------|----------|-------|
 | `statement` | Yes | A [Statement object](#statement-object) carrying a `value`. `propertyType` may be omitted, and then takes the type the Subject's Schema currently gives the property; a property the Schema does not define is rejected with `400`. A value that is empty for its type removes the Statement. |
+| `baseRevisionId` | Yes | As for [writing Subjects](#writing-subjects). |
 | `comment` | No | Edit summary. |
 
-`DELETE` on the same path removes the Statement and takes only `comment`. Removing a Statement the Subject does
-not have succeeds and changes nothing.
+`DELETE` on the same path removes the Statement and takes only the required `baseRevisionId` and an optional `comment`.
+Removing a Statement the Subject does not have succeeds and changes nothing.
 
 Violations in the response cover the whole Subject, not only the property written.
 
 `{propertyName}` is the name, URL-encoded: `Founded at` is `Founded%20at`, not `Founded_at`. `PUT` holds it to the
 same rules as a Statement key. A property name containing `/` is not addressable this way on servers that reject
 `%2F` in paths; write those Statements with `PUT /subject/{subjectId}`.
+
+### Edit conflicts
+
+A write that takes `baseRevisionId` answers:
+
+| When | Answer |
+|------|--------|
+| Nothing the write would overwrite changed, though other Subjects on the page may have | `200`, written |
+| `PUT /subject/{subjectId}`: the Subject or one of its [Dependent Subjects](#dependent-subjects) changed | `409`, nothing written |
+| Statement write: the Statement, or a Dependent Subject it reaches, changed | `409`, nothing written |
+| `baseRevisionId` is not a revision of the Subject's page | `409`, nothing written |
+
+These `409` bodies carry `revisionId`, which the `409` for a Dependent Subject `id` in use does not:
+
+```json
+{
+  "status": "error",
+  "message": "The Subject changed after the base revision",
+  "revisionId": 1240,
+  "subject": { "id": "s1demo5sssssss1", "label": "Changed elsewhere", "statements": {} }
+}
+```
+
+- `subject` is the Subject at `revisionId`, as a write response serves it, without its Dependent Subjects. It is left
+  out if you may not read that revision.
+- To retry, apply your change to `subject` and send it with `revisionId` as `baseRevisionId`. Resending your original
+  change with only `baseRevisionId` updated overwrites the newer edit.
 
 ### Dependent Subjects
 
@@ -310,6 +342,7 @@ the Schema it instantiates, so a client does not have to re-read after a write:
 {
   "status": "updated",
   "subjectId": "s1demo5sssssss1",
+  "revisionId": 1235,
   "violations": [],
   "subject": { "id": "s1demo5sssssss1", "label": "Updated Label", "displayName": "Updated Label",
                "displayNameIsGenerated": false, "schema": "Company", "pageId": 42,
@@ -319,7 +352,8 @@ the Schema it instantiates, so a client does not have to re-read after a write:
 ```
 
 `subject` is the same shape `GET /subject/{subjectId}?expand=page` serves, so it reflects any normalisation the
-write applied. Its page fields are omitted when the server cannot resolve the Subject's page.
+write applied. Its page fields are omitted when the server cannot resolve the Subject's page. `revisionId` is the
+revision the Subject is at after the write, also when the write changed nothing.
 
 `schema` carries no name of its own — that is the Subject's `schema` field — and is absent when the Schema does
 not exist or its page is unreadable. It is the Schema as of the write, which may define properties the client's

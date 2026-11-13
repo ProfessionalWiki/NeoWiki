@@ -29,6 +29,7 @@ import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { EditNotice } from '@/domain/EditNotice';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
@@ -808,6 +809,128 @@ describe( 'SubjectEditorDialog', () => {
 					type: 'error',
 				} ),
 			] );
+		} );
+	} );
+
+	describe( 'EditConflictError handling', () => {
+		const theirs = newSubject( {
+			id: mockSubject.getId().text,
+			label: 'Their label',
+			schemaName: 'TestSchema',
+			pageIdentifiers: unresolvedPage(),
+			revisionId: 43,
+		} );
+
+		async function mountAndSaveIntoAConflict(
+			onSave: Mock = vi.fn().mockRejectedValue( new EditConflictError( rootSubjectId ) ),
+			getSubjectForEditing: Mock = vi.fn().mockResolvedValue( theirs ),
+		): Promise<VueWrapper> {
+			const subjectRepository = new StubSubjectRepository( [] );
+			subjectRepository.getSubjectForEditing = getSubjectForEditing;
+			const wrapper = mountComponent(
+				true,
+				validationTestStubs,
+				onSave,
+				mockSchema,
+				{ [ Service.SubjectRepository ]: subjectRepository },
+			);
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await flushPromises();
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			return wrapper;
+		}
+
+		function loadTheirVersionButton( wrapper: VueWrapper ): DOMWrapper<HTMLButtonElement> {
+			return wrapper.findAll( 'button' ).find(
+				( button ) => button.text().includes( 'neowiki-subject-editor-edit-conflict-load' ),
+			)!;
+		}
+
+		it( 'says the Subject changed while it was being edited, and stays open', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			expect( wrapper.text() ).toContain( 'neowiki-subject-editor-edit-conflict-title' );
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		} );
+
+		it( 'holds Save back until their version is loaded', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'loads their version into the pane', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			await loadTheirVersionButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( ( wrapper.findComponent( SubjectEditPane ).props( 'subject' ) as Subject ).getLabel() ).toBe( 'Their label' );
+			expect( wrapper.text() ).not.toContain( 'neowiki-subject-editor-edit-conflict-title' );
+		} );
+
+		it( 'saves on top of their version once it is loaded', async () => {
+			const onSave = vi.fn()
+				.mockRejectedValueOnce( new EditConflictError( rootSubjectId ) )
+				.mockResolvedValue( undefined );
+			const wrapper = await mountAndSaveIntoAConflict( onSave );
+			await loadTheirVersionButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			await wrapper.findComponent( SubjectEditor ).vm.$emit( 'change' );
+			await flushPromises();
+			await wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			expect( ( onSave.mock.calls[ 1 ][ 0 ] as Subject ).getRevisionId() ).toBe( 43 );
+		} );
+
+		it( 'leaves nothing to save once their version is loaded', async () => {
+			// What was typed before the conflict goes with the version it was typed into.
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			await loadTheirVersionButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
+		} );
+
+		it( 'says so when their version cannot be loaded', async () => {
+			const wrapper = await mountAndSaveIntoAConflict( undefined, vi.fn().mockRejectedValue( new Error( 'network down' ) ) );
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+
+			await loadTheirVersionButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( ( mw.notify as Mock ).mock.calls ).toContainEqual( [
+				expect.stringContaining( 'neowiki-subject-editor-load-error' ),
+				{ type: 'error' },
+			] );
+		} );
+
+		it( 'lets the user save again when their version cannot be loaded', async () => {
+			// The Subject may have been deleted meanwhile: the other panes must not stay unsaveable.
+			const wrapper = await mountAndSaveIntoAConflict( undefined, vi.fn().mockRejectedValue( new Error( 'gone' ) ) );
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+
+			await loadTheirVersionButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
+		} );
+
+		it( 'drops the conflict when the editor opens again', async () => {
+			const wrapper = await mountAndSaveIntoAConflict();
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.text() ).not.toContain( 'neowiki-subject-editor-edit-conflict-title' );
 		} );
 	} );
 

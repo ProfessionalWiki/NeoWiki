@@ -45,6 +45,21 @@ function recordBundledSchema( schema: Schema | null, epochBeforeRequest: number 
 }
 
 /**
+ * The later of the revision the Subject was read from and the one this session's own last write of it left it at:
+ * an editor that wrote a Subject, and edits it on, holds what it wrote.
+ */
+function baseRevisionOf( subject: Subject, writtenRevisionIds: ReadonlyMap<string, number> ): number {
+	const read = subject.getRevisionId();
+	const written = writtenRevisionIds.get( subject.getId().text );
+
+	if ( read === null && written === undefined ) {
+		throw new Error( `No revision to base the edit of ${ subject.getId().text } on` );
+	}
+
+	return Math.max( read ?? 0, written ?? 0 );
+}
+
+/**
  * The Dependent Subjects a write creates or replaces with the Subject it names; the wiki keeps the others that
  * Subject still reaches.
  */
@@ -62,6 +77,8 @@ export const useSubjectStore = defineStore( 'subject', {
 		subjectCreatorTarget: null as SubjectCreatorTarget | null,
 		pageSubjects: null as PageSubjects | null,
 		mutationEpoch: 0, // See SchemaStore.mutationEpoch — same guard contract.
+		/** The revision this session's own last write of each Subject left it at, by id. */
+		writtenRevisionIds: new Map<string, number>(),
 	} ),
 	getters: {
 		getSubject: ( state ) => function ( id: SubjectId ): Subject {
@@ -130,6 +147,7 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject(
 				subject.getId(),
+				baseRevisionOf( subject, this.writtenRevisionIds ),
 				subject.getLabel(),
 				subject.getStatements(),
 				dependentSubjects,
@@ -352,6 +370,10 @@ export const useSubjectStore = defineStore( 'subject', {
 
 			if ( result.subject !== null ) {
 				this.setSubject( result.subject );
+			}
+
+			if ( result.revisionId !== null ) {
+				this.writtenRevisionIds.set( result.subjectId.text, result.revisionId );
 			}
 
 			recordBundledSchema( result.schema, schemaEpochBeforeRequest );

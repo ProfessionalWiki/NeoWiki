@@ -5,6 +5,7 @@ import { StatementList } from '@/domain/StatementList';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';
 import type { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 import { productionClientAnswering } from '../infrastructure/productionClientAnswering.ts';
@@ -24,6 +25,21 @@ function repositoryAnswering( status: number, body: unknown ): RestSubjectReposi
 }
 
 describe( 'RestSubjectRepository over the production HTTP client', () => {
+
+	it( 'reports a Subject that changed after the revision an edit is based on as an edit conflict', async () => {
+		const repository = repositoryAnswering( 409, {
+			status: 'error',
+			message: 'The Subject changed after the base revision',
+			revisionId: 43,
+			subject: { id: 's11111111111111' },
+		} );
+
+		const error = await repository
+			.updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] )
+			.catch( ( thrown: unknown ) => thrown );
+
+		expect( error ).toBeInstanceOf( EditConflictError );
+	} );
 
 	it( 'names the page in the way when a title is taken', async () => {
 		const repository = repositoryAnswering( 409, {

@@ -927,7 +927,7 @@ describe( 'SubjectsManagerPage red links', () => {
 describe( 'SubjectsManagerPage saves from the editor', () => {
 
 	const onPage = new PageIdentifiers( PAGE_ID, 'Test Page' );
-	const host = newSubject( { id: ID_A, label: 'Pablo Picasso', schemaName: 'Person', pageIdentifiers: onPage } );
+	const host = newSubject( { id: ID_A, label: 'Pablo Picasso', schemaName: 'Person', pageIdentifiers: onPage, revisionId: 1 } );
 	const birth = newSubject( { id: ID_B, label: null, schemaName: 'Birth', pageIdentifiers: onPage } );
 
 	beforeEach( () => {

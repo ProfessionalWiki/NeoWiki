@@ -49,6 +49,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  */
 class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 
+	use WritesOnTheCurrentRevision;
+
 	use HandlerTestTrait;
 
 	private const string PERSON = 'sDSRWPerson1111';
@@ -243,11 +245,11 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	public function testReplacingAHostSubjectWritesItsDependentSubjects(): void {
 		$pageId = $this->pageWithPersonAndBirth();
 
-		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Pablo Picasso',
 			'statements' => [ 'Birth' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH ], [ 'target' => self::NEW_BIRTH ] ] ] ],
 			'dependentSubjects' => [ $this->birthItem() ],
-		] );
+		] ) );
 
 		$this->assertSame( 200, $status );
 		$this->assertSame( [ self::PERSON, self::BIRTH, self::NEW_BIRTH ], $this->idsOn( $pageId ) );
@@ -256,10 +258,10 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	public function testReplacingAHostSubjectWithoutTheRelationRemovesTheDependentSubject(): void {
 		$pageId = $this->pageWithPersonAndBirth();
 
-		$this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		$this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Pablo Picasso',
 			'statements' => [],
-		] );
+		] ) );
 
 		$this->assertSame( [ self::PERSON ], $this->idsOn( $pageId ) );
 	}
@@ -275,7 +277,7 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 			new SetStatementApi( $this->csrfValidator() ),
 			'PUT',
 			[ 'subjectId' => self::OTHER_PERSON, 'propertyName' => 'Friend' ],
-			[ 'statement' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH ] ] ] ]
+			$this->onTheCurrentRevision( self::OTHER_PERSON, [ 'statement' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH ] ] ] ] )
 		);
 
 		$this->assertSame( 422, $status );
@@ -338,10 +340,10 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	public function testAWriteLeavesADependentSubjectThatWasAlreadyUnreachedInPlace(): void {
 		$pageId = $this->createPageWithSubjects( 'Pablo Picasso', $this->person(), new SubjectMap( $this->birth() ) )->getPageId();
 
-		$this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		$this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Picasso',
 			'statements' => [],
-		] );
+		] ) );
 
 		$this->assertSame( [ self::PERSON, self::BIRTH ], $this->idsOn( $pageId ) );
 	}
@@ -349,11 +351,11 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	public function testReplacingAHostSubjectWithItsStoredDependentSubjectSucceeds(): void {
 		$this->pageWithPersonAndBirth();
 
-		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Pablo Picasso',
 			'statements' => $this->birthRelation( self::BIRTH ),
 			'dependentSubjects' => [ $this->birthItem( self::BIRTH ) ],
-		] );
+		] ) );
 
 		$this->assertSame( 200, $status );
 	}
@@ -373,11 +375,11 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 			)
 		);
 
-		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		[ $status ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Pablo Picasso',
 			'statements' => $this->birthRelation( self::BIRTH ),
 			'dependentSubjects' => [ $this->birthItem( self::NEW_BIRTH ) ],
-		] );
+		] ) );
 
 		$this->assertSame( 409, $status );
 	}
@@ -385,11 +387,11 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	public function testSupplyingADependentSubjectTheWriteLeavesUnreachedIsRefused(): void {
 		$this->pageWithPersonAndBirth();
 
-		[ $status, $body ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], [
+		[ $status, $body ] = $this->call( new ReplaceSubjectApi( $this->csrfValidator() ), 'PUT', [ 'subjectId' => self::PERSON ], $this->onTheCurrentRevision( self::PERSON, [
 			'label' => 'Pablo Picasso',
 			'statements' => [],
 			'dependentSubjects' => [ $this->birthItem( self::BIRTH ) ],
-		] );
+		] ) );
 
 		$this->assertSame( 422, $status );
 		$this->assertSame( [ 'dependent-subject-without-host' ], $this->codesIn( $body ) );

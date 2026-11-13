@@ -13,11 +13,11 @@ interface CreateSubjectPresenter {
 	/**
 	 * Receives the persisted Subject, not the request: the server normalizes labels and Statements
 	 * on the way in, so this is the state a subsequent read returns. A null Schema means the Subject
-	 * names a Schema that does not exist.
+	 * names a Schema that does not exist. $revisionId is the revision the Subject is now at.
 	 *
 	 * @param Violation[] $violations
 	 */
-	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void;
+	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void;
 
 	public function presentSubjectAlreadyExists(): void;
 

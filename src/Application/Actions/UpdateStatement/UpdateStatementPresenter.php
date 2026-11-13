@@ -15,9 +15,17 @@ interface UpdateStatementPresenter {
 	 * in, so this is the state a subsequent read returns. A null Schema means the Subject names a
 	 * Schema that does not exist.
 	 *
+	 * $revisionId is the revision the Subject is now at, including after a write that changed nothing.
+	 *
 	 * @param Violation[] $violations
 	 */
-	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void;
+	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void;
+
+	/**
+	 * Called when the Statement changed after the base revision of the request, or that revision is not one of the
+	 * Subject's page. Nothing was written. Receives the Subject as it is now.
+	 */
+	public function presentConflict( GetSubjectResponseItem $currentSubject, int $currentRevisionId ): void;
 
 	/**
 	 * Called when validation enforcement rejects an edit that would introduce

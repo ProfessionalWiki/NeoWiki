@@ -9,6 +9,7 @@ use MediaWiki\Content\Content;
 use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
@@ -25,6 +26,7 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SubjectContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSaver;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 class MediaWikiSubjectRepository implements SubjectRepository {
 
@@ -71,10 +73,10 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	private function getContentByPageId( PageId $pageId ): ?SubjectContent {
 		$revision = $this->revisionLookup->getRevisionByPageId( $pageId->id );
 
-		if ( $revision === null ) {
-			return null;
-		}
+		return $revision === null ? null : $this->getContent( $revision );
+	}
 
+	private function getContent( RevisionRecord $revision ): ?SubjectContent {
 		try {
 			$content = $revision->getContent( self::SLOT_NAME );
 		}
@@ -82,23 +84,42 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			return null;
 		}
 
-		if ( $content instanceof SubjectContent ) {
+		if ( $content === null || $content instanceof SubjectContent ) {
 			return $content;
 		}
 
 		throw new \RuntimeException( 'Content is not a SubjectContent' );
 	}
 
+	/**
+	 * From the primary database, like the write it serves: a replica can lag behind the revision the write checks
+	 * the page is at, and miss the one this session just wrote.
+	 */
+	public function getLatestRevisionId( PageId $pageId ): ?int {
+		return $this->revisionLookup->getRevisionByPageId( $pageId->id, 0, IDBAccessObject::READ_LATEST )?->getId();
+	}
+
+	public function getSubjectsAtRevision( PageId $pageId, int $revisionId ): ?PageSubjects {
+		$revision = $this->revisionLookup->getRevisionById( $revisionId, IDBAccessObject::READ_LATEST );
+
+		if ( $revision === null || $revision->getPageId() !== $pageId->id ) {
+			return null;
+		}
+
+		return $this->getContent( $revision )?->getPageSubjects() ?? PageSubjects::newEmpty();
+	}
+
 	public function updateSubject(
 		Subject $subject,
-		?string $comment = null,
-		SubjectMap $dependentSubjects = new SubjectMap()
+		int $parentRevisionId,
+		?string $comment,
+		SubjectMap $dependentSubjects
 	): PageContentSavingStatus {
-		$pageId = $this->getPageIdForSubject( $subject->id );
-		$content = $pageId === null ? null : $this->getContentByPageId( $pageId );
+		$parentRevision = $this->revisionLookup->getRevisionById( $parentRevisionId, IDBAccessObject::READ_LATEST );
+		$content = $parentRevision === null ? null : $this->getContent( $parentRevision );
 		$pageSubjects = $content?->getPageSubjects();
 
-		if ( $pageId === null || $content === null || $pageSubjects?->getAllSubjects()->hasSubject( $subject->id ) !== true ) {
+		if ( $parentRevision === null || $content === null || $pageSubjects?->getAllSubjects()->hasSubject( $subject->id ) !== true ) {
 			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Subject not found' );
 		}
 
@@ -108,7 +129,14 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			$pageSubjects->putSubject( $dependentSubject );
 		}
 
-		return $this->saveGuarded( $content, $pageSubjects, $dependentSubjects->getIds(), $pageId, $comment );
+		$this->admit( $content, $pageSubjects, $dependentSubjects->getIds() );
+
+		return $this->pageContentSaver->saveContentOnto(
+			new PageId( $parentRevision->getPageId() ),
+			$parentRevisionId,
+			[ self::SLOT_NAME => $content ],
+			$this->newComment( $comment )
+		);
 	}
 
 	/**
@@ -121,9 +149,16 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 		PageId $pageId,
 		?string $comment
 	): PageContentSavingStatus {
-		$content->setPageSubjects( $this->dependentSubjectGuard->admit( $content->getPageSubjects(), $pageSubjects, $suppliedIds ) );
+		$this->admit( $content, $pageSubjects, $suppliedIds );
 
 		return $this->saveContent( $content, $pageId, $comment );
+	}
+
+	/**
+	 * @throws DependentSubjectRulesViolatedException
+	 */
+	private function admit( SubjectContent $content, PageSubjects $pageSubjects, SubjectIdList $suppliedIds ): void {
+		$content->setPageSubjects( $this->dependentSubjectGuard->admit( $content->getPageSubjects(), $pageSubjects, $suppliedIds ) );
 	}
 
 	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
@@ -132,8 +167,12 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 			[
 				self::SLOT_NAME => $content,
 			],
-			CommentStoreComment::newUnsavedComment( $comment ?? 'Update NeoWiki subject' )
+			$this->newComment( $comment )
 		);
+	}
+
+	private function newComment( ?string $comment ): CommentStoreComment {
+		return CommentStoreComment::newUnsavedComment( $comment ?? 'Update NeoWiki subject' );
 	}
 
 	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus {

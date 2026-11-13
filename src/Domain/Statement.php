@@ -28,4 +28,13 @@ readonly class Statement {
 		return $this->value;
 	}
 
+	/**
+	 * Strict, so values that only read alike, such as "10" and "1e1", differ.
+	 */
+	public function equals( self $other ): bool {
+		return $this->property->text === $other->property->text
+			&& $this->propertyType === $other->propertyType
+			&& $this->value->toScalars() === $other->value->toScalars();
+	}
+
 }

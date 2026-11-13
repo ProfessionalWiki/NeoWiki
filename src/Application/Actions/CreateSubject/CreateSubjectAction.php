@@ -103,7 +103,7 @@ readonly class CreateSubjectAction {
 
 		// The read gate above already turns an unresolvable page away; this catches the page going
 		// away between that check and the save, so a dropped write is never reported as created.
-		if ( $status->status === PageContentSavingStatus::ERROR ) {
+		if ( $status->status === PageContentSavingStatus::ERROR || $status->revisionId === null ) {
 			$this->presenter->presentPageNotFound();
 			return;
 		}
@@ -122,7 +122,8 @@ readonly class CreateSubjectAction {
 				hostSubject: null
 			),
 			$this->schemaResolver->getSchema( $schemaReference ),
-			$violations
+			$violations,
+			$status->revisionId
 		);
 	}
 

@@ -32,10 +32,11 @@ class RestCreateSubjectPresenter implements CreateSubjectPresenter {
 	/**
 	 * @param Violation[] $violations
 	 */
-	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
+	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->apiResponse = [
 			'status' => 'created',
 			'subjectId' => $subject->id,
+			'revisionId' => $revisionId,
 			'violations' => ViolationSerializer::serializeMany( $violations ),
 			'subject' => $this->subjectSerializer->serialize( $subject ),
 		];

@@ -6,11 +6,13 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Subject;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 
 /**
@@ -67,6 +69,64 @@ class SubjectTest extends TestCase {
 
 		$this->assertSame( $originalStatements, $subject->getStatements() );
 		$this->assertSame( [], $copy->getStatements()->asArray() );
+	}
+
+	public function testStatementOrderIsNotContent(): void {
+		$this->assertTrue(
+			$this->newCompany( 'ACME', [ 'Motto' => 'Make things', 'Website' => 'acme.example' ] )->hasSameContentAs(
+				$this->newCompany( 'ACME', [ 'Website' => 'acme.example', 'Motto' => 'Make things' ] )
+			)
+		);
+	}
+
+	public function testAnotherLabelIsOtherContent(): void {
+		$this->assertFalse(
+			$this->newCompany( 'ACME', [] )->hasSameContentAs( $this->newCompany( 'ACME Inc', [] ) )
+		);
+	}
+
+	public function testNoLabelIsOtherContentThanALabel(): void {
+		$this->assertFalse(
+			$this->newCompany( null, [] )->hasSameContentAs( $this->newCompany( 'ACME', [] ) )
+		);
+	}
+
+	public function testAnotherStatementValueIsOtherContent(): void {
+		$this->assertFalse(
+			$this->newCompany( 'ACME', [ 'Motto' => 'Make things' ] )->hasSameContentAs(
+				$this->newCompany( 'ACME', [ 'Motto' => 'Break things' ] )
+			)
+		);
+	}
+
+	public function testAnAddedStatementIsOtherContent(): void {
+		$this->assertFalse(
+			$this->newCompany( 'ACME', [ 'Motto' => 'Make things' ] )->hasSameContentAs(
+				$this->newCompany( 'ACME', [ 'Motto' => 'Make things', 'Website' => 'acme.example' ] )
+			)
+		);
+	}
+
+	public function testAnotherSchemaIsOtherContent(): void {
+		$this->assertFalse(
+			TestSubject::build( schemaName: new SchemaName( 'Company' ) )->hasSameContentAs(
+				TestSubject::build( schemaName: new SchemaName( 'Person' ) )
+			)
+		);
+	}
+
+	/**
+	 * @param array<string, string> $statements
+	 */
+	private function newCompany( ?string $label, array $statements ): Subject {
+		return TestSubject::build(
+			label: $label,
+			statements: new StatementList( array_map(
+				static fn ( string $property, string $value ): Statement => TestStatement::build( $property, $value ),
+				array_keys( $statements ),
+				$statements
+			) )
+		);
 	}
 
 }

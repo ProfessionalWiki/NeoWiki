@@ -37,6 +37,7 @@ describe( 'SubjectDeserializer', () => {
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 			null,
+			null,
 		) );
 	} );
 
@@ -181,6 +182,7 @@ describe( 'SubjectDeserializer', () => {
 				new Statement( new PropertyName( 'Property2' ), NumberType.typeName, newNumberValue( 1337 ) ),
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
+			null,
 			null,
 		) );
 	} );

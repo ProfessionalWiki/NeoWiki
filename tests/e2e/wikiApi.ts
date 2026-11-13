@@ -13,14 +13,42 @@ export async function createSchema(
 	await savePage( request, `Schema:${ name }`, JSON.stringify( { propertyDefinitions } ) );
 }
 
+/**
+ * @return The id of the Subject created.
+ */
 export async function createSubjectPage(
 	request: APIRequestContext,
 	subject: { pageTitle: string; label: string; schema: string; statements: Record<string, object> }
-): Promise<void> {
+): Promise<string> {
 	const response = await request.post( 'rest.php/neowiki/v0/subjects', {
 		data: subject,
 		headers: { 'X-CSRF-TOKEN': await csrfToken( request ) }
 	} );
+
+	await expect( response ).toBeOK();
+
+	return ( await response.json() ).subjectId;
+}
+
+/**
+ * Writes one Statement on the Subject as it is now, as another editor saving meanwhile does.
+ */
+export async function setStatement(
+	request: APIRequestContext,
+	subjectId: string,
+	propertyName: string,
+	statement: object
+): Promise<void> {
+	const read = await request.get( `rest.php/neowiki/v0/subject/${ subjectId }`, { params: { latest: '1' } } );
+	await expect( read ).toBeOK();
+
+	const response = await request.put(
+		`rest.php/neowiki/v0/subject/${ subjectId }/statements/${ encodeURIComponent( propertyName ) }`,
+		{
+			data: { statement, baseRevisionId: ( await read.json() ).revisionId },
+			headers: { 'X-CSRF-TOKEN': await csrfToken( request ) }
+		}
+	);
 
 	await expect( response ).toBeOK();
 }

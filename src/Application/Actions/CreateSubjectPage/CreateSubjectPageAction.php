@@ -112,12 +112,13 @@ readonly class CreateSubjectPageAction {
 		}
 
 		$pageSubjects = new PageSubjects( $subject, $dependentSubjects );
-		$pageId = $this->createPage( $pageTitle, $pageSubjects, $request->comment, $allViolations );
+		$created = $this->createPage( $pageTitle, $pageSubjects, $request->comment, $allViolations );
 
-		if ( $pageId === null ) {
+		if ( $created === null ) {
 			return;
 		}
 
+		[ $pageId, $revisionId ] = $created;
 		$page = new PageIdentifiers( id: $pageId, title: $pageTitle, namespaceId: $this->subjectPageNamespace );
 
 		$this->presenter->presentCreated(
@@ -129,16 +130,19 @@ readonly class CreateSubjectPageAction {
 			),
 			$page,
 			$this->schemaResolver->getSchema( $schemaReference ),
-			$violations
+			$violations,
+			$revisionId
 		);
 	}
 
 	/**
-	 * Null when the write failed, which this has then presented.
+	 * The page created and the revision the write left it at, or null when the write failed, which this has then
+	 * presented.
 	 *
 	 * @param Violation[] $violations
+	 * @return array{PageId, int}|null
 	 */
-	private function createPage( string $pageTitle, PageSubjects $pageSubjects, ?string $comment, array $violations ): ?PageId {
+	private function createPage( string $pageTitle, PageSubjects $pageSubjects, ?string $comment, array $violations ): ?array {
 		try {
 			$status = $this->subjectRepository->createPageWithSubjects( $pageTitle, $pageSubjects, $comment );
 		} catch ( DependentSubjectRulesViolatedException $exception ) {
@@ -146,11 +150,12 @@ readonly class CreateSubjectPageAction {
 			return null;
 		}
 
-		if ( $status->pageId === null ) {
+		if ( $status->pageId === null || $status->revisionId === null ) {
 			$this->presentFailedWrite( $pageTitle, $status );
+			return null;
 		}
 
-		return $status->pageId;
+		return [ $status->pageId, $status->revisionId ];
 	}
 
 	/**

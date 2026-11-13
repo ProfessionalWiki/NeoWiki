@@ -14,6 +14,7 @@ import { NeoWikiExtension } from '@/NeoWikiExtension';
 import { Subject } from '@/domain/Subject.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
@@ -80,7 +81,7 @@ const birth = new Subject(
 	true,
 	'Birth',
 	new StatementList( [ new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( '1881' ) ) ] ),
-	new PageIdentifiers( 42, 'Employees' ), null );
+	new PageIdentifiers( 42, 'Employees' ), null, null );
 const birthField = [ {
 	id: 's1birthAAAAAAA1',
 	schema: 'Birth',
@@ -127,6 +128,7 @@ describe( 'RestSubjectRepository', () => {
 					new Statement( new PropertyName( 'WorkUrl' ), 'url', newStringValue( 'https://pro.wiki' ) ),
 				] ),
 				new PageIdentifiers( subjectResponse.pageId, subjectResponse.pageTitle ),
+				null,
 				null,
 			) );
 			expect( subject.getLabel() ).toEqual( 'John Doe' );
@@ -213,6 +215,14 @@ describe( 'RestSubjectRepository', () => {
 			await newRepositoryForRevision( httpClient, 7 ).getSubjectForEditing( subjectId );
 
 			expect( get ).toHaveBeenCalledWith( editingUrl() );
+		} );
+
+		it( 'carries the revision the read names, which an edit is based on', async () => {
+			const subject = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ editingUrl() ]: new Response( JSON.stringify( { ...mockResponse, revisionId: 41 } ), { status: 200 } ),
+			} ) ).getSubjectForEditing( subjectId );
+
+			expect( subject.getRevisionId() ).toBe( 41 );
 		} );
 
 		function newRepositoryForRevision( httpClient: InMemoryHttpClient, revisionId: number ): RestSubjectRepository {
@@ -859,7 +869,7 @@ describe( 'RestSubjectRepository', () => {
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
 			await expect(
-				() => repository.updateSubject( new SubjectId( 's11111111111111' ), 'Updated Label', new StatementList( [] ), [] ),
+				() => repository.updateSubject( new SubjectId( 's11111111111111' ), 41, 'Updated Label', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error updating subject' );
 		} );
 
@@ -875,6 +885,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const result = await repository.updateSubject(
 				new SubjectId( 's11111111111111' ),
+				41,
 				'Subject label',
 				new StatementList( [] ),
 				[],
@@ -897,7 +908,7 @@ describe( 'RestSubjectRepository', () => {
 			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
 					new Response( JSON.stringify( withoutPage ), { status: 200 } ),
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ), [] );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, 'Updated', new StatementList( [] ), [] );
 
 			expect( result.subject ).toBeNull();
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
@@ -912,7 +923,7 @@ describe( 'RestSubjectRepository', () => {
 
 			const repository = newRepository( 'https://example.com/rest.php', inMemoryHttpClient );
 
-			await repository.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ), [] );
+			await repository.updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] );
 
 			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { label: null } );
 		} );
@@ -925,9 +936,55 @@ describe( 'RestSubjectRepository', () => {
 			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
 
 			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
-				.updateSubject( new SubjectId( 's11111111111111' ), null, new StatementList( [] ), [ birth ] );
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [ birth ] );
 
 			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { dependentSubjects: birthField } );
+		} );
+
+		it( 'sends the revision the edit is based on', async () => {
+			const inMemoryHttpClient = new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
+			} );
+			const putSpy = vi.spyOn( inMemoryHttpClient, 'put' );
+
+			await newRepository( 'https://example.com/rest.php', inMemoryHttpClient )
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] );
+
+			expect( putSpy.mock.calls[ 0 ][ 1 ] ).toMatchObject( { baseRevisionId: 41 } );
+		} );
+
+		it( 'returns the subject at the revision the write left it at', async () => {
+			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( writeResponseJson( { revisionId: 43 } ) ), { status: 200 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] );
+
+			expect( result.subject?.getRevisionId() ).toBe( 43 );
+		} );
+
+		it( 'throws EditConflictError when the Subject changed after the revision the edit is based on', async () => {
+			const conflict = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( {
+						status: 'error',
+						message: 'The Subject changed after the base revision',
+						revisionId: 43,
+						subject: writeResponseJson().subject,
+					} ), { status: 409 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] );
+
+			await expect( conflict ).rejects.toBeInstanceOf( EditConflictError );
+		} );
+
+		it( 'keeps a 409 that names no revision a plain failure', async () => {
+			// A Dependent Subject taking an id in use answers 409 too, and is no edit conflict.
+			const refusal = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( { status: 'error', message: 'Subject id in use' } ), { status: 409 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [ birth ] );
+
+			await expect( refusal ).rejects.not.toBeInstanceOf( EditConflictError );
 		} );
 
 		it( 'sends a PUT request', async () => {
@@ -942,6 +999,7 @@ describe( 'RestSubjectRepository', () => {
 
 			await repository.updateSubject(
 				new SubjectId( 's11111111111111' ),
+				41,
 				'Subject label',
 				new StatementList( [] ),
 				[],
@@ -1183,7 +1241,7 @@ describe( 'RestSubjectRepository', () => {
 			};
 
 			const promise = repoWith( make422Response( body ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, 'Label', new StatementList( [] ), [] );
 
 			const error = await promise.catch( ( e ) => e );
 			expect( error ).toBeInstanceOf( ValidationFailedError );
@@ -1196,7 +1254,7 @@ describe( 'RestSubjectRepository', () => {
 
 		it( 'throws generic Error (not ValidationFailedError) when 422 body has no violations field', async () => {
 			const promise = repoWith( make422Response( { status: 'error', message: 'Validation failed' } ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1206,7 +1264,7 @@ describe( 'RestSubjectRepository', () => {
 
 		it( 'throws generic Error when 422 body has violations as a non-array', async () => {
 			const promise = repoWith( make422Response( { violations: { propertyName: 'Foo', code: 'required' } } ) )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1216,7 +1274,7 @@ describe( 'RestSubjectRepository', () => {
 		it( 'throws generic Error when a violation entry has a non-string code', async () => {
 			const promise = repoWith( make422Response( {
 				violations: [ { propertyName: 'Foo', code: 123, args: [], severity: 'error', valuePartIndex: null } ],
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toSatisfy(
 				( err ) => err instanceof Error && !( err instanceof ValidationFailedError ),
@@ -1226,14 +1284,14 @@ describe( 'RestSubjectRepository', () => {
 		it( 'resolves normally on 200 (existing behaviour preserved)', async () => {
 			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
 				[ subjectUrl ]: new Response( JSON.stringify( writeResponseJson() ), { status: 200 } ),
-			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 'Updated', new StatementList( [] ), [] );
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, 'Updated', new StatementList( [] ), [] );
 
 			expect( result.subjectId.text ).toEqual( 's33333333333333' );
 		} );
 
 		it( 'throws generic Error on 500', async () => {
 			const promise = repoWith( make500Response() )
-				.updateSubject( new SubjectId( 's11111111111111' ), 'Label', new StatementList( [] ), [] );
+				.updateSubject( new SubjectId( 's11111111111111' ), 41, 'Label', new StatementList( [] ), [] );
 
 			await expect( promise ).rejects.toThrowError( 'Error updating subject' );
 			await expect( promise ).rejects.toSatisfy(

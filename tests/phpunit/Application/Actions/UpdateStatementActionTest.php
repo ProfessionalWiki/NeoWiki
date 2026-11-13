@@ -12,6 +12,7 @@ use Psr\Log\NullLogger;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
+use ProfessionalWiki\NeoWiki\Application\EditConflictCheck;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -54,6 +55,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
 class UpdateStatementActionTest extends TestCase {
 
 	private const string SUBJECT_ID = TestHostingPages::SUBJECT_ID;
+	private const int PAGE_ID = 7;
 	private const string SCHEMA_NAME = 'TestSchema';
 	private const string OTHER_SOURCE_KEY = 'catalog';
 
@@ -106,6 +108,8 @@ class UpdateStatementActionTest extends TestCase {
 					sourceRegistry: TestSources::newRegistry(),
 				),
 			),
+			dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
+			editConflictCheck: new EditConflictCheck( $this->subjectRepository ),
 			responseItemFactory: TestNaming::newResponseItemFactory( $this->subjectRepository, $this->schemaLookup ),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
@@ -143,12 +147,26 @@ class UpdateStatementActionTest extends TestCase {
 		?StatementList $statements = null,
 		SchemaName|SchemaReference|null $schemaName = null
 	): void {
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->putOnPage( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' ),
 			schemaName: $schemaName ?? new SchemaName( self::SCHEMA_NAME ),
 			statements: $statements,
 		) );
+	}
+
+	/**
+	 * Puts $subject on the page the Subject under test resolves to, beside what it holds already.
+	 */
+	private function putOnPage( Subject $subject ): void {
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
+		$pageSubjects->putSubject( $subject );
+
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( self::PAGE_ID ) );
+	}
+
+	private function currentRevision(): int {
+		return $this->subjectRepository->getLatestRevisionId( new PageId( self::PAGE_ID ) ) ?? 0;
 	}
 
 	private function getStoredSubject(): Subject {
@@ -174,11 +192,186 @@ class UpdateStatementActionTest extends TestCase {
 	): void {
 		$this->newAction()->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( $propertyName ),
 			$propertyType,
 			$value,
 			$comment
 		);
+	}
+
+	public function testAStatementChangedSinceTheBaseRevisionIsLeftAsItIs(): void {
+		$base = $this->storeWebsiteThenChangeIt( 'https://changed.example' );
+
+		$this->setWebsiteOn( $base, 'https://mine.example' );
+
+		$this->assertSame( [ 'https://changed.example' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	/**
+	 * @return int The revision before the change.
+	 */
+	private function storeWebsiteThenChangeIt( string $changedWebsite ): int {
+		$this->storeSubject( $this->websiteStatements( 'https://base.example' ) );
+		$base = $this->currentRevision();
+		$this->storeSubject( $this->websiteStatements( $changedWebsite ) );
+
+		return $base;
+	}
+
+	private function websiteStatements( string $website ): StatementList {
+		return new StatementList( [ TestStatement::build( property: 'Website', value: $website, propertyType: 'url' ) ] );
+	}
+
+	private function setWebsiteOn( int $baseRevisionId, string $website ): void {
+		$this->newAction()->setStatement(
+			new SubjectId( self::SUBJECT_ID ),
+			$baseRevisionId,
+			new PropertyName( 'Website' ),
+			'url',
+			[ $website ],
+			null
+		);
+	}
+
+	public function testConflictPresentsTheSubjectAndTheRevisionItIsNowAt(): void {
+		$base = $this->storeWebsiteThenChangeIt( 'https://changed.example' );
+
+		$this->setWebsiteOn( $base, 'https://mine.example' );
+
+		$this->assertSame(
+			[ 'https://changed.example' ],
+			$this->presenterSpy->conflictingSubject?->statements['Website']['value']
+		);
+		$this->assertSame( $this->currentRevision(), $this->presenterSpy->conflictRevisionId );
+	}
+
+	public function testAStatementRemovedSinceTheBaseRevisionStopsItsRemoval(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl(), 'Motto' => TestProperty::buildText() ] ) );
+		$this->storeSubject( $this->websiteStatements( 'https://base.example' ) );
+		$base = $this->currentRevision();
+		$this->storeSubject( new StatementList( [ TestStatement::build( property: 'Motto', value: 'Changed elsewhere' ) ] ) );
+
+		$this->newAction()->removeStatement( new SubjectId( self::SUBJECT_ID ), $base, new PropertyName( 'Website' ), null );
+
+		$this->assertSame( 'Changed elsewhere', $this->presenterSpy->conflictingSubject?->statements['Motto']['value'][0] );
+	}
+
+	public function testAChangeToAnotherStatementSinceTheBaseRevisionIsKeptBesideTheWrite(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl(), 'Motto' => TestProperty::buildText() ] ) );
+		$this->storeSubject( $this->websiteStatements( 'https://base.example' ) );
+		$base = $this->currentRevision();
+		$this->storeSubject( new StatementList( [
+			TestStatement::build( property: 'Website', value: 'https://base.example', propertyType: 'url' ),
+			TestStatement::build( property: 'Motto', value: 'Changed elsewhere' ),
+		] ) );
+
+		$this->setWebsiteOn( $base, 'https://mine.example' );
+
+		$this->assertSame( [ 'https://mine.example' ], $this->getStoredValue( 'Website' ) );
+		$this->assertSame( [ 'Changed elsewhere' ], $this->getStoredValue( 'Motto' ) );
+	}
+
+	public function testAnotherStatementSavedDuringTheWriteIsKeptBesideIt(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl(), 'Motto' => TestProperty::buildText() ] ) );
+		$this->storeSubject( $this->websiteStatements( 'https://base.example' ) );
+		$this->subjectRepository->savesLandingBeforeUpdates[] = function (): void {
+			$this->storeSubject( new StatementList( [
+				TestStatement::build( property: 'Website', value: 'https://base.example', propertyType: 'url' ),
+				TestStatement::build( property: 'Motto', value: 'Saved meanwhile' ),
+			] ) );
+		};
+
+		$this->setWebsiteOn( $this->currentRevision(), 'https://mine.example' );
+
+		$this->assertSame( [ 'https://mine.example' ], $this->getStoredValue( 'Website' ) );
+		$this->assertSame( [ 'Saved meanwhile' ], $this->getStoredValue( 'Motto' ) );
+	}
+
+	public function testAChangeToADependentSubjectTheStatementReachesSinceTheBaseRevisionStopsTheWrite(): void {
+		// Removing the Relation removes the Dependent Subject, and with it the change made to it.
+		$this->registerSchemaWithBirth();
+		$this->storeSubject( new StatementList( [
+			TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH_ID ) ] ),
+		] ) );
+		$this->putOnPage( $this->newBirth( '1881' ) );
+		$base = $this->currentRevision();
+		$this->putOnPage( $this->newBirth( '25 October 1881' ) );
+
+		$this->newAction()->removeStatement( new SubjectId( self::SUBJECT_ID ), $base, new PropertyName( 'Birth' ), null );
+
+		$this->assertNotNull( $this->presenterSpy->conflictingSubject );
+	}
+
+	private const string BIRTH_ID = 'sBirth111111111';
+
+	private function registerSchemaWithBirth(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Birth' => TestProperty::buildRelation( targetSchemas: [ 'Birth' ] ) ] ) );
+		$this->schemaLookup->updateSchema( TestSchema::build(
+			name: 'Birth',
+			properties: new PropertyDefinitions( [ 'Date' => TestProperty::buildText() ] ),
+			subjectsAreDependent: true
+		) );
+	}
+
+	private function newBirth( string $date ): Subject {
+		return TestSubject::build(
+			id: self::BIRTH_ID,
+			label: null,
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [ TestStatement::build( 'Date', $date ) ] )
+		);
+	}
+
+	public function testAChangeToADependentSubjectAnotherStatementReachesDoesNotStopTheWrite(): void {
+		$this->registerSchemaWithBirth();
+		$this->registerSchema( new PropertyDefinitions( [
+			'Birth' => TestProperty::buildRelation( targetSchemas: [ 'Birth' ] ),
+			'Website' => TestProperty::buildUrl(),
+		] ) );
+		$this->storeSubject( new StatementList( [
+			TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH_ID ) ] ),
+		] ) );
+		$this->putOnPage( $this->newBirth( '1881' ) );
+		$base = $this->currentRevision();
+		$this->putOnPage( $this->newBirth( '25 October 1881' ) );
+
+		$this->setWebsiteOn( $base, 'https://mine.example' );
+
+		$this->assertSame( [ 'https://mine.example' ], $this->getStoredValue( 'Website' ) );
+	}
+
+	public function testAPageThatKeepsChangingDuringTheWriteFailsIt(): void {
+		$this->storeSubject( $this->websiteStatements( 'https://base.example' ) );
+		$this->landASaveOfTheLabelBeforeEachOfTheNextUpdates( 3 );
+
+		$this->setWebsiteOn( $this->currentRevision(), 'https://mine.example' );
+
+		$this->assertSame( [ 'https://base.example' ], $this->getStoredValue( 'Website' ) );
+		$this->assertNotNull( $this->presenterSpy->saveFailure );
+	}
+
+	private function landASaveOfTheLabelBeforeEachOfTheNextUpdates( int $count ): void {
+		for ( $save = 1; $save <= $count; $save++ ) {
+			$label = "Renamed $save times";
+			$this->subjectRepository->savesLandingBeforeUpdates[] = function () use ( $label ): void {
+				$this->putOnPage( TestSubject::build(
+					id: new SubjectId( self::SUBJECT_ID ),
+					label: new SubjectLabel( $label ),
+					schemaName: new SchemaName( self::SCHEMA_NAME ),
+					statements: $this->websiteStatements( 'https://base.example' ),
+				) );
+			};
+		}
+	}
+
+	public function testPresentsTheRevisionTheWriteCreated(): void {
+		$this->registerSchema( new PropertyDefinitions( [ 'Website' => TestProperty::buildUrl() ] ) );
+		$this->storeSubject();
+
+		$this->setWebsiteOn( $this->currentRevision(), 'https://mine.example' );
+
+		$this->assertSame( $this->currentRevision(), $this->presenterSpy->revisionId );
 	}
 
 	public function testSetStatementStoresTheValue(): void {
@@ -313,6 +506,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$action->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Unlisted' ),
 			null,
 			[ 'a value' ],
@@ -346,6 +540,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction( $spy )->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],
@@ -364,6 +559,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$action->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],
@@ -378,6 +574,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$action->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],
@@ -397,6 +594,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$action->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],
@@ -412,6 +610,7 @@ class UpdateStatementActionTest extends TestCase {
 		try {
 			$this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )->setStatement(
 				new SubjectId( self::SUBJECT_ID ),
+				$this->currentRevision(),
 				new PropertyName( 'Website' ),
 				'url',
 				[ 'https://overwritten.example' ],
@@ -430,7 +629,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->expectException( SubjectNotFoundException::class );
 
-		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), new PropertyName( 'Website' ), null );
+		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), new PropertyName( 'Website' ), null );
 	}
 
 	public function testPresentedSubjectCarriesThePersistedStatements(): void {
@@ -485,6 +684,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction()->removeStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Target' ),
 			null
 		);
@@ -500,6 +700,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction()->removeStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Absent' ),
 			null
 		);
@@ -514,7 +715,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 
-		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), new PropertyName( 'Website' ), null );
+		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), new PropertyName( 'Website' ), null );
 	}
 
 	public function testRemoveOnNonExistentSubjectThrows(): void {
@@ -522,7 +723,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->expectException( SubjectNotFoundException::class );
 
-		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), new PropertyName( 'Website' ), null );
+		$action->removeStatement( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), new PropertyName( 'Website' ), null );
 	}
 
 	public function testViolationsOfUntouchedPropertiesArePresented(): void {
@@ -547,6 +748,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'not-a-url' ],
@@ -565,6 +767,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->removeStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Required' ),
 			null
 		);
@@ -582,6 +785,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],
@@ -597,6 +801,7 @@ class UpdateStatementActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->setStatement(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			new PropertyName( 'Website' ),
 			'url',
 			[ 'https://pro.wiki' ],

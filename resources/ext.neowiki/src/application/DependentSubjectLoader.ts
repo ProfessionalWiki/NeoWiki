@@ -212,6 +212,7 @@ export class DependentSubjectLoader {
 			new StatementList( [] ),
 			page,
 			null,
+			null,
 		);
 
 		const started = await this.withStartingDependentSubjects( blank, schema, schemas, ancestorSchemaNames );

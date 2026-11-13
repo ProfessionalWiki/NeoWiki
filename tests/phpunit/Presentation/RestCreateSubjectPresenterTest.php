@@ -57,7 +57,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 
 		$presenter->presentCreated( $this->newSubject(), null, [
 			new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' ),
-		] );
+		], 42 );
 
 		$this->assertSame( 201, $presenter->getStatusCode() );
 		$this->assertSame( 'created', $presenter->getJsonArray()['status'] );
@@ -71,7 +71,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 	public function testPresentCreatedWithNoViolationsYieldsEmptyViolationsArray(): void {
 		$presenter = new RestCreateSubjectPresenter();
 
-		$presenter->presentCreated( $this->newSubject(), null, [] );
+		$presenter->presentCreated( $this->newSubject(), null, [], 42 );
 
 		$this->assertSame( 201, $presenter->getStatusCode() );
 		$this->assertSame( [], $presenter->getJsonArray()['violations'] );
@@ -80,7 +80,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 	public function testPresentCreatedIncludesTheCanonicalSubjectWithItsPageIdentifiers(): void {
 		$presenter = new RestCreateSubjectPresenter();
 
-		$presenter->presentCreated( $this->newSubject(), null, [] );
+		$presenter->presentCreated( $this->newSubject(), null, [], 42 );
 
 		$this->assertSame(
 			[
@@ -101,7 +101,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 	public function testPresentCreatedOmitsPageKeysWhenTheHostingPageIsUnresolved(): void {
 		$presenter = new RestCreateSubjectPresenter();
 
-		$presenter->presentCreated( $this->newSubject( pageId: null ), null, [] );
+		$presenter->presentCreated( $this->newSubject( pageId: null ), null, [], 42 );
 
 		$this->assertSame(
 			[
@@ -119,7 +119,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 	public function testPresentCreatedIncludesTheSchemaBodyWithoutItsName(): void {
 		$presenter = new RestCreateSubjectPresenter();
 
-		$presenter->presentCreated( $this->newSubject(), $this->newSchema(), [] );
+		$presenter->presentCreated( $this->newSubject(), $this->newSchema(), [], 42 );
 
 		$this->assertSame(
 			[
@@ -144,7 +144,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 	public function testPresentCreatedOmitsTheSchemaKeyWhenTheSchemaIsMissing(): void {
 		$presenter = new RestCreateSubjectPresenter();
 
-		$presenter->presentCreated( $this->newSubject(), null, [] );
+		$presenter->presentCreated( $this->newSubject(), null, [], 42 );
 
 		$this->assertArrayNotHasKey( 'schema', $presenter->getJsonArray() );
 	}

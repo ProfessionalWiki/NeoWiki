@@ -52,7 +52,8 @@
 
 			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
 				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
-				the ValueInput refs inside it. -->
+				the ValueInput refs inside it. Loading the Subject again is the exception: what was typed
+				into the pane is to go. -->
 			<div
 				ref="content"
 				class="ext-neowiki-subject-editor-dialog__content"
@@ -94,7 +95,7 @@
 							v-for="pane in panes"
 							v-show="pane.id === activePaneId"
 							:id="`ext-neowiki-panel-${ pane.id }`"
-							:key="pane.id"
+							:key="paneKey( pane.id )"
 							tabindex="-1"
 						>
 							<SubjectEditPane
@@ -116,6 +117,23 @@
 				#footer
 			>
 				<CdxMessage
+					v-if="conflict !== null"
+					type="error"
+					class="ext-neowiki-subject-editor-dialog__conflict"
+				>
+					<p>
+						<strong>{{ $i18n( 'neowiki-subject-editor-edit-conflict-title', conflict.subjectName ).text() }}</strong>
+						{{ $i18n( 'neowiki-subject-editor-edit-conflict' ).text() }}
+					</p>
+					<CdxButton
+						:disabled="loadingTheirVersion"
+						@click="loadTheirVersion"
+					>
+						{{ $i18n( 'neowiki-subject-editor-edit-conflict-load' ).text() }}
+					</CdxButton>
+				</CdxMessage>
+
+				<CdxMessage
 					v-if="partialSave !== null"
 					:inline="true"
 					type="warning"
@@ -135,7 +153,7 @@
 					:footer-text="saveScopeText"
 					compact-save-button
 					:save-button-label="saveButtonLabel"
-					:save-disabled="!anyChanged || saving || props.saveDisabled === true"
+					:save-disabled="!anyChanged || saving || conflict !== null || props.saveDisabled === true"
 					@save="handleSave"
 				/>
 			</template>
@@ -185,6 +203,7 @@ import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 import { useEditNotices } from '@/composables/useEditNotices.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
+import { EditConflictError } from '@/persistence/EditConflictError';
 import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
@@ -321,6 +340,18 @@ const activePaneId = ref<string>( rootPaneId.value );
 // Set when a save wrote some Subjects and then failed: the toast that says so vanishes,
 // and the dialog is still open.
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
+
+// Set when a save was refused because the Subject changed after it was read. Saving it again would be
+// refused the same way, so Save waits for the Subject to be loaded again.
+const conflict = ref<{ paneId: string; subjectName: string } | null>( null );
+const loadingTheirVersion = ref( false );
+
+// How often each pane's Subject was loaded again, which starts the pane over.
+const paneReloads = shallowReactive( new Map<string, number>() );
+
+function paneKey( paneId: string ): string {
+	return `${ paneId }:${ paneReloads.get( paneId ) ?? 0 }`;
+}
 
 const panes = computed( (): EditPane[] => loadedRoot.value === null ? [] : [
 	{
@@ -639,6 +670,7 @@ async function createRelationTarget( schemaName: string, label: string | null ):
 				schemaName,
 				new StatementList( [] ),
 				page,
+				null,
 				null
 			),
 			schema,
@@ -733,6 +765,8 @@ function startSession(): void {
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
+	conflict.value = null;
+	paneReloads.clear();
 	loadedRoot.value = null;
 	readingLong.value = false;
 	clearTimeout( pendingTimer );
@@ -874,12 +908,14 @@ const saveScopeText = computed( (): string => {
 } );
 
 // A pane stops being new the moment its Subject exists on the wiki, so a save that fails further
-// down re-runs as an update rather than offering the same id to the server a second time. The
-// panes are a shallowRef, so the flag is cleared by replacing the entry rather than mutating it.
+// down re-runs as an update rather than offering the same id to the server a second time.
 function markPaneWritten( id: string ): void {
-	extraPanes.value = extraPanes.value.map(
-		( pane ) => pane.id === id ? { ...pane, isNew: false } : pane
-	);
+	changeExtraPane( id, { isNew: false } );
+}
+
+// The panes are a shallowRef, so an entry is changed by replacing it rather than mutating it.
+function changeExtraPane( id: string, change: Partial<EditPane> ): void {
+	extraPanes.value = extraPanes.value.map( ( pane ) => pane.id === id ? { ...pane, ...change } : pane );
 }
 
 // A Subject this session invented has to be created rather than replaced, on the page its pane
@@ -1024,6 +1060,11 @@ function reportWriteFailure( error: unknown, paneId: string, subjectName: string
 		return;
 	}
 
+	if ( error instanceof EditConflictError ) {
+		conflict.value = { paneId, subjectName };
+		return;
+	}
+
 	if ( error instanceof ValidationFailedError ) {
 		paneRefs.get( paneId )?.setServerViolations( error.violations );
 		mw.notify( mw.msg( 'neowiki-subject-editor-validation-failed', subjectName ), { type: 'error' } );
@@ -1037,6 +1078,55 @@ function reportWriteFailure( error: unknown, paneId: string, subjectName: string
 			type: 'error'
 		}
 	);
+}
+
+// Their version replaces the Subject and its Dependent Subjects, and the pane starts over from it: what was
+// typed into it would otherwise stay in its fields and be saved over their version.
+async function loadTheirVersion(): Promise<void> {
+	const pane = panes.value.find( ( candidate ) => candidate.id === conflict.value?.paneId );
+
+	if ( pane === undefined ) {
+		return;
+	}
+
+	const epoch = openEpoch.value;
+	loadingTheirVersion.value = true;
+
+	try {
+		const subject = await subjectRepository.getSubjectForEditing( pane.subject.getId() );
+		const dependentSubjects = await dependentSubjectLoader.loadFor( subject, pane.schema, dependentSubjectEditing.schemas );
+
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		dependentSubjectEditing.include( dependentSubjects, false );
+		replacePaneSubject( pane.id, subject );
+		paneReloads.set( pane.id, ( paneReloads.get( pane.id ) ?? 0 ) + 1 );
+		conflict.value = null;
+		await focusPane( pane.id );
+	} catch ( error ) {
+		if ( epoch !== openEpoch.value ) {
+			return;
+		}
+
+		// The Subject may be gone, and the save holds back every pane while the conflict stands. A save of this
+		// pane now meets the conflict again, or says why the Subject cannot be written.
+		console.error( 'Failed to load the subject again:', error );
+		conflict.value = null;
+		mw.notify( mw.msg( 'neowiki-subject-editor-load-error' ), { type: 'error' } );
+	} finally {
+		loadingTheirVersion.value = false;
+	}
+}
+
+function replacePaneSubject( paneId: string, subject: Subject ): void {
+	if ( paneId === rootPaneId.value ) {
+		loadedRoot.value = subject;
+		return;
+	}
+
+	changeExtraPane( paneId, { subject } );
 }
 
 // Said of the write it is attached to, not of the save as a whole: one save can create a Subject
@@ -1212,6 +1302,7 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		padding: @spacing-100 @spacing-150;
 	}
 
+	&__conflict,
 	&__partial-save {
 		margin: 0 0 @spacing-50;
 	}
