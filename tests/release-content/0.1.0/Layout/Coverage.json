@@ -1,0 +1,22 @@
+{
+	"schema": "Coverage",
+	"type": "infobox",
+	"description": "The names, rating and partners, with the rating rounded to whole stars",
+	"displayRules": [
+		{
+			"property": "Names"
+		},
+		{
+			"property": "Rating",
+			"displayAttributes": {
+				"precision": 0
+			}
+		},
+		{
+			"property": "Partners"
+		}
+	],
+	"settings": {
+		"borderColor": "#36c"
+	}
+}

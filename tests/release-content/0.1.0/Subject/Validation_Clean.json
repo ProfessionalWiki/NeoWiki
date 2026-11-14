@@ -1,0 +1,85 @@
+{
+    "mainSubject": "sEpfwJLoE7vKq2M",
+    "subjects": {
+        "sEpfwJLoE7vKq2M": {
+            "label": "Validation Clean",
+            "schema": "Validation Demo",
+            "statements": {
+                "Title": {
+                    "propertyType": "text",
+                    "value": [
+                        "All properties filled in"
+                    ]
+                },
+                "Summary": {
+                    "propertyType": "text",
+                    "value": [
+                        "A valid summary that is comfortably between ten and one hundred characters long."
+                    ]
+                },
+                "Aliases": {
+                    "propertyType": "text",
+                    "value": [
+                        "Clean sample",
+                        "Reference subject"
+                    ]
+                },
+                "Homepage": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://example.com"
+                    ]
+                },
+                "Tags": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://example.com/a",
+                        "https://example.com/b"
+                    ]
+                },
+                "Score": {
+                    "propertyType": "number",
+                    "value": 42.5
+                },
+                "Status": {
+                    "propertyType": "select",
+                    "value": [
+                        "oVgd1htUPMmGZYT"
+                    ]
+                },
+                "Topics": {
+                    "propertyType": "select",
+                    "value": [
+                        "oVgd1Fzq3xfLnxJ",
+                        "oVgd1LjchzFUcLg"
+                    ]
+                },
+                "Featured": {
+                    "propertyType": "boolean",
+                    "value": true
+                },
+                "Release date": {
+                    "propertyType": "date",
+                    "value": [
+                        "2024-06-15"
+                    ]
+                },
+                "Last reviewed": {
+                    "propertyType": "dateTime",
+                    "value": [
+                        "2024-06-15T09:30:00Z"
+                    ]
+                },
+                "Related product": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rVgd1keRxJzQR6e",
+                            "target": "s1demo1aaaaaaa2"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

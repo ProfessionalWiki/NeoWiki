@@ -1,0 +1,94 @@
+{
+    "mainSubject": "sF1pfgkamRxcmqc",
+    "subjects": {
+        "sF1pfgkamRxcmqc": {
+            "label": "Coverage",
+            "schema": "Coverage",
+            "statements": {
+                "Names": {
+                    "propertyType": "monolingualText",
+                    "value": [
+                        {
+                            "text": "Coverage",
+                            "language": "en"
+                        },
+                        {
+                            "text": "Abdeckung",
+                            "language": "de"
+                        },
+                        {
+                            "text": "Dekking",
+                            "language": "nl-be"
+                        }
+                    ]
+                },
+                "Motto": {
+                    "propertyType": "monolingualText",
+                    "value": [
+                        {
+                            "text": "Nihil sine datis",
+                            "language": "la"
+                        }
+                    ]
+                },
+                "Keywords": {
+                    "propertyType": "text",
+                    "value": [
+                        "fixtures",
+                        "upgrades"
+                    ]
+                },
+                "Websites": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://neowiki.ai",
+                        "https://professional.wiki/en/neowiki"
+                    ]
+                },
+                "Rating": {
+                    "propertyType": "number",
+                    "value": 4.5
+                },
+                "Verified": {
+                    "propertyType": "boolean",
+                    "value": false
+                },
+                "Founded": {
+                    "propertyType": "date",
+                    "value": [
+                        "2024-03-15"
+                    ]
+                },
+                "Last audit": {
+                    "propertyType": "dateTime",
+                    "value": [
+                        "2026-10-28T13:54:54+01:00"
+                    ]
+                },
+                "Stage": {
+                    "propertyType": "select",
+                    "value": [
+                        "o1cov1aaaaaaaa2"
+                    ]
+                },
+                "Partners": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rF1pfgkatKdukyK",
+                            "target": "s1demo1aaaaaaa1"
+                        },
+                        {
+                            "id": "rF1pfgkatc5dDZ9",
+                            "target": "s1demo8aaaaaai2"
+                        },
+                        {
+                            "id": "rF1pfgkatgfgZ5c",
+                            "target": "otherwiki:s1other1aaaaaa1"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

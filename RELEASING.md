@@ -61,6 +61,19 @@ git push origin refs/tags/0.1.0
 gh release create 0.1.0 --verify-tag
 ```
 
+## Capture what the release stores
+
+`tests/release-content/` holds content as releases stored it, and CI fails once master can no longer read it. When a
+release can store something the directory does not hold yet, such as a new Property Type, Constraint, Display
+Attribute or field, or a format that changed, write pages holding it in a wiki running the release, in every way users
+can: in the editors, through the REST API and as JSON. Then capture what the wiki stored for them:
+
+```bash
+scripts/capture-release-content.sh http://localhost:8484/w/api.php 0.2.0 'Schema:Coverage' 'Coverage'
+```
+
+Merge the new files in a pull request. The tests read every file there, so they need no changes.
+
 ## Rules
 
 * Tag only with the script. A tag made by hand, or by `gh release create` without `--verify-tag`, has no bundle and

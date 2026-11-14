@@ -1,0 +1,179 @@
+{
+    "mainSubject": "sEpfwJLnxyQy6vR",
+    "subjects": {
+        "sEpfwJLnxyQy6vR": {
+            "label": "Rijksmuseum",
+            "schema": "Museum",
+            "statements": {
+                "Description": {
+                    "propertyType": "text",
+                    "value": [
+                        "Dutch national museum dedicated to arts and history, home to masterpieces of the Dutch Golden Age"
+                    ]
+                },
+                "Founded": {
+                    "propertyType": "number",
+                    "value": 1800
+                },
+                "City": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rEpfwJLoEB5UuQS",
+                            "target": "sEpfwJLnuwcxvuJ"
+                        }
+                    ]
+                },
+                "Website": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl"
+                    ]
+                },
+                "Specialization": {
+                    "propertyType": "text",
+                    "value": [
+                        "Dutch Golden Age",
+                        "Dutch History",
+                        "Asian Art"
+                    ]
+                },
+                "Annual visitors": {
+                    "propertyType": "number",
+                    "value": 2700000
+                },
+                "Admission fee": {
+                    "propertyType": "number",
+                    "value": 22.5
+                },
+                "Links": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.instagram.com/rijksmuseum",
+                        "https://twitter.com/rijksmuseum"
+                    ]
+                },
+                "Attendance figures": {
+                    "propertyType": "relation",
+                    "value": [
+                        {
+                            "id": "rBKCjDftnYgSdAJ",
+                            "target": "sEpfwJLAtndAaaA"
+                        },
+                        {
+                            "id": "rgFKbv2gQfcqLwF",
+                            "target": "sEpfwJLAtndBbbB"
+                        },
+                        {
+                            "id": "rNpGydZhJ74hga6",
+                            "target": "sEpfwJLAtndCccC"
+                        },
+                        {
+                            "id": "rkXKcYPREAYsRra",
+                            "target": "sEpfwJLAtndDddD"
+                        },
+                        {
+                            "id": "rNwQhP12V5e2fn6",
+                            "target": "sEpfwJLAtndEeeE"
+                        }
+                    ]
+                }
+            }
+        },
+        "sEpfwJLAtndAaaA": {
+            "schema": "Annual attendance",
+            "statements": {
+                "Year": {
+                    "propertyType": "number",
+                    "value": 2024
+                },
+                "Visitors": {
+                    "propertyType": "number",
+                    "value": 2500000
+                },
+                "Source": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2024"
+                    ]
+                }
+            }
+        },
+        "sEpfwJLAtndBbbB": {
+            "schema": "Annual attendance",
+            "statements": {
+                "Year": {
+                    "propertyType": "number",
+                    "value": 2023
+                },
+                "Visitors": {
+                    "propertyType": "number",
+                    "value": 2700000
+                },
+                "Source": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl/en/press/press-releases/rijksmuseum-rounds-off-historic-year"
+                    ]
+                }
+            }
+        },
+        "sEpfwJLAtndCccC": {
+            "schema": "Annual attendance",
+            "statements": {
+                "Year": {
+                    "propertyType": "number",
+                    "value": 2022
+                },
+                "Visitors": {
+                    "propertyType": "number",
+                    "value": 1760000
+                },
+                "Source": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2022"
+                    ]
+                }
+            }
+        },
+        "sEpfwJLAtndDddD": {
+            "schema": "Annual attendance",
+            "statements": {
+                "Year": {
+                    "propertyType": "number",
+                    "value": 2021
+                },
+                "Visitors": {
+                    "propertyType": "number",
+                    "value": 625000
+                },
+                "Source": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl/nl/pers/persberichten/het-rijksmuseum-in-2021"
+                    ]
+                }
+            }
+        },
+        "sEpfwJLAtndEeeE": {
+            "schema": "Annual attendance",
+            "statements": {
+                "Year": {
+                    "propertyType": "number",
+                    "value": 2020
+                },
+                "Visitors": {
+                    "propertyType": "number",
+                    "value": 675000
+                },
+                "Source": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://www.rijksmuseum.nl/en/press/press-releases/the-rijksmuseum-in-2020"
+                    ]
+                }
+            }
+        }
+    }
+}

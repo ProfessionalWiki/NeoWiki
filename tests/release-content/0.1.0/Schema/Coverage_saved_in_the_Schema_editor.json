@@ -1,0 +1,152 @@
+{
+	"description": "Every Property Type, with the Constraints, severities and defaults the demo Schemas lack",
+	"propertyDefinitions": {
+		"Names": {
+			"type": "monolingualText",
+			"description": "The name in each language",
+			"required": {
+				"severity": "error"
+			},
+			"multiple": true,
+			"uniqueLanguages": {
+				"severity": "error"
+			},
+			"minLength": 2,
+			"maxLength": {
+				"value": 200,
+				"severity": "error"
+			}
+		},
+		"Motto": {
+			"type": "monolingualText",
+			"description": "",
+			"required": false,
+			"default": [
+				{
+					"text": "Nihil",
+					"language": "la"
+				}
+			],
+			"multiple": false,
+			"uniqueLanguages": false
+		},
+		"Keywords": {
+			"type": "text",
+			"description": "",
+			"required": false,
+			"default": [
+				"general"
+			],
+			"multiple": true,
+			"uniqueItems": {
+				"severity": "error"
+			},
+			"minLength": {
+				"value": 3,
+				"severity": "error"
+			},
+			"maxLength": 40
+		},
+		"Websites": {
+			"type": "url",
+			"description": "",
+			"required": false,
+			"default": [
+				"https://example.org"
+			],
+			"multiple": true,
+			"uniqueItems": true
+		},
+		"Rating": {
+			"type": "number",
+			"description": "",
+			"required": false,
+			"default": 2.5,
+			"precision": 1,
+			"minimum": 0,
+			"maximum": {
+				"value": 5,
+				"severity": "error"
+			}
+		},
+		"Verified": {
+			"type": "boolean",
+			"description": "",
+			"required": {
+				"severity": "error"
+			},
+			"default": false
+		},
+		"Founded": {
+			"type": "date",
+			"description": "",
+			"required": false,
+			"default": [
+				"2000-01-01"
+			],
+			"minimum": {
+				"value": "1800-01-01",
+				"severity": "error"
+			},
+			"maximum": "2100-12-31"
+		},
+		"Last audit": {
+			"type": "dateTime",
+			"description": "",
+			"required": false,
+			"default": [
+				"2024-06-01T12:00:00Z"
+			],
+			"minimum": "2000-01-01T00:00:00Z",
+			"maximum": {
+				"value": "2099-12-31T23:59:59+01:00",
+				"severity": "error"
+			}
+		},
+		"Stage": {
+			"type": "select",
+			"description": "",
+			"required": false,
+			"default": [
+				"o1cov1aaaaaaaa1"
+			],
+			"options": {
+				"value": [
+					{
+						"id": "o1cov1aaaaaaaa1",
+						"label": "Idea"
+					},
+					{
+						"id": "o1cov1aaaaaaaa2",
+						"label": "Running"
+					},
+					{
+						"id": "o1cov1aaaaaaaa3",
+						"label": "Done"
+					}
+				],
+				"severity": "error"
+			},
+			"multiple": {
+				"value": false,
+				"severity": "error"
+			}
+		},
+		"Partners": {
+			"type": "relation",
+			"description": "",
+			"required": {
+				"severity": "error"
+			},
+			"targetSchemas": [
+				"Company",
+				"Institution",
+				{
+					"source": "otherwiki",
+					"name": "Organization"
+				}
+			],
+			"multiple": true
+		}
+	}
+}
