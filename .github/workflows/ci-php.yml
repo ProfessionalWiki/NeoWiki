@@ -17,6 +17,9 @@ on:
       - 'resources/**'
       - 'Neo/neojs/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: "PHPUnit: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
