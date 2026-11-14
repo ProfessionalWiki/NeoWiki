@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceParser;
 use Psr\Log\LoggerInterface;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
@@ -126,22 +127,45 @@ class SubjectContentDataDeserializer {
 	 * @return string[]
 	 */
 	public static function deserializeSubjectIds( string $json ): array {
-		// Cast so that content that is not a JSON object becomes an array without the key, leaving one
-		// thing to check.
-		$subjects = ( (array)json_decode( $json, true ) )['subjects'] ?? null;
-
-		if ( !is_array( $subjects ) ) {
-			return [];
-		}
-
 		// A Subject id that looks like a decimal integer comes back from json_decode as an int key.
 		// The local Source's grammar, and the same rule deserialize() applies: only local ids are
 		// stored in a local slot, and a qualified id is longer than the index column, so admitting one
 		// would truncate rather than record it.
 		return array_values( array_filter(
-			array_map( 'strval', array_keys( $subjects ) ),
+			array_map( 'strval', array_keys( self::subjectsIn( $json ) ) ),
 			SubjectId::isValidLocalId( ... )
 		) );
+	}
+
+	/**
+	 * The Schemas the Subjects in the JSON name, each once, read without deserializing the Subjects, so
+	 * that one that does not deserialize still has its Schema. A Subject naming no valid Schema is left
+	 * out.
+	 *
+	 * @return SchemaReference[]
+	 */
+	public function deserializeSchemaReferences( string $json ): array {
+		$references = [];
+
+		foreach ( self::subjectsIn( $json ) as $subject ) {
+			try {
+				$reference = $this->schemaReferenceParser->fromJson( $subject['schema'] ?? null );
+			} catch ( InvalidArgumentException ) {
+				continue;
+			}
+
+			$references[json_encode( $reference->toJson() )] = $reference;
+		}
+
+		return array_values( $references );
+	}
+
+	private static function subjectsIn( string $json ): array {
+		// Cast so that content that is not a JSON object becomes an array without the key, leaving one
+		// thing to check.
+		$subjects = ( (array)json_decode( $json, true ) )['subjects'] ?? null;
+
+		return is_array( $subjects ) ? $subjects : [];
 	}
 
 }
