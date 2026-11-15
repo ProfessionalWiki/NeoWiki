@@ -60,8 +60,6 @@ Subjects that share a page are related only through Relations, as Subjects on di
 - A set of target Schemas used by many relation Property Definitions is repeated on each
   ([#1627](https://github.com/ProfessionalWiki/NeoWiki/issues/1627)).
 - Cypher queries match Relations by property name, such as `` `Birth place` ``, not by verb phrases such as `BORN_IN`.
-- Renaming a relation Property Definition renames its graph edges and RDF predicates, as renaming any other Property
-  Definition already does ([ADR 17](017-names-as-identifiers.md)).
 - The Schema and Subject formats change incompatibly. NeoWiki is not in production, so that is acceptable.
 
 ## Out of Scope
