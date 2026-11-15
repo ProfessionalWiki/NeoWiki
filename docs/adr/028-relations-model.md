@@ -70,14 +70,18 @@ Subjects that share a page are related only through Relations, as Subjects on di
 ## Out of Scope
 
 - Targets narrower than a Schema, such as only the Persons who are painters
-- Relations to any Subject regardless of its Schema
-- Schema hierarchies, such as Person and Group below an Actor Schema
-  ([#1627](https://github.com/ProfessionalWiki/NeoWiki/issues/1627))
 - Cardinalities other than one or many
 - "No value" and "unknown value" markers ([#937](https://github.com/ProfessionalWiki/NeoWiki/issues/937))
 - Showing referencing Subjects on pages and Views ([#1528](https://github.com/ProfessionalWiki/NeoWiki/issues/1528)),
   and adding a referencing Subject from its target's editor
   ([#1530](https://github.com/ProfessionalWiki/NeoWiki/issues/1530))
+
+## Alternatives Considered
+
+- **A Schema hierarchy**, such as Person and Group below an Actor Schema that a relation Property Definition targets.
+  Not chosen for now: a list covers the cases raised, while a hierarchy raises open questions of its own, tracked in
+  [#1627](https://github.com/ProfessionalWiki/NeoWiki/issues/1627).
+- **Relations to any Subject**, whatever its Schema. Not chosen: no case calls for it.
 
 ## Related
 
