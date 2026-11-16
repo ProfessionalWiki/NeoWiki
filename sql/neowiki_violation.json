@@ -1,0 +1,146 @@
+[
+	{
+		"name": "neowiki_violation",
+		"comment": "One row per Violation of a Subject a page publishes, as validating it against its Schema finds them with every page readable. Written by jobs after the page or a Schema or relation target it depends on changes, so it can lag. Derived data: rebuildable from the pages at any time.",
+		"columns": [
+			{
+				"name": "nwv_id",
+				"type": "integer",
+				"options": {
+					"autoincrement": true,
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "nwv_page_id",
+				"comment": "Page whose subject slot holds the Subject",
+				"type": "integer",
+				"options": {
+					"notnull": true,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nwv_subject_id",
+				"comment": "Subject id, bare: a slot holds Subjects of this wiki only",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 32
+				}
+			},
+			{
+				"name": "nwv_schema",
+				"comment": "Name of the Subject's Schema, without its Source, cut to 255 bytes on a character boundary",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwv_property",
+				"comment": "Name of the property the Violation is about, cut to 255 bytes on a character boundary. Null for one about the Subject as a whole, such as a Schema that is not found.",
+				"type": "binary",
+				"options": {
+					"notnull": false,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwv_code",
+				"comment": "The Violation's code, such as required or relation-target-not-found",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwv_severity",
+				"comment": "error or warning",
+				"type": "binary",
+				"options": {
+					"notnull": true,
+					"length": 16
+				}
+			},
+			{
+				"name": "nwv_value_part",
+				"comment": "Index of the value part the Violation is about, null when it is about the whole value",
+				"type": "integer",
+				"options": {
+					"notnull": false,
+					"unsigned": true
+				}
+			},
+			{
+				"name": "nwv_target_id",
+				"comment": "Id of the relation target the Violation is about, null for one about no relation target. Lets a list show it only to readers of the target.",
+				"type": "binary",
+				"options": {
+					"notnull": false,
+					"length": 255
+				}
+			},
+			{
+				"name": "nwv_args",
+				"comment": "The Violation's message arguments, as a JSON list",
+				"type": "blob",
+				"options": {
+					"notnull": true,
+					"length": 65535
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "nwv_page_id",
+				"comment": "For replacing the Violations of one page",
+				"columns": [
+					"nwv_page_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nwv_severity_id",
+				"comment": "For listing the Violations of one severity",
+				"columns": [
+					"nwv_severity",
+					"nwv_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nwv_schema_id",
+				"comment": "For listing the Violations of the Subjects of one Schema",
+				"columns": [
+					"nwv_schema",
+					"nwv_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nwv_target_id",
+				"comment": "For finding the pages recorded with Violations about a relation target, to check again once it exists",
+				"columns": [
+					"nwv_target_id"
+				],
+				"unique": false
+			},
+			{
+				"name": "nwv_code_id",
+				"comment": "For listing the Violations of one code",
+				"columns": [
+					"nwv_code",
+					"nwv_id"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"nwv_id"
+		]
+	}
+]
