@@ -7,13 +7,37 @@
 			@keydown="onKeydown"
 		>
 			<li
+				role="option"
+				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--schema"
+				v-bind="rowState( SCHEMA_POSITION )"
+				@click="selectAndFocus( SCHEMA_POSITION )"
+			>
+				<CdxIcon
+					class="ext-neowiki-property-list__item__icon"
+					:icon="cdxIconSettings"
+				/>
+				<span class="ext-neowiki-property-list__item__text">
+					<span class="ext-neowiki-property-list__item__text__label">
+						{{ $i18n( 'neowiki-schema-editor-schema' ).text() }}
+					</span>
+					<span
+						v-if="schemaError"
+						class="ext-neowiki-property-list__item__text__error"
+					>
+						<CdxIcon
+							:icon="cdxIconError"
+							size="small"
+						/>
+						{{ schemaError }}
+					</span>
+				</span>
+			</li>
+			<li
 				v-if="props.showsLabelRow"
 				role="option"
 				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
-				:class="{ 'ext-neowiki-property-list__item--selected': isSubjectLabelSelected }"
-				:aria-selected="isSubjectLabelSelected"
-				:tabindex="isSubjectLabelTabStop ? 0 : -1"
-				@click="selectAndFocus( -1 )"
+				v-bind="rowState( LABEL_POSITION )"
+				@click="selectAndFocus( LABEL_POSITION )"
 			>
 				<CdxIcon
 					class="ext-neowiki-property-list__item__icon"
@@ -32,11 +56,9 @@
 				v-for="( property, index ) in propertyArray"
 				:key="property.name.toString()"
 				role="option"
-				class="ext-neowiki-property-list__item"
-				:class="{ 'ext-neowiki-property-list__item--selected': isSelected( property ) }"
-				:aria-selected="isSelected( property )"
-				:tabindex="isTabStop( property ) ? 0 : -1"
-				@click="selectAndFocus( index )"
+				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--property"
+				v-bind="rowState( propertyPosition( index ) )"
+				@click="selectAndFocus( propertyPosition( index ) )"
 			>
 				<CdxIcon
 					v-if="getPropertyIcon( property )"
@@ -96,24 +118,25 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDraggable, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconDraggable, cdxIconError, cdxIconSettings, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSortable } from '@/composables/useSortable.ts';
 import type { Icon } from '@wikimedia/codex-icons';
+import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 
 const props = defineProps<{
 	properties: PropertyDefinitionList;
-	/** The property whose row is selected. Without one, the Label row is, where it is shown. */
-	selectedPropertyName?: string;
+	selection: PropertyListRow;
 	showsLabelRow: boolean;
+	/** A problem with the Schema's own fields, shown on its row too: they are out of sight while another row is selected. */
+	schemaError?: string;
 }>();
 
 const emit = defineEmits<{
-	subjectLabelSelected: [];
-	propertySelected: [ name: PropertyName ];
+	select: [ row: PropertyListRow ];
 	addProperty: [];
 	propertyDeleted: [ name: PropertyName ];
 	propertyReordered: [ names: PropertyName[] ];
@@ -125,24 +148,52 @@ const listRef = ref<HTMLElement | null>( null );
 
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
 
-const isSubjectLabelSelected = computed( (): boolean => props.showsLabelRow && props.selectedPropertyName === undefined );
+// Positions count the rows as the list shows them: the Schema's first, then the Label row where it is shown, then
+// the properties.
+const SCHEMA_POSITION = 0;
+const LABEL_POSITION = 1;
 
-// Alone, the Label row has no other row to move to, so Tab passes the list.
-const isSubjectLabelTabStop = computed( (): boolean => isSubjectLabelSelected.value && propertyArray.value.length > 0 );
+const firstPropertyPosition = computed( (): number => props.showsLabelRow ? 2 : 1 );
 
-function isSelected( property: PropertyDefinition ): boolean {
-	return property.name.toString() === props.selectedPropertyName;
+const lastPosition = computed( (): number => firstPropertyPosition.value + propertyArray.value.length - 1 );
+
+function propertyPosition( index: number ): number {
+	return firstPropertyPosition.value + index;
 }
 
-// Without a Label row or a selection, the first property's row is the Tab stop.
-function isTabStop( property: PropertyDefinition ): boolean {
-	return isSelected( property ) ||
-		( !props.showsLabelRow && getSelectedIndex() === -1 && property === propertyArray.value[ 0 ] );
+function propertyIndex( position: number ): number {
+	return position - firstPropertyPosition.value;
 }
 
-const firstPropertyRow = computed( (): number => props.showsLabelRow ? 1 : 0 );
+function isPropertyPosition( position: number ): boolean {
+	return position >= firstPropertyPosition.value && position <= lastPosition.value;
+}
 
-const firstSelectableIndex = computed( (): number => props.showsLabelRow ? -1 : 0 );
+const selectedPosition = computed( (): number => {
+	const selection = props.selection;
+
+	if ( selection.kind === 'schema' ) {
+		return SCHEMA_POSITION;
+	}
+
+	if ( selection.kind === 'subjectLabel' ) {
+		return props.showsLabelRow ? LABEL_POSITION : -1;
+	}
+
+	const index = propertyArray.value.findIndex( ( property ) => property.name.toString() === selection.name );
+	return index === -1 ? -1 : propertyPosition( index );
+} );
+
+// The selected row is the list's Tab stop, except alone: it has no other row to move to, so Tab passes the list.
+function rowState( position: number ): { class: Record<string, boolean>; 'aria-selected': boolean; tabindex: number } {
+	const selected = position === selectedPosition.value;
+
+	return {
+		class: { 'ext-neowiki-property-list__item--selected': selected },
+		'aria-selected': selected,
+		tabindex: selected && lastPosition.value > SCHEMA_POSITION ? 0 : -1
+	};
+}
 
 function getPropertyIcon( property: PropertyDefinition ): Icon | undefined {
 	return componentRegistry.getIcon( property.type );
@@ -153,31 +204,27 @@ function describeType( type: string, required: boolean ): string {
 	return required ? typeLabel : mw.msg( 'neowiki-schema-editor-optional-property-type', typeLabel );
 }
 
-// Indexes below are into the properties, with the Label row before them as -1. Without a Label row, -1
-// is no row at all.
-function getSelectedIndex(): number {
-	return propertyArray.value.findIndex( isSelected );
-}
-
-function focusItem( index: number ): void {
-	const items = listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' );
-	items?.[ index + firstPropertyRow.value ]?.focus();
-}
-
 // The focus follows the selection the parent makes of it, which the parent may refuse.
-async function selectAndFocus( index: number ): Promise<void> {
-	if ( index === -1 ) {
-		emit( 'subjectLabelSelected' );
-	} else {
-		emit( 'propertySelected', propertyArray.value[ index ].name );
+async function selectAndFocus( position: number ): Promise<void> {
+	emit( 'select', rowAt( position ) );
+	await focusSelectedRow();
+}
+
+function rowAt( position: number ): PropertyListRow {
+	if ( position === SCHEMA_POSITION ) {
+		return SCHEMA_ROW;
 	}
 
-	await focusSelectedItem();
+	if ( isPropertyPosition( position ) ) {
+		return propertyRow( propertyArray.value[ propertyIndex( position ) ].name.toString() );
+	}
+
+	return LABEL_ROW;
 }
 
-async function focusSelectedItem(): Promise<void> {
+async function focusSelectedRow(): Promise<void> {
 	await nextTick();
-	focusItem( getSelectedIndex() );
+	listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' )[ selectedPosition.value ]?.focus();
 }
 
 function moveProperty( fromIndex: number, toIndex: number ): void {
@@ -187,34 +234,41 @@ function moveProperty( fromIndex: number, toIndex: number ): void {
 	emit( 'propertyReordered', names );
 }
 
+// Among the properties only: the rows above them stay where they are.
+function moveSelectedProperty( by: 1 | -1 ): void {
+	const position = selectedPosition.value;
+
+	if ( isPropertyPosition( position ) && isPropertyPosition( position + by ) ) {
+		moveProperty( propertyIndex( position ), propertyIndex( position ) + by );
+		focusSelectedRow();
+	}
+}
+
 function onKeydown( event: KeyboardEvent ): void {
-	const currentIndex = getSelectedIndex();
-	const lastIndex = propertyArray.value.length - 1;
+	const position = selectedPosition.value;
 
 	if ( event.key === 'ArrowDown' ) {
 		event.preventDefault();
-		if ( event.altKey && currentIndex > -1 && currentIndex < lastIndex ) {
-			moveProperty( currentIndex, currentIndex + 1 );
-			focusSelectedItem();
-		} else if ( !event.altKey && currentIndex < lastIndex ) {
-			selectAndFocus( currentIndex + 1 );
+		if ( event.altKey ) {
+			moveSelectedProperty( 1 );
+		} else if ( position < lastPosition.value ) {
+			selectAndFocus( position + 1 );
 		}
 	} else if ( event.key === 'ArrowUp' ) {
 		event.preventDefault();
-		if ( event.altKey && currentIndex > 0 ) {
-			moveProperty( currentIndex, currentIndex - 1 );
-			focusSelectedItem();
-		} else if ( !event.altKey && currentIndex > firstSelectableIndex.value ) {
-			selectAndFocus( currentIndex - 1 );
+		if ( event.altKey ) {
+			moveSelectedProperty( -1 );
+		} else if ( position > SCHEMA_POSITION ) {
+			selectAndFocus( position - 1 );
 		}
 	}
 }
 
 useSortable( listRef, {
-	draggable: '.ext-neowiki-property-list__item:not(.ext-neowiki-property-list__item--subject-label)',
+	draggable: '.ext-neowiki-property-list__item--property',
 	onReorder( oldIndex: number, newIndex: number ): void {
-		// SortableJS indexes count the Label row, which stays first, where it is shown.
-		moveProperty( oldIndex - firstPropertyRow.value, newIndex - firstPropertyRow.value );
+		// SortableJS indexes count the rows above the properties, which stay where they are.
+		moveProperty( propertyIndex( oldIndex ), propertyIndex( newIndex ) );
 	}
 } );
 </script>
@@ -246,8 +300,25 @@ useSortable( listRef, {
 			background-color: @background-color-progressive-subtle;
 		}
 
+		&--schema,
 		&--subject-label {
 			cursor: pointer;
+		}
+
+		/* Set apart from the rows of what the Schema's Subjects hold by a rule in the gap below it, inset as the rows'
+			content is, and in a grey lighter than lines that divide the dialog. Drawn outside the row, which has no
+			actions to clip. */
+		&--schema {
+			overflow: visible;
+			margin-block-end: @spacing-50;
+
+			&::after {
+				content: '';
+				position: absolute;
+				inset-block-start: calc( 100% + @spacing-25 );
+				inset-inline: @spacing-75;
+				border-block-start: @border-width-base @border-style-base @border-color-muted;
+			}
 		}
 
 		&--ghost {
@@ -296,6 +367,20 @@ useSortable( listRef, {
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
+			}
+
+			/* As a field's validation message, and wrapped rather than cut short: it says what to fix. */
+			&__error {
+				display: flex;
+				align-items: flex-start;
+				gap: @spacing-25;
+				font-size: @font-size-small;
+				color: @color-error;
+
+				.cdx-icon {
+					flex-shrink: 0;
+					color: @color-error;
+				}
 			}
 		}
 

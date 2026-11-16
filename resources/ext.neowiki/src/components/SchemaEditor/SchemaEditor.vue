@@ -3,25 +3,35 @@
 		class="ext-neowiki-schema-editor"
 		:start-pane="{ ...PROPERTY_LIST_SIZE, resizeLabel: $i18n( 'neowiki-schema-editor-resize-property-list' ).text() }"
 		:stacks-below-desktop="true"
-		:scrolls-with-dialog="scrollsWithDialog"
 		@keydown.capture="onKeydown"
 	>
 		<template #start>
 			<PropertyList
 				:properties="currentSchema.getPropertyDefinitions()"
-				:selected-property-name="selectedPropertyName"
+				:selection="selection"
 				:shows-label-row="!subjectsAreDependent"
-				@subject-label-selected="onSubjectLabelSelected"
-				@property-selected="onPropertySelected"
+				:schema-error="schemaError"
+				@select="moveSelectionTo"
 				@add-property="addProperty"
 				@property-deleted="onPropertyDeleted"
 				@property-reordered="onPropertyReordered"
 			/>
 		</template>
 
-		<div class="ext-neowiki-schema-editor__detail">
+		<div
+			ref="detail"
+			class="ext-neowiki-schema-editor__detail"
+		>
+			<!-- Named after the row, for assistive technology: the creator labels its name field "Name" alone. -->
+			<div
+				v-if="selection.kind === 'schema'"
+				role="group"
+				:aria-label="$i18n( 'neowiki-schema-editor-schema' ).text()"
+			>
+				<slot name="schema" />
+			</div>
 			<PropertyDefinitionEditor
-				v-if="selectedProperty !== undefined"
+				v-else-if="selectedProperty !== undefined"
 				ref="propertyDefinitionEditor"
 				:key="propertyEditorKey"
 				:property="selectedProperty as PropertyDefinition"
@@ -29,12 +39,6 @@
 				:select-name="selectedPropertyName === createdPropertyName"
 				@update:property-definition="onPropertyUpdated"
 			/>
-			<p
-				v-else-if="subjectsAreDependent"
-				class="ext-neowiki-schema-editor__no-properties"
-			>
-				{{ $i18n( 'neowiki-schema-editor-no-properties-dependent' ).text() }}
-			</p>
 			<template v-else>
 				<h3 class="ext-neowiki-schema-editor__subject-label-heading">
 					{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
@@ -50,8 +54,9 @@
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition';
 import { Schema } from '@/domain/Schema.ts';
-import { ComponentPublicInstance, computed, provide, ref, watch } from 'vue';
+import { ComponentPublicInstance, computed, nextTick, provide, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
+import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import EditorPanes, { type StartPaneOptions } from '@/components/common/EditorPanes.vue';
@@ -61,30 +66,34 @@ import { invalidSelectOption } from '@/components/SchemaEditor/Property/selectOp
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import { propertyNameProblemBeside, propertyNameProblemsInSchema } from '@/domain/propertyNameRules.ts';
 import { propertyNameProblemMessage } from '@/components/SchemaEditor/propertyNameProblemMessage.ts';
+import { focusFirstValueControl } from '@/components/common/valueControlFocus.ts';
 
 const props = withDefaults( defineProps<{
 	initialSchema: Schema;
-	/**
-	 * The Schema's description, owned by the host: the editor covers the property
-	 * definitions, while creating and editing present the description
-	 * differently. Optional, because a caller that does not present it at all
-	 * should keep the one the Schema arrived with rather than clear it.
-	 */
-	description?: string;
 	/**
 	 * Set by a host that decides it, such as the Schema creator. Null keeps
 	 * what the Schema declares.
 	 */
 	subjectsAreDependent?: boolean | null;
-	/** Set by a host that scrolls the editor in its dialog together with content of its own, as the Schema creator does. */
-	scrollsWithDialog?: boolean;
+	/** Opens on the Schema's own row, for a host whose fields there come first. */
+	opensOnSchema?: boolean;
+	/** A problem with the host's fields, shown on the Schema's row too: they are out of sight while another row is selected. */
+	schemaError?: string;
 }>(), {
-	description: undefined,
-	subjectsAreDependent: null
+	subjectsAreDependent: null,
+	schemaError: undefined
 } );
 
 const emit = defineEmits<{
 	change: [];
+}>();
+
+defineSlots<{
+	/**
+	 * The fields of the Schema as a whole, shown while the Schema's own row is selected. The host's: creating and
+	 * editing a Schema offer different fields.
+	 */
+	schema(): unknown;
 }>();
 
 // One preference across all five dialogs this editor appears in: same two columns, and
@@ -103,19 +112,44 @@ const currentSchema = ref<Schema>( props.initialSchema );
 const subjectsAreDependent = computed( (): boolean =>
 	props.subjectsAreDependent ?? currentSchema.value.subjectsAreDependent() );
 
-// Undefined while the Label row is selected, or, without a Label row, while no property is.
-const selectedPropertyName = ref<string | undefined>();
+const selection = ref<PropertyListRow>( openingRow() );
+
+const selectedPropertyName = computed( (): string | undefined => propertyNameOf( selection.value ) );
+
+function isSelected( row: PropertyListRow ): boolean {
+	return row.kind === selection.value.kind && propertyNameOf( row ) === selectedPropertyName.value;
+}
+
+function propertyNameOf( row: PropertyListRow ): string | undefined {
+	return row.kind === 'property' ? row.name : undefined;
+}
 
 // Gives each selected property an editor of its own. Not the name: renaming the property
 // would then rebuild the editor on every keystroke, moving the caret to the end of the
 // name and dropping what the editor's fields hold.
 const propertyEditorKey = ref( 0 );
 
-function selectProperty( name: string | undefined ): void {
-	if ( name !== selectedPropertyName.value ) {
-		selectedPropertyName.value = name;
+function select( row: PropertyListRow ): void {
+	if ( !isSelected( row ) ) {
+		selection.value = row;
 		propertyEditorKey.value++;
 	}
+}
+
+function openingRow(): PropertyListRow {
+	return props.opensOnSchema ? SCHEMA_ROW : defaultRow();
+}
+
+// The first property's row, else the Label row, else the Schema's own, which is always there. Dependent Subjects
+// have no label.
+function defaultRow(): PropertyListRow {
+	const firstProperty = [ ...currentSchema.value.getPropertyDefinitions() ][ 0 ];
+
+	if ( firstProperty !== undefined ) {
+		return propertyRow( firstProperty.name.toString() );
+	}
+
+	return subjectsAreDependent.value ? SCHEMA_ROW : LABEL_ROW;
 }
 
 // The property added last, whose generated name the editor selects for replacement.
@@ -123,9 +157,28 @@ const createdPropertyName = ref<string | undefined>();
 
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
-	const firstProperty = [ ...schema.getPropertyDefinitions() ][ 0 ];
-	selectProperty( firstProperty?.name.toString() );
-}, { immediate: true } );
+	select( openingRow() );
+} );
+
+const detail = ref<HTMLElement | null>( null );
+
+// The first of the host's fields takes the focus once the Schema's row is chosen, as a property's name does when its
+// editor mounts: a tick after the change renders, after the list has focused the row. Not on opening, which is no
+// change: the host decides where the focus goes then.
+watch( selection, async ( row ) => {
+	if ( row.kind !== 'schema' ) {
+		return;
+	}
+
+	await nextTick();
+	focusSchemaFields();
+} );
+
+function focusSchemaFields(): void {
+	if ( detail.value !== null ) {
+		focusFirstValueControl( detail.value );
+	}
+}
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
 
@@ -147,17 +200,9 @@ const otherPropertyNames = computed( (): string[] =>
 	propertyNames.value.filter( ( name ) => name !== selectedPropertyName.value )
 );
 
-function onSubjectLabelSelected(): void {
-	moveSelectionTo( undefined );
-}
-
-function onPropertySelected( name: PropertyName ): void {
-	moveSelectionTo( name.toString() );
-}
-
-function moveSelectionTo( name: string | undefined ): void {
-	if ( name !== selectedPropertyName.value ) {
-		leaveSelectedProperty( () => selectProperty( name ) );
+function moveSelectionTo( row: PropertyListRow ): void {
+	if ( !isSelected( row ) ) {
+		leaveSelectedProperty( () => select( row ) );
 	}
 }
 
@@ -179,7 +224,7 @@ function addProperty(): void {
 		const newProperty = createNewProperty();
 		currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
 		createdPropertyName.value = newProperty.name.toString();
-		selectProperty( newProperty.name.toString() );
+		select( propertyRow( newProperty.name.toString() ) );
 		emit( 'change' );
 	} );
 }
@@ -222,10 +267,7 @@ function onPropertyDeleted( name: PropertyName ): void {
 	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
 
 	if ( selectedPropertyName.value === name.toString() ) {
-		const properties = [ ...currentSchema.value.getPropertyDefinitions() ];
-		selectProperty( properties.length > 0 ?
-			properties[ 0 ].name.toString() :
-			undefined );
+		select( defaultRow() );
 	}
 
 	emit( 'change' );
@@ -239,7 +281,8 @@ function onPropertyReordered( names: PropertyName[] ): void {
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
 
-	selectedPropertyName.value = updatedProperty.name.toString();
+	// Renamed in place: the editor showing it stays.
+	selection.value = propertyRow( updatedProperty.name.toString() );
 	emit( 'change' );
 }
 
@@ -275,6 +318,11 @@ export interface SchemaEditorExposes {
 	getSchema: () => Schema;
 	saveBlocker: () => SaveBlocker | null;
 	revealErrors: () => void;
+	/**
+	 * Selects the Schema's own row, where it is not, and focuses its first field: for a host to bring its fields
+	 * into view, as when it refuses a save over one of them.
+	 */
+	showSchema: () => void;
 }
 
 /**
@@ -330,19 +378,22 @@ const errorsRevealed = ref( false );
 
 provide( ErrorsRevealedKey, errorsRevealed );
 
-/** For the host to call when it refuses a save. */
+/** For the host to call when it refuses a save. Selects the property the save is refused over, so its errors show. */
 const revealErrors = (): void => {
 	errorsRevealed.value = true;
+
+	const blocker = saveBlocker();
+
+	if ( blocker !== null ) {
+		moveSelectionTo( propertyRow( blocker.propertyName ) );
+	}
 };
 
 defineExpose<SchemaEditorExposes>( {
-	getSchema: function(): Schema {
-		const schema = currentSchema.value as Schema;
-
-		return props.description === undefined ? schema : schema.withDescription( props.description );
-	},
+	getSchema: (): Schema => currentSchema.value as Schema,
 	saveBlocker,
-	revealErrors
+	revealErrors,
+	showSchema: (): void => isSelected( SCHEMA_ROW ) ? focusSchemaFields() : moveSelectionTo( SCHEMA_ROW )
 } );
 </script>
 
@@ -372,6 +423,11 @@ defineExpose<SchemaEditorExposes>( {
 					border-start-start-radius: 0;
 					border-end-start-radius: 0;
 				}
+
+				/* As far from the column divider's line, in the middle of its track, as from the dialog's edge. */
+				.ext-neowiki-property-list__item--schema::after {
+					inset-inline: @spacing-150 calc( @spacing-150 - @spacing-75 / 2 );
+				}
 			}
 		}
 
@@ -383,11 +439,6 @@ defineExpose<SchemaEditorExposes>( {
 
 		&__subject-label-help {
 			margin: @spacing-50 0 0;
-		}
-
-		&__no-properties {
-			margin: 0;
-			color: @color-subtle;
 		}
 	}
 
@@ -413,6 +464,14 @@ defineExpose<SchemaEditorExposes>( {
 
 				.ext-neowiki-property-list__item {
 					border-radius: 0;
+				}
+
+				.ext-neowiki-property-list__item--schema {
+					margin-block-end: 0;
+
+					&::after {
+						display: none;
+					}
 				}
 
 				.ext-neowiki-property-list__add-item {

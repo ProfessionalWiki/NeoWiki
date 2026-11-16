@@ -18,20 +18,26 @@ const NEW_SCHEMA_NAME = 'Company';
 const DEBOUNCE_DELAY = 300;
 
 // The reason the stubbed editor reports for holding the save, the Schema it holds, and whether it
-// was asked to reveal its errors. Reset per test by the beforeEach below.
+// was asked to reveal its errors or to show the Schema's row. Reset per test by the beforeEach below.
 let editorSaveBlocker: SaveBlocker | null = null;
 let editorSchema: Schema;
 let editorErrorsRevealed = false;
+let editorShowedSchema = false;
 
+// Shows the creator's fields for the Schema's own row, as the real editor does while that row is selected.
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
-	template: '<div class="schema-editor-stub"></div>',
+	template: '<div class="schema-editor-stub"><slot name="schema" /></div>',
 	props: {
 		initialSchema: { type: Object, required: true },
 		subjectsAreDependent: { type: Boolean, default: undefined },
+		schemaError: { type: String, default: undefined },
 	},
 	emits: [ 'change' ],
 	methods: {
+		showSchema(): void {
+			editorShowedSchema = true;
+		},
 		getSchema(): Schema {
 			return editorSchema;
 		},
@@ -70,12 +76,11 @@ describe( 'SchemaCreator', () => {
 						template: '<input class="cdx-text-input-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value ); $emit( \'input\' )" />',
 						props: [ 'modelValue', 'placeholder' ],
 						emits: [ 'update:modelValue', 'input' ],
-						// A duplicate's name is focused, as Codex's focus() does.
-						methods: {
-							focus(): void {
-								( this.$el as HTMLInputElement ).focus();
-							},
-						},
+					},
+					CdxTextArea: {
+						template: '<textarea class="cdx-text-area-stub" :value="modelValue" @input="$emit( \'update:modelValue\', $event.target.value )"></textarea>',
+						props: [ 'modelValue', 'placeholder' ],
+						emits: [ 'update:modelValue' ],
 					},
 				},
 				provide: {
@@ -93,6 +98,7 @@ describe( 'SchemaCreator', () => {
 		editorSaveBlocker = null;
 		editorSchema = newSchema( { title: '', description: '', properties: new PropertyDefinitionList( [] ) } );
 		editorErrorsRevealed = false;
+		editorShowedSchema = false;
 		vi.useFakeTimers();
 
 		setupMwMock( {
@@ -163,6 +169,17 @@ describe( 'SchemaCreator', () => {
 		expect( field.props( 'status' ) ).toBe( 'error' );
 	} );
 
+	it( 'hands the editor a taken name\'s error, for the Schema\'s row, which another row may hide the field from', async () => {
+		schemaStore.schemaNameExists = vi.fn().mockResolvedValue( true );
+		const wrapper = mountComponent();
+
+		await wrapper.find( '.cdx-text-input-stub' ).setValue( EXISTING_SCHEMA_NAME );
+		vi.advanceTimersByTime( DEBOUNCE_DELAY );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorStub ).props( 'schemaError' ) ).toBe( 'neowiki-schema-creator-name-taken' );
+	} );
+
 	it( 'does not check for duplicates before debounce delay', async () => {
 		const wrapper = mountComponent();
 
@@ -221,7 +238,42 @@ describe( 'SchemaCreator', () => {
 		expect( field.props( 'status' ) ).toBe( 'default' );
 	} );
 
+	it( 'shows the Schema\'s row a task after it mounts, which focuses the name', () => {
+		mountComponent();
+
+		vi.runAllTimers();
+
+		expect( editorShowedSchema ).toBe( true );
+	} );
+
 	describe( 'validate', () => {
+		it( 'shows the Schema\'s row when the name is missing', async () => {
+			const wrapper = mountComponent();
+
+			await ( wrapper.vm as any ).validate();
+
+			expect( editorShowedSchema ).toBe( true );
+		} );
+
+		it( 'shows the Schema\'s row when the name is taken', async () => {
+			schemaStore.schemaNameExists = vi.fn().mockResolvedValue( true );
+			const wrapper = mountComponent();
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( EXISTING_SCHEMA_NAME );
+
+			await ( wrapper.vm as any ).validate();
+
+			expect( editorShowedSchema ).toBe( true );
+		} );
+
+		it( 'leaves the row selected where it is when the name is free', async () => {
+			const wrapper = mountComponent();
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+			await ( wrapper.vm as any ).validate();
+
+			expect( editorShowedSchema ).toBe( false );
+		} );
+
 		it( 'returns false and shows error when name is empty', async () => {
 			const wrapper = mountComponent();
 
@@ -273,9 +325,8 @@ describe( 'SchemaCreator', () => {
 		it( 'returns the schema with the name and description that were entered', async () => {
 			const wrapper = mountComponent();
 
-			const [ nameInput, descriptionInput ] = wrapper.findAll( '.cdx-text-input-stub' );
-			await nameInput.setValue( NEW_SCHEMA_NAME );
-			await descriptionInput.setValue( 'What this schema is for' );
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+			await wrapper.find( '.cdx-text-area-stub' ).setValue( 'What this schema is for' );
 			await flushPromises();
 
 			const schema = ( wrapper.vm as any ).getSchema() as Schema;
@@ -445,8 +496,7 @@ describe( 'SchemaCreator', () => {
 	it( 'reports a change when the description is typed, so the dialog can offer to save', async () => {
 		const wrapper = mountComponent();
 
-		const descriptionInput = wrapper.findAll( '.cdx-text-input-stub' )[ 1 ];
-		await descriptionInput.setValue( 'Something worth saving' );
+		await wrapper.find( '.cdx-text-area-stub' ).setValue( 'Something worth saving' );
 
 		expect( wrapper.emitted( 'change' ) ).toBeTruthy();
 	} );

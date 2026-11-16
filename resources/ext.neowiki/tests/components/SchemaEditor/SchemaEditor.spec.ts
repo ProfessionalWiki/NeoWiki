@@ -1,6 +1,7 @@
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, onTestFinished } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
+import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -12,7 +13,7 @@ import { newSchema } from '@/TestHelpers.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
-import { createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
+import { afterQueuedTasks, createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
@@ -36,11 +37,17 @@ const PropertyDefinitionEditorStub = defineComponent( {
 	},
 } );
 
-function createWrapper( schema: Schema, description = '' ): VueWrapper {
+// What a host puts in the pane of the Schema's own row.
+const SCHEMA_FIELDS = '<div class="schema-fields"><p>The fields of the Schema</p><input class="schema-name"></div>';
+
+function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
-			description,
+			...props,
+		},
+		slots: {
+			schema: SCHEMA_FIELDS,
 		},
 		global: {
 			mocks: {
@@ -52,6 +59,22 @@ function createWrapper( schema: Schema, description = '' ): VueWrapper {
 			},
 		},
 	} );
+}
+
+// With the real property list, which focuses the row it is asked to select, attached to the document for the focus.
+function createWrapperWithPropertyList( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
+	const wrapper = mount( SchemaEditor, {
+		props: { initialSchema: schema, ...props },
+		slots: { schema: SCHEMA_FIELDS },
+		attachTo: document.body,
+		global: {
+			provide: NeoWikiTestServices.getServices(),
+			mocks: { $i18n: createI18nMock() },
+			stubs: { PropertyDefinitionEditor: PropertyDefinitionEditorStub },
+		},
+	} );
+	onTestFinished( () => wrapper.unmount() );
+	return wrapper;
 }
 
 function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
@@ -79,18 +102,21 @@ function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
 
 const LABEL_PANE_TEXT = 'neowiki-schema-editor-subject-label-help';
 
-function selectedPropertyName( wrapper: VueWrapper ): string | undefined {
-	return wrapper.findComponent( { name: 'PropertyList' } ).props( 'selectedPropertyName' );
+function selectedRow( wrapper: VueWrapper ): PropertyListRow {
+	return wrapper.findComponent( { name: 'PropertyList' } ).props( 'selection' );
 }
 
-function afterQueuedTasks(): Promise<void> {
-	return new Promise( ( resolve ) => {
-		setTimeout( resolve );
-	} );
+function selectedPropertyName( wrapper: VueWrapper ): string | undefined {
+	const row = selectedRow( wrapper );
+	return row.kind === 'property' ? row.name : undefined;
+}
+
+function showsSchemaFields( wrapper: VueWrapper ): boolean {
+	return wrapper.find( '.schema-fields' ).exists();
 }
 
 async function selectProperty( wrapper: VueWrapper, name: string ): Promise<void> {
-	await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( name ) );
+	await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', propertyRow( name ) );
 	await flushPromises();
 }
 
@@ -111,6 +137,7 @@ describe( 'SchemaEditor', () => {
 			config: { get: vi.fn( ( key: string ) => ( { wgUserLanguage: 'en', wgContentLanguage: 'en' } as Record<string, string> )[ key ] ) },
 			language: { bcp47: ( code: string ) => code },
 			notify: vi.fn(),
+			msg: vi.fn( ( key: string ) => key ),
 			message: vi.fn( ( str ) => ( {
 				text: () => messages[ str ] ?? str,
 				parse: () => messages[ str ] ?? str,
@@ -144,9 +171,86 @@ describe( 'SchemaEditor', () => {
 
 		const wrapper = createWrapper( schema );
 
-		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
+		expect( selectedRow( wrapper ) ).toEqual( LABEL_ROW );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
+	} );
+
+	it( 'opens on the Schema\'s row for a host that asks, showing the host\'s fields', () => {
+		const wrapper = createWrapper( newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+		} ), { opensOnSchema: true } );
+
+		expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+		expect( showsSchemaFields( wrapper ) ).toBe( true );
+		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
+		expect( wrapper.text() ).not.toContain( LABEL_PANE_TEXT );
+	} );
+
+	it( 'names the host\'s fields after the Schema\'s row, for a field whose label leaves out whose it is', () => {
+		const wrapper = createWrapper( newSchema(), { opensOnSchema: true } );
+
+		const group = wrapper.get( '[role="group"]' );
+
+		expect( group.attributes( 'aria-label' ) ).toBe( 'neowiki-schema-editor-schema' );
+		expect( group.find( '.schema-fields' ).exists() ).toBe( true );
+	} );
+
+	it( 'shows the host\'s fields only while the Schema\'s row is selected', async () => {
+		const wrapper = createWrapper( newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+		} ) );
+		const shownBefore = showsSchemaFields( wrapper );
+
+		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', SCHEMA_ROW );
+
+		expect( shownBefore ).toBe( false );
+		expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+		expect( showsSchemaFields( wrapper ) ).toBe( true );
+	} );
+
+	it( 'focuses the first of the host\'s fields once the Schema\'s row is clicked, as a property\'s name is', async () => {
+		const wrapper = createWrapperWithPropertyList( newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+		} ) );
+
+		await wrapper.get( '.ext-neowiki-property-list__item--schema' ).trigger( 'click' );
+		await flushPromises();
+
+		expect( document.activeElement ).toBe( wrapper.get( '.schema-name' ).element );
+	} );
+
+	it( 'focuses the first of the host\'s fields when the host asks for the Schema\'s row it is on', async () => {
+		const wrapper = createWrapperWithPropertyList( newSchema(), { opensOnSchema: true } );
+
+		( wrapper.vm as unknown as SchemaEditorExposes ).showSchema();
+
+		expect( document.activeElement ).toBe( wrapper.get( '.schema-name' ).element );
+	} );
+
+	it( 'leaves the focus to the host when it opens on the Schema\'s row', async () => {
+		const wrapper = createWrapperWithPropertyList( newSchema(), { opensOnSchema: true } );
+		await flushPromises();
+
+		expect( document.activeElement ).not.toBe( wrapper.get( '.schema-name' ).element );
+	} );
+
+	it( 'hands the list a problem with the host\'s fields, for the Schema\'s row', () => {
+		const wrapper = createWrapper( newSchema(), { schemaError: 'A schema with this name already exists.' } );
+
+		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'schemaError' ) )
+			.toBe( 'A schema with this name already exists.' );
+	} );
+
+	it( 'shows the Schema\'s row when the host asks', async () => {
+		const wrapper = createWrapper( newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+		} ) );
+
+		( wrapper.vm as unknown as SchemaEditorExposes ).showSchema();
+		await nextTick();
+
+		expect( showsSchemaFields( wrapper ) ).toBe( true );
 	} );
 
 	it( 'opens a property named Label on its definition rather than on the label pane', () => {
@@ -163,9 +267,9 @@ describe( 'SchemaEditor', () => {
 			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
 		} ) );
 
-		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'subjectLabelSelected' );
+		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', LABEL_ROW );
 
-		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
+		expect( selectedRow( wrapper ) ).toEqual( LABEL_ROW );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 		expect( wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).exists() ).toBe( false );
 	} );
@@ -222,7 +326,7 @@ describe( 'SchemaEditor', () => {
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
 
-		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'thirdProp' ).name );
+		await propertyList.vm.$emit( 'select', propertyRow( 'thirdProp' ) );
 		await propertyList.vm.$emit( 'propertyDeleted', schema.getPropertyDefinition( 'firstProp' ).name );
 
 		expect( selectedPropertyName( wrapper ) ).toBe( 'thirdProp' );
@@ -235,58 +339,38 @@ describe( 'SchemaEditor', () => {
 
 		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyDeleted', new PropertyName( 'Alpha' ) );
 
-		expect( selectedPropertyName( wrapper ) ).toBe( undefined );
+		expect( selectedRow( wrapper ) ).toEqual( LABEL_ROW );
 		expect( wrapper.text() ).toContain( LABEL_PANE_TEXT );
 	} );
 
-	it( 'builds the schema with the description supplied by the host', () => {
-		const schema = newSchema( {
-			title: 'TestSchema',
-			description: 'The description the editor was handed',
-			properties: new PropertyDefinitionList( [] ),
-		} );
+	it( 'returns to the Schema\'s row when the last property of a Schema of Dependent Subjects is deleted', async () => {
+		const wrapper = createWrapper( newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+			subjectsAreDependent: true,
+		} ) );
 
-		const wrapper = createWrapper( schema, 'The description the host now holds' );
+		await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyDeleted', new PropertyName( 'Alpha' ) );
 
-		const built = ( wrapper.vm as any ).getSchema() as Schema;
-		expect( built.getDescription() ).toBe( 'The description the host now holds' );
-		expect( built.getName() ).toBe( 'TestSchema' );
+		expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+		expect( showsSchemaFields( wrapper ) ).toBe( true );
 	} );
 
-	it( 'keeps the schema its own description when the host presents none', () => {
+	it( 'keeps the Schema\'s name and description when a property is edited', async () => {
 		const schema = newSchema( {
 			title: 'TestSchema',
 			description: 'The description it arrived with',
-			properties: new PropertyDefinitionList( [] ),
-		} );
-
-		const wrapper = mount( SchemaEditor, {
-			props: { initialSchema: schema },
-			global: {
-				mocks: { $i18n: createI18nMock() },
-				stubs: { PropertyList: true, PropertyDefinitionEditor: true },
-			},
-		} );
-
-		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() )
-			.toBe( 'The description it arrived with' );
-	} );
-
-	it( 'keeps the host description when a property is edited', async () => {
-		const schema = newSchema( {
-			title: 'TestSchema',
-			description: '',
 			properties: new PropertyDefinitionList( [
 				createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName } ),
 			] ),
 		} );
 
-		const wrapper = createWrapper( schema, 'Held by the host' );
-		const editor = wrapper.findComponent( { name: 'PropertyDefinitionEditor' } );
+		const wrapper = createWrapper( schema );
 		const updatedProperty = createPropertyDefinitionFromJson( 'firstProp', { type: TextType.typeName, description: 'Updated' } );
-		await editor.vm.$emit( 'update:propertyDefinition', updatedProperty );
+		await wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit( 'update:propertyDefinition', updatedProperty );
 
-		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( 'Held by the host' );
+		const built = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
+		expect( built.getDescription() ).toBe( 'The description it arrived with' );
+		expect( built.getName() ).toBe( 'TestSchema' );
 	} );
 
 	it( 'keeps the declaration that the subjects are dependent when a property is edited', async () => {
@@ -329,10 +413,11 @@ describe( 'SchemaEditor', () => {
 			expect( labelRowShown( wrapper ) ).toBe( false );
 		} );
 
-		it( 'gives way to a request for property definitions while a Schema of Dependent Subjects has none', () => {
+		it( 'gives way to the Schema\'s row while a Schema of Dependent Subjects has no properties', () => {
 			const wrapper = createWrapper( newSchema( { subjectsAreDependent: true } ) );
 
-			expect( wrapper.find( '.ext-neowiki-schema-editor__detail' ).text() ).toBe( 'neowiki-schema-editor-no-properties-dependent' );
+			expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+			expect( showsSchemaFields( wrapper ) ).toBe( true );
 		} );
 	} );
 
@@ -486,7 +571,7 @@ describe( 'SchemaEditor', () => {
 		const wrapper = createWrapper( schema );
 		const propertyList = wrapper.findComponent( { name: 'PropertyList' } );
 
-		await propertyList.vm.$emit( 'propertySelected', schema.getPropertyDefinition( 'secondProp' ).name );
+		await propertyList.vm.$emit( 'select', propertyRow( 'secondProp' ) );
 
 		expect( wrapper.emitted( 'change' ) ).toBeUndefined();
 	} );
@@ -534,7 +619,7 @@ describe( 'SchemaEditor', () => {
 			const wrapper = createWrapperWithPropertyEditor( schemaWithScore() );
 			await reportUnparseableNumber( wrapper.findComponent( NumberInput ).find( 'input' ) );
 
-			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Score' ) );
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', propertyRow( 'Score' ) );
 			await flushPromises();
 
 			expect( saveBlocker( wrapper ) ).toEqual( {
@@ -583,7 +668,15 @@ describe( 'SchemaEditor', () => {
 		it( 'stays on the property when the Label row is chosen', async () => {
 			const wrapper = await editorHoldingUnreadableScore();
 
-			await propertyList( wrapper ).vm.$emit( 'subjectLabelSelected' );
+			await propertyList( wrapper ).vm.$emit( 'select', LABEL_ROW );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Score' );
+		} );
+
+		it( 'stays on the property when the Schema\'s row is chosen', async () => {
+			const wrapper = await editorHoldingUnreadableScore();
+
+			await propertyList( wrapper ).vm.$emit( 'select', SCHEMA_ROW );
 
 			expect( selectedPropertyName( wrapper ) ).toBe( 'Score' );
 		} );
@@ -844,7 +937,7 @@ describe( 'SchemaEditor', () => {
 		it( 'names an incomplete property while the label pane is shown', async () => {
 			const wrapper = createWrapper( schemaWith( relationPropertyWithoutTarget( 'Maker' ) ) );
 
-			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'subjectLabelSelected' );
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', LABEL_ROW );
 
 			expect( saveBlocker( wrapper )?.propertyName ).toBe( 'Maker' );
 		} );
@@ -895,6 +988,19 @@ describe( 'SchemaEditor', () => {
 				expect( wrapper.text() ).toContain( 'Target schema is required.' );
 			} );
 
+			it( 'selects the property whose definition is incomplete, so its errors show', async () => {
+				const wrapper = createWrapperWithPropertyEditor( schemaWith(
+					newNumberProperty( { name: 'Score' } ),
+					relationPropertyWithoutTarget( 'Maker' ),
+				) );
+
+				await revealErrors( wrapper );
+				await flushPromises();
+
+				expect( selectedPropertyName( wrapper ) ).toBe( 'Maker' );
+				expect( wrapper.text() ).toContain( 'Target schema is required.' );
+			} );
+
 			// Only the selected property has an editor mounted, so the one for this property is
 			// created after the errors were revealed.
 			it( 'shows the missing target of a relation property selected afterwards', async () => {
@@ -904,7 +1010,7 @@ describe( 'SchemaEditor', () => {
 				) );
 				await revealErrors( wrapper );
 
-				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertySelected', new PropertyName( 'Maker' ) );
+				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', propertyRow( 'Maker' ) );
 				await flushPromises();
 
 				expect( wrapper.text() ).toContain( 'Target schema is required.' );

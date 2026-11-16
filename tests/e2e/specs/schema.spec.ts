@@ -10,7 +10,8 @@ test( 'a new Schema saves a Relation property with its target Schema', async ( {
 	await page.goto( 'index.php?title=Special:Schemas' );
 	await page.getByRole( 'button', { name: 'Create schema' } ).click();
 	const dialog = page.getByRole( 'dialog', { name: 'Create schema' } );
-	await dialog.getByRole( 'textbox', { name: 'Schema name' } ).fill( schemaName );
+	// The Schema's name, in the pane of the Schema row the dialog opens on.
+	await dialog.getByRole( 'textbox', { name: 'Name', exact: true } ).fill( schemaName );
 	await dialog.getByRole( 'button', { name: 'Add property definition' } ).click();
 	await dialog.getByRole( 'textbox', { name: 'Name', exact: true } ).fill( 'Employer' );
 	await dialog.getByRole( 'combobox' ).first().click();
@@ -83,18 +84,18 @@ test( 'the property editor fades its pane by as much as the content runs past ea
 	await expect.poll( () => fadeDepths( pane ) ).toEqual( { start: 24, end: 0 } );
 } );
 
-test( 'the Create schema dialog scrolls with the wheel over its editor', async ( { page } ) => {
+test( 'the Create schema dialog scrolls its property editor with the wheel', async ( { page } ) => {
 	await page.setViewportSize( { width: 1280, height: 600 } );
 
 	await page.goto( 'index.php?title=Special:Schemas' );
 	await page.getByRole( 'button', { name: 'Create schema' } ).click();
 	const dialog = page.getByRole( 'dialog', { name: 'Create schema' } );
 	await dialog.getByRole( 'button', { name: 'Add property definition' } ).click();
-	const body = dialog.locator( '.cdx-dialog__body' );
-	const scrollTop = (): Promise<number> => body.evaluate( ( element ) => element.scrollTop );
+	const pane = dialog.locator( '.ext-neowiki-editor-panes__pane' ).last();
+	const scrollTop = (): Promise<number> => pane.evaluate( ( element ) => element.scrollTop );
 
-	// What makes the test mean anything: the dialog has more to show than fits.
-	expect( await body.evaluate( ( element ) => element.scrollHeight > element.clientHeight ) ).toBe( true );
+	// What makes the test mean anything: the property editor has more to show than fits.
+	expect( await pane.evaluate( ( element ) => element.scrollHeight > element.clientHeight ) ).toBe( true );
 
 	await dialog.getByRole( 'textbox', { name: 'Name', exact: true } ).hover();
 	const scrollTopBefore = await scrollTop();

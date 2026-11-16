@@ -72,6 +72,13 @@ export async function chooseFromLanguageList( languageInput: VueWrapper | DOMWra
  * link, its own text. Text hidden from assistive technology counts for nothing, and an element with an `aria-label`
  * of its own counts by that.
  */
+/** Resolves once the tasks queued so far have run, such as the one a component waits for Codex's own focusing in. */
+export function afterQueuedTasks(): Promise<void> {
+	return new Promise( ( resolve ) => {
+		setTimeout( resolve );
+	} );
+}
+
 export function accessibleName( element: Element ): string {
 	const label = element.getAttribute( 'aria-label' );
 
@@ -393,25 +400,6 @@ export function stubIntersectionObserver(): ScrollStub {
 			}
 		},
 	};
-}
-
-export interface ScrollerSizes {
-	scrollTop?: number;
-	scrollHeight: number;
-	clientHeight: number;
-}
-
-/** Gives a scroller the sizes jsdom, which resolves no layout, cannot. */
-export function sized( scroller: Element, sizes: ScrollerSizes ): void {
-	Object.defineProperty( scroller, 'scrollHeight', { configurable: true, value: sizes.scrollHeight } );
-	Object.defineProperty( scroller, 'clientHeight', { configurable: true, value: sizes.clientHeight } );
-	Object.defineProperty( scroller, 'scrollTop', { configurable: true, writable: true, value: sizes.scrollTop ?? 0 } );
-}
-
-/** Scrolls a scroller holding 30px more than its 200px box 10px down. */
-export function scrollPartway( scroller: Element ): void {
-	sized( scroller, { scrollTop: 10, scrollHeight: 230, clientHeight: 200 } );
-	scroller.dispatchEvent( new Event( 'scroll' ) );
 }
 
 /**
