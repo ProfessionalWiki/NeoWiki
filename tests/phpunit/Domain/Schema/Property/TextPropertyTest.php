@@ -96,9 +96,20 @@ JSON
 		);
 	}
 
-	public function testExceptionOnInvalidMinLength(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson( '{ "type": "text", "minLength": "yes" }' );
+	public function testMinLengthThatIsNotAWholeNumberIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "text", "minLength": "yes" }',
+			'minLength',
+			'must be a whole number, not "yes"'
+		);
+	}
+
+	public function testFractionalMaxLengthIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "text", "maxLength": 2.5 }',
+			'maxLength',
+			'must be a whole number, not 2.5'
+		);
 	}
 
 	public function testValueIsAnArrayOfStrings(): void {

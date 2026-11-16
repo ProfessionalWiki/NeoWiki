@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property;
 
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\BooleanProperty;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
 
@@ -60,15 +59,11 @@ JSON
 		);
 	}
 
-	public function testExceptionOnNonBooleanDefault(): void {
-		$this->expectException( InvalidArgumentException::class );
-		$this->fromJson(
-			<<<JSON
-{
-	"type": "boolean",
-	"default": "yes"
-}
-JSON
+	public function testDefaultThatIsNotABooleanIsNamed(): void {
+		$this->assertFieldIsRefused(
+			'{ "type": "boolean", "default": "yes" }',
+			'default',
+			'must be true or false, not "yes"'
 		);
 	}
 

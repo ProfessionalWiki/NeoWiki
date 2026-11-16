@@ -6,8 +6,8 @@ namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
 use DateTimeImmutable;
 use Exception;
-use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
@@ -26,6 +26,8 @@ class DateTimeProperty extends PropertyDefinition {
 		. 'T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(?:\.[0-9]{1,9})?(?:Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$';
 
 	private const string ISO_DATE_TIME_REGEX = '/' . self::ISO_DATE_TIME_PATTERN . '/';
+
+	private const string EXPECTED = 'a date and time with a time zone, such as 2025-01-31T09:00:00Z';
 
 	public function __construct(
 		PropertyCore $core,
@@ -48,9 +50,7 @@ class DateTimeProperty extends PropertyDefinition {
 		}
 
 		if ( !self::isValidIsoDateTime( $value ) ) {
-			throw new InvalidArgumentException(
-				"DateTimeProperty {$field} must be a strict ISO 8601 datetime with an explicit timezone, got '{$value}'"
-			);
+			throw InvalidFieldException::mustBe( $field, self::EXPECTED, $value );
 		}
 	}
 
@@ -105,8 +105,8 @@ class DateTimeProperty extends PropertyDefinition {
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
 		return new self(
 			core: $core,
-			minimum: $property['minimum'] ?? null,
-			maximum: $property['maximum'] ?? null,
+			minimum: self::stringOrNull( $property, 'minimum', self::EXPECTED ),
+			maximum: self::stringOrNull( $property, 'maximum', self::EXPECTED ),
 		);
 	}
 

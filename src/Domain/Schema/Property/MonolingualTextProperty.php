@@ -54,8 +54,8 @@ class MonolingualTextProperty extends PropertyDefinition {
 			core: $core,
 			multiple: $property['multiple'] ?? false,
 			uniqueLanguages: $property['uniqueLanguages'] ?? false,
-			minLength: $property['minLength'] ?? null,
-			maxLength: $property['maxLength'] ?? null,
+			minLength: self::wholeNumberOrNull( $property, 'minLength' ),
+			maxLength: self::wholeNumberOrNull( $property, 'maxLength' ),
 		);
 	}
 
