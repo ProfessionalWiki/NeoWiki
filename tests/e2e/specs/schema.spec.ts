@@ -1,4 +1,4 @@
-import type { Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures';
 import { createSchema, pageJson, uniqueName } from '../wikiApi';
 
@@ -9,7 +9,7 @@ test( 'a new Schema saves a Relation property with its target Schema', async ( {
 
 	await page.goto( 'index.php?title=Special:Schemas' );
 	await page.getByRole( 'button', { name: 'Create schema' } ).click();
-	const dialog = page.getByRole( 'dialog', { name: 'Create schema' } );
+	const dialog = schemaCreator( page );
 	// The Schema's name, in the pane of the Schema row the dialog opens on.
 	await dialog.getByRole( 'textbox', { name: 'Name', exact: true } ).fill( schemaName );
 	await dialog.getByRole( 'button', { name: 'Add property definition' } ).click();
@@ -89,7 +89,7 @@ test( 'the Create schema dialog scrolls its property editor with the wheel', asy
 
 	await page.goto( 'index.php?title=Special:Schemas' );
 	await page.getByRole( 'button', { name: 'Create schema' } ).click();
-	const dialog = page.getByRole( 'dialog', { name: 'Create schema' } );
+	const dialog = schemaCreator( page );
 	await dialog.getByRole( 'button', { name: 'Add property definition' } ).click();
 	const pane = dialog.locator( '.ext-neowiki-editor-panes__pane' ).last();
 	const scrollTop = (): Promise<number> => pane.evaluate( ( element ) => element.scrollTop );
@@ -103,6 +103,11 @@ test( 'the Create schema dialog scrolls its property editor with the wheel', asy
 
 	await expect.poll( scrollTop ).toBeGreaterThan( scrollTopBefore );
 } );
+
+// Titled with the Schema's name once one is entered.
+function schemaCreator( page: Page ): Locator {
+	return page.getByRole( 'dialog', { name: /^Creating (.+ )?schema$/ } );
+}
 
 async function scrollTo( scroller: Locator, top: number ): Promise<void> {
 	await scroller.evaluate( ( element, scrollTop ) => {

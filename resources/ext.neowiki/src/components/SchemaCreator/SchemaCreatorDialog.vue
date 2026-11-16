@@ -17,7 +17,7 @@
 
 			<SchemaCreator
 				ref="schemaCreatorRef"
-				:initial-name="props.initialName"
+				v-model:name="schemaName"
 				:duplicate-of="props.duplicateOf"
 				:subjects-are-dependent="props.subjectsAreDependent"
 				@change="markChanged"
@@ -88,10 +88,19 @@ const schemaStore = useSchemaStore();
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const schemaCreatorRef = ref<SchemaCreatorExposes | null>( null );
+const schemaName = ref( props.initialName ?? '' );
 
-const title = computed( () => props.duplicateOf === undefined ?
-	mw.msg( 'neowiki-schema-creator-title' ) :
-	mw.msg( 'neowiki-schema-creator-duplicate-title', props.duplicateOf.getName() ) );
+const title = computed( () => {
+	const name = schemaName.value.trim();
+
+	if ( name !== '' ) {
+		return mw.msg( 'neowiki-creating-schema', name );
+	}
+
+	return props.duplicateOf === undefined ?
+		mw.msg( 'neowiki-schema-creator-title' ) :
+		mw.msg( 'neowiki-schema-creator-duplicate-title', props.duplicateOf.getName() );
+} );
 
 function close(): void {
 	emit( 'update:open', false );
@@ -116,6 +125,7 @@ function onDialogUpdateOpen( value: boolean ): void {
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
 		resetChanged();
+		schemaName.value = props.initialName ?? '';
 	}
 } );
 
