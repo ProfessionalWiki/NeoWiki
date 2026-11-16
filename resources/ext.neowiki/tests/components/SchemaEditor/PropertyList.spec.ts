@@ -224,14 +224,6 @@ describe( 'PropertyList', () => {
 		expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Beta' ) ] );
 	} );
 
-	it( 'shows a problem with the Schema\'s own fields on its row, to be seen from any row', async () => {
-		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
-
-		await wrapper.setProps( { schemaError: 'A schema with this name already exists.' } );
-
-		expect( findRow( wrapper, SCHEMA_ROW_TITLE ).text() ).toContain( 'A schema with this name already exists.' );
-	} );
-
 	it( 'offers no delete button on the Schema\'s row or the Label row', () => {
 		const wrapper = createWrapper( properties, SCHEMA_ROW );
 

@@ -10,7 +10,6 @@
 				:properties="currentSchema.getPropertyDefinitions()"
 				:selection="selection"
 				:shows-label-row="!subjectsAreDependent"
-				:schema-error="schemaError"
 				@select="moveSelectionTo"
 				@add-property="addProperty"
 				@property-deleted="onPropertyDeleted"
@@ -77,11 +76,8 @@ const props = withDefaults( defineProps<{
 	subjectsAreDependent?: boolean | null;
 	/** Opens on the Schema's own row, for a host whose fields there come first. */
 	opensOnSchema?: boolean;
-	/** A problem with the host's fields, shown on the Schema's row too: they are out of sight while another row is selected. */
-	schemaError?: string;
 }>(), {
-	subjectsAreDependent: null,
-	schemaError: undefined
+	subjectsAreDependent: null
 } );
 
 const emit = defineEmits<{

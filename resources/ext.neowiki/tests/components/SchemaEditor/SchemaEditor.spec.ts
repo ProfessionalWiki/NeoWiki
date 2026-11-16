@@ -235,13 +235,6 @@ describe( 'SchemaEditor', () => {
 		expect( document.activeElement ).not.toBe( wrapper.get( '.schema-name' ).element );
 	} );
 
-	it( 'hands the list a problem with the host\'s fields, for the Schema\'s row', () => {
-		const wrapper = createWrapper( newSchema(), { schemaError: 'A schema with this name already exists.' } );
-
-		expect( wrapper.findComponent( { name: 'PropertyList' } ).props( 'schemaError' ) )
-			.toBe( 'A schema with this name already exists.' );
-	} );
-
 	it( 'shows the Schema\'s row when the host asks', async () => {
 		const wrapper = createWrapper( newSchema( {
 			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
