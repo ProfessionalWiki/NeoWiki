@@ -87,6 +87,44 @@ class DependentSubjectRules {
 	}
 
 	/**
+	 * @return array<string, Subject> The Subject at the top of each Subject's chain of Host Subjects, by the Subject's
+	 *   id: itself where no Subject on the page is its Host Subject. A chain that loops, which a raw write can leave,
+	 *   ends at a Subject in the loop.
+	 */
+	public function topsOfChainsOn( PageSubjects $pageSubjects ): array {
+		$hostSubjects = $this->hostSubjectsOn( $pageSubjects );
+		$tops = [];
+
+		foreach ( $pageSubjects->getAllSubjects()->asArray() as $subject ) {
+			$tops += self::topsAlongChain( $subject, $hostSubjects, $tops );
+		}
+
+		return $tops;
+	}
+
+	/**
+	 * Stops at a Subject whose top is known, so that a page holding a long chain is walked once, not once per Subject.
+	 *
+	 * @param array<string, Subject> $hostSubjects
+	 * @param array<string, Subject> $tops The tops found so far, by id.
+	 * @return array<string, Subject> The top of $subject's chain, by the id of each Subject walked and of the top.
+	 */
+	private static function topsAlongChain( Subject $subject, array $hostSubjects, array $tops ): array {
+		$chain = [];
+
+		while ( array_key_exists( $subject->id->text, $hostSubjects ) && !array_key_exists( $subject->id->text, $tops )
+			&& !array_key_exists( $subject->id->text, $chain )
+		) {
+			$chain[$subject->id->text] = true;
+			$subject = $hostSubjects[$subject->id->text];
+		}
+
+		$top = $tops[$subject->id->text] ?? $subject;
+
+		return array_fill_keys( [ ...array_keys( $chain ), $top->id->text ], $top );
+	}
+
+	/**
 	 * The violations $after has and $before does not, so that a page already breaking a rule stays editable.
 	 *
 	 * @param SubjectMap $subjectsOnOtherPages The Subjects {@see self::targetsOnOtherPages()} names, as far as

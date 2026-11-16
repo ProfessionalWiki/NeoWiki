@@ -2059,7 +2059,7 @@ class NeoWikiExtension {
 			revisionPolicy: $this->getRevisionPolicy(),
 			readAuthorizer: $this->newPageReadAuthorizer( $this->getRequestAuthority() ),
 			titleFormatter: MediaWikiServices::getInstance()->getTitleFormatter(),
-			hostSubjectBuilder: $this->newHostSubjectBuilder(),
+			dependentSubjectRules: $this->newDependentSubjectRules(),
 			revisionBound: self::RECENTLY_EDITED_SUBJECTS_REVISION_BOUND,
 			readBound: self::RECENTLY_EDITED_SUBJECTS_READ_BOUND,
 		);

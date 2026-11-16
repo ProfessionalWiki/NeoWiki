@@ -568,6 +568,45 @@ class DependentSubjectRulesTest extends TestCase {
 		$this->assertSame( self::PERSON, $this->hostSubjectIdsOn( $page )[self::BIRTH] );
 	}
 
+	public function testTheTopOfADependentSubjectsChainIsTheStandaloneSubjectItLeadsTo(): void {
+		$page = $this->page(
+			$this->person( self::PERSON, $this->relation( 'Birth', self::BIRTH ) ),
+			$this->subject( self::BIRTH, 'Birth', null, $this->relation( 'Record', self::RECORD ) ),
+			$this->subject( self::RECORD, 'Record' )
+		);
+
+		$this->assertSame( self::PERSON, $this->topIdsOn( $page )[self::RECORD] );
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private function topIdsOn( PageSubjects $pageSubjects ): array {
+		return array_map(
+			static fn ( Subject $top ): string => $top->id->text,
+			$this->newRules()->topsOfChainsOn( $pageSubjects )
+		);
+	}
+
+	public function testAStandaloneSubjectIsTheTopOfItsOwnChainWhenAnotherSubjectPointsAtIt(): void {
+		$page = $this->page(
+			$this->person( self::PERSON, $this->relation( 'Birth', self::BIRTH ) ),
+			$this->subject( self::BIRTH, 'Birth', null, $this->relation( 'Place', self::PLACE ) ),
+			$this->subject( self::PLACE, 'Place' )
+		);
+
+		$this->assertSame( self::PLACE, $this->topIdsOn( $page )[self::PLACE] );
+	}
+
+	public function testAChainThatLoopsEndsAtASubjectInTheLoop(): void {
+		$page = $this->page(
+			$this->subject( self::BIRTH, 'Birth', null, $this->relation( 'Record', self::RECORD ) ),
+			$this->subject( self::RECORD, 'Record', null, $this->relation( 'Birth', self::BIRTH ) )
+		);
+
+		$this->assertContains( $this->topIdsOn( $page )[self::RECORD], [ self::BIRTH, self::RECORD ] );
+	}
+
 	public function testASchemaNameNamesASchemaOfDependentSubjects(): void {
 		$this->assertTrue( $this->newRules()->localSchemaDeclaresDependentSubjects( 'Birth' ) );
 	}

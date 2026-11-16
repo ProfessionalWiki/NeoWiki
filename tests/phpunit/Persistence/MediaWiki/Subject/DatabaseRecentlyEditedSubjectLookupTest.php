@@ -47,6 +47,8 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 	private const string MONDAY = '2030-01-07T09:00:00Z';
 	private const string TUESDAY = '2030-01-08T09:00:00Z';
 	private const string WEDNESDAY = '2030-01-09T09:00:00Z';
+	private const string THURSDAY = '2030-01-10T09:00:00Z';
+	private const string FRIDAY = '2030-01-11T09:00:00Z';
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -162,7 +164,7 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 
 		$lookup = $this->newLookup( readAuthorizer: new SelectivePageReadAuthorizer( [ $secret->getPageId() ] ) );
 
-		$this->assertSame( [ self::ADA ], array_column( $lookup->getRecentlyEditedSubjects( 10 ), 'subjectId' ) );
+		$this->assertSame( [ self::ADA ], $this->listedIds( $lookup ) );
 	}
 
 	public function testAnEditWhoseContentIsHiddenListsNothing(): void {
@@ -209,14 +211,14 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 		$this->saveAt( self::TUESDAY, 'Grace Hopper', $this->person( self::GRACE, '1906' ) );
 		$this->editPage( 'Grace Hopper', new TextContent( 'Text only' ) );
 
-		$this->assertSame( [ self::GRACE ], array_column( $this->newLookup( revisionBound: 2 )->getRecentlyEditedSubjects( 10 ), 'subjectId' ) );
+		$this->assertSame( [ self::GRACE ], $this->listedIds( $this->newLookup( revisionBound: 2 ) ) );
 	}
 
 	public function testEndsTheListOnceItHasReadItsBound(): void {
 		$this->saveAt( self::MONDAY, 'Ada Lovelace', $this->person( self::ADA, '1815' ) );
 		$this->saveAt( self::TUESDAY, 'Grace Hopper', $this->person( self::GRACE, '1906' ) );
 
-		$this->assertNotContains( self::ADA, array_column( $this->newLookup( readBound: 1 )->getRecentlyEditedSubjects( 10 ), 'subjectId' ) );
+		$this->assertNotContains( self::ADA, $this->listedIds( $this->newLookup( readBound: 1 ) ) );
 	}
 
 	public function testListsNothingOnAWikiThatNeverStoredASubject(): void {
@@ -252,27 +254,26 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 		$this->assertSame( 'Help:Ada Lovelace', $other->pageTitle );
 	}
 
-	public function testNamesADependentSubjectAfterItsHostSubject(): void {
+	public function testAnEditOfADependentSubjectIsAnEditOfItsHostSubject(): void {
 		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
-		$this->saveAt(
-			self::MONDAY,
-			'Ada Lovelace',
-			TestSubject::build(
-				id: self::ADA,
-				label: 'Ada Lovelace',
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH ) ] ),
-				] )
-			),
-			TestSubject::build(
-				id: self::BIRTH,
-				label: null,
-				schemaName: new SchemaName( 'Birth' ),
-				statements: new StatementList( [ $this->statement( 'Year', '1815' ) ] )
-			)
-		);
+		$this->saveAt( self::MONDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1815' ) );
+		$this->saveAt( self::TUESDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1816' ) );
 
-		$this->assertSame( 'Ada Lovelace', $this->listedRow( self::BIRTH )->hostSubject?->displayName );
+		$this->assertSame( [ self::TUESDAY => [ self::ADA ] ], $this->editsByTime() );
+	}
+
+	/**
+	 * Ada's page also holds her Birth, which has no row of its own, so listing Ada lists the whole page.
+	 */
+	public function testOlderEditsOfAPageWhoseSubjectsAreAllListedDoNotUseUpTheReadBound(): void {
+		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
+		$this->saveAt( self::MONDAY, 'Grace Hopper', $this->person( self::GRACE, '1906' ) );
+		$this->saveAt( self::TUESDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1815' ) );
+		$this->saveAt( self::WEDNESDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1816' ) );
+		$this->saveAt( self::THURSDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1817' ) );
+		$this->saveAt( self::FRIDAY, 'Ada Lovelace', $this->adaWithBirth(), $this->birth( '1818' ) );
+
+		$this->assertContains( self::GRACE, $this->listedIds( $this->newLookup( readBound: 4 ) ) );
 	}
 
 	private function newLookup(
@@ -287,7 +288,7 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 			revisionPolicy: NeoWikiExtension::getInstance()->getRevisionPolicy(),
 			readAuthorizer: $readAuthorizer,
 			titleFormatter: $this->getServiceContainer()->getTitleFormatter(),
-			hostSubjectBuilder: NeoWikiExtension::getInstance()->newHostSubjectBuilder(),
+			dependentSubjectRules: NeoWikiExtension::getInstance()->newDependentSubjectRules(),
 			revisionBound: $revisionBound,
 			readBound: $readBound,
 		);
@@ -309,6 +310,13 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 		return $edits;
 	}
 
+	/**
+	 * @return string[]
+	 */
+	private function listedIds( DatabaseRecentlyEditedSubjectLookup $lookup ): array {
+		return array_column( $lookup->getRecentlyEditedSubjects( 10 ), 'subjectId' );
+	}
+
 	private function listedRow( string $subjectId ): SubjectSummary {
 		return array_column( $this->newLookup()->getRecentlyEditedSubjects( 50 ), null, 'subjectId' )[$subjectId];
 	}
@@ -319,6 +327,26 @@ class DatabaseRecentlyEditedSubjectLookupTest extends NeoWikiIntegrationTestCase
 
 	private function statement( string $property, string $value ): Statement {
 		return new Statement( new PropertyName( $property ), 'text', new StringValue( $value ) );
+	}
+
+	private function adaWithBirth(): Subject {
+		// A fixed Relation id, so that saving Ada again leaves her data unchanged.
+		return TestSubject::build(
+			id: self::ADA,
+			label: 'Ada Lovelace',
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Birth', [ TestRelation::build( id: 'rTestRES1111111', targetId: self::BIRTH ) ] ),
+			] )
+		);
+	}
+
+	private function birth( string $year ): Subject {
+		return TestSubject::build(
+			id: self::BIRTH,
+			label: null,
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [ $this->statement( 'Year', $year ) ] )
+		);
 	}
 
 	/** Creates the page, or changes only its Subjects as the Subject editor does. */

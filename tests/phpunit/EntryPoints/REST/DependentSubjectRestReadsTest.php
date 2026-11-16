@@ -28,7 +28,6 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectApi
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetSubjectSummariesApi
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetRecentlyEditedSubjectsApi
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetReferencingSubjectsApi
  * @group Database
  */
@@ -115,15 +114,6 @@ class DependentSubjectRestReadsTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( self::PICASSO, $body['subjects'][0]['hostSubject'] );
 	}
 
-	public function testTheRecentlyEditedSubjectsNameADependentSubjectAfterItsHostSubject(): void {
-		$body = $this->get( NeoWikiExtension::newGetRecentlyEditedSubjectsApi() );
-
-		$this->assertSame(
-			self::PICASSO,
-			array_column( $body['subjects'], null, 'id' )[self::BIRTH]['hostSubject']
-		);
-	}
-
 	public function testTheSubjectReadOfAnEarlierRevisionNamesTheHostSubjectAsThatRevisionDoes(): void {
 		$this->changeSubjectsOfPage( 'Pablo Picasso', $this->picasso( 'Picasso' ), $this->birth() );
 
@@ -158,40 +148,6 @@ class DependentSubjectRestReadsTest extends NeoWikiIntegrationTestCase {
 		$body = $this->get( NeoWikiExtension::newGetReferencingSubjectsApi(), pathParams: [ 'subjectId' => self::PLACE ] );
 
 		$this->assertSame( self::PICASSO, $body['referencingSubjects'][0]['subject']['hostSubject'] );
-	}
-
-	public function testTheRecentlyEditedSubjectsAnswerForAPageHoldingAChainOfHostSubjectsLongerThanJsonNests(): void {
-		$this->createSchema( 'Record', '{"subjectsAreDependent":true,"propertyDefinitions":{'
-			. '"Record":{"type":"relation","targetSchemas":["Record"]}}}' );
-		$this->createPageWithSubjects( 'Records', otherSubjects: new SubjectMap( ...$this->chainOfRecords( 520 ) ) );
-
-		$response = $this->executeHandler(
-			NeoWikiExtension::newGetRecentlyEditedSubjectsApi(),
-			new RequestData( [ 'method' => 'GET' ] )
-		);
-
-		$this->assertSame( 200, $response->getStatusCode() );
-	}
-
-	/**
-	 * @return Subject[] Records each pointed at by the next.
-	 */
-	private function chainOfRecords( int $length ): array {
-		$ids = array_map(
-			static fn ( int $index ): string => 'sRecordChain'
-				. strtr( str_pad( base_convert( (string)$index, 10, 9 ), 3, '0', STR_PAD_LEFT ), '012345678', '123456789' ),
-			range( 0, $length - 1 )
-		);
-
-		return array_map(
-			fn ( int $index ): Subject => TestSubject::build(
-				id: $ids[$index],
-				label: null,
-				schemaName: TestSchema::reference( 'Record' ),
-				statements: new StatementList( $index === 0 ? [] : [ $this->relation( 'Record', $ids[$index - 1] ) ] )
-			),
-			range( 0, $length - 1 )
-		);
 	}
 
 	private function relation( string $property, string $targetId ): Statement {

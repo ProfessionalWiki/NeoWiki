@@ -12,15 +12,16 @@ use MediaWiki\Storage\NameTableStore;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\Utils\MWTimestamp;
-use ProfessionalWiki\NeoWiki\Application\HostSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\RecentlyEditedSubjectLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummary;
+use ProfessionalWiki\NeoWiki\Domain\Page\DependentSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use stdClass;
 use TypeError;
 use Wikimedia\Rdbms\IConnectionProvider;
@@ -40,14 +41,14 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 		private readonly RevisionPolicy $revisionPolicy,
 		private readonly PageReadAuthorizer $readAuthorizer,
 		private readonly TitleFormatter $titleFormatter,
-		private readonly HostSubjectBuilder $hostSubjectBuilder,
+		private readonly DependentSubjectRules $dependentSubjectRules,
 		private readonly int $revisionBound,
 		private readonly int $readBound,
 	) {
 	}
 
 	public function getRecentlyEditedSubjects( int $limit ): array {
-		/** @var array<int, array{?RevisionRecord, ?PageSubjects}> $pages */
+		/** @var array<int, array{?RevisionRecord, ?PageSubjects, array<string, Subject>, string[]}> $pages */
 		$pages = [];
 		/** @var array<string, array{Subject, PageSubjects, RevisionRecord, stdClass}> $edits */
 		$edits = [];
@@ -63,25 +64,23 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			}
 
 			if ( !array_key_exists( $change->rev_page, $pages ) ) {
-				$publishedRevision = $this->publishedRevision( (int)$change->rev_page );
-				$pages[$change->rev_page] = [ $publishedRevision, $this->subjectsOf( $publishedRevision ) ];
+				$pages[$change->rev_page] = $this->publishedPage( (int)$change->rev_page );
 				$reads++;
 			}
 
-			[ $published, $pageSubjects ] = $pages[$change->rev_page];
+			[ $published, $pageSubjects, $tops, $topIds ] = $pages[$change->rev_page];
 
 			if ( $published === null || $pageSubjects === null || $this->isAfter( $change, $published )
-				|| array_diff( $pageSubjects->getAllSubjects()->getIdsAsTextArray(), array_keys( $edits ) ) === []
+				|| array_diff( $topIds, array_keys( $edits ) ) === []
 			) {
 				continue;
 			}
 
 			$reads++;
-			$publishedById = $pageSubjects->getAllSubjects();
 
 			foreach ( $this->subjectsChangedBy( (int)$change->rev_id, $published ) as $changed ) {
 				// Gone from the page since: deleted, or moved to a page whose own revision lists it.
-				$subject = $publishedById->getSubject( $changed->id );
+				$subject = $tops[$changed->id->text] ?? null;
 
 				if ( $subject !== null ) {
 					$edits[$subject->id->text] ??= [ $subject, $pageSubjects, $published, $change ];
@@ -123,6 +122,18 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			->fetchResultSet();
 
 		return $rows;
+	}
+
+	/**
+	 * @return array{?RevisionRecord, ?PageSubjects, array<string, Subject>, string[]} The published revision, its
+	 *   Subjects, the Subject at the top of each one's chain of Host Subjects by id, and the ids of those tops.
+	 */
+	private function publishedPage( int $pageId ): array {
+		$published = $this->publishedRevision( $pageId );
+		$pageSubjects = $this->subjectsOf( $published );
+		$tops = $pageSubjects === null ? [] : $this->dependentSubjectRules->topsOfChainsOn( $pageSubjects );
+
+		return [ $published, $pageSubjects, $tops, ( new SubjectMap( ...$tops ) )->getIdsAsTextArray() ];
 	}
 
 	private function publishedRevision( int $pageId ): ?RevisionRecord {
@@ -204,7 +215,7 @@ class DatabaseRecentlyEditedSubjectLookup implements RecentlyEditedSubjectLookup
 			pageId: (int)$change->rev_page,
 			pageTitle: $pageTitle,
 			lastEdited: (string)MWTimestamp::convert( TS_ISO_8601, $change->rev_timestamp ),
-			hostSubject: $name === null ? $this->hostSubjectBuilder->build( $subject, $pageSubjects, $pageTitle ) : null,
+			hostSubject: null,
 		);
 	}
 
