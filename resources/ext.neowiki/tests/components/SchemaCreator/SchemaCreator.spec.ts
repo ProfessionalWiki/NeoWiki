@@ -55,7 +55,7 @@ describe( 'SchemaCreator', () => {
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 
 	interface CreatorProps {
-		initialName?: string;
+		name?: string;
 		duplicateOf?: Schema;
 		subjectsAreDependent?: boolean;
 	}
@@ -511,7 +511,7 @@ describe( 'SchemaCreator', () => {
 	} );
 
 	it( 'starts with the name it is given', () => {
-		const wrapper = mountComponent( { initialName: 'Artwork' } );
+		const wrapper = mountComponent( { name: 'Artwork' } );
 
 		const nameInput = wrapper.find( '.cdx-text-input-stub' );
 		expect( ( nameInput.element as HTMLInputElement ).value ).toBe( 'Artwork' );

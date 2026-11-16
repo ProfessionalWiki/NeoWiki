@@ -162,7 +162,8 @@
 	"neowiki-page-picker-create-hint": "Label of the unpickable option at the bottom of the page picker dropdown, shown while the user has typed nothing, telling them that typing a title offers a page that does not exist yet.",
 	"neowiki-page-picker-create-named": "Label of the option at the bottom of the page picker dropdown that picks a page which does not exist yet. Parameters:\n* $1 - the page title the user typed",
 
-	"neowiki-schema-creator-title": "Title of the dialog for creating a new schema.",
+	"neowiki-schema-creator-title": "Title of the dialog for creating a new schema while no name is entered. Once one is, {{msg-mw|neowiki-creating-schema}} takes its place.",
+	"neowiki-creating-schema": "Title of the dialog for creating a new schema once a name is entered, the counterpart of {{msg-mw|neowiki-editing-schema}}.\n\nParameters:\n* $1 - the name entered for the new schema",
 	"neowiki-schema-creator-duplicate-title": "Title of the dialog for creating a new schema when it opens prefilled with a copy of an existing one, from {{msg-mw|neowiki-schemas-duplicate}} on [[Special:Schemas]]. 'Duplicate' is a verb.\n\nParameters:\n* $1 - the name of the schema being duplicated",
 	"neowiki-schema-creator-button": "Label of the button in the toolbar of [[Special:Schemas]] that opens the dialog for creating a schema.",
 	"neowiki-schema-creator-name-field": "Label for the schema name input field in the schema creation dialog, in the pane of the property list's Schema row ({{msg-mw|neowiki-schema-editor-schema}}), which says whose name it is.\n{{Identical|Name}}",

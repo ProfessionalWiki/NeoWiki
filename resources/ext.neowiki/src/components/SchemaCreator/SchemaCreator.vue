@@ -92,7 +92,6 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
-	initialName?: string;
 	/** The Schema to duplicate: the new one starts with all of it but the name. */
 	duplicateOf?: Schema;
 	/**
@@ -100,7 +99,6 @@ const props = withDefaults( defineProps<{
 	 */
 	subjectsAreDependent?: boolean | null;
 }>(), {
-	initialName: '',
 	duplicateOf: undefined,
 	subjectsAreDependent: null
 } );
@@ -115,7 +113,7 @@ const DEBOUNCE_DELAY = 300;
 
 const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ), false );
 
-const schemaName = ref( props.initialName );
+const schemaName = defineModel<string>( 'name', { default: '' } );
 const schemaDescription = ref( baseSchema.getDescription() );
 const subjectsAreDependent = ref( props.subjectsAreDependent ?? baseSchema.subjectsAreDependent() );
 const explanationShown = ref( false );

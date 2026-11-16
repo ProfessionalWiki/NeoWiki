@@ -277,6 +277,7 @@
 	"neowiki-page-picker-create-hint": "Gib einen Titel ein, um eine neue Seite zu verwenden",
 	"neowiki-page-picker-create-named": "„$1“ als neue Seite verwenden",
 	"neowiki-schema-creator-title": "Schema erstellen",
+	"neowiki-creating-schema": "Schema „$1“ erstellen",
 	"neowiki-schema-creator-duplicate-title": "$1 duplizieren",
 	"neowiki-schema-creator-button": "Schema erstellen",
 	"neowiki-schema-creator-name-field": "Name",

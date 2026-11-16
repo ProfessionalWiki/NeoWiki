@@ -34,8 +34,8 @@ let creatorErrorsRevealed = false;
 
 const SchemaCreatorStub = {
 	template: '<div class="schema-creator-stub"></div>',
-	props: { initialName: String, duplicateOf: Object, subjectsAreDependent: { type: [ Boolean, null ], default: null } },
-	emits: [ 'change' ],
+	props: { name: String, duplicateOf: Object, subjectsAreDependent: { type: [ Boolean, null ], default: null } },
+	emits: [ 'change', 'update:name' ],
 	setup() {
 		let valid = true;
 		const schema: Schema | null = newSchema( { title: NEW_SCHEMA_NAME, description: 'A description', properties: new PropertyDefinitionList( [] ) } );
@@ -151,7 +151,7 @@ describe( 'SchemaCreatorDialog', () => {
 	it( 'starts the schema on the name it is given', () => {
 		const wrapper = mountComponent( { initialName: 'Artwork' } );
 
-		expect( wrapper.findComponent( SchemaCreatorStub ).props( 'initialName' ) ).toBe( 'Artwork' );
+		expect( wrapper.findComponent( SchemaCreatorStub ).props( 'name' ) ).toBe( 'Artwork' );
 	} );
 
 	describe( 'Offering the save', () => {
@@ -266,17 +266,65 @@ describe( 'SchemaCreatorDialog', () => {
 		expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 	} );
 
-	it( 'is titled for creating a Schema', () => {
-		expect( mountComponent().findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-title' );
-	} );
+	describe( 'Title', () => {
+		function titleOf( wrapper: VueWrapper ): string {
+			return wrapper.findComponent( CdxDialog ).props( 'title' );
+		}
 
-	// Special:Schemas keeps the dialog mounted, opening it on one Schema after another.
-	it( 'is titled after the Schema it duplicates when it opens on one', async () => {
-		const wrapper = mountComponent( { open: false } );
+		async function enterName( wrapper: VueWrapper, name: string ): Promise<void> {
+			await wrapper.findComponent( SchemaCreatorStub ).vm.$emit( 'update:name', name );
+		}
 
-		await wrapper.setProps( { open: true, duplicateOf: COMPANY } );
+		it( 'is titled for creating a Schema while it has no name', () => {
+			expect( titleOf( mountComponent() ) ).toBe( 'neowiki-schema-creator-title' );
+		} );
 
-		expect( wrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
+		it( 'is titled after the name it opens with', () => {
+			expect( titleOf( mountComponent( { initialName: 'Artwork' } ) ) ).toBe( 'neowiki-creating-schemaArtwork' );
+		} );
+
+		it( 'is titled after the name entered, without the spaces around it', async () => {
+			const wrapper = mountComponent();
+
+			await enterName( wrapper, ' Artwork ' );
+
+			expect( titleOf( wrapper ) ).toBe( 'neowiki-creating-schemaArtwork' );
+		} );
+
+		it( 'keeps its title while the name entered is only spaces', async () => {
+			const wrapper = mountComponent();
+
+			await enterName( wrapper, '  ' );
+
+			expect( titleOf( wrapper ) ).toBe( 'neowiki-schema-creator-title' );
+		} );
+
+		// Special:Schemas keeps the dialog mounted, opening it on one Schema after another.
+		it( 'is titled after the Schema it duplicates when it opens on one', async () => {
+			const wrapper = mountComponent( { open: false } );
+
+			await wrapper.setProps( { open: true, duplicateOf: COMPANY } );
+
+			expect( titleOf( wrapper ) ).toBe( 'neowiki-schema-creator-duplicate-titleCompany' );
+		} );
+
+		it( 'is titled after the name entered for a duplicate', async () => {
+			const wrapper = mountComponent( { duplicateOf: COMPANY } );
+
+			await enterName( wrapper, 'Group' );
+
+			expect( titleOf( wrapper ) ).toBe( 'neowiki-creating-schemaGroup' );
+		} );
+
+		it( 'drops the name entered before when it opens again', async () => {
+			const wrapper = mountComponent();
+			await enterName( wrapper, 'Artwork' );
+
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+
+			expect( titleOf( wrapper ) ).toBe( 'neowiki-schema-creator-title' );
+		} );
 	} );
 
 	// The real creator and Schema editor, attached to the document for the focus they move.
@@ -333,6 +381,14 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( nameAndDescription( wrapper ) ).toEqual( [ '', 'An organisation that sells things' ] );
 			expect( propertyNames( wrapper ) ).toEqual( [ 'Name', 'Founded' ] );
+		} );
+
+		it( 'is titled after the name typed', async () => {
+			const wrapper = mountDuplicating( COMPANY );
+
+			await findNameInput( wrapper ).setValue( 'Group' );
+
+			expect( wrapper.findComponent( CdxDialog ).props( 'title' ) ).toBe( 'neowiki-creating-schemaGroup' );
 		} );
 
 		it( 'saves the duplicate under the name typed, with everything else of that Schema', async () => {

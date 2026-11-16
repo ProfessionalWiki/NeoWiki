@@ -874,6 +874,7 @@
 				"neowiki-managesubjects-move-create-page-summary-default",
 				"neowiki-managesubjects-move-create-page-error",
 				"neowiki-schema-creator-title",
+				"neowiki-creating-schema",
 				"neowiki-schema-creator-duplicate-title",
 				"neowiki-schema-creator-button",
 				"neowiki-schema-creator-name-field",
