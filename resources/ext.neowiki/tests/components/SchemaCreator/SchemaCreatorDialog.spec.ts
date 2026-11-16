@@ -7,7 +7,7 @@ import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemas
 import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
+import { accessibleName, afterQueuedTasks, createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
@@ -76,6 +76,12 @@ const CloseConfirmationDialogStub = {
 	props: [ 'open' ],
 	emits: [ 'discard', 'keep-editing' ],
 };
+
+// By its label: the pane of a property has a Name field too.
+function nameInputIn( root: ParentNode ): HTMLInputElement | null {
+	return [ ...root.querySelectorAll( 'input' ) ]
+		.find( ( input ) => accessibleName( input ) === 'neowiki-schema-creator-name-field' ) ?? null;
+}
 
 describe( 'SchemaCreatorDialog', () => {
 	let pinia: ReturnType<typeof createPinia>;
@@ -302,19 +308,19 @@ describe( 'SchemaCreatorDialog', () => {
 		}
 
 		function findNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {
-			return wrapper.find<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section input' );
+			return new DOMWrapper( nameInputIn( wrapper.element.ownerDocument ) as HTMLInputElement );
 		}
 
 		function nameAndDescription( wrapper: VueWrapper ): string[] {
-			return wrapper.findAll<HTMLInputElement>( '.ext-neowiki-schema-creator__name-section .cdx-text-input input' )
-				.map( ( input ) => input.element.value );
+			return [
+				findNameInput( wrapper ).element.value,
+				wrapper.get<HTMLTextAreaElement>( '.ext-neowiki-schema-editor__detail textarea' ).element.value,
+			];
 		}
 
 		function propertyNames( wrapper: VueWrapper ): string[] {
-			return wrapper.findAll(
-				'.ext-neowiki-property-list__item:not( .ext-neowiki-property-list__item--subject-label ) ' +
-				'.ext-neowiki-property-list__item__text__label',
-			).map( ( label ) => label.text() );
+			return wrapper.findAll( '.ext-neowiki-property-list__item--property .ext-neowiki-property-list__item__text__label' )
+				.map( ( label ) => label.text() );
 		}
 
 		beforeEach( () => {
@@ -327,13 +333,6 @@ describe( 'SchemaCreatorDialog', () => {
 
 			expect( nameAndDescription( wrapper ) ).toEqual( [ '', 'An organisation that sells things' ] );
 			expect( propertyNames( wrapper ) ).toEqual( [ 'Name', 'Founded' ] );
-		} );
-
-		it( 'starts with the cursor in the name field', async () => {
-			const wrapper = mountDuplicating( COMPANY );
-			await flushPromises();
-
-			expect( document.activeElement ).toBe( findNameInput( wrapper ).element );
 		} );
 
 		it( 'saves the duplicate under the name typed, with everything else of that Schema', async () => {
@@ -351,6 +350,15 @@ describe( 'SchemaCreatorDialog', () => {
 	describe( 'Focus', () => {
 		beforeEach( () => {
 			setupMwMock();
+		} );
+
+		it( 'puts the cursor in the name field of a new Schema, after the dialog has focused its first control', async () => {
+			const wrapper = mountWithRealCreator( { open: true }, {} );
+			onTestFinished( () => wrapper.unmount() );
+
+			await afterQueuedTasks();
+
+			expect( document.activeElement ).toBe( nameInputIn( document ) );
 		} );
 
 		// Mounted open and removed on close, as the dialogs that stack it in front of themselves do.

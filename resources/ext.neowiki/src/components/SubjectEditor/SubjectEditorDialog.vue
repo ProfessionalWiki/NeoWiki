@@ -185,7 +185,7 @@ import { reachableTargetIds, writeOrder } from '@/components/SubjectEditor/Subje
 import type { HeldSubject } from '@/components/SubjectEditor/SubjectDraftGraph.ts';
 import { DependentSubjectLoader, loadedSchemasOf } from '@/application/DependentSubjectLoader.ts';
 import { useDependentSubjectEditing } from '@/composables/useDependentSubjectEditing.ts';
-import { focusFirstValueControl } from '@/components/SubjectEditor/valueControlFocus.ts';
+import { focusFirstValueControl } from '@/components/common/valueControlFocus.ts';
 import type { DependentSubjects } from '@/stores/SubjectStore.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 

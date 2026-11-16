@@ -1,6 +1,7 @@
 import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
+import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
@@ -28,7 +29,7 @@ enableAutoUnmount( afterEach );
 
 function createWrapper(
 	properties: PropertyDefinitionList,
-	selectedPropertyName?: string,
+	selection: PropertyListRow,
 	attachTo?: HTMLElement,
 	showsLabelRow: boolean = true,
 	listeners: Record<string, ( ...args: never[] ) => unknown> = {},
@@ -36,7 +37,7 @@ function createWrapper(
 	return mount( PropertyList, {
 		props: {
 			properties,
-			selectedPropertyName,
+			selection,
 			showsLabelRow,
 			...listeners,
 		},
@@ -52,14 +53,14 @@ function createWrapper(
 // The Schema editor's part: it makes each selection and reordering the list asks for, unless it refuses a selection.
 function selecting( wrapper: () => VueWrapper ): Record<string, ( ...args: never[] ) => unknown> {
 	return {
-		onPropertySelected: ( name: PropertyName ) => wrapper().setProps( { selectedPropertyName: name.toString() } ),
-		onSubjectLabelSelected: () => wrapper().setProps( { selectedPropertyName: undefined } ),
+		onSelect: ( row: PropertyListRow ) => wrapper().setProps( { selection: row } ),
 		onPropertyReordered: ( names: PropertyName[] ) => wrapper().setProps( {
 			properties: ( wrapper().props() as { properties: PropertyDefinitionList } ).properties.reordered( names ),
 		} ),
 	};
 }
 
+const SCHEMA_ROW_TITLE = 'neowiki-schema-editor-schema';
 const LABEL_ROW_TITLE = 'neowiki-schema-editor-subject-label';
 const DELETE_BUTTON = '[aria-label="neowiki-schema-editor-delete-property"]';
 
@@ -106,6 +107,14 @@ function sortableOptions(): UseSortableOptions {
 	return calls[ calls.length - 1 ][ 1 ];
 }
 
+function selections( wrapper: VueWrapper ): PropertyListRow[] {
+	return ( wrapper.emitted( 'select' ) ?? [] ).map( ( [ row ] ) => row as PropertyListRow );
+}
+
+async function pressOnList( wrapper: VueWrapper, key: string, altKey: boolean = false ): Promise<void> {
+	await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key, altKey } );
+}
+
 describe( 'PropertyList', () => {
 
 	beforeEach( () => {
@@ -117,14 +126,14 @@ describe( 'PropertyList', () => {
 	const property3 = createPropertyDefinitionFromJson( 'Gamma', { type: TextType.typeName } );
 	const properties = new PropertyDefinitionList( [ property1, property2, property3 ] );
 
-	it( 'lists the Label row before the properties', () => {
-		const wrapper = createWrapper( properties );
+	it( 'lists the Schema\'s row first, then the Label row, then the properties', () => {
+		const wrapper = createWrapper( properties, SCHEMA_ROW );
 
-		expect( rowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE, 'Alpha', 'Beta', 'Gamma' ] );
+		expect( rowTitles( wrapper ) ).toEqual( [ SCHEMA_ROW_TITLE, LABEL_ROW_TITLE, 'Alpha', 'Beta', 'Gamma' ] );
 	} );
 
 	it( 'describes an optional property by its type, marked optional', () => {
-		const wrapper = createWrapper( properties );
+		const wrapper = createWrapper( properties, SCHEMA_ROW );
 
 		expect( rowDescription( findRow( wrapper, 'Alpha' ) ) )
 			.toBe( 'neowiki-schema-editor-optional-property-typeneowiki-property-type-text' );
@@ -133,58 +142,51 @@ describe( 'PropertyList', () => {
 	it( 'describes a required property by its type alone', () => {
 		const wrapper = createWrapper( new PropertyDefinitionList( [
 			createPropertyDefinitionFromJson( 'Alpha', { type: TextType.typeName, required: true } ),
-		] ) );
+		] ), SCHEMA_ROW );
 
 		expect( rowDescription( findRow( wrapper, 'Alpha' ) ) ).toBe( 'neowiki-property-type-text' );
 	} );
 
-	it( 'marks the selected property with aria-selected', () => {
-		const wrapper = createWrapper( properties, 'Beta' );
+	describe.each( [
+		[ 'the Schema\'s row', SCHEMA_ROW, SCHEMA_ROW_TITLE ],
+		[ 'the Label row', LABEL_ROW, LABEL_ROW_TITLE ],
+		[ 'a property\'s row', propertyRow( 'Beta' ), 'Beta' ],
+	] )( 'while %s is selected', ( _name, selection, title ) => {
+		it( 'marks it alone with aria-selected', () => {
+			const wrapper = createWrapper( properties, selection );
 
-		expect( selectedRowTitles( wrapper ) ).toEqual( [ 'Beta' ] );
+			expect( selectedRowTitles( wrapper ) ).toEqual( [ title ] );
+		} );
+
+		it( 'highlights it alone', () => {
+			const wrapper = createWrapper( properties, selection );
+
+			expect( highlightedRowTitles( wrapper ) ).toEqual( [ title ] );
+		} );
+
+		it( 'makes it the list\'s only Tab stop', () => {
+			const wrapper = createWrapper( properties, selection );
+
+			expect( focusableRowTitles( wrapper ) ).toEqual( [ title ] );
+		} );
 	} );
 
-	it( 'highlights only the selected property', () => {
-		const wrapper = createWrapper( properties, 'Beta' );
+	it( 'keeps the list in the tab order while the Schema\'s row and the Label row are its only rows', () => {
+		const wrapper = createWrapper( new PropertyDefinitionList( [] ), SCHEMA_ROW );
 
-		expect( highlightedRowTitles( wrapper ) ).toEqual( [ 'Beta' ] );
+		expect( focusableRowTitles( wrapper ) ).toEqual( [ SCHEMA_ROW_TITLE ] );
 	} );
 
-	it( 'sets tabindex 0 on selected item and -1 on others', () => {
-		const wrapper = createWrapper( properties, 'Beta' );
-
-		expect( focusableRowTitles( wrapper ) ).toEqual( [ 'Beta' ] );
-		expect( findRow( wrapper, 'Alpha' ).attributes( 'tabindex' ) ).toBe( '-1' );
-	} );
-
-	it( 'marks the Label row with aria-selected while no property is selected', () => {
-		const wrapper = createWrapper( properties );
-
-		expect( selectedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
-	} );
-
-	it( 'sets tabindex 0 on the Label row while no property is selected', () => {
-		const wrapper = createWrapper( properties );
-
-		expect( focusableRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
-	} );
-
-	it( 'leaves the Label row out of the tab order while it is the only row', () => {
-		const wrapper = createWrapper( new PropertyDefinitionList( [] ) );
+	it( 'leaves the Schema\'s row out of the tab order while it is the only row', () => {
+		const wrapper = createWrapper( new PropertyDefinitionList( [] ), SCHEMA_ROW, undefined, false );
 
 		expect( focusableRowTitles( wrapper ) ).toEqual( [] );
 	} );
 
-	it( 'highlights the Label row while no property is selected', () => {
-		const wrapper = createWrapper( properties );
+	it( 'moves the selection to the row the editor selects', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
-		expect( highlightedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
-	} );
-
-	it( 'moves the selection to the Label row once no property is selected', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
-
-		await wrapper.setProps( { selectedPropertyName: undefined } );
+		await wrapper.setProps( { selection: LABEL_ROW } );
 
 		expect( selectedRowTitles( wrapper ) ).toEqual( [ LABEL_ROW_TITLE ] );
 	} );
@@ -192,40 +194,54 @@ describe( 'PropertyList', () => {
 	it( 'selects a property named Label as that property, not as the Label row', () => {
 		const wrapper = createWrapper(
 			new PropertyDefinitionList( [ property1, createPropertyDefinitionFromJson( 'Label', { type: TextType.typeName } ) ] ),
-			'Label',
+			propertyRow( 'Label' ),
 		);
 
 		expect( selectedRowTitles( wrapper ) ).toEqual( [ 'Label' ] );
 	} );
 
-	it( 'emits subjectLabelSelected when the Label row is clicked', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
+	it( 'selects the Schema\'s row when it is clicked', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
+
+		await findRow( wrapper, SCHEMA_ROW_TITLE ).trigger( 'click' );
+
+		expect( selections( wrapper ) ).toEqual( [ SCHEMA_ROW ] );
+	} );
+
+	it( 'selects the Label row when it is clicked', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 		await findRow( wrapper, LABEL_ROW_TITLE ).trigger( 'click' );
 
-		expect( wrapper.emitted( 'subjectLabelSelected' ) ).toHaveLength( 1 );
-		expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
+		expect( selections( wrapper ) ).toEqual( [ LABEL_ROW ] );
 	} );
 
-	it( 'emits propertySelected when an item is clicked', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
+	it( 'selects a property when its row is clicked', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 		await findRow( wrapper, 'Beta' ).trigger( 'click' );
 
-		const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
-		expect( emitted ).toHaveLength( 1 );
-		expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Beta' );
+		expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Beta' ) ] );
 	} );
 
-	it( 'offers no delete button on the Label row', () => {
-		const wrapper = createWrapper( properties );
+	it( 'shows a problem with the Schema\'s own fields on its row, to be seen from any row', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
+		await wrapper.setProps( { schemaError: 'A schema with this name already exists.' } );
+
+		expect( findRow( wrapper, SCHEMA_ROW_TITLE ).text() ).toContain( 'A schema with this name already exists.' );
+	} );
+
+	it( 'offers no delete button on the Schema\'s row or the Label row', () => {
+		const wrapper = createWrapper( properties, SCHEMA_ROW );
+
+		expect( findRow( wrapper, SCHEMA_ROW_TITLE ).find( DELETE_BUTTON ).exists() ).toBe( false );
 		expect( findRow( wrapper, LABEL_ROW_TITLE ).find( DELETE_BUTTON ).exists() ).toBe( false );
 		expect( findRow( wrapper, 'Alpha' ).find( DELETE_BUTTON ).exists() ).toBe( true );
 	} );
 
 	it( 'emits propertyDeleted when delete button is clicked', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 		await findRow( wrapper, 'Beta' ).find( DELETE_BUTTON ).trigger( 'click' );
 
@@ -234,16 +250,16 @@ describe( 'PropertyList', () => {
 		expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Beta' );
 	} );
 
-	it( 'does not emit propertySelected when delete button is clicked', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
+	it( 'selects nothing when a delete button is clicked', async () => {
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 		await findRow( wrapper, 'Beta' ).find( DELETE_BUTTON ).trigger( 'click' );
 
-		expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
+		expect( selections( wrapper ) ).toEqual( [] );
 	} );
 
 	it( 'emits addProperty when the add button is clicked', async () => {
-		const wrapper = createWrapper( properties, 'Alpha' );
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 		await findAddButton( wrapper ).trigger( 'click' );
 
@@ -253,111 +269,119 @@ describe( 'PropertyList', () => {
 	describe( 'keyboard navigation', () => {
 
 		it( 'selects next item on ArrowDown', async () => {
-			const wrapper = createWrapper( properties, 'Alpha' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowDown' } );
+			await pressOnList( wrapper, 'ArrowDown' );
 
-			const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
-			expect( emitted ).toHaveLength( 1 );
-			expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Beta' );
+			expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Beta' ) ] );
 		} );
 
 		it( 'selects previous item on ArrowUp', async () => {
-			const wrapper = createWrapper( properties, 'Beta' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Beta' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowUp' } );
+			await pressOnList( wrapper, 'ArrowUp' );
 
-			const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
-			expect( emitted ).toHaveLength( 1 );
-			expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Alpha' );
+			expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Alpha' ) ] );
+		} );
+
+		it( 'selects the Label row on ArrowDown from the Schema\'s row', async () => {
+			const wrapper = createWrapper( properties, SCHEMA_ROW );
+
+			await pressOnList( wrapper, 'ArrowDown' );
+
+			expect( selections( wrapper ) ).toEqual( [ LABEL_ROW ] );
 		} );
 
 		it( 'selects the first property on ArrowDown from the Label row', async () => {
-			const wrapper = createWrapper( properties );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, LABEL_ROW );
 
-			await list.trigger( 'keydown', { key: 'ArrowDown' } );
+			await pressOnList( wrapper, 'ArrowDown' );
 
-			const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
-			expect( emitted ).toHaveLength( 1 );
-			expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Alpha' );
+			expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Alpha' ) ] );
 		} );
 
 		it( 'selects the Label row on ArrowUp from the first property', async () => {
-			const wrapper = createWrapper( properties, 'Alpha' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowUp' } );
+			await pressOnList( wrapper, 'ArrowUp' );
 
-			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toHaveLength( 1 );
-			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
+			expect( selections( wrapper ) ).toEqual( [ LABEL_ROW ] );
 		} );
 
-		it( 'moves the focus to the Label row on ArrowUp from the first property', async () => {
-			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, true, selecting( () => wrapper ) );
+		it( 'selects the Schema\'s row on ArrowUp from the Label row', async () => {
+			const wrapper = createWrapper( properties, LABEL_ROW );
 
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowUp' } );
+			await pressOnList( wrapper, 'ArrowUp' );
+
+			expect( selections( wrapper ) ).toEqual( [ SCHEMA_ROW ] );
+		} );
+
+		it( 'selects nothing above the Schema\'s row on ArrowUp', async () => {
+			const wrapper = createWrapper( properties, SCHEMA_ROW );
+
+			await pressOnList( wrapper, 'ArrowUp' );
+
+			expect( selections( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'moves the focus to the Schema\'s row on ArrowUp from the Label row', async () => {
+			const wrapper: VueWrapper = createWrapper( properties, LABEL_ROW, document.body, true, selecting( () => wrapper ) );
+
+			await pressOnList( wrapper, 'ArrowUp' );
 			await flushPromises();
 
-			expect( document.activeElement ).toBe( findRow( wrapper, LABEL_ROW_TITLE ).element );
+			expect( document.activeElement ).toBe( findRow( wrapper, SCHEMA_ROW_TITLE ).element );
 		} );
 
 		it( 'emits propertyReordered on Alt+ArrowDown', async () => {
-			const wrapper = createWrapper( properties, 'Alpha' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
+			await pressOnList( wrapper, 'ArrowDown', true );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Beta', 'Alpha', 'Gamma' ] );
 		} );
 
 		it( 'keeps the property it moves selected on Alt+ArrowDown', async () => {
-			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, true, selecting( () => wrapper ) );
+			const wrapper: VueWrapper = createWrapper( properties, propertyRow( 'Alpha' ), document.body, true, selecting( () => wrapper ) );
 
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
+			await pressOnList( wrapper, 'ArrowDown', true );
 			await flushPromises();
 
 			expect( selectedRowTitles( wrapper ) ).toEqual( [ 'Alpha' ] );
 		} );
 
 		it( 'emits propertyReordered on Alt+ArrowUp', async () => {
-			const wrapper = createWrapper( properties, 'Gamma' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Gamma' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowUp', altKey: true } );
+			await pressOnList( wrapper, 'ArrowUp', true );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Alpha', 'Gamma', 'Beta' ] );
 		} );
 
 		it( 'does not reorder past the last item on Alt+ArrowDown', async () => {
-			const wrapper = createWrapper( properties, 'Gamma' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Gamma' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
+			await pressOnList( wrapper, 'ArrowDown', true );
 
 			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
 		} );
 
 		it( 'does not move the first property above the Label row on Alt+ArrowUp', async () => {
-			const wrapper = createWrapper( properties, 'Alpha' );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
-			await list.trigger( 'keydown', { key: 'ArrowUp', altKey: true } );
+			await pressOnList( wrapper, 'ArrowUp', true );
 
 			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
-			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toBeUndefined();
+			expect( selections( wrapper ) ).toEqual( [] );
 		} );
 
 		it( 'does not move the Label row on Alt+ArrowDown', async () => {
-			const wrapper = createWrapper( properties );
-			const list = wrapper.find( '[role="listbox"]' );
+			const wrapper = createWrapper( properties, LABEL_ROW );
 
-			await list.trigger( 'keydown', { key: 'ArrowDown', altKey: true } );
+			await pressOnList( wrapper, 'ArrowDown', true );
 
 			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
-			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
+			expect( selections( wrapper ) ).toEqual( [] );
 		} );
 
 	} );
@@ -365,19 +389,20 @@ describe( 'PropertyList', () => {
 	// jsdom cannot drag, so these drive the options the list hands useSortable.
 	describe( 'drag and drop', () => {
 
-		it( 'lets SortableJS drag the property rows but not the Label row', () => {
-			const wrapper = createWrapper( properties );
+		it( 'lets SortableJS drag the property rows but neither the Schema\'s row nor the Label row', () => {
+			const wrapper = createWrapper( properties, SCHEMA_ROW );
 			const draggable = sortableOptions().draggable!;
 
+			expect( findRow( wrapper, SCHEMA_ROW_TITLE ).element.matches( draggable ) ).toBe( false );
 			expect( findRow( wrapper, LABEL_ROW_TITLE ).element.matches( draggable ) ).toBe( false );
 			expect( findRow( wrapper, 'Alpha' ).element.matches( draggable ) ).toBe( true );
 		} );
 
 		it( 'moves a dropped property to its place among the properties', () => {
-			const wrapper = createWrapper( properties, 'Alpha' );
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 			// SortableJS reports indexes that count every row of the list.
-			sortableOptions().onReorder!( 3, 1 );
+			sortableOptions().onReorder!( 4, 2 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );
@@ -386,42 +411,27 @@ describe( 'PropertyList', () => {
 
 	describe( 'without a Label row', () => {
 
-		function createWithoutLabelRow( selectedPropertyName?: string, attachTo?: HTMLElement ): VueWrapper {
-			return createWrapper( properties, selectedPropertyName, attachTo, false );
+		function createWithoutLabelRow( selection: PropertyListRow, attachTo?: HTMLElement ): VueWrapper {
+			return createWrapper( properties, selection, attachTo, false );
 		}
 
-		it( 'lists the properties alone', () => {
-			const wrapper = createWithoutLabelRow( 'Alpha' );
+		it( 'lists the Schema\'s row and the properties', () => {
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ) );
 
-			expect( rowTitles( wrapper ) ).toEqual( [ 'Alpha', 'Beta', 'Gamma' ] );
-		} );
-
-		it( 'keeps the first property in the tab order while none is selected', () => {
-			const wrapper = createWithoutLabelRow();
-
-			expect( focusableRowTitles( wrapper ) ).toEqual( [ 'Alpha' ] );
-		} );
-
-		it( 'selects the first property on ArrowDown while none is selected', async () => {
-			const wrapper = createWithoutLabelRow();
-
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
-
-			const emitted = wrapper.emitted( 'propertySelected' ) as PropertyName[][];
-			expect( emitted[ 0 ][ 0 ].toString() ).toBe( 'Alpha' );
+			expect( rowTitles( wrapper ) ).toEqual( [ SCHEMA_ROW_TITLE, 'Alpha', 'Beta', 'Gamma' ] );
 		} );
 
 		it( 'moves the focus with the selection to the next property', async () => {
-			const wrapper: VueWrapper = createWrapper( properties, 'Alpha', document.body, false, selecting( () => wrapper ) );
+			const wrapper: VueWrapper = createWrapper( properties, propertyRow( 'Alpha' ), document.body, false, selecting( () => wrapper ) );
 
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+			await pressOnList( wrapper, 'ArrowDown' );
 			await flushPromises();
 
 			expect( document.activeElement ).toBe( findRow( wrapper, 'Beta' ).element );
 		} );
 
 		it( 'keeps the focus on the selected property when a click on another is refused', async () => {
-			const wrapper = createWithoutLabelRow( 'Alpha', document.body );
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ), document.body );
 
 			await findRow( wrapper, 'Beta' ).trigger( 'click' );
 			await flushPromises();
@@ -430,27 +440,51 @@ describe( 'PropertyList', () => {
 		} );
 
 		it( 'keeps the focus on the selected property when the selection is refused', async () => {
-			const wrapper = createWithoutLabelRow( 'Alpha', document.body );
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ), document.body );
 
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowDown' } );
+			await pressOnList( wrapper, 'ArrowDown' );
 			await flushPromises();
 
 			expect( document.activeElement ).toBe( findRow( wrapper, 'Alpha' ).element );
 		} );
 
-		it( 'selects nothing above the first property on ArrowUp', async () => {
-			const wrapper = createWithoutLabelRow( 'Alpha' );
+		it( 'selects the first property on ArrowDown from the Schema\'s row', async () => {
+			const wrapper = createWithoutLabelRow( SCHEMA_ROW );
 
-			await wrapper.find( '[role="listbox"]' ).trigger( 'keydown', { key: 'ArrowUp' } );
+			await pressOnList( wrapper, 'ArrowDown' );
 
-			expect( wrapper.emitted( 'propertySelected' ) ).toBeUndefined();
-			expect( wrapper.emitted( 'subjectLabelSelected' ) ).toBeUndefined();
+			expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Alpha' ) ] );
+		} );
+
+		// With a property right below it, where the Label row would otherwise stop the move by itself.
+		it( 'does not move the Schema\'s row on Alt+ArrowDown', async () => {
+			const wrapper = createWithoutLabelRow( SCHEMA_ROW );
+
+			await pressOnList( wrapper, 'ArrowDown', true );
+
+			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
+		} );
+
+		it( 'selects the Schema\'s row on ArrowUp from the first property', async () => {
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ) );
+
+			await pressOnList( wrapper, 'ArrowUp' );
+
+			expect( selections( wrapper ) ).toEqual( [ SCHEMA_ROW ] );
+		} );
+
+		it( 'does not move the first property above the Schema\'s row on Alt+ArrowUp', async () => {
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ) );
+
+			await pressOnList( wrapper, 'ArrowUp', true );
+
+			expect( wrapper.emitted( 'propertyReordered' ) ).toBeUndefined();
 		} );
 
 		it( 'moves a dropped property to its place, with no Label row among the rows SortableJS counts', () => {
-			const wrapper = createWithoutLabelRow( 'Alpha' );
+			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ) );
 
-			sortableOptions().onReorder!( 2, 0 );
+			sortableOptions().onReorder!( 3, 1 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );

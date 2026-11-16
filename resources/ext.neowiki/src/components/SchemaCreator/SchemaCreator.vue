@@ -1,12 +1,19 @@
 <template>
-	<div class="ext-neowiki-schema-creator">
-		<div class="ext-neowiki-schema-creator__name-section">
+	<SchemaEditor
+		ref="schemaEditorRef"
+		class="ext-neowiki-schema-creator"
+		:initial-schema="baseSchema"
+		:subjects-are-dependent="subjectsAreDependent"
+		:opens-on-schema="true"
+		:schema-error="nameError"
+		@change="onChange"
+	>
+		<template #schema>
 			<CdxField
 				:status="nameStatus"
 				:messages="nameError ? { error: nameError } : {}"
 			>
 				<CdxTextInput
-					ref="nameInput"
 					v-model="schemaName"
 					:placeholder="$i18n( 'neowiki-schema-creator-name-placeholder' ).text()"
 					@input="onNameInput"
@@ -17,10 +24,10 @@
 			</CdxField>
 
 			<CdxField :optional="true">
-				<CdxTextInput
+				<CdxTextArea
 					v-model="schemaDescription"
 					:placeholder="$i18n( 'neowiki-schema-editor-description-placeholder' ).text()"
-					@input="onChange"
+					@update:model-value="onChange"
 				/>
 				<template #label>
 					{{ $i18n( 'neowiki-schema-editor-description' ).text() }}
@@ -68,21 +75,13 @@
 			>
 				{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
 			</p>
-		</div>
-
-		<SchemaEditor
-			ref="schemaEditorRef"
-			:initial-schema="baseSchema"
-			:subjects-are-dependent="subjectsAreDependent"
-			:scrolls-with-dialog="true"
-			@change="onChange"
-		/>
-	</div>
+		</template>
+	</SchemaEditor>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue';
-import { CdxButton, CdxCheckbox, CdxField, CdxIcon, CdxTextInput } from '@wikimedia/codex';
+import { onMounted, ref } from 'vue';
+import { CdxButton, CdxCheckbox, CdxField, CdxIcon, CdxTextArea, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
@@ -122,17 +121,15 @@ const subjectsAreDependent = ref( props.subjectsAreDependent ?? baseSchema.subje
 const explanationShown = ref( false );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
-const nameInput = ref<InstanceType<typeof CdxTextInput> | null>( null );
 const schemaEditorRef = ref<SchemaEditorExposes | null>( null );
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let requestSequence = 0;
 
-// The Schema editor focuses a duplicate's first property definition; the name is the field to fill in first. A new
-// Schema is left to Codex, which focuses the name itself: focusing it sooner stops Codex returning the focus on close.
+// The name, the first of the fields the editor opens on, is the field to fill in first. A task later: Codex focuses
+// the dialog's first focusable element, the Schema's row, one or two ticks after it opens, and would otherwise win.
+// Focusing it sooner would also stop Codex returning the focus on close.
 onMounted( () => {
-	if ( props.duplicateOf !== undefined ) {
-		nextTick( () => nameInput.value?.focus() );
-	}
+	setTimeout( () => schemaEditorRef.value?.showSchema() );
 } );
 
 function onChange(): void {
@@ -185,18 +182,21 @@ async function validate(): Promise<boolean> {
 	const name = schemaName.value.trim();
 
 	if ( !name ) {
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-required' );
-		nameStatus.value = 'error';
-		return false;
+		return refuseName( mw.msg( 'neowiki-schema-creator-name-required' ) );
 	}
 
 	if ( await schemaStore.schemaNameExists( name ) ) {
-		nameError.value = mw.msg( 'neowiki-schema-creator-name-taken' );
-		nameStatus.value = 'error';
-		return false;
+		return refuseName( mw.msg( 'neowiki-schema-creator-name-taken' ) );
 	}
 
 	return true;
+}
+
+function refuseName( error: string ): false {
+	nameError.value = error;
+	nameStatus.value = 'error';
+	schemaEditorRef.value?.showSchema();
+	return false;
 }
 
 function getSchema(): Schema | null {
@@ -233,21 +233,7 @@ defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, revealEr
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-/* The Schema editor takes what the name fields leave of a dialog taller than both, so its
-	panes run down to the footer. */
 .ext-neowiki-schema-creator {
-	display: grid;
-	grid-template-rows: auto 1fr;
-
-	&__name-section {
-		padding: @spacing-100;
-		border-block-end: @border-subtle;
-
-		@media ( min-width: @min-width-breakpoint-desktop ) {
-			padding: @spacing-150;
-		}
-	}
-
 	/* The button ends the line saying that the choice is final, and the explanation opens below that line. On the
 		baseline rather than at the end: the checkbox's margin and padding reach below its last line. */
 	&__dependence-option {
@@ -264,7 +250,7 @@ defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, revealEr
 	}
 
 	&__dependence-decided {
-		margin: @spacing-75 0 0;
+		margin: @spacing-100 0 0;
 		color: @color-subtle;
 	}
 }

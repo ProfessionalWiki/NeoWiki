@@ -89,7 +89,7 @@ import {
 	type SubjectViolation
 } from '@/domain/SubjectViolation.ts';
 import { DependentSubjectEditingKey, DependentSubjectViolationsKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
-import { focusFirstValueControl } from '@/components/SubjectEditor/valueControlFocus.ts';
+import { focusFirstValueControl } from '@/components/common/valueControlFocus.ts';
 
 const props = defineProps<{
 	/** Undefined for a Dependent Subject that did not load, which can only be removed. */

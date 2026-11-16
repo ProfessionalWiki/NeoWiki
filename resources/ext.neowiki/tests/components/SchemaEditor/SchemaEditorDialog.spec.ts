@@ -1,14 +1,12 @@
-import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
+import { DOMWrapper, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent, nextTick, ref } from 'vue';
+import { defineComponent, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaEditorDialog, { type SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
-import EditableText from '@/components/common/EditableText.vue';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import DialogHeader from '@/components/common/DialogHeader.vue';
-import EditorPanes from '@/components/common/EditorPanes.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
@@ -19,7 +17,7 @@ import { newRelationProperty, RelationProperty } from '@/domain/propertyTypes/Re
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { createI18nMock, pressHeaderClose, scrollPartway, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const $i18n = createI18nMock();
@@ -29,17 +27,16 @@ const $i18n = createI18nMock();
 let editorSaveBlocker: SaveBlocker | null = null;
 let editorErrorsRevealed = false;
 
+// Shows the fields the dialog gives it for the Schema's own row, as the real editor does while that row is selected.
 const SchemaEditorStub = defineComponent( {
-	template: '<div class="schema-editor-stub"></div>',
+	template: '<div class="schema-editor-stub"><slot name="schema" /></div>',
 	props: {
 		initialSchema: { type: Object, required: true },
-		description: { type: String, required: true },
 	},
 	emits: [ 'change' ],
 	methods: {
-		// Mirrors the real editor, which applies the host-owned description.
 		getSchema(): Schema {
-			return newSchema( { title: 'TestSchema', description: this.description, properties: new PropertyDefinitionList( [] ) } );
+			return newSchema( { title: 'TestSchema', properties: new PropertyDefinitionList( [] ) } );
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -49,13 +46,6 @@ const SchemaEditorStub = defineComponent( {
 		},
 	},
 } );
-
-// The editor as far as its panes: a body the header collapses its supporting text for.
-const SchemaEditorWithPanesStub = {
-	name: 'SchemaEditor',
-	components: { EditorPanes },
-	template: '<EditorPanes><div class="detail"></div></EditorPanes>',
-};
 
 const SummaryActionStub = {
 	template: '<div class="edit-summary-stub"></div>',
@@ -87,18 +77,15 @@ describe( 'SchemaEditorDialog', () => {
 		CloseConfirmationDialog: CloseConfirmationDialogStub,
 	};
 
-	function mountComponent(): VueWrapper {
+	function mountOn( initialSchema: Schema ): VueWrapper {
 		return mount( SchemaEditorDialog, {
-			props: {
-				initialSchema: mockSchema,
-				open: true,
-				onSave,
-			},
-			global: {
-				mocks: { $i18n },
-				stubs,
-			},
+			props: { initialSchema, open: true, onSave },
+			global: { mocks: { $i18n }, stubs },
 		} );
+	}
+
+	function mountComponent(): VueWrapper {
+		return mountOn( mockSchema );
 	}
 
 	describe( 'Save button', () => {
@@ -146,94 +133,31 @@ describe( 'SchemaEditorDialog', () => {
 	} );
 
 	describe( 'Description', () => {
-		async function typeDescription( wrapper: VueWrapper, text: string ): Promise<void> {
-			const field = wrapper.findComponent( EditableText );
-			await field.get( 'button[aria-label="neowiki-schema-editor-description-edit"]' ).trigger( 'click' );
-			await field.get( 'textarea' ).setValue( text );
+		function descriptionField( wrapper: VueWrapper ): Omit<DOMWrapper<HTMLTextAreaElement>, 'exists'> {
+			return wrapper.findComponent( SchemaEditor ).get<HTMLTextAreaElement>( 'textarea' );
 		}
 
-		it( 'shows the description of the schema being edited', async () => {
+		it( 'shows the description of the schema being edited among the fields of the Schema\'s row', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			expect( wrapper.findComponent( EditableText ).props( 'modelValue' ) ).toBe( 'A test schema' );
-		} );
-
-		it( 'passes the description down to the editor', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-
-			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
-
-			expect( wrapper.findComponent( SchemaEditor ).props( 'description' ) ).toBe( 'Rewritten' );
+			expect( descriptionField( wrapper ).element.value ).toBe( 'A test schema' );
 		} );
 
 		it( 'enables save once the description is edited', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
+			await descriptionField( wrapper ).setValue( 'Rewritten' );
 
 			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
-		} );
-
-		it( 'enables save while a typed description is still open', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-
-			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
-
-			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( false );
-		} );
-
-		it( 'disables save again when the typed description is discarded', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-
-			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
-			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', false );
-
-			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
-		} );
-
-		it( 'asks before closing while a typed description is still open', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-			await wrapper.findComponent( EditableText ).vm.$emit( 'dirty', true );
-
-			wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
-			await flushPromises();
-
-			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
-		} );
-
-		it( 'drops a dirty draft when the dialog reopens', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-			await typeDescription( wrapper, 'Rewr' );
-
-			await wrapper.setProps( { open: false } );
-			await wrapper.setProps( { open: true } );
-
-			expect( wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) ).toBe( true );
-		} );
-
-		it( 'saves a description still being typed', async () => {
-			const wrapper = mountComponent();
-			await flushPromises();
-			await typeDescription( wrapper, 'Typed' );
-
-			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
-			await flushPromises();
-
-			expect( onSave.mock.calls[ 0 ][ 0 ].getDescription() ).toBe( 'Typed' );
 		} );
 
 		it( 'saves the edited description', async () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Rewritten' );
+			await descriptionField( wrapper ).setValue( 'Rewritten' );
 			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', 'a summary' );
 			await flushPromises();
 
@@ -244,34 +168,26 @@ describe( 'SchemaEditorDialog', () => {
 			const wrapper = mountComponent();
 			await flushPromises();
 
-			await wrapper.findComponent( EditableText ).vm.$emit( 'update:modelValue', 'Abandoned' );
+			await descriptionField( wrapper ).setValue( 'Abandoned' );
 			await wrapper.setProps( { open: false } );
 			await wrapper.setProps( { open: true } );
 			await flushPromises();
 
-			expect( wrapper.findComponent( EditableText ).props( 'modelValue' ) ).toBe( 'A test schema' );
+			expect( descriptionField( wrapper ).element.value ).toBe( 'A test schema' );
 		} );
 	} );
 
 	describe( 'Whether the Subjects are dependent', () => {
-		// Not teleported, so that its header can be read off the wrapper.
-		function mountOn( initialSchema: Schema ): VueWrapper {
-			return mount( SchemaEditorDialog, {
-				props: { initialSchema, open: true, onSave },
-				global: { mocks: { $i18n }, stubs: { ...stubs, teleport: true } },
-			} );
-		}
-
-		it( 'says so of a Schema whose Subjects are dependent', () => {
+		it( 'says so of a Schema whose Subjects are dependent, among the fields of the Schema\'s row', () => {
 			const wrapper = mountOn( newSchema( { subjectsAreDependent: true } ) );
 
-			expect( wrapper.find( '.cdx-dialog__header' ).text() ).toContain( 'neowiki-schema-subjects-are-dependent' );
+			expect( wrapper.findComponent( SchemaEditor ).text() ).toContain( 'neowiki-schema-subjects-are-dependent' );
 		} );
 
 		it( 'says nothing of it for a Schema whose Subjects are standalone', () => {
 			const wrapper = mountOn( mockSchema );
 
-			expect( wrapper.find( '.cdx-dialog__header' ).text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
+			expect( wrapper.findComponent( SchemaEditor ).text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
 		} );
 	} );
 
@@ -293,27 +209,6 @@ describe( 'SchemaEditorDialog', () => {
 
 			expect( wrapper.findComponent( DialogHeader ).props( 'useCloseButton' ) ).toBe( true );
 		} );
-	} );
-
-	// Through the editor's own panes, which the header tells apart from the other scrollers in the dialog.
-	it( 'collapses its description while a pane of the editor is scrolled down', async () => {
-		const wrapper = mount( SchemaEditorDialog, {
-			props: { initialSchema: mockSchema, open: true, onSave },
-			global: {
-				mocks: { $i18n },
-				stubs: { ...stubs, SchemaEditor: SchemaEditorWithPanesStub },
-			},
-		} );
-		await flushPromises();
-
-		const pane = wrapper.findComponent( EditorPanes ).get( '.ext-neowiki-editor-panes__pane' ).element;
-		scrollPartway( pane );
-		await nextTick();
-
-		const supportingText = pane.closest( '.cdx-dialog' )?.querySelector( '.ext-neowiki-dialog-header__supporting-text' );
-
-		expect( supportingText?.hasAttribute( 'inert' ) ).toBe( true );
-		wrapper.unmount();
 	} );
 
 	describe( 'Close confirmation', () => {
@@ -415,7 +310,7 @@ describe( 'SchemaEditorDialog', () => {
 		// way the property editor does.
 		const RelationEditorStub = {
 			components: { RelationAttributesEditor },
-			props: [ 'initialSchema', 'description' ],
+			props: [ 'initialSchema' ],
 			emits: [ 'change' ],
 			setup() {
 				const property = ref<RelationProperty>( newRelationProperty( { targetSchemas: [ 'Person' ] } ) );
