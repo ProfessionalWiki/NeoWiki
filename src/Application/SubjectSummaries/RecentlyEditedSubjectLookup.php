@@ -5,7 +5,8 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Application\SubjectSummaries;
 
 /**
- * The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it.
+ * The Subjects whose data was edited last, newest first. Adding a Subject counts as editing it, and adding or changing
+ * a Dependent Subject as editing the Subject at the top of its chain of Host Subjects.
  *
  * Each Subject is listed once, at its last edit, with the data its page publishes. A Subject on a page the caller may
  * not read is left out as if absent.
