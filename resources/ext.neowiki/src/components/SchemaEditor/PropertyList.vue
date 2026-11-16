@@ -20,16 +20,6 @@
 					<span class="ext-neowiki-property-list__item__text__label">
 						{{ $i18n( 'neowiki-schema-editor-schema' ).text() }}
 					</span>
-					<span
-						v-if="schemaError"
-						class="ext-neowiki-property-list__item__text__error"
-					>
-						<CdxIcon
-							:icon="cdxIconError"
-							size="small"
-						/>
-						{{ schemaError }}
-					</span>
 				</span>
 			</li>
 			<li
@@ -118,7 +108,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDraggable, cdxIconError, cdxIconSettings, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconDraggable, cdxIconSettings, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
@@ -131,8 +121,6 @@ const props = defineProps<{
 	properties: PropertyDefinitionList;
 	selection: PropertyListRow;
 	showsLabelRow: boolean;
-	/** A problem with the Schema's own fields, shown on its row too: they are out of sight while another row is selected. */
-	schemaError?: string;
 }>();
 
 const emit = defineEmits<{
@@ -367,20 +355,6 @@ useSortable( listRef, {
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
-			}
-
-			/* As a field's validation message, and wrapped rather than cut short: it says what to fix. */
-			&__error {
-				display: flex;
-				align-items: flex-start;
-				gap: @spacing-25;
-				font-size: @font-size-small;
-				color: @color-error;
-
-				.cdx-icon {
-					flex-shrink: 0;
-					color: @color-error;
-				}
 			}
 		}
 
