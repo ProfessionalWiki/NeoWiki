@@ -265,69 +265,19 @@ function sizeForKey( key: string, sign: number ): number {
 	touch-action: none;
 	user-select: none;
 
-	&::before,
-	&::after {
-		content: '';
-		grid-area: 1 / 1;
-	}
-
 	/* A border rather than a painted box: forced-colors mode keeps borders and replaces
 		backgrounds with the canvas, which would leave the rule invisible exactly where the
 		12px target is hardest to hit. Printing drops backgrounds too. Stopping short of the panes'
 		ends, as there is no line above or below them for it to meet; the target still runs their
 		whole height. */
 	&::before {
+		content: '';
 		margin-block: @spacing-50;
 		border-inline-start: @border-subtle;
 	}
 
-	/* The grip, shown once the divider is about to move, and always where no pointer can hover
-		over it to find out that it moves. */
-	&::after {
-		visibility: hidden;
-		align-self: center;
-		box-sizing: border-box;
-		inline-size: @spacing-35;
-		block-size: @size-200;
-		border: @border-width-base @border-style-base @border-color-base;
-		border-radius: @border-radius-pill;
-		background-color: @background-color-base;
-	}
-
-	@media ( hover: none ) {
-		&::after {
-			visibility: visible;
-		}
-	}
-
-	@media ( hover: hover ) {
-		&:hover {
-			background-color: @background-color-interactive;
-
-			&::after {
-				visibility: visible;
-				border-color: @border-color-interactive;
-			}
-		}
-	}
-
-	&:focus-visible::after {
-		visibility: visible;
-		border-color: @border-color-progressive--focus;
-	}
-
-	/* Doubled to outrank the hover above, which the pointer holding the divider keeps on. */
-	&&--dragging {
-		background-color: transparent;
-
-		&::before {
-			border-inline-start: @border-width-thick @border-style-base @border-color-progressive;
-		}
-
-		&::after {
-			visibility: visible;
-			border-color: @border-color-progressive;
-		}
+	&--dragging::before {
+		border-inline-start: @border-width-thick @border-style-base @border-color-progressive;
 	}
 
 	&:focus-visible {
@@ -335,15 +285,8 @@ function sizeForKey( key: string, sign: number ): number {
 		outline-offset: -@border-width-thick;
 	}
 
-	/* Last, to outrank the hover, focus and touch screen rules above, which offer a move it
-		cannot make. */
 	&[ aria-disabled='true' ] {
-		background-color: transparent;
 		cursor: default;
-
-		&::after {
-			display: none;
-		}
 	}
 }
 
