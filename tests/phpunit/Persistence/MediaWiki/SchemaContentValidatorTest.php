@@ -492,7 +492,7 @@ JSON
 	 * A custom Property Type's own Constraint keys are not declared here, so only the
 	 * additionalProperties guard checks their severity. Without it the typo saves cleanly and
 	 * SeverityNormalizer::extract then throws on every read, which SchemaPersistenceDeserializer
-	 * swallows — silently removing the property from the Schema with no error and no log.
+	 * catches, removing the property from the Schema with only a log warning to show for it.
 	 */
 	public function testCustomKeyObjectFormWithInvalidSeverityFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();

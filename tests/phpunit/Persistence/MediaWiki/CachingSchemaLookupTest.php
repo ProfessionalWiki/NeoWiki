@@ -21,6 +21,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\SpyPageContentFetcher;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubPageReadAuthorizer;
 use Wikimedia\ObjectCache\EmptyBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
+use Psr\Log\NullLogger;
 
 /**
  * The shared tier is PublishedPageJsonLookup's, so these run with a shared cache that stores nothing,
@@ -135,7 +136,7 @@ class CachingSchemaLookupTest extends TestCase {
 				$this->createMock( Authority::class ),
 				new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] )
 			),
-			schemaDeserializer: new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry() ),
+			schemaDeserializer: new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry(), new NullLogger() ),
 			titleFactory: $titleFactory ?? $this->newTitleFactory( 'Person', 100 ),
 			readAuthorizer: $readAuthorizer ?? new StubPageReadAuthorizer( allowed: true ),
 		);

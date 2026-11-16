@@ -11,7 +11,6 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\TextType;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestData;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestProperty;
@@ -201,7 +200,7 @@ class SchemaPresentationSerializerTest extends TestCase {
 	public function testSchemaIntegrityAfterRoundTripSerialization( string $schemaName, string $originalSchemaJson ): void {
 		$originalSchemaArray = json_decode( $originalSchemaJson, true );
 
-		$deserializer = new SchemaPersistenceDeserializer( NeoWikiExtension::getInstance()->getPropertyTypeLookup() );
+		$deserializer = NeoWikiExtension::getInstance()->getPersistenceSchemaDeserializer();
 		$originalSchema = $deserializer->deserialize( new SchemaName( $schemaName ), json_encode( $originalSchemaArray ) );
 
 		$serialized = $this->serializer->serialize( $originalSchema );

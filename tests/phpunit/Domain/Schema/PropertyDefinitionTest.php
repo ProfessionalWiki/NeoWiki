@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Domain\Schema;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Tests\Domain\Schema\Property\PropertyTestCase;
 
 /**
@@ -51,6 +52,13 @@ class PropertyDefinitionTest extends PropertyTestCase {
 			'labels',
 			$this->fromJson( '{ "type": "date", "labels": { "de": "" } }' )->toJson()
 		);
+	}
+
+	public function testRefusalCarriesThePropertyTypesReason(): void {
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'target Schemas of a relation property' );
+
+		$this->fromJson( '{ "type": "relation" }' );
 	}
 
 }
