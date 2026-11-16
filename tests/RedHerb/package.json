@@ -5,13 +5,13 @@
 	"license": "GPL-2.0-or-later",
 	"scripts": {
 		"lint": "npm run lint:code && npm run lint:styles && npm run lint:i18n",
-		"lint:code": "eslint . --ext .js,.vue --ignore-path .gitignore",
+		"lint:code": "eslint .",
 		"lint:styles": "NODE_NO_WARNINGS=1 stylelint \"resources/**/*.{vue,less}\"",
 		"lint:i18n": "banana-checker i18n/"
 	},
 	"devDependencies": {
-		"eslint": "^8.57.0",
-		"eslint-config-wikimedia": "^0.32.4",
+		"eslint": "^9.39.5",
+		"eslint-config-wikimedia": "^0.33.1",
 		"grunt-banana-checker": "0.13.0",
 		"stylelint": "^16.12.0",
 		"stylelint-config-wikimedia": "^0.18.0"
