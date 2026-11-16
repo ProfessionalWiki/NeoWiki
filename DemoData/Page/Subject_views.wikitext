@@ -4,4 +4,15 @@ Edits in any view also propagate to the others without a page reload.
 
 Sandbox Subject uses a dedicated [[Schema:Sandbox|Sandbox]] schema, so editing it here won't affect any other Subject in the demo wiki.
 
+<pre>
+{{#view:s1demo9aaaaaaa1}}
+
+{{#view:s1demo9aaaaaaa1|layout=SandboxCompact}}
+
+{{#view:s1demo9aaaaaaa1|layout=SandboxDetail}}
+</pre>
+
 {{#invoke:SubjectRow|render|s1demo9aaaaaaa1|s1demo9aaaaaaa1@SandboxCompact|s1demo9aaaaaaa1@SandboxDetail}}
+
+; List of layouts
+* [[Special:Layouts]]
