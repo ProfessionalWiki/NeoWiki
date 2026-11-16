@@ -141,4 +141,10 @@ describe( 'EditorPanes', () => {
 
 		expect( wrapper.classes() ).toContain( 'ext-neowiki-editor-panes--stacks-below-desktop' );
 	} );
+
+	it( 'leaves the scrolling to the dialog for a host that asks', () => {
+		const wrapper = mountPanes( { scrollsWithDialog: true } );
+
+		expect( wrapper.classes() ).toContain( 'ext-neowiki-editor-panes--scrolls-with-dialog' );
+	} );
 } );

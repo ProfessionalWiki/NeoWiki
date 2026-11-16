@@ -83,6 +83,26 @@ test( 'the property editor fades its pane by as much as the content runs past ea
 	await expect.poll( () => fadeDepths( pane ) ).toEqual( { start: 24, end: 0 } );
 } );
 
+test( 'the Create schema dialog scrolls with the wheel over its editor', async ( { page } ) => {
+	await page.setViewportSize( { width: 1280, height: 600 } );
+
+	await page.goto( 'index.php?title=Special:Schemas' );
+	await page.getByRole( 'button', { name: 'Create schema' } ).click();
+	const dialog = page.getByRole( 'dialog', { name: 'Create schema' } );
+	await dialog.getByRole( 'button', { name: 'Add property definition' } ).click();
+	const body = dialog.locator( '.cdx-dialog__body' );
+	const scrollTop = (): Promise<number> => body.evaluate( ( element ) => element.scrollTop );
+
+	// What makes the test mean anything: the dialog has more to show than fits.
+	expect( await body.evaluate( ( element ) => element.scrollHeight > element.clientHeight ) ).toBe( true );
+
+	await dialog.getByRole( 'textbox', { name: 'Name', exact: true } ).hover();
+	const scrollTopBefore = await scrollTop();
+	await page.mouse.wheel( 0, 100 );
+
+	await expect.poll( scrollTop ).toBeGreaterThan( scrollTopBefore );
+} );
+
 async function scrollTo( scroller: Locator, top: number ): Promise<void> {
 	await scroller.evaluate( ( element, scrollTop ) => {
 		element.scrollTop = Math.min( scrollTop, element.scrollHeight );

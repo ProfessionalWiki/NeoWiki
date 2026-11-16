@@ -74,6 +74,7 @@
 			ref="schemaEditorRef"
 			:initial-schema="baseSchema"
 			:subjects-are-dependent="subjectsAreDependent"
+			:scrolls-with-dialog="true"
 			@change="onChange"
 		/>
 	</div>

@@ -4,7 +4,8 @@
 		class="ext-neowiki-editor-panes"
 		:class="{
 			'ext-neowiki-editor-panes--two': showsStartPane(),
-			'ext-neowiki-editor-panes--stacks-below-desktop': stacksBelowDesktop
+			'ext-neowiki-editor-panes--stacks-below-desktop': stacksBelowDesktop,
+			'ext-neowiki-editor-panes--scrolls-with-dialog': scrollsWithDialog
 		}"
 		:style="showsStartPane() ? { '--ext-neowiki-pane-size': paneSize?.cssSize.value } : undefined"
 	>
@@ -61,6 +62,8 @@ const props = defineProps<{
 	startPane?: StartPaneOptions;
 	/** Below desktop width, puts the start pane above the main one and leaves the scrolling to the dialog. */
 	stacksBelowDesktop?: boolean;
+	/** Leaves the scrolling to the dialog at every width, for a host that lets the editor grow with its content. */
+	scrollsWithDialog?: boolean;
 }>();
 
 const slots = useSlots();
@@ -87,6 +90,20 @@ defineExpose( { mainPane } );
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 @import ( reference ) '@/assets/mixins.less';
+
+/* For panes the dialog scrolls with the rest of its content. They must not be scrollers: Chromium ends a wheel's
+	scrolling at a scroller with `overscroll-behavior: none` even where it has nothing to scroll, short of the dialog. */
+.ext-neowiki-editor-panes-scroll-with-dialog() {
+	.ext-neowiki-editor-panes__pane {
+		overflow-y: visible;
+		scrollbar-gutter: auto;
+
+		&::before,
+		&::after {
+			display: none;
+		}
+	}
+}
 
 /* `minmax( 0, 1fr )` for the row: each pane stretches to it and scrolls itself, which keeps the
 	start pane in view while the main one is scrolled. `min-height: 0` is what lets this grid, and
@@ -121,6 +138,10 @@ defineExpose( { mainPane } );
 		scrollbar-gutter: stable;
 	}
 
+	&--scrolls-with-dialog {
+		.ext-neowiki-editor-panes-scroll-with-dialog();
+	}
+
 	/* The divider is hidden only where the panes are stacked, a single track: hiding a grid item
 		inside an explicit three-track list would leave its track behind and land the main pane in
 		it. */
@@ -134,15 +155,7 @@ defineExpose( { mainPane } );
 				display: none;
 			}
 
-			.ext-neowiki-editor-panes__pane {
-				overflow-y: visible;
-				scrollbar-gutter: auto;
-
-				&::before,
-				&::after {
-					display: none;
-				}
-			}
+			.ext-neowiki-editor-panes-scroll-with-dialog();
 		}
 	}
 }

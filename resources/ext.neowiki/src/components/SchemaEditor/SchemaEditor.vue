@@ -3,6 +3,7 @@
 		class="ext-neowiki-schema-editor"
 		:start-pane="{ ...PROPERTY_LIST_SIZE, resizeLabel: $i18n( 'neowiki-schema-editor-resize-property-list' ).text() }"
 		:stacks-below-desktop="true"
+		:scrolls-with-dialog="scrollsWithDialog"
 		@keydown.capture="onKeydown"
 	>
 		<template #start>
@@ -75,6 +76,8 @@ const props = withDefaults( defineProps<{
 	 * what the Schema declares.
 	 */
 	subjectsAreDependent?: boolean | null;
+	/** Set by a host that scrolls the editor in its dialog together with content of its own, as the Schema creator does. */
+	scrollsWithDialog?: boolean;
 }>(), {
 	description: undefined,
 	subjectsAreDependent: null
