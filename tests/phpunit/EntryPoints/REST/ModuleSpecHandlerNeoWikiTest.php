@@ -19,6 +19,7 @@ use MediaWiki\Session\SessionManager;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ReflectionMethod;
+use ReflectionParameter;
 use Wikimedia\Message\ITextFormatter;
 use Wikimedia\Message\MessageSpecifier;
 
@@ -54,6 +55,18 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 		$firstParameter = ( new ReflectionMethod( Router::class, '__construct' ) )->getParameters()[0];
 
 		return $firstParameter->getType()?->getName() !== 'array';
+	}
+
+	/**
+	 * MediaWiki 1.48 hands Router the JsonLocalizer it used to build from its first text formatter.
+	 */
+	private function routerTakesJsonLocalizer(): bool {
+		$parameterTypes = array_map(
+			static fn ( ReflectionParameter $parameter ): ?string => $parameter->getType()?->getName(),
+			( new ReflectionMethod( Router::class, '__construct' ) )->getParameters()
+		);
+
+		return in_array( JsonLocalizer::class, $parameterTypes, true );
 	}
 
 	private function newModuleManager( ITextFormatter $formatter ): ModuleManager {
@@ -113,7 +126,8 @@ class ModuleSpecHandlerNeoWikiTest extends NeoWikiIntegrationTestCase {
 				new MWErrorReporter(),
 				$services->getHookContainer(),
 				$this->getSession( true ),
-				$services->getUrlUtils()
+				$services->getUrlUtils(),
+				...( $this->routerTakesJsonLocalizer() ? [ new JsonLocalizer( $formatter ) ] : [] )
 			);
 		}
 

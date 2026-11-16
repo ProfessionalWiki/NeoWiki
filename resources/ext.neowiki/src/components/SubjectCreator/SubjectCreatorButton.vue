@@ -25,6 +25,13 @@
 			:default-action="closeAction"
 			@default="denialOpen = false"
 		>
+			<template #header>
+				<DialogHeader
+					:title="$i18n( 'permissionserrors' ).text()"
+					@close="denialOpen = false"
+				/>
+			</template>
+
 			{{ denialReason }}
 		</CdxDialog>
 	</div>
@@ -33,6 +40,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { DialogAction } from '@wikimedia/codex';
 import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';

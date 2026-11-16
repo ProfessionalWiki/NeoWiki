@@ -206,6 +206,7 @@
 	"neowiki-schema-editor-no-properties-dependent": "Add the Property Definitions of this Schema's Dependent Subjects.",
 
 	"neowiki-subject-creator-title": "Creating subject",
+	"neowiki-subject-creator-back": "Back",
 	"neowiki-subject-creator-schema-field": "Schema",
 	"neowiki-schema-picker-placeholder": "Select a schema",
 	"neowiki-schema-picker-create": "Create schema",
@@ -293,6 +294,7 @@
 	"neowiki-subject-editor-save-scope": "Saves changes to $1 {{PLURAL:$1|subject|subjects}} on $2 {{PLURAL:$2|page|pages}}.",
 	"neowiki-subject-editor-save-scope-subject-first": "Saves changes to $1 {{PLURAL:$1|subject|subjects}}.",
 	"neowiki-subject-editor-open-subjects": "Subjects being edited",
+	"neowiki-subject-editor-resize-open-subjects": "Resize list of subjects being edited",
 	"neowiki-dependent-subject-add": "Add $1",
 	"neowiki-dependent-subject-add-choose": "Add",
 	"neowiki-dependent-subject-remove": "Remove $1",
@@ -409,7 +411,6 @@
 	"neowiki-edit-summary-help-text-layout": "Changes affect all views using this Layout.",
 	"neowiki-layout-editor-description": "Description",
 	"neowiki-layout-editor-description-placeholder": "Enter a description for the layout",
-	"neowiki-layout-editor-schema": "Schema",
 	"neowiki-layout-editor-view-type": "View type",
 	"neowiki-layout-editor-show-all-properties": "Show all properties",
 	"neowiki-layout-editor-shown-count": "$1 of $2 shown",

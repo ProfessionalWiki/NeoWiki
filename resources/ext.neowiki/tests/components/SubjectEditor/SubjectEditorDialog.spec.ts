@@ -23,11 +23,14 @@ import SubjectEditor from '@/components/SubjectEditor/SubjectEditor.vue';
 import SubjectEditPane from '@/components/SubjectEditor/SubjectEditPane.vue';
 import DependentSubjectEditor from '@/components/SubjectEditor/DependentSubjectEditor.vue';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
+import PaneDivider from '@/components/common/PaneDivider.vue';
+import EditorPanes from '@/components/common/EditorPanes.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { EditNotice } from '@/domain/EditNotice';
@@ -153,6 +156,7 @@ describe( 'SubjectEditorDialog', () => {
 			( subject: any, pageId: number, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>
 		) | undefined = undefined,
 		extraProps: Record<string, unknown> = {},
+		slots: Record<string, string> = {},
 	): VueWrapper => {
 		schemaPermissionHints = {
 			canEditSchema: vi.fn().mockResolvedValue( canEditSchema ),
@@ -164,6 +168,7 @@ describe( 'SubjectEditorDialog', () => {
 
 		return mount( SubjectEditorDialog, {
 			attachTo,
+			slots,
 			props: {
 				subject,
 				schema,
@@ -396,6 +401,13 @@ describe( 'SubjectEditorDialog', () => {
 			.toBe( 'neowiki-subject-editor-title' );
 	} );
 
+	it( 'keeps its close button on wide screens', async () => {
+		const wrapper = mountComponent( true, {} );
+		await flushPromises();
+
+		expect( wrapper.findComponent( DialogHeader ).props( 'useCloseButton' ) ).toBe( true );
+	} );
+
 	// Reached through a pane: the real Teleport moves the dialog out of the wrapper's subtree, where
 	// a query rooted at the wrapper finds no header and so reads every id as absent.
 	function dialogHeader( wrapper: VueWrapper ): DOMWrapper<Element> {
@@ -406,7 +418,7 @@ describe( 'SubjectEditorDialog', () => {
 	}
 
 	function idBesideTitle( wrapper: VueWrapper ): string | null {
-		return dialogHeader( wrapper ).element.querySelector( '.cdx-dialog__header__subtitle' )?.textContent?.trim() ?? null;
+		return dialogHeader( wrapper ).element.querySelector( '.ext-neowiki-subject-editor-dialog__subject-id' )?.textContent?.trim() ?? null;
 	}
 
 	function schemaBadge( wrapper: VueWrapper ): Omit<DOMWrapper<Element>, 'exists'> {
@@ -1417,6 +1429,7 @@ describe( 'SubjectEditorDialog', () => {
 			rootSchema?: Schema;
 			rootSubject?: Subject;
 			stubs?: Record<string, any>;
+			slots?: Record<string, string>;
 		}
 
 		function mountWithTargetRepos(
@@ -1427,6 +1440,7 @@ describe( 'SubjectEditorDialog', () => {
 			attachTo: Element | undefined = undefined,
 			onCreate: Mock | undefined = undefined,
 			extraProps: Record<string, unknown> = {},
+			slots: Record<string, string> = {},
 		): TargetReposMount {
 			const target = targetSubject( 's22222222222222', 'Target subject' );
 			const mockSubjectRepository = {
@@ -1452,14 +1466,15 @@ describe( 'SubjectEditorDialog', () => {
 				attachTo,
 				onCreate,
 				extraProps,
+				slots,
 			);
 			return { wrapper, mockSubjectRepository, mockSchemaRepository, target };
 		}
 
 		async function mountWithSecondPaneOpen(
-			{ onSave, rootSchema, rootSubject, stubs = {} }: PaneStackOptions = {},
+			{ onSave, rootSchema, rootSubject, stubs = {}, slots = {} }: PaneStackOptions = {},
 		): Promise<TargetReposMount> {
-			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject );
+			const result = mountWithTargetRepos( onSave, stubs, rootSchema, rootSubject, undefined, undefined, {}, slots );
 			await flushPromises();
 			result.wrapper.findComponent( SubjectEditPane ).vm.$emit( 'edit-relation-target', new SubjectId( 's22222222222222' ) );
 			await flushPromises();
@@ -1527,6 +1542,19 @@ describe( 'SubjectEditorDialog', () => {
 			expect( wrapper.findAllComponents( SubjectEditPane ) ).toHaveLength( 2 );
 			expect( wrapper.find( `#ext-neowiki-panel-${ rootSubjectId }` ).attributes( 'style' ) )
 				.toContain( 'display: none' );
+		} );
+
+		it( 'remembers the width of the list of open Subjects apart from other editors\' lists', async () => {
+			const storage = { get: vi.fn( () => null ), set: vi.fn( () => true ) };
+			const global = globalThis as unknown as { mw: Record<string, unknown> };
+			global.mw = { ...global.mw, storage };
+			const { wrapper } = await mountWithSecondPaneOpen();
+
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'resize', 400 );
+			wrapper.findComponent( PaneDivider ).vm.$emit( 'commit' );
+			await nextTick();
+
+			expect( storage.set ).toHaveBeenCalledWith( 'neowiki-subject-editor-pane-size', '400' );
 		} );
 
 		it( 'shows a newly opened relation target', async () => {
@@ -1677,7 +1705,7 @@ describe( 'SubjectEditorDialog', () => {
 		describe( 'Scroll position', () => {
 			function formScroller( wrapper: VueWrapper ): Element {
 				return wrapper.findComponent( SubjectEditPane ).element
-					.closest( '.ext-neowiki-subject-editor-dialog__surface' ) as Element;
+					.closest( '.ext-neowiki-editor-panes__pane' ) as Element;
 			}
 
 			async function mountOnRootScrolledTo( scrollTop: number ): Promise<VueWrapper> {
@@ -1945,7 +1973,7 @@ describe( 'SubjectEditorDialog', () => {
 					await makePaneDirty( wrapper, 0 );
 					await triggerSave( wrapper, '' );
 
-					await wrapper.find( '.cdx-dialog__header__close-button' ).trigger( 'click' );
+					await pressHeaderClose( wrapper );
 
 					expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( false );
 					expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
@@ -1962,6 +1990,24 @@ describe( 'SubjectEditorDialog', () => {
 
 					expect( event.defaultPrevented ).toBe( false );
 					expect( wrapper.findComponent( SchemaEditorDialog ).props( 'open' ) ).toBe( false );
+				} );
+
+				// The header is outside the form's inert part, so a host's actions there are handed the save's
+				// progress to freeze themselves with.
+				it( 'puts the host\'s start actions in its header, frozen until the save settles', async () => {
+					const { onSave, settle } = deferredSave();
+					const { wrapper } = await mountWithSecondPaneOpen( { onSave, slots: {
+						'start-actions': '<template #start-actions="{ saving }"><button class="host-action" :disabled="saving">Back</button></template>',
+					} } );
+					await makePaneDirty( wrapper, 0 );
+					const action = (): HTMLButtonElement => wrapper.get<HTMLButtonElement>( '.ext-neowiki-dialog-header .host-action' ).element;
+
+					await triggerSave( wrapper, '' );
+					expect( action().disabled ).toBe( true );
+
+					settle( new Error( 'Boom' ) );
+					await flushPromises();
+					expect( action().disabled ).toBe( false );
 				} );
 
 				it( 'makes the form inert until the save settles', async () => {
@@ -1996,7 +2042,7 @@ describe( 'SubjectEditorDialog', () => {
 				const { wrapper } = await mountWithThreePanesOpen();
 				await makePaneDirty( wrapper, 0 );
 
-				await wrapper.find( '.cdx-dialog__header__close-button' ).trigger( 'click' );
+				await pressHeaderClose( wrapper );
 
 				expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
 			} );
@@ -2672,59 +2718,24 @@ describe( 'SubjectEditorDialog', () => {
 				} );
 			} );
 
-			// Auto-placement puts each child in its own column, and the divider between them draws
-			// the rule between them, so both rest on this order. jsdom resolves no layout: this pins
-			// the structure, and the placement itself is verified in the browser.
-			it( 'renders the navigator and the pane region as sibling surfaces, navigator first', async () => {
+			it( 'puts the form in the main pane, beside the navigator', async () => {
 				const { wrapper } = await mountWithSecondPaneOpen( {
 					rootSchema: relationRootSchema,
 					rootSubject: relationRootSubject,
 				} );
 
-				const content = wrapper.find( '.ext-neowiki-subject-editor-dialog__content' );
+				const mainPane = ( wrapper.findComponent( EditorPanes ).vm as unknown as { mainPane: Element } ).mainPane;
 
-				expect( Array.from( content.element.children ).map( ( child ) => child.className ) )
-					.toEqual( [
-						'ext-neowiki-subject-editor-dialog__surface',
-						'ext-neowiki-subject-editor-dialog__divider',
-						'ext-neowiki-subject-editor-dialog__surface',
-					] );
+				expect( mainPane.contains( wrapper.find( '.ext-neowiki-subject-editor-dialog__panels' ).element ) ).toBe( true );
+				expect( mainPane.contains( wrapper.findComponent( OpenSubjectList ).element ) ).toBe( false );
 			} );
 
-			it( 'renders the navigator inside the first surface', async () => {
-				const { wrapper } = await mountWithSecondPaneOpen( {
-					rootSchema: relationRootSchema,
-					rootSubject: relationRootSubject,
-				} );
-
-				const surfaces = wrapper.findAll(
-					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
-				);
-
-				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( true );
-				expect( surfaces[ 1 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
-			} );
-
-			// The track list and the divider turn on together: a divider left behind would
-			// hold a track open for a column that is not rendered.
-			it( 'renders no divider when there is no navigator', async () => {
+			it( 'shows neither the navigator nor its divider while one Subject is open', async () => {
 				const wrapper = mountComponent( false, {} );
 				await flushPromises();
 
-				expect( wrapper.find( '.ext-neowiki-subject-editor-dialog__divider' ).exists() ).toBe( false );
-			} );
-
-			it( 'renders only the form surface when there is no navigator', async () => {
-				const wrapper = mountComponent( false, {} );
-				await flushPromises();
-
-				const surfaces = wrapper.findAll(
-					'.ext-neowiki-subject-editor-dialog__content > .ext-neowiki-subject-editor-dialog__surface',
-				);
-
-				expect( surfaces ).toHaveLength( 1 );
-				expect( surfaces[ 0 ].find( '.ext-neowiki-open-subject-list' ).exists() ).toBe( false );
-				expect( surfaces[ 0 ].find( '.ext-neowiki-subject-editor-dialog__panels' ).exists() ).toBe( true );
+				expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
+				expect( wrapper.findComponent( PaneDivider ).exists() ).toBe( false );
 			} );
 
 			// Every listed Subject is a pane already, so a choice is a switch and never a load.
@@ -3693,16 +3704,6 @@ describe( 'SubjectEditorDialog', () => {
 		} );
 	} );
 
-	// Codex draws the rules under the header and above the footer only for a dialog whose own
-	// body scrolls, which this one's never does, so the variant is asked for by name.
-	it( 'asks Codex for the dividers variant, navigator or no navigator', async () => {
-		const wrapper = mountComponent( false, saveButtonTestStubs );
-		await flushPromises();
-
-		expect( wrapper.findComponent( OpenSubjectList ).exists() ).toBe( false );
-		expect( wrapper.find( '.cdx-dialog' ).classes() ).toContain( 'cdx-dialog--dividers' );
-	} );
-
 	describe( 'Edit notices', () => {
 		it( 'loads the viewed page\'s notices when the dialog opens', async () => {
 			const getNotices = vi.fn().mockResolvedValue( [] );
@@ -3735,10 +3736,9 @@ describe( 'SubjectEditorDialog', () => {
 			const content = wrapper.find( '.ext-neowiki-subject-editor-dialog__content' );
 			const children = Array.from( content.element.children );
 
-			expect( children.map( ( child ) => child.className ) ).toEqual( [
-				'ext-neowiki-edit-notices',
-				'ext-neowiki-subject-editor-dialog__surface',
-			] );
+			expect( children ).toHaveLength( 2 );
+			expect( children[ 0 ].classList ).toContain( 'ext-neowiki-edit-notices' );
+			expect( children[ 1 ].classList ).toContain( 'ext-neowiki-subject-editor-dialog__panes' );
 
 			repository.mockRestore();
 		} );
@@ -3916,7 +3916,7 @@ describe( 'SubjectEditorDialog', () => {
 	} );
 
 	describe( 'Fade when the Subject creator hands over', () => {
-		const NEW_ROOT_CLASS = 'ext-neowiki-subject-editor-dialog--new-root';
+		const NEW_ROOT_CLASS = 'ext-neowiki-dialog--takes-over';
 
 		it( 'names a dialog on a new root, for the stylesheet to leave its fade out', async () => {
 			const wrapper = mountComponent(

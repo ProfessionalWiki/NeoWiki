@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Content\JsonContent;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataDeserializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
@@ -58,6 +59,13 @@ class SubjectContent extends JsonContent {
 	 */
 	public function getSubjectIds(): array {
 		return SubjectContentDataDeserializer::deserializeSubjectIds( $this->getText() );
+	}
+
+	/**
+	 * @return SchemaReference[]
+	 */
+	public function getSchemaReferences(): array {
+		return NeoWikiExtension::getInstance()->newSubjectContentDataDeserializer()->deserializeSchemaReferences( $this->getText() );
 	}
 
 }

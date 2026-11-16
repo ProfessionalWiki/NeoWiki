@@ -3,13 +3,20 @@
 		:open="true"
 		class="ext-neowiki-ui ext-neowiki-schema-import-dialog"
 		:title="$i18n( 'neowiki-schemas-import-title' ).text()"
-		:use-close-button="!importing"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
 		@primary="importCheckedSchemas"
 		@default="emit( 'close' )"
 		@update:open="onUpdateOpen"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-schemas-import-title' ).text()"
+				:use-close-button="!importing"
+				@close="onUpdateOpen( false )"
+			/>
+		</template>
+
 		<template v-if="outcome === null">
 			<div
 				v-for="section in selectableSections"
@@ -89,6 +96,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef } from 'vue';
 import { CdxCheckbox, CdxDialog, CdxMessage } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { DialogAction, PrimaryDialogAction } from '@wikimedia/codex';
 import {
 	importSchemas,

@@ -3,9 +3,16 @@
 		:open="props.open"
 		class="ext-neowiki-ui"
 		:title="$i18n( 'neowiki-delete-confirm-title', props.displayName ).text()"
-		:use-close-button="true"
 		@update:open="onUpdateOpen"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-delete-confirm-title', props.displayName ).text()"
+				:use-close-button="true"
+				@close="onUpdateOpen( false )"
+			/>
+		</template>
+
 		<I18nSlot message-key="neowiki-delete-confirm-message">
 			{{ props.typeLabel }} <strong>{{ props.displayName }}</strong>
 		</I18nSlot>
@@ -27,6 +34,7 @@
 
 <script setup lang="ts">
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { cdxIconTrash } from '@wikimedia/codex-icons';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import I18nSlot from '@/components/common/I18nSlot.vue';

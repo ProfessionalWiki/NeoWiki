@@ -1,0 +1,91 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "description": "config:recommended ignores **/tests/**, which would leave the RedHerb example extension and its lock file unmanaged. RedHerb is a shipped project that happens to live under tests/, so that exclusion is dropped.",
+  "ignorePresets": [
+    ":ignoreModulesAndTests"
+  ],
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
+  "dependencyDashboard": {
+    "enabled": true,
+    "header": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\nTicked checkboxes are acted on by the next [Renovate run](https://github.com/{{repository}}/actions/workflows/renovate.yml), which happens daily and can be started early from that page with \"Run workflow\"."
+  },
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["at any time"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "ci-php.yml starts QLever and Oxigraph with docker run, on the images the Docker stacks run. Extracted under the same names as the compose images, so each update changes the workflow in the same pull request as the compose files.",
+      "managerFilePatterns": ["/^\\.github/workflows/ci-php\\.yml$/"],
+      "matchStrings": [
+        "\\s(?<depName>docker\\.io/adfreiburg/qlever)@(?<currentDigest>sha256:[a-f0-9]{64})\\s",
+        "\\s(?<depName>ghcr\\.io/oxigraph/oxigraph):(?<currentValue>[^\\s@]+)\\s"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Versions in package.json and composer.json, ranges and exact pins alike, are changed by hand. Lock-file maintenance refreshes the npm lock files within the ranges.",
+      "matchManagers": ["npm", "composer"],
+      "matchUpdateTypes": ["major", "minor", "patch", "replacement"],
+      "enabled": false
+    },
+    {
+      "description": "One lock-file maintenance pull request per project, so a lock file that fails CI holds back only its own project.",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "additionalBranchPrefix": "{{parentDir}}-",
+      "commitMessageSuffix": "({{parentDir}})"
+    },
+    {
+      "description": "Action updates are grouped, with majors in a pull request of their own. Images in workflow services and the Node version given to setup-node are not actions and stay out of it.",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "The dev stack's node image and the node-version given to setup-node in the workflows move together, so a Node major lands in one pull request.",
+      "matchDepNames": ["node"],
+      "groupName": "Node"
+    },
+    {
+      "description": "Digest updates carry no release timestamp, which timestamp-optional lets through the age gate. This keeps them flowing if the gate is ever made strict. Nothing auto-merges, so the age gate adds no safety for digest updates.",
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": "0 days"
+    },
+    {
+      "description": "The php:8.3-apache base image runs the MediaWiki the image ships, 1.43 (MW_BRANCH in the Makefile), and MediaWiki supports PHP 8.4 only from 1.46. Lift this together with the MediaWiki branch the image ships.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["php"],
+      "allowedVersions": "<8.4"
+    },
+    {
+      "description": "MariaDB stays on the 11.8 LTS series. The image treats any change to the first two version components as needing mariadb-upgrade, and skips it unless MARIADB_AUTO_UPGRADE is set, which the stacks don't set, so a series bump would bring the new server up against the old series' system tables in an existing data volume, with the upgrade logged as skipped. Patch releases arrive through the floating 11.8 tag.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["mariadb"],
+      "allowedVersions": "<11.9"
+    },
+    {
+      "description": "Neo4j 5.26 is the LTS line and the oldest Neo4j NeoWiki supports, and CI tests against that floor.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["neo4j"],
+      "allowedVersions": "<6"
+    },
+    {
+      "description": "Oxigraph releases can migrate the store one way, so their pull requests carry a note on recovery.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/oxigraph/oxigraph"],
+      "matchUpdateTypes": ["major", "minor"],
+      "prBodyNotes": [
+        "Oxigraph major and minor releases can migrate the store on first start, one way: older versions then refuse it. Read the release notes before merging. A stack that hits a problem can wipe its Oxigraph volume and refill it with `make rebuild-graph-databases`."
+      ]
+    }
+  ]
+}

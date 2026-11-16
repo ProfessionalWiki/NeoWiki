@@ -70,6 +70,7 @@
 	"neowiki-page-tools-rdf": "Label for the sidebar link that opens the current page's RDF export (Turtle serialization of the page's Subjects), served by the per-page RDF REST endpoint. Shown on every existing content page.",
 
 	"neowiki-subject-creator-schema-field": "Label of the field in the 'create subject' dialog that picks the Subject's schema. Not shown; read out by screen readers.",
+	"neowiki-subject-creator-back": "Accessible name of the icon button at the start of the header while a new subject is being filled in, which goes back to choosing its schema. If anything was entered, the user is first asked to discard it.",
 	"neowiki-subject-creator-no-schemas": "Shown in the 'create subject' dialog in place of the schema field, on a wiki that has no schemas yet, to a user who may not create one.",
 	"neowiki-subject-creator-page-field": "Label of the field group in the 'create subject' dialog that picks which page the Subject goes on.",
 	"neowiki-subject-creator-page-section": "Title of the collapsible section of the 'create subject' dialog that holds the page choice, and, while it is collapsed, the choice made; it is also the header of the non-expandable block a {{#create_subject}} button shows when the page is fixed: {{msg-mw|neowiki-subject-creator-page-section-this}} and its siblings continue this title, so 'Store the subject on' plus 'this page' must read as one phrase.",
@@ -143,6 +144,7 @@
 	"neowiki-subject-editor-save-scope": "Note shown beside the subject editor's save button on a page-first wiki, naming what the save writes. Parameters:\n* $1 - how many subjects the save writes\n* $2 - how many wiki pages hold them\nShown only when the user cannot see the whole scope already, so $1 is at least two or the one changed subject is not the one on screen.",
 	"neowiki-subject-editor-save-scope-subject-first": "Note shown beside the subject editor's save button on a subject-first wiki, naming how many subjects the save writes. Unlike {{msg-mw|neowiki-subject-editor-save-scope}}, it counts no pages. Parameters:\n* $1 - how many subjects the save writes\nShown only when the user cannot see the whole scope already, so $1 is at least two or the one changed subject is not the one on screen.",
 	"neowiki-subject-editor-open-subjects": "Accessible name of the list of subjects open in the subject editor, which the user selects one of to edit it. Shown only once a second subject has been opened.",
+	"neowiki-subject-editor-resize-open-subjects": "Accessible name of the divider between the list of subjects open in the subject editor and the form beside it. Dragging it, or moving it with the arrow keys, changes how wide the list is. See also {{msg-mw|neowiki-subject-editor-open-subjects}}.",
 	"neowiki-dependent-subject-add": "Label of the button below a relation field of the subject editor whose values are dependent subjects, which adds one; the field shows the fields of each dependent subject inline. Parameters:\n* $1 - the name of the schema of the dependent subject it adds.",
 	"neowiki-dependent-subject-add-choose": "Label of the menu button below a relation field of the subject editor whose values are dependent subjects of several schemas. It opens a menu of those schemas, one of which the user picks to add a dependent subject of it.",
 	"neowiki-dependent-subject-remove": "Accessible name and tooltip of the button that removes one dependent subject from the relation field of the subject editor that shows it inline. Parameters:\n* $1 - the name of the dependent subject's group: its schema name, numbered where the field holds several of that schema ({{msg-mw|neowiki-dependent-subject-numbered}}).",
@@ -275,7 +277,6 @@
 	"neowiki-delete-error": "Error notification title shown when deleting a page fails. $1 is the page name.",
 	"neowiki-layout-editor-description": "Label for the description field in the layout editor.",
 	"neowiki-layout-editor-description-placeholder": "Placeholder text for the description field in the layout editor.",
-	"neowiki-layout-editor-schema": "Label for the read-only schema field in the layout editor.",
 	"neowiki-layout-editor-view-type": "Label for the read-only view type field in the layout editor.",
 	"neowiki-layout-editor-show-all-properties": "Label for the button that reveals all hidden properties, keeping the existing order of the shown ones.",
 	"neowiki-layout-editor-shown-count": "Header in the display rule editor showing how many properties are visible. $1 is the number shown; $2 is the total number of properties.",

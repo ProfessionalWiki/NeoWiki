@@ -6,7 +6,6 @@ namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints;
 
 use MediaWiki\Extension\Scribunto\ScribuntoContent;
 use MediaWiki\Parser\ParserOptions;
-use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -20,7 +19,8 @@ use ProfessionalWiki\NeoWiki\Tests\ParseTimePermissionFixtures;
 /**
  * A parse that reads the Subjects of another page depends on that page, the way a page depends on a
  * template it uses, so that MediaWiki refreshes the parsed page when the read one changes. So does a
- * parse showing a select value, on the Schema that gives its options their labels.
+ * parse showing a select value, on the Schema that gives its options their labels, and a parse reading
+ * a Schema, on that Schema.
  *
  * Needs the integration base and the database for the real parser, the Lua library, and the pages
  * and subject-to-page index the reads go through.
@@ -41,6 +41,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 	private const string MISSING_PAGE = 'CrossPageSubjectReadDependencyTestMissingPage';
 	private const string SELECT_PAGE = 'CrossPageSubjectReadDependencyTestSelectPage';
 	private const string SELECT_SCHEMA = 'CrossPageSubjectReadDependencyTestSchema';
+	private const string READ_SCHEMA = 'CrossPageSubjectReadDependencyTestReadSchema';
 	private const string MODULE = 'CrossPageSubjectReadDependencyTest';
 
 	private const string READ_SUBJECT_ID = 'sreadsubject111';
@@ -54,6 +55,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 		. "function p.getSubject( frame ) nw.getSubject( frame.args[1] ) end\n"
 		. "function p.getSubjects( frame ) nw.getSubjects( frame.args[1] ) end\n"
 		. "function p.getRelationLabel( frame ) nw.getValue( 'Owner', { page = frame.args[1] } ) end\n"
+		. "function p.getSchema( frame ) nw.getSchema( frame.args[1] ) end\n"
 		. 'return p';
 
 	/**
@@ -84,11 +86,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 	 * @return string[]
 	 */
 	private function pagesTheParseDependsOn( string $wikitext, string $parsedPage = self::PARSED_PAGE ): array {
-		return array_map(
-			fn ( array $template ): string => $this->getServiceContainer()->getTitleFormatter()
-				->getPrefixedText( $template['link'] ),
-			$this->parserOutputOn( $parsedPage, $wikitext, ParserOptions::newFromAnon() )->getLinkList( ParserOutputLinkTypes::TEMPLATE )
-		);
+		return $this->templatesOf( $this->parserOutputOn( $parsedPage, $wikitext, ParserOptions::newFromAnon() ) );
 	}
 
 	/**
@@ -184,6 +182,7 @@ class CrossPageSubjectReadDependencyTest extends NeoWikiIntegrationTestCase {
 		yield 'getSubject' => [ 'getSubject', self::READ_SUBJECT_ID, self::READ_PAGE ];
 		yield 'getSubjects' => [ 'getSubjects', self::READ_PAGE, self::READ_PAGE ];
 		yield 'a relation label, off the page hosting its target' => [ 'getRelationLabel', self::READ_PAGE, self::TARGET_PAGE ];
+		yield 'getSchema, of a Schema not created yet' => [ 'getSchema', self::READ_SCHEMA, 'Schema:' . self::READ_SCHEMA ];
 	}
 
 }

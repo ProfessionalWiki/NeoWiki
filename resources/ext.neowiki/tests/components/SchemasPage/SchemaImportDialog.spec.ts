@@ -7,7 +7,7 @@ import type { SchemaImportItem, SchemaImportStatus } from '@/components/SchemasP
 import type { Schema } from '@/domain/Schema.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
@@ -243,6 +243,15 @@ describe( 'SchemaImportDialog', () => {
 		expect( wrapper.emitted( 'imported' ) ).toHaveLength( 1 );
 	} );
 
+	// Shown on a phone, as Codex 2 shows it there too.
+	it( 'ignores its header\'s Close while the import runs', async () => {
+		const { wrapper } = await importWithSaveHeld();
+
+		await pressHeaderClose( wrapper );
+
+		expect( wrapper.emitted( 'close' ) ).toBeUndefined();
+	} );
+
 	it( 'closes on cancel without saving', async () => {
 		const wrapper = mountDialog( [ item( 'Museum' ) ] );
 
@@ -275,7 +284,7 @@ describe( 'SchemaImportDialog', () => {
 		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 
 		expect( wrapper.emitted( 'close' ) ).toBeUndefined();
-		expect( wrapper.find( '.cdx-dialog__header__close-button' ).exists() ).toBe( false );
+		expect( wrapper.get( '.ext-neowiki-dialog-header__close' ).classes() ).toContain( 'ext-neowiki-dialog-header__close--phones-only' );
 		expect( primaryAction( wrapper ).element.disabled ).toBe( true );
 		expect( defaultAction( wrapper ).element.disabled ).toBe( true );
 		expect( checkboxOf( wrapper, 'Museum' ).element.disabled ).toBe( true );

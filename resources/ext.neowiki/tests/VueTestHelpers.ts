@@ -289,12 +289,20 @@ export function openDialogTitles(): string[] {
 }
 
 /**
+ * Presses Close in a dialog's header. Reached through the header's component, which a real CdxDialog teleports out of
+ * the wrapper's own element.
+ */
+export async function pressHeaderClose( wrapper: VueWrapper ): Promise<void> {
+	await wrapper.findComponent( { name: 'DialogHeader' } ).get( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
+}
+
+/**
  * CdxDialog as a stub that still renders its slots. shallowMount's auto-stubs render none, and a
  * dialog's controls live in its #footer slot, so a test driving one needs them in the tree.
  */
 export const CdxDialogStub = {
-	template: '<div v-if="open" class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton', 'defaultAction' ],
+	template: '<div v-if="open" class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
+	props: [ 'open', 'title', 'defaultAction' ],
 	emits: [ 'update:open' ],
 };
 
@@ -385,6 +393,25 @@ export function stubIntersectionObserver(): ScrollStub {
 			}
 		},
 	};
+}
+
+export interface ScrollerSizes {
+	scrollTop?: number;
+	scrollHeight: number;
+	clientHeight: number;
+}
+
+/** Gives a scroller the sizes jsdom, which resolves no layout, cannot. */
+export function sized( scroller: Element, sizes: ScrollerSizes ): void {
+	Object.defineProperty( scroller, 'scrollHeight', { configurable: true, value: sizes.scrollHeight } );
+	Object.defineProperty( scroller, 'clientHeight', { configurable: true, value: sizes.clientHeight } );
+	Object.defineProperty( scroller, 'scrollTop', { configurable: true, writable: true, value: sizes.scrollTop ?? 0 } );
+}
+
+/** Scrolls a scroller holding 30px more than its 200px box 10px down. */
+export function scrollPartway( scroller: Element ): void {
+	sized( scroller, { scrollTop: 10, scrollHeight: 230, clientHeight: 200 } );
+	scroller.dispatchEvent( new Event( 'scroll' ) );
 }
 
 /**

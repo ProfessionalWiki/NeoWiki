@@ -1,0 +1,26 @@
+{
+	"version": 1,
+	"prefixes": {
+		"hdto": "http://isl.ics.forth.gr/ontology/echoes/",
+		"crm": "http://www.cidoc-crm.org/cidoc-crm/"
+	},
+	"schemas": {
+		"Artwork": {
+			"subject": { "class": "hdto:HC3_Tangible_Heritage_Entity" },
+			"nodes": {
+				"production": { "class": "crm:E12_Production", "linkPredicate": "crm:P108i_was_produced_by", "per": "value" }
+			},
+			"properties": {
+				"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" },
+				"Located at": { "predicate": "crm:P50_has_current_keeper" },
+				"Image": { "predicate": "hdto:HP9i_has_visual_representation" }
+			}
+		},
+		"Artist": {
+			"subject": { "class": "crm:E21_Person" }
+		},
+		"Museum": {
+			"subject": { "class": "crm:E74_Group" }
+		}
+	}
+}

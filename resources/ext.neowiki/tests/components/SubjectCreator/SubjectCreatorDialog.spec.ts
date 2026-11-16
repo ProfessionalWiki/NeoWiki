@@ -12,6 +12,7 @@ import {
 	createI18nMock,
 	NewerCodexAccordionStub,
 	openDialogTitles,
+	pressHeaderClose,
 	setupMwMock,
 	toggleDetails,
 } from '../../VueTestHelpers.ts';
@@ -100,6 +101,8 @@ let editedDependentSubjects: Subject[] = [];
 // beforeEach below.
 const editorShows = ref( true );
 const editorShowsReading = ref( false );
+// Whether the stubbed editor holds anything a reader entered. Reset per test by the beforeEach below.
+const editorHasChanged = ref( false );
 // What the last save through the stub threw, so a test can assert the save stopped there.
 let lastSaveError: unknown = null;
 // Stands in for the round trip the real write loop awaits before its first write — it flushes every
@@ -132,6 +135,7 @@ const SubjectEditorDialogStub = {
 	name: 'SubjectEditorDialog',
 	components: { SummaryAction: SummaryActionStub },
 	template: '<div class="subject-editor-dialog-stub">' +
+		'<slot name="start-actions" :saving="saving" />' +
 		'<slot name="before-actions" :saving="saving" />' +
 		'<SummaryAction :save-disabled="saveDisabled" @save="runSave" />' +
 		'<button class="stub-close" @click="$emit( \'update:open\', false )">Close</button>' +
@@ -184,6 +188,7 @@ const SubjectEditorDialogStub = {
 		return {
 			saving,
 			runSave,
+			hasChanged: editorHasChanged,
 			rootLabel: editedLabel,
 			shown: editorShows,
 			visible: computed( () => editorShows.value || editorShowsReading.value ),
@@ -211,7 +216,7 @@ function labelOf( field: DOMWrapper<Element> ): string | undefined {
 
 const CdxDialogStub = {
 	template: '<div class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton' ],
+	props: [ 'open', 'title' ],
 	emits: [ 'update:open', 'default' ],
 };
 
@@ -369,6 +374,7 @@ describe( 'SubjectCreatorDialog', () => {
 		editedDependentSubjects = [];
 		editorShows.value = true;
 		editorShowsReading.value = false;
+		editorHasChanged.value = false;
 		lastSaveError = null;
 		beforeFirstWrite = Promise.resolve();
 		reloadMock = vi.fn();
@@ -2311,6 +2317,24 @@ describe( 'SubjectCreatorDialog', () => {
 				return wrapper.find( '.ext-neowiki-subject-creator-page-summary' );
 			}
 
+			it( 'keeps the page it was opened for once Back returns to the Schema step', async () => {
+				const wrapper = mountWithInitialPage( {
+					choice: 'anotherPage',
+					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
+					fixed: true,
+				}, { initialSchemaName: undefined } );
+				await open( wrapper );
+				wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+				await flushPromises();
+
+				await wrapper.get( 'button[aria-label="neowiki-subject-creator-back"]' ).trigger( 'click' );
+				await flushPromises();
+				wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+				await flushPromises();
+
+				expect( shownChoice( wrapper ) ).toBe( 'neowiki-subject-creator-page-section-pickedACME Inc' );
+			} );
+
 			it( 'states a fixed this page and hides the choice', async () => {
 				const wrapper = mountWithInitialPage( { choice: 'thisPage', fixed: true } );
 				await open( wrapper );
@@ -2700,7 +2724,165 @@ describe( 'SubjectCreatorDialog', () => {
 		} );
 	} );
 
+	describe( 'going back to the Schema step', () => {
+		async function openCreator( props: Record<string, any> = {} ): Promise<VueWrapper> {
+			const wrapper = mountComponent( {}, props );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			return wrapper;
+		}
+
+		async function chooseSchema( wrapper: VueWrapper ): Promise<void> {
+			wrapper.findComponent( SchemaPicker ).vm.$emit( 'select', SCHEMA_NAME );
+			await flushPromises();
+		}
+
+		async function openOnSubjectStep(): Promise<VueWrapper> {
+			const wrapper = await openCreator();
+			await chooseSchema( wrapper );
+			return wrapper;
+		}
+
+		// The Subject's own write lands, and the save stops at a Subject created alongside it.
+		function saveStoppingAfterTheRoot(): void {
+			sessionDrafts = [ { subject: newSubject( { id: 's1draftAAAAAAA1', label: 'A colleague', schemaName: 'Colleague' } ), pageId: 0 } ];
+			subjectStore.createSubject = vi.fn().mockRejectedValue( new Error( 'Server error' ) );
+		}
+
+		function backButton( wrapper: VueWrapper ): DOMWrapper<HTMLButtonElement> {
+			return wrapper.find<HTMLButtonElement>( 'button[aria-label="neowiki-subject-creator-back"]' );
+		}
+
+		async function goBack( wrapper: VueWrapper ): Promise<void> {
+			await backButton( wrapper ).trigger( 'click' );
+			await flushPromises();
+		}
+
+		function openConfirmations( wrapper: VueWrapper ): VueWrapper[] {
+			return wrapper.findAllComponents( CloseConfirmationDialog ).filter( ( dialog ) => dialog.props( 'open' ) === true );
+		}
+
+		function showsSchemaStep( wrapper: VueWrapper ): boolean {
+			return wrapper.findComponent( SchemaPicker ).exists() && !wrapper.findComponent( SubjectEditorDialog ).exists();
+		}
+
+		it( 'is offered once a Schema has been chosen on the Schema step', async () => {
+			const wrapper = await openOnSubjectStep();
+
+			expect( backButton( wrapper ).exists() ).toBe( true );
+		} );
+
+		it( 'is not offered where the creator opened on its Schema', async () => {
+			const wrapper = await openCreator( { initialSchemaName: SCHEMA_NAME } );
+
+			expect( backButton( wrapper ).exists() ).toBe( false );
+		} );
+
+		it( 'is offered where the creator fell back to its Schema step from a Schema it could not read', async () => {
+			getSchemaMock.mockRejectedValueOnce( new Error( 'No such schema' ) );
+			const wrapper = await openCreator( { initialSchemaName: 'Missing' } );
+
+			await chooseSchema( wrapper );
+
+			expect( backButton( wrapper ).exists() ).toBe( true );
+		} );
+
+		it( 'returns to the Schema step at once while nothing has been entered', async () => {
+			const wrapper = await openOnSubjectStep();
+
+			await goBack( wrapper );
+
+			expect( showsSchemaStep( wrapper ) ).toBe( true );
+			expect( openConfirmations( wrapper ) ).toHaveLength( 0 );
+		} );
+
+		// The editor went without a fade, as it came, so the backdrop stays dimmed throughout.
+		it( 'shows the Schema step again without fading it in', async () => {
+			const wrapper = await openOnSubjectStep();
+
+			await goBack( wrapper );
+
+			expect( wrapper.findComponent( CdxDialog ).classes() ).toContain( 'ext-neowiki-dialog--takes-over' );
+		} );
+
+		it( 'puts the focus on the Schema picker', async () => {
+			const wrapper = await openOnSubjectStep();
+
+			await goBack( wrapper );
+
+			expect( wrapper.findComponent( SchemaPicker ).vm.focus ).toHaveBeenCalled();
+		} );
+
+		it( 'asks before discarding what has been entered', async () => {
+			const wrapper = await openOnSubjectStep();
+			editorHasChanged.value = true;
+
+			await goBack( wrapper );
+
+			expect( showsSchemaStep( wrapper ) ).toBe( false );
+			expect( openConfirmations( wrapper ) ).toHaveLength( 1 );
+		} );
+
+		it( 'returns to the Schema step once the discard is confirmed', async () => {
+			const wrapper = await openOnSubjectStep();
+			editorHasChanged.value = true;
+			await goBack( wrapper );
+
+			openConfirmations( wrapper )[ 0 ].vm.$emit( 'discard' );
+			await flushPromises();
+
+			expect( showsSchemaStep( wrapper ) ).toBe( true );
+			expect( openConfirmations( wrapper ) ).toHaveLength( 0 );
+		} );
+
+		it( 'stays on the Subject when the reader keeps editing', async () => {
+			const wrapper = await openOnSubjectStep();
+			editorHasChanged.value = true;
+			await goBack( wrapper );
+
+			openConfirmations( wrapper )[ 0 ].vm.$emit( 'keep-editing' );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( true );
+			expect( openConfirmations( wrapper ) ).toHaveLength( 0 );
+		} );
+
+		it( 'cannot be pressed while the Subject is being saved', async () => {
+			beforeFirstWrite = new Promise( () => {
+				// Held, so the save is observed while under way.
+			} );
+			const wrapper = await openOnSubjectStep();
+
+			await save( wrapper );
+
+			expect( backButton( wrapper ).element.disabled ).toBe( true );
+		} );
+
+		// Going back would leave the written Subject behind, and a Schema chosen again would create another.
+		it( 'is not offered once the Subject has been written', async () => {
+			saveStoppingAfterTheRoot();
+			const wrapper = await openOnSubjectStep();
+
+			await save( wrapper );
+
+			expect( backButton( wrapper ).exists() ).toBe( false );
+		} );
+	} );
+
 	describe( 'Close confirmation', () => {
+		it( 'asks before its header\'s Close throws away a picked schema still loading', async () => {
+			const wrapper = mountComponent();
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+			await pickSchemaStillLoading( wrapper );
+
+			await pressHeaderClose( wrapper );
+			await flushPromises();
+
+			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+			expect( wrapper.findComponent( CloseConfirmationDialog ).props( 'open' ) ).toBe( true );
+		} );
+
 		it( 'asks before closing while a picked schema is still loading', async () => {
 			const wrapper = mountComponent();
 			await wrapper.setProps( { open: true } );

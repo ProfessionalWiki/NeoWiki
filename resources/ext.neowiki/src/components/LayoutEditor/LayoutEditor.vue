@@ -3,12 +3,6 @@
 		<div class="ext-neowiki-layout-editor__metadata">
 			<span class="ext-neowiki-layout-editor__metadata-item">
 				<span class="ext-neowiki-layout-editor__metadata-label">
-					{{ $i18n( 'neowiki-layout-editor-schema' ).text() }}
-				</span>
-				{{ initialLayout.getSchema() }}
-			</span>
-			<span class="ext-neowiki-layout-editor__metadata-item">
-				<span class="ext-neowiki-layout-editor__metadata-label">
 					{{ $i18n( 'neowiki-layout-editor-view-type' ).text() }}
 				</span>
 				{{ initialLayout.getType() }}
@@ -129,10 +123,10 @@ defineExpose( {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-layout-editor {
-	padding: @spacing-100;
+	padding: @spacing-50 @spacing-100 @spacing-100;
 
 	@media ( min-width: @min-width-breakpoint-desktop ) {
-		padding: @spacing-150;
+		padding: @spacing-50 @spacing-150 @spacing-100;
 	}
 
 	&__description {
@@ -141,7 +135,6 @@ defineExpose( {
 
 	&__metadata {
 		display: flex;
-		gap: @spacing-200;
 		margin-block-end: @spacing-100;
 	}
 

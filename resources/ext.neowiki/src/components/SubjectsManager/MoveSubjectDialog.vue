@@ -3,9 +3,16 @@
 		:open="props.open"
 		class="ext-neowiki-ui ext-neowiki-move-subject-dialog"
 		:title="$i18n( 'neowiki-managesubjects-move-title' ).text()"
-		:use-close-button="true"
 		@update:open="onOpenChange"
 	>
+		<template #header>
+			<DialogHeader
+				:title="$i18n( 'neowiki-managesubjects-move-title' ).text()"
+				:use-close-button="true"
+				@close="onOpenChange( false )"
+			/>
+		</template>
+
 		<CdxField
 			:status="fieldStatus"
 			:messages="fieldMessages"
@@ -72,6 +79,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { CdxCheckbox, CdxDialog, CdxField, CdxMessage } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import { cdxIconArticleRedirect } from '@wikimedia/codex-icons';
 import PagePicker from '@/components/common/PagePicker.vue';

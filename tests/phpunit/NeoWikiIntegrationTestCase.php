@@ -16,6 +16,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
@@ -122,6 +123,17 @@ class NeoWikiIntegrationTestCase extends MediaWikiIntegrationTestCase {
 			$wikitext,
 			Title::newFromText( $pageName ),
 			$parserOptions
+		);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	protected function templatesOf( ParserOutput $output ): array {
+		return array_map(
+			fn ( array $template ): string => $this->getServiceContainer()->getTitleFormatter()
+				->getPrefixedText( $template['link'] ),
+			$output->getLinkList( ParserOutputLinkTypes::TEMPLATE )
 		);
 	}
 

@@ -7,7 +7,7 @@ import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemas
 import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 import { CdxDialog } from '@wikimedia/codex';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
@@ -66,8 +66,8 @@ const SummaryActionStub = {
 };
 
 const CdxDialogStub = {
-	template: '<div class="cdx-dialog-stub"><slot /><slot name="footer" /></div>',
-	props: [ 'open', 'title', 'useCloseButton' ],
+	template: '<div class="cdx-dialog-stub"><slot name="header" /><slot /><slot name="footer" /></div>',
+	props: [ 'open', 'title' ],
 	emits: [ 'update:open' ],
 };
 
@@ -118,6 +118,16 @@ describe( 'SchemaCreatorDialog', () => {
 
 		schemaStore = useSchemaStore();
 		schemaStore.saveSchema = vi.fn().mockResolvedValue( undefined );
+	} );
+
+	it( 'asks before its header\'s Close throws away what was entered', async () => {
+		const wrapper = mountComponent();
+		await wrapper.findComponent( SchemaCreatorStub ).vm.$emit( 'change' );
+
+		await pressHeaderClose( wrapper );
+
+		expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+		expect( wrapper.findComponent( CloseConfirmationDialogStub ).props( 'open' ) ).toBe( true );
 	} );
 
 	it( 'hands the creator a decision on whether the Subjects are dependent', () => {

@@ -297,7 +297,6 @@ module.exports = exports = {
 		min-width: 0;
 		margin: 0;
 		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 }
 </style>

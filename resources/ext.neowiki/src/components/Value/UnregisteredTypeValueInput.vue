@@ -55,7 +55,6 @@ defineExpose<ValueInputExposes>( {
 .ext-neowiki-unregistered-type-value-input {
 	&__raw {
 		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 
 	&__note {

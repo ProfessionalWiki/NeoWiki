@@ -7,8 +7,12 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Content;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Content\Renderer\ContentParseParams;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageReference;
 use MediaWiki\Title\Title;
 use MediaWiki\Parser\ParserOutput;
+use ProfessionalWiki\NeoWiki\Infrastructure\ParserPageDependencyRecorder;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 class SubjectContentHandler extends JsonContentHandler {
 
@@ -26,6 +30,28 @@ class SubjectContentHandler extends JsonContentHandler {
 		ParserOutput &$parserOutput
 	): void {
 		$parserOutput->setContentHolderText( '' );
+
+		$schemas = $content instanceof SubjectContent ? $content->getSchemaReferences() : [];
+
+		if ( $schemas === [] || !$this->anonymousUsersCanRead( $cpoParams->getPage() ) ) {
+			return;
+		}
+
+		$recorder = ParserPageDependencyRecorder::forParserOutput( $parserOutput, $cpoParams->getPage() );
+
+		foreach ( $schemas as $schema ) {
+			$recorder->recordDependencyOnSchema( $schema );
+		}
+	}
+
+	/**
+	 * Link tables are public, so like other data derived from a page's Subjects, their Schemas are
+	 * recorded only where anonymous users can read the page.
+	 */
+	private function anonymousUsersCanRead( PageReference $page ): bool {
+		return NeoWikiExtension::getInstance()
+			->newPageReadAuthorizer( MediaWikiServices::getInstance()->getUserFactory()->newAnonymous() )
+			->authorizeReadByPageTitle( Title::newFromPageReference( $page ) );
 	}
 
 	/**

@@ -74,6 +74,7 @@
 			ref="schemaEditorRef"
 			:initial-schema="baseSchema"
 			:subjects-are-dependent="subjectsAreDependent"
+			:scrolls-with-dialog="true"
 			@change="onChange"
 		/>
 	</div>
@@ -232,8 +233,8 @@ defineExpose<SchemaCreatorExposes>( { validate, getSchema, saveBlocker, revealEr
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-/* The Schema editor takes what the name fields leave of a dialog taller than both, so the
-	rule between its columns reaches the footer. */
+/* The Schema editor takes what the name fields leave of a dialog taller than both, so its
+	panes run down to the footer. */
 .ext-neowiki-schema-creator {
 	display: grid;
 	grid-template-rows: auto 1fr;

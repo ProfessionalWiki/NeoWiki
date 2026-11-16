@@ -2,16 +2,33 @@
 	<div>
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
 			class="ext-neowiki-ui ext-neowiki-layout-editor-dialog"
 			:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
 			@update:open="onDialogUpdateOpen"
 		>
-			<LayoutEditor
-				ref="layoutEditor"
-				:initial-layout="initialLayout"
-				@change="markChanged"
-			/>
+			<template #header>
+				<DialogHeader
+					:title="$i18n( 'neowiki-editing-layout', props.initialLayout.getName() ).text()"
+					:use-close-button="true"
+					@close="onDialogUpdateOpen( false )"
+				>
+					<!-- A new tab: nothing guards a navigation away from the unsaved Layout. -->
+					<template #metadata>
+						<SchemaNameDisplay
+							:schema-name="props.initialLayout.getSchema()"
+							link="new-tab"
+						/>
+					</template>
+				</DialogHeader>
+			</template>
+
+			<EditorPanes>
+				<LayoutEditor
+					ref="layoutEditor"
+					:initial-layout="initialLayout"
+					@change="markChanged"
+				/>
+			</EditorPanes>
 
 			<template #footer>
 				<SummaryAction
@@ -37,6 +54,9 @@ import type { LayoutEditorExposes } from '@/components/LayoutEditor/LayoutEditor
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import EditorPanes from '@/components/common/EditorPanes.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
@@ -109,14 +129,12 @@ defineExpose( { hasChanged } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-layout-editor-dialog {
 	&.cdx-dialog {
+		.ext-neowiki-dialog-grid-body();
 		max-width: @size-5600;
-
-		.cdx-dialog__body {
-			padding: 0;
-		}
 	}
 }
 </style>

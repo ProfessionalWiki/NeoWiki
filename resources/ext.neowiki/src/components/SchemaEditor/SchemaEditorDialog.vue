@@ -1,55 +1,44 @@
 <template>
 	<div>
-		<!-- Codex adds the dividers only for a dialog whose own body scrolls, which leaves the
-			rule between the columns running into nothing whenever it does not, so the variant is
-			asked for by name. Same reasoning as the subject editor. -->
 		<CdxDialog
 			:open="props.open"
-			:use-close-button="true"
-			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog cdx-dialog--dividers"
+			class="ext-neowiki-ui ext-neowiki-schema-editor-dialog"
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ dialogTitle }}
-					</h2>
-
-					<div class="cdx-dialog__header__subtitle">
-						<EditableText
-							ref="descriptionField"
-							:model-value="description"
-							:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
-							:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
-							:expand-label="$i18n( 'neowiki-schema-editor-description-expand' ).text()"
-							:collapse-label="$i18n( 'neowiki-schema-editor-description-collapse' ).text()"
-							:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
-							:multiline="true"
-							:clamp-lines="2"
-							@dirty="descriptionDirty = $event"
-							@update:model-value="onDescriptionChanged"
-						/>
-					</div>
-
-					<!-- Shown, not offered: it is set when the Schema is created. -->
-					<p
-						v-if="props.initialSchema.subjectsAreDependent()"
-						class="ext-neowiki-schema-editor-dialog__dependence"
-					>
-						{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
-					</p>
-				</div>
-
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="requestClose"
+				<DialogHeader
+					:title="dialogTitle"
+					:use-close-button="true"
+					:collapses-supporting-text="true"
+					@close="requestClose"
 				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
+					<template #supporting-text>
+						<div class="ext-neowiki-schema-editor-dialog__supporting-text">
+							<EditableText
+								ref="descriptionField"
+								:model-value="description"
+								:edit-button-label="$i18n( 'neowiki-schema-editor-description-edit' ).text()"
+								:input-aria-label="$i18n( 'neowiki-schema-editor-description' ).text()"
+								:expand-label="$i18n( 'neowiki-schema-editor-description-expand' ).text()"
+								:collapse-label="$i18n( 'neowiki-schema-editor-description-collapse' ).text()"
+								:add-label="$i18n( 'neowiki-schema-editor-description-add' ).text()"
+								:multiline="true"
+								:clamp-lines="2"
+								@dirty="descriptionDirty = $event"
+								@update:model-value="onDescriptionChanged"
+							/>
+
+							<!-- Shown, not offered: it is set when the Schema is created. -->
+							<p
+								v-if="props.initialSchema.subjectsAreDependent()"
+								class="ext-neowiki-schema-editor-dialog__dependence"
+							>
+								{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
+							</p>
+						</div>
+					</template>
+				</DialogHeader>
 			</template>
 
 			<SchemaEditor
@@ -93,8 +82,8 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import EditableText from '@/components/common/EditableText.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
-import { CdxButton, CdxDialog, CdxIcon } from '@wikimedia/codex';
-import { cdxIconClose } from '@wikimedia/codex-icons';
+import { CdxDialog } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { computed, nextTick, ref, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
@@ -217,33 +206,15 @@ defineExpose( { hasChanged } );
 	&.cdx-dialog {
 		.ext-neowiki-schema-dialog-size();
 		.ext-neowiki-dialog-grid-body();
+	}
 
-		/* Replicate the Codex default dialog header styles, which a custom
-			header slot does not get. Aligned to the start rather than the
-			baseline, so the close button stays put as the description wraps. */
-		.cdx-dialog__header {
-			display: flex;
-			align-items: flex-start;
-			justify-content: flex-end;
-			box-sizing: @box-sizing-base;
-			width: @size-full;
-
-			/* Secondary to the title. Nested under the header to out-rank
-				Codex's runtime-injected two-class subtitle rule. */
-			.cdx-dialog__header__subtitle {
-				font-size: @font-size-small;
-			}
-		}
-
-		.cdx-dialog__header__title-group {
-			min-width: 0;
-		}
+	/* Secondary to the title. A block, as the description's own text is inline. */
+	&__supporting-text {
+		font-size: @font-size-small;
 	}
 
 	&__dependence {
 		margin: @spacing-25 0 0;
-		color: @color-subtle;
-		font-size: @font-size-small;
 	}
 }
 </style>

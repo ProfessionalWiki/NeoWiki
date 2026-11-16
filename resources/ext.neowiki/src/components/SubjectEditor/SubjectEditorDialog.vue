@@ -1,58 +1,54 @@
 <template>
 	<div class="ext-neowiki-subject-editor-container">
-		<!-- Codex switches `cdx-dialog--dividers` on by itself only when the dialog body scrolls,
-			which this body never does: the navigator and the form each scroll inside it. The
-			dividers are what the rule between those two surfaces runs into, so ask by name. -->
 		<CdxDialog
 			:open="visible"
-			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog cdx-dialog--dividers"
+			class="ext-neowiki-ui ext-neowiki-subject-editor-dialog"
 			:class="{
 				'ext-neowiki-subject-editor-dialog--wide': showsNavigator,
-				'ext-neowiki-subject-editor-dialog--new-root': props.rootIsNew === true
+				'ext-neowiki-dialog--takes-over': props.rootIsNew === true
 			}"
 			:style="grownHeightStyle"
 			:title="dialogTitle"
 			@update:open="onDialogUpdateOpen"
 		>
-			<!-- Codex's own header, reproduced to hold the Schema of the Subject on screen. -->
 			<template #header>
-				<div class="cdx-dialog__header__title-group">
-					<h2 class="cdx-dialog__header__title">
-						{{ dialogTitle }}
-					</h2>
-
-					<p
-						v-if="headerSubjectId !== undefined"
-						class="cdx-dialog__header__subtitle"
-					>
-						{{ headerSubjectId }}
-					</p>
-
-					<!-- A new tab: this dialog holds unsaved edits for every open pane and nothing
-						guards a navigation away from it. Inert during a save, like the form. -->
-					<SchemaNameDisplay
-						v-if="activePane !== undefined"
-						:schema-name="activePane.subject.getSchemaName()"
-						link="new-tab"
-						:inert="saving || undefined"
-						@click="openSchemaEditor"
-					/>
-				</div>
-
-				<CdxButton
-					class="cdx-dialog__header__close-button"
-					weight="quiet"
-					type="button"
-					:aria-label="$i18n( 'cdx-dialog-close-button-label' ).text()"
-					@click="closeRequested"
+				<DialogHeader
+					:title="dialogTitle"
+					:use-close-button="true"
+					@close="closeRequested"
 				>
-					<CdxIcon :icon="cdxIconClose" />
-				</CdxButton>
+					<!-- Whatever the host offers ahead of the title, such as a way back to where it opened
+						this dialog from. Handed the save's progress, as the header is not inert during it. -->
+					<template
+						v-if="$slots[ 'start-actions' ]"
+						#start-actions
+					>
+						<slot name="start-actions" :saving="saving" />
+					</template>
+
+					<template #metadata>
+						<p
+							v-if="headerSubjectId !== undefined"
+							class="ext-neowiki-subject-editor-dialog__subject-id"
+						>
+							{{ headerSubjectId }}
+						</p>
+
+						<!-- A new tab: this dialog holds unsaved edits for every open pane and nothing
+							guards a navigation away from it. Inert during a save, like the form. -->
+						<SchemaNameDisplay
+							v-if="activePane !== undefined"
+							:schema-name="activePane.subject.getSchemaName()"
+							link="new-tab"
+							:inert="saving || undefined"
+							@click="openSchemaEditor"
+						/>
+					</template>
+				</DialogHeader>
 			</template>
 
-			<!-- Only the navigator's surface is ever conditionally rendered, and the panes container
-				is deliberately unkeyed: a pane must never unmount, because its unsaved values live in
-				the ValueInput refs inside it. -->
+			<!-- The panes container is deliberately unkeyed: a pane must never unmount, because its
+				unsaved values live in the ValueInput refs inside it. -->
 			<div
 				ref="content"
 				class="ext-neowiki-subject-editor-dialog__content"
@@ -61,30 +57,23 @@
 			>
 				<EditNoticeList :notices="notices" />
 
-				<div
-					v-if="showsNavigator"
-					class="ext-neowiki-subject-editor-dialog__surface"
+				<EditorPanes
+					ref="editorPanes"
+					class="ext-neowiki-subject-editor-dialog__panes"
+					:start-pane="{ ...NAVIGATOR_SIZE, resizeLabel: $i18n( 'neowiki-subject-editor-resize-open-subjects' ).text() }"
 				>
-					<OpenSubjectList
-						:subjects="openSubjects"
-						:active-id="activePaneId"
-						:unsaved-ids="unsavedIds"
-						@select="showPane"
-					/>
-				</div>
+					<template
+						v-if="showsNavigator"
+						#start
+					>
+						<OpenSubjectList
+							:subjects="openSubjects"
+							:active-id="activePaneId"
+							:unsaved-ids="unsavedIds"
+							@select="showPane"
+						/>
+					</template>
 
-				<!-- On the navigator's own condition: the second track exists only alongside it,
-					and a divider outside that would hold a track open for a column that is
-					not there. -->
-				<div
-					v-if="showsNavigator"
-					class="ext-neowiki-subject-editor-dialog__divider"
-				/>
-
-				<div
-					ref="formScroller"
-					class="ext-neowiki-subject-editor-dialog__surface"
-				>
 					<div class="ext-neowiki-subject-editor-dialog__panels">
 						<CdxProgressBar
 							v-if="pending"
@@ -108,7 +97,7 @@
 							/>
 						</div>
 					</div>
-				</div>
+				</EditorPanes>
 			</div>
 
 			<template
@@ -165,8 +154,8 @@ import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import EditNoticeList from '@/components/common/EditNoticeList.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
-import { CdxButton, CdxDialog, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
-import { cdxIconClose } from '@wikimedia/codex-icons';
+import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
+import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Subject } from '@/domain/Subject.ts';
 import { enteredSubjectLabel } from '@/domain/enteredSubjectLabel.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
@@ -179,6 +168,7 @@ import SchemaEditorDialog from '@/components/SchemaEditor/SchemaEditorDialog.vue
 import type { SchemaSaveHandler } from '@/components/SchemaEditor/SchemaEditorDialog.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import { useGrowOnlyHeight } from '@/composables/useGrowOnlyHeight.ts';
+import EditorPanes, { type StartPaneOptions } from '@/components/common/EditorPanes.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSaveGuard } from '@/composables/useSaveGuard.ts';
@@ -506,9 +496,20 @@ const showsNavigator = computed( (): boolean => extraPanes.value.length > 0 );
 
 const openIds = computed( (): string[] => panes.value.map( ( pane ) => pane.id ) );
 
+// The form keeps at least as much as the list starts with, which leaves the list about 40% of a dialog too narrow
+// for both.
+const NAVIGATOR_SIZE: Omit<StartPaneOptions, 'resizeLabel'> = {
+	defaultSize: 320,
+	minSize: 128,
+	minOtherSize: 320,
+	storageKey: 'neowiki-subject-editor-pane-size'
+};
+
+const editorPanes = ref<InstanceType<typeof EditorPanes> | null>( null );
+const formScroller = computed( (): HTMLElement | null => editorPanes.value?.mainPane ?? null );
+
 // The panes share one scroller, so each keeps its own place in it here while another is on screen. One that is not
 // open any more, after a session has started over, has no place to keep.
-const formScroller = ref<HTMLElement | null>( null );
 const scrollPositions = new Map<string, number>();
 
 // Read before the switch renders, and restored once it has: `v-show` swaps the panes after post-flush watchers have
@@ -1075,9 +1076,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 @import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-subject-editor-dialog {
-	/* In a window too narrow for both, the form gives up width first, and the navigator only once
-		the form would have less than 60% of the dialog.
-		A literal because Codex's size scale has no step between `@size-1600` and `@size-2400`. */
+	/* The navigator's width before the reader sets one, as `NAVIGATOR_SIZE` has it. A literal
+		because Codex's size scale has no step between `@size-1600` and `@size-2400`. */
 	@navigator-width: 20rem;
 	/* The form's width plus the navigator and the divider beside it. */
 	@wide-width: calc( @size-3200 + @navigator-width + @spacing-75 );
@@ -1086,42 +1086,25 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		its dialog move on every switch.
 
 		Codex's own 16px/24px body padding is dropped by the mixin and handed to the regions inside,
-		because the border between the two surfaces is the only rule between the navigator and the
-		form and that padding would hold it short of the header's and the footer's rules.
-		Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it scopes
-		them. */
+		so the navigator's rows can reach the dialog's edge and each pane scrolls with its own
+		inset. Compounded, as the Schema dialogs' is, to outrank Codex's dialog rules however it
+		scopes them. */
 	&.cdx-dialog {
-		.ext-neowiki-subject-dialog-header();
 		.ext-neowiki-dialog-grid-body();
 		max-height: @ext-neowiki-dialog-height-limit;
 		min-height: min( var( --ext-neowiki-dialog-grown-height ), @ext-neowiki-dialog-height-limit );
 	}
 
-	/* The id and the Schema on the title's line, where Codex stacks a subtitle below it, and
-		centred on the title as the header centres them all on the close button. Shrinkable, so
-		a long Schema name ellipsises rather than pushing the close button out of the dialog. */
-	.cdx-dialog__header__title-group {
-		flex-flow: row wrap;
-		align-items: center;
-		column-gap: @spacing-50;
-		min-width: 0;
-
-		/* Trimmed to the capitals and the baseline, so centring lines up the letters: the
-			monospace font leaves more room below its letters than the title's does, which
-			centred the id's line box with its letters high. */
-		.cdx-dialog__header__title,
-		.cdx-dialog__header__subtitle {
-			text-box: trim-both cap alphabetic;
-		}
-
-		/* Directed by its own first letter: an id from another Source may end in punctuation,
-			which a right-to-left page would otherwise move to the front. Sized like the id on
-			the Data tab. */
-		.cdx-dialog__header__subtitle {
-			unicode-bidi: plaintext;
-			font-family: @font-family-monospace;
-			font-size: @font-size-x-small;
-		}
+	/* Directed by its own first letter: an id from another Source may end in punctuation, which a
+		right-to-left page would otherwise move to the front. Sized like the id on the Data tab, and
+		trimmed like the title beside it, as the monospace font leaves more room below its letters. */
+	&__subject-id {
+		margin: 0;
+		color: @color-subtle;
+		unicode-bidi: plaintext;
+		font-family: @font-family-monospace;
+		font-size: @font-size-x-small;
+		text-box: trim-both cap alphabetic;
 	}
 
 	/* Widened by the navigator alone, so the form keeps the width it had.
@@ -1138,91 +1121,49 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		Codex zeroes the top and bottom insets of the body's own first and last children; the
 		notices escape that only by being a child of `__content` rather than of the body. */
 	&__content > .ext-neowiki-edit-notices {
-		grid-column: 1 / -1;
-		padding: @spacing-100 @spacing-150 0;
+		padding: @spacing-50 @spacing-150 0;
 	}
 
-	/* The notices across the top, the navigator and the form side by side beneath them.
+	/* The notices across the top, the panes beneath them taking the height that is left.
 
-		`minmax( 0, 1fr )` rather than `auto` for the second row: both cells stretch to it and
-		each scrolls itself, which keeps the navigator in view while the form is scrolled. Under
-		`auto` the taller cell sets the row's height, pushing the scrolling up to the dialog body
-		and taking the navigator off-screen with the form.
-
-		No column gap: the divider has a track of its own and draws the rule inside it, so the
-		rule still runs into the header's and the footer's rather than floating short of them.
+		`minmax( 0, 1fr )` rather than `auto` for the second row, so the panes scroll themselves
+		rather than push the scrolling up to the dialog body, which would take the navigator
+		off-screen with the form.
 
 		jsdom resolves no layout, so the suite cannot see this grid collapse. Measure every change
 		in a browser, at more than one viewport height, with and without an edit notice, and with
 		and without the navigator. */
 	&__content {
 		display: grid;
-		grid-template-columns: 1fr;
 		grid-template-rows: auto minmax( 0, 1fr );
 		/* Otherwise this grid item takes its whole natural length out of the dialog body's
 			scroller instead of dividing the height the body has. */
 		min-height: 0;
 	}
 
-	/* `--wide` is bound to the same condition as the navigator's own `v-if`. Declaring both
-		columns unconditionally would leave a navigator-wide void beside a form with no
-		navigator to fill it. */
-	&--wide &__content {
-		grid-template-columns: min( @navigator-width, 40% ) @spacing-75 minmax( 0, 1fr );
-	}
-
-	/* Both columns of the second row: a scroll container holding one inner element that
-		carries the padding. Scrolling here rather than at the dialog body is what keeps the
-		navigator in view while the form is scrolled, and `min-height: 0` is what lets a grid
-		item shrink below its content at all. */
-	/* Placed rather than flowed: the notices above are conditional, so auto-placement puts
-		these in the notices' row whenever there is no notice. */
-	&__surface,
-	&__divider {
+	/* Placed rather than flowed: the notices above are conditional, so auto-placement puts the
+		panes in the notices' row whenever there is no notice. */
+	&__panes {
 		grid-row: 2;
-	}
-
-	&__surface {
-		min-width: 0;
-		min-height: 0;
-		overflow-y: auto;
-		/* Held whether or not it scrolls, so a Subject long enough to scroll lays its fields
-			out as wide as one that is not. */
-		scrollbar-gutter: stable;
-	}
-
-	/* The rule between the navigator and the form, centred in a track of its own. A border
-		rather than a painted box, which forced-colors mode would replace with the canvas. */
-	&__divider {
-		justify-self: center;
-		border-inline-start: @border-subtle;
 	}
 
 	/* Nothing at the sides: a row carries the form's inset itself, so its name lines up with the
 		dialog's title, the notices above and the form beside it, while its hover and selected
-		backgrounds reach the dialog's edge. The scrollbar sits flush with the divider. */
+		backgrounds reach the dialog's edge. Nothing above: the first row's text starts as far down
+		as the form's first line. */
 	& .ext-neowiki-open-subject-list {
-		padding: @spacing-100 0;
+		padding: 0 0 @spacing-50;
 	}
 
 	/* Every inset the form has, on this padded element rather than on the scroller around it:
 		a padding-bottom inside an overflow container is the one browsers have historically
 		dropped. */
 	&__panels {
-		padding: @spacing-100 @spacing-150;
+		padding: @spacing-50 @spacing-150 @spacing-100;
 	}
 
 	&__partial-save {
 		margin: 0 0 @spacing-50;
 	}
-}
-
-/* A new root is what the creator opens this dialog on, in place of its Schema step, whose backdrop
-	already dims the page. Codex fades every dialog's backdrop in, the dialog with it, which would
-	take the dimming away and bring it back; it offers no dialog that opens without the fade. Where
-	the creator is opened on a Schema, this dialog replaces the step without a fade however far the
-	step's own fade had got, which depends on how soon the Schema and the edit notices answer. */
-.cdx-dialog-backdrop.cdx-dialog-fade-enter-from:has( > .ext-neowiki-subject-editor-dialog--new-root ) {
-	opacity: 1;
 }
 </style>
