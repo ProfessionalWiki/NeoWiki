@@ -5,26 +5,37 @@
 			placement="bottom-end"
 			@update:model-value="commit"
 		>
-			<template #default="{ toggle, close }">
+			<template #default="{ expanded: searchExpanded, controls, toggle, close }">
 				<!-- A select, rendered as CdxSelect renders one, that shows the tag rather than the name to
-					fit in the end of the text field. The user turning to it is done with the search. -->
+					fit in the end of the text field. The user turning to it is done with the search.
+					Holding no language, it is the search's own trigger instead. -->
 				<div
 					ref="handleRef"
 					class="ext-neowiki-language-input__handle"
 					role="combobox"
 					tabindex="0"
 					:aria-label="props.label"
-					:aria-controls="menuId"
-					:aria-expanded="expanded"
+					:aria-controls="opensSearch ? controls : menuId"
+					:aria-expanded="opensSearch ? searchExpanded : expanded"
 					:aria-activedescendant="highlightedId"
-					:title="nameOrTag"
-					@click="toggleList"
+					:title="handleText"
+					@click="opensSearch ? toggle() : toggleList()"
 					@blur="expanded = false"
-					@keydown="onKeydown"
-					@focus="close"
+					@keydown="( event: KeyboardEvent ) => onKeydown( event, toggle )"
+					@focus="onHandleFocus( close )"
 				>
-					<span aria-hidden="true">{{ shownLanguageTag( props.modelValue ) }}</span>
-					<span class="ext-neowiki-language-input__name">{{ nameOrTag }}</span>
+					<CdxIcon
+						v-if="props.modelValue === null"
+						:icon="cdxIconLanguage"
+						size="small"
+					/>
+					<span
+						v-else
+						aria-hidden="true"
+					>
+						{{ shownLanguageTag( props.modelValue ) }}
+					</span>
+					<span class="ext-neowiki-language-input__name">{{ handleText }}</span>
 					<CdxIcon
 						:icon="cdxIconExpand"
 						size="x-small"
@@ -48,16 +59,22 @@
 import { computed, ref } from 'vue';
 import { CdxIcon, CdxMenu, useFloatingMenu, useGeneratedId } from '@wikimedia/codex';
 import type { MenuItemData, MenuItemValue } from '@wikimedia/codex';
-import { cdxIconExpand } from '@wikimedia/codex-icons';
+import { cdxIconExpand, cdxIconLanguage } from '@wikimedia/codex-icons';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
 import { dataLanguageTags, languageNameOrTag, shownLanguageTag } from '@/presentation/languages.ts';
 
 // Never a language tag, which has no spaces.
 const OTHER_LANGUAGE = 'other language';
 
+// The keys that open a select's list.
+const SEARCH_OPENING_KEYS = [ 'Enter', ' ', 'ArrowDown', 'ArrowUp' ];
+
 interface LanguageInputProps {
-	/** The language, as a BCP 47 tag. */
-	modelValue: string;
+	/**
+	 * The language, as a BCP 47 tag, or null where the user has yet to pick one from the search,
+	 * every language the list offers being taken.
+	 */
+	modelValue: string | null;
 	/** Names the field, such as "Title language 2". */
 	label: string;
 }
@@ -72,6 +89,8 @@ const dataLanguages = dataLanguageTags();
 
 const otherLanguageText = mw.message( 'neowiki-language-input-other' ).text();
 
+const chooseLanguageText = mw.message( 'neowiki-language-input-choose' ).text();
+
 const menuId = useGeneratedId( 'ext-neowiki-language-input-menu' );
 
 const handleRef = ref<HTMLElement | null>( null );
@@ -79,10 +98,16 @@ const menuRef = ref<InstanceType<typeof CdxMenu>>();
 
 const expanded = ref( false );
 
-const nameOrTag = computed( (): string => languageNameOrTag( props.modelValue ) );
+const opensSearch = computed( (): boolean => props.modelValue === null );
+
+const handleText = computed(
+	(): string => props.modelValue === null ? chooseLanguageText : languageNameOrTag( props.modelValue )
+);
 
 const menuItems = computed( (): MenuItemData[] => {
-	const tags = dataLanguages.includes( props.modelValue ) ? dataLanguages : [ ...dataLanguages, props.modelValue ];
+	const tags = props.modelValue === null || dataLanguages.includes( props.modelValue ) ?
+		dataLanguages :
+		[ ...dataLanguages, props.modelValue ];
 
 	return [
 		...tags.map( ( tag ) => ( { value: tag, label: languageNameOrTag( tag ) } ) ),
@@ -109,8 +134,23 @@ function toggleList(): void {
 	handleRef.value?.focus();
 }
 
-function onKeydown( event: KeyboardEvent ): void {
-	menuRef.value?.delegateKeyNavigation( event, { characterNavigation: true } );
+function onKeydown( event: KeyboardEvent, toggleSearch: () => void ): void {
+	if ( !opensSearch.value ) {
+		menuRef.value?.delegateKeyNavigation( event, { characterNavigation: true } );
+		return;
+	}
+
+	if ( SEARCH_OPENING_KEYS.includes( event.key ) ) {
+		event.preventDefault();
+		toggleSearch();
+	}
+}
+
+// Closing the search here would have the click that follows the focus open it again.
+function onHandleFocus( closeSearch: () => void ): void {
+	if ( !opensSearch.value ) {
+		closeSearch();
+	}
 }
 
 function onSelect( value: MenuItemValue | null, openSearch: () => void ): void {

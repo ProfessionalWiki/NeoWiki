@@ -18,8 +18,9 @@ export interface ValueInputProps<T extends PropertyDefinition> {
 
 export type ValueInputEmits = {
 	/**
-	 * Not emitted while the widget holds text it cannot turn into a Value, such as "-" in a
-	 * number field: reporting it as empty would erase the stored value.
+	 * Not emitted for text the widget cannot turn into a Value, such as "-" in a number field:
+	 * reporting it as empty would erase the stored value. A widget of several parts still reports
+	 * the parts it can read.
 	 */
 	'update:modelValue': [ Value | undefined ];
 	/**
@@ -42,7 +43,8 @@ export interface ValueInputExposes {
 	 * into a Value, or null when it holds none. Native number and date inputs
 	 * reach this state: text like "5foo", or a date with a part cleared, stays
 	 * on screen while getCurrentValue() returns the last value the widget could
-	 * read. Callers hold the save while any input reports a message, and surface
+	 * read. So does a text without a language, which getCurrentValue() leaves
+	 * out. Callers hold the save while any input reports a message, and surface
 	 * that same message, rather than saving a value the field does not show.
 	 * Inputs whose widget cannot reach such a state omit this.
 	 */

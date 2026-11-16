@@ -5,6 +5,7 @@ import {
 	languageOptions,
 	newPartLanguageTag,
 	partsForReader,
+	unusedLanguageTag,
 	userLanguageTag,
 } from '@/presentation/languages';
 import { setupMwMock } from '../VueTestHelpers.ts';
@@ -99,12 +100,28 @@ describe( 'languages', () => {
 			setupMwMock( { config: { wgContentLanguage: 'en', wgNeoWikiDataLanguages: [ 'de', 'fr', 'it' ] } } );
 		} );
 
-		it( 'starts a new part in the first data language no part is in', () => {
-			expect( newPartLanguageTag( [ 'de', 'es' ] ) ).toBe( 'fr' );
+		it( 'starts a new part in the content language once every language has a part', () => {
+			expect( newPartLanguageTag( [ 'it', 'en', 'de', 'fr' ] ) ).toBe( 'en' );
 		} );
 
-		it( 'starts a new part in the content language once every data language has a part', () => {
-			expect( newPartLanguageTag( [ 'it', 'de', 'fr' ] ) ).toBe( 'en' );
+	} );
+
+	describe( 'unusedLanguageTag', () => {
+
+		beforeEach( () => {
+			setupMwMock( { config: { wgContentLanguage: 'en', wgNeoWikiDataLanguages: [ 'de', 'fr', 'it' ] } } );
+		} );
+
+		it( 'gives the first data language no part is in', () => {
+			expect( unusedLanguageTag( [ 'de', 'es' ] ) ).toBe( 'fr' );
+		} );
+
+		it( 'gives the content language once every data language has a part', () => {
+			expect( unusedLanguageTag( [ 'it', 'de', 'fr' ] ) ).toBe( 'en' );
+		} );
+
+		it( 'gives no language once the content language has a part too', () => {
+			expect( unusedLanguageTag( [ 'it', 'en', 'de', 'fr' ] ) ).toBeUndefined();
 		} );
 
 	} );
