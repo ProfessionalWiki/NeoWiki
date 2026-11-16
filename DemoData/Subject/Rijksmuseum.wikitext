@@ -1,9 +1,3 @@
 The '''Rijksmuseum''' is the Dutch national museum of arts and history, in [[Amsterdam]]. Founded in 1800 in The Hague and moved to Amsterdam in 1808, it has occupied its Pierre Cuypers-designed building since 1885.
 
 The museum holds around one million objects from 1200 to 2000, including masterpieces by Rembrandt, [[Johannes Vermeer|Vermeer]], and Frans Hals. It is best known for "The Night Watch" and a comprehensive survey of Dutch Golden Age painting.
-
-== Annual attendance ==
-
-Yearly attendance, stored on this page as [[Schema:Annual attendance|Annual attendance]] Subjects. They are [https://neowiki.ai/docs/glossary#dependent-subject Dependent Subjects] of the museum: they show inside it on its [{{fullurl:{{FULLPAGENAME}}|action=subjects}} Data tab] and on [[Special:Subject/sEpfwJLnxyQy6vR|Special:Subject]], and you edit them with the museum.
-
-{{#invoke:NeoWikiDemo|subjectTable|schema=Annual attendance|columns=Year, Visitors|sortBy=Year|numberColumns=Visitors}}
