@@ -186,14 +186,26 @@ local function statementValue( stmt )
 	return v
 end
 
+local function cellValue( subject, column, labelColumn )
+	if column == labelColumn then
+		return subject.label
+	end
+	return statementValue( subject.statements[column] )
+end
+
 -- Renders a wikitable from the current page's Subjects.
 -- Args: columns=Col1, Col2 (required, in order)
+--       labelColumn=ColName (optional, a first column holding each Subject's label)
 --       schema=SchemaName (optional, filters the Subjects to one schema)
 --       sortBy=ColName (optional)
 --       sortDir=asc|desc (optional, default desc)
 --       numberColumns=Col1, Col2 (optional, formatted with thousand separators)
 function p.subjectTable( frame )
 	local columns = mw.text.split( frame.args.columns or '', ',%s*' )
+	local labelColumn = frame.args.labelColumn
+	if labelColumn then
+		table.insert( columns, 1, labelColumn )
+	end
 	local schemaFilter = frame.args.schema
 	local sortBy = frame.args.sortBy
 	local sortDir = frame.args.sortDir or 'desc'
@@ -212,7 +224,7 @@ function p.subjectTable( frame )
 		if not schemaFilter or subject.schema == schemaFilter then
 			local row = {}
 			for _, col in ipairs( columns ) do
-				local v = statementValue( subject.statements[col] )
+				local v = cellValue( subject, col, labelColumn )
 				if v == nil then
 					row[col] = ''
 				elseif numberSet[col] and tonumber( v ) then
@@ -224,7 +236,7 @@ function p.subjectTable( frame )
 			-- Stash the raw sort value so number columns sort numerically
 			-- even after thousand-separator formatting has stringified them.
 			if sortBy then
-				row.__sortValue = statementValue( subject.statements[sortBy] )
+				row.__sortValue = cellValue( subject, sortBy, labelColumn )
 			end
 			rows[#rows + 1] = row
 		end
