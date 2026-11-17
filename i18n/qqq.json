@@ -355,6 +355,7 @@
 	"neowiki-property-editor-labels": "Label of the schema editor field holding a property's labels, one per language. Each label is shown to readers of its language in place of the property name.",
 	"neowiki-property-editor-labels-description": "Tooltip on the info icon beside {{msg-mw|neowiki-property-editor-labels}} in the schema editor.",
 	"neowiki-property-editor-name-taken": "Error shown under the property name field in the schema editor when another property of the schema already has the entered name. $1 is the entered name.",
+	"neowiki-property-editor-name-locked": "Help text under the property name field in the schema editor when the name cannot be changed, because Subjects of the schema may have values stored under it. \"label\" refers to {{msg-mw|neowiki-property-editor-labels}}.",
 	"neowiki-property-editor-min-exceeds-max": "Error shown in the schema editor when the minimum value exceeds the maximum value for a number property.",
 	"neowiki-property-editor-options": "Label for the options field in the select property type editor, where schema creators define the allowed values.",
 	"neowiki-property-editor-options-unique": "Error shown under each option whose label is the same as another option's (ignoring letter case and surrounding spaces), in the options list of a Select property in the schema editor, and in the notification that refuses the save.",

@@ -5,6 +5,7 @@
 		:initial-schema="baseSchema"
 		:subjects-are-dependent="subjectsAreDependent"
 		:opens-on-schema="true"
+		:subjects-may-use-schema="false"
 		@change="onChange"
 	>
 		<template #name>

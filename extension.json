@@ -676,6 +676,7 @@
 				"neowiki-property-editor-labels",
 				"neowiki-property-editor-labels-description",
 				"neowiki-property-editor-name-taken",
+				"neowiki-property-editor-name-locked",
 				"neowiki-property-name-not-canonical",
 				"neowiki-property-name-not-canonical-invisible",
 				"neowiki-property-name-empty",

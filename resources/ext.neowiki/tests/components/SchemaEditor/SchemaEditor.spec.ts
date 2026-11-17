@@ -13,7 +13,7 @@ import { newSchema } from '@/TestHelpers.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
-import { afterQueuedTasks, createI18nMock, findPropertyNameInput, labelTextInputs, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
+import { afterQueuedTasks, createI18nMock, findPropertyNameInput, labelTextInputs, propertyNameIsLocked, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
@@ -45,6 +45,7 @@ function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): V
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
+			subjectsMayUseSchema: false,
 			...props,
 		},
 		slots: {
@@ -67,7 +68,7 @@ function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): V
 // With the real property list, which focuses the row it is asked to select, attached to the document for the focus.
 function createWrapperWithPropertyList( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
 	const wrapper = mount( SchemaEditor, {
-		props: { initialSchema: schema, ...props },
+		props: { initialSchema: schema, subjectsMayUseSchema: false, ...props },
 		slots: { name: SCHEMA_NAME_FIELD, schema: SCHEMA_FIELDS },
 		attachTo: document.body,
 		global: {
@@ -81,10 +82,12 @@ function createWrapperWithPropertyList( schema: Schema, props: Record<string, un
 	return wrapper;
 }
 
-function createWrapperWithPropertyEditor( schema: Schema ): VueWrapper {
+function createWrapperWithPropertyEditor( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
 	return mount( SchemaEditor, {
 		props: {
 			initialSchema: schema,
+			subjectsMayUseSchema: false,
+			...props,
 		},
 		global: {
 			plugins: [ createPinia() ],
@@ -993,6 +996,104 @@ describe( 'SchemaEditor', () => {
 			const schema = ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
 			expect( Object.keys( schema.getPropertyDefinitions().asRecord() ) )
 				.toEqual( [ 'new property 1', 'New Property 2' ] );
+		} );
+
+		it( 'moves on from a property whose name breaks a rule, leaving it to the save to refuse', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWithPropertiesNamed( 'id', 'Title' ) );
+
+			await selectProperty( wrapper, 'Title' );
+
+			expect( selectedPropertyName( wrapper ) ).toBe( 'Title' );
+		} );
+
+		describe( 'while Subjects may use the Schema', () => {
+			function editorOn( ...propertyNames: string[] ): VueWrapper {
+				return createWrapperWithPropertyEditor( schemaWithPropertiesNamed( ...propertyNames ), { subjectsMayUseSchema: true } );
+			}
+
+			async function addProperty( wrapper: VueWrapper ): Promise<void> {
+				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'addProperty' );
+				await flushPromises();
+			}
+
+			it( 'locks the name of a property the Schema opens with', async () => {
+				const wrapper = editorOn( 'Title', 'Birth date', 'Score' );
+
+				await selectProperty( wrapper, 'Birth date' );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( true );
+			} );
+
+			it( 'leaves the name of a property added since open to change', async () => {
+				const wrapper = editorOn( 'Birth date' );
+
+				await addProperty( wrapper );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
+
+			async function deleteProperty( wrapper: VueWrapper, name: string ): Promise<void> {
+				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'propertyDeleted', new PropertyName( name ) );
+			}
+
+			it( 'leaves the name of an added property open to change after a property with its generated name is deleted', async () => {
+				const wrapper = editorOn( 'New Property 1', 'Title' );
+				await deleteProperty( wrapper, 'New Property 1' );
+
+				await addProperty( wrapper );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
+
+			it( 'leaves a property added under the name of a deleted one open to change', async () => {
+				const wrapper = editorOn( 'Birth date', 'Title' );
+				await deleteProperty( wrapper, 'Birth date' );
+				await addProperty( wrapper );
+				await findPropertyNameInput( wrapper ).setValue( 'Birth date' );
+				await selectProperty( wrapper, 'Title' );
+
+				await selectProperty( wrapper, 'Birth date' );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
+
+			it( 'locks a deleted property\'s name in a Schema the host switches it to', async () => {
+				const wrapper = editorOn( 'Birth date', 'Title' );
+				await deleteProperty( wrapper, 'Birth date' );
+
+				await wrapper.setProps( { initialSchema: schemaWithPropertiesNamed( 'Birth date', 'Score' ) } );
+				await flushPromises();
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( true );
+			} );
+
+			it( 'leaves a name that breaks a rule open to change, since the wiki refuses the Schema with it', () => {
+				const wrapper = editorOn( 'id', 'Title' );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
+
+			it( 'keeps the earlier of two near-duplicate names locked, as renaming the later one is enough', () => {
+				const wrapper = editorOn( 'Birth date', 'birth date', 'Title' );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( true );
+			} );
+
+			it( 'leaves the later of two near-duplicate names open to change, since the wiki refuses the pair', async () => {
+				const wrapper = editorOn( 'Birth date', 'birth date', 'Title' );
+
+				await selectProperty( wrapper, 'birth date' );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
+
+			it( 'unlocks the names once no Subject turns out to use the Schema', async () => {
+				const wrapper = editorOn( 'Birth date' );
+
+				await wrapper.setProps( { subjectsMayUseSchema: false } );
+
+				expect( propertyNameIsLocked( wrapper ) ).toBe( false );
+			} );
 		} );
 	} );
 

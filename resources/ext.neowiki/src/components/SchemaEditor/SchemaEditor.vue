@@ -43,6 +43,7 @@
 				:key="propertyEditorKey"
 				:property="selectedProperty as PropertyDefinition"
 				:other-property-names="otherPropertyNames"
+				:name-locked="selectedNameLocked"
 				:select-name="selectedPropertyName === createdPropertyName"
 				@update:property-definition="onPropertyUpdated"
 			/>
@@ -85,6 +86,11 @@ const props = withDefaults( defineProps<{
 	subjectsAreDependent?: boolean | null;
 	/** Opens on the Schema's own row, for a host whose fields there come first. */
 	opensOnSchema?: boolean;
+	/**
+	 * Whether Subjects may hold values under the names of the properties the Schema opens with. Renaming one of those
+	 * properties would hide its values, so their names cannot change.
+	 */
+	subjectsMayUseSchema: boolean;
 }>(), {
 	subjectsAreDependent: null
 } );
@@ -112,6 +118,9 @@ const PROPERTY_LIST_SIZE: Omit<StartPaneOptions, 'resizeLabel'> = {
 };
 
 const currentSchema = ref<Schema>( props.initialSchema );
+
+// A property added under one of these names is a new property, whose name can change.
+const deletedPropertyNames = ref<string[]>( [] );
 
 const subjectsAreDependent = computed( (): boolean =>
 	props.subjectsAreDependent ?? currentSchema.value.subjectsAreDependent() );
@@ -161,6 +170,7 @@ const createdPropertyName = ref<string | undefined>();
 
 watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
+	deletedPropertyNames.value = [];
 	select( openingRow() );
 } );
 
@@ -197,13 +207,32 @@ const selectedProperty = computed( () => {
 	);
 } );
 
-const propertyNames = computed( (): string[] =>
-	Object.keys( currentSchema.value.getPropertyDefinitions().asRecord() )
-);
+function propertyNamesOf( schema: Schema ): string[] {
+	return Object.keys( schema.getPropertyDefinitions().asRecord() );
+}
+
+const propertyNames = computed( (): string[] => propertyNamesOf( currentSchema.value as Schema ) );
 
 const otherPropertyNames = computed( (): string[] =>
 	propertyNames.value.filter( ( name ) => name !== selectedPropertyName.value )
 );
+
+// The properties the Schema opens with, while it holds them. Not a name the wiki refuses: the Schema cannot be saved
+// until that name changes.
+const lockedPropertyNames = computed( (): string[] => {
+	if ( !props.subjectsMayUseSchema ) {
+		return [];
+	}
+
+	const storedNames = propertyNamesOf( props.initialSchema );
+	const refusedNames = new Set( propertyNameProblemsInSchema( storedNames ).map( ( problem ) => problem.name ) );
+
+	return storedNames.filter( ( name ) => !refusedNames.has( name ) && !deletedPropertyNames.value.includes( name ) );
+} );
+
+// No other property can take a locked name while the one holding it is there, so the name identifies the property.
+const selectedNameLocked = computed( (): boolean =>
+	selectedPropertyName.value !== undefined && lockedPropertyNames.value.includes( selectedPropertyName.value ) );
 
 function moveSelectionTo( row: PropertyListRow ): void {
 	if ( !isSelected( row ) ) {
@@ -270,6 +299,7 @@ function isAddPropertyShortcut( event: KeyboardEvent ): boolean {
 
 function onPropertyDeleted( name: PropertyName ): void {
 	currentSchema.value = currentSchema.value.withRemovedPropertyDefinition( name );
+	deletedPropertyNames.value = [ ...deletedPropertyNames.value, name.toString() ];
 
 	if ( selectedPropertyName.value === name.toString() ) {
 		select( defaultRow() );

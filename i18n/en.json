@@ -77,6 +77,7 @@
 	"neowiki-property-editor-labels": "Labels",
 	"neowiki-property-editor-labels-description": "Shown to readers in place of the name, in their language.",
 	"neowiki-property-editor-name-taken": "A property named \"$1\" already exists.",
+	"neowiki-property-editor-name-locked": "Subjects may have values under this name, so it cannot change. Give the property a label to show it under another name.",
 	"neowiki-property-editor-type": "Type",
 	"neowiki-property-editor-initial-value": "Initial value",
 	"neowiki-property-editor-required": "Require a value",

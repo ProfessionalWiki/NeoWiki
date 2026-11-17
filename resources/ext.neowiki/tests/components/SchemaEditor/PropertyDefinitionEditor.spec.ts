@@ -22,9 +22,11 @@ import { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { newNumberValue, newStringValue } from '@/domain/Value';
 import {
 	createTestWrapper,
+	describedAs,
 	FieldProps,
 	findPropertyNameInput,
 	labelTextInputs,
+	propertyNameIsLocked,
 	reportPartlyClearedDate,
 	reportUnparseableNumber,
 	selectedText,
@@ -38,8 +40,11 @@ describe( 'PropertyDefinitionEditor', () => {
 		setupMwMock();
 	} );
 
-	function newWrapper( property: PropertyDefinition, props: { selectName?: boolean; otherPropertyNames?: string[] } = {} ): VueWrapper {
-		return createTestWrapper( PropertyDefinitionEditor, { property, otherPropertyNames: [], ...props } );
+	function newWrapper(
+		property: PropertyDefinition,
+		props: { selectName?: boolean; otherPropertyNames?: string[]; nameLocked?: boolean } = {},
+	): VueWrapper {
+		return createTestWrapper( PropertyDefinitionEditor, { property, otherPropertyNames: [], nameLocked: false, ...props } );
 	}
 
 	function unparseableInputMessage( wrapper: VueWrapper ): string | null {
@@ -502,6 +507,36 @@ describe( 'PropertyDefinitionEditor', () => {
 			await typeName( wrapper, 'Title' );
 
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-property-editor-name-takenTitle' );
+		} );
+
+		describe( 'locked names', () => {
+			function editorWithLockedName( props: { otherPropertyNames?: string[] } = {} ): VueWrapper {
+				return newWrapper( newTextProperty( { name: 'Birth date' } ), { nameLocked: true, ...props } );
+			}
+
+			function nameDescription( wrapper: VueWrapper ): string[] {
+				return describedAs( wrapper, findPropertyNameInput( wrapper ) );
+			}
+
+			it( 'keep a name the editor opens with from being typed over', () => {
+				expect( propertyNameIsLocked( editorWithLockedName() ) ).toBe( true );
+			} );
+
+			it( 'tell the user why the name cannot change', () => {
+				expect( nameDescription( editorWithLockedName() ) ).toEqual( [ 'neowiki-property-editor-name-locked' ] );
+			} );
+
+			it( 'say nothing of a lock on a name that can change', () => {
+				const wrapper = newWrapper( newTextProperty( { name: 'Birth date' } ) );
+
+				expect( nameDescription( wrapper ) ).toEqual( [] );
+			} );
+
+			it( 'show no error over a near-duplicate of another name', () => {
+				const wrapper = editorWithLockedName( { otherPropertyNames: [ 'birth date' ] } );
+
+				expect( nameFieldProps( wrapper ).status ).toBe( 'default' );
+			} );
 		} );
 	} );
 } );
