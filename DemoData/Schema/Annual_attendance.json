@@ -8,6 +8,7 @@
 		},
 		"Visitors": {
 			"type": "number",
+			"required": true,
 			"minimum": 0,
 			"precision": 0
 		},
