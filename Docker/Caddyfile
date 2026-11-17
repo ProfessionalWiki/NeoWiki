@@ -1,3 +1,4 @@
 {$MW_SERVER} {
+	encode zstd gzip
 	reverse_proxy mediawiki:80
 }
