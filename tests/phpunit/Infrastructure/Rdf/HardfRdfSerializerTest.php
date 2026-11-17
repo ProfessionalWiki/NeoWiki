@@ -444,6 +444,27 @@ class HardfRdfSerializerTest extends TestCase {
 		$this->assertCount( 1, ParsedRdf::canonicalQuads( $output ) );
 	}
 
+	public function testUrlValueInAPropertyNamespaceLeavesValuesOfThatSchemeWritten(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList(
+				$this->websiteQuad( new Iri( 'https://wiki.example/prop/mailto/x' ) ),
+				$this->websiteQuad( new Iri( 'mailto:alice@example.org' ) ),
+			),
+			RdfFormat::Turtle
+		);
+
+		$this->assertCount( 2, ParsedRdf::canonicalQuads( $output ) );
+	}
+
+	public function testSchemaNamedAfterTheSchemeOfAUrlValueLeavesThatValueWritten(): void {
+		$output = $this->serializer()->serialize(
+			new QuadList( $this->schemaPropertyQuad( 'mailto', 'Email', new Iri( 'mailto:alice@example.org' ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertCount( 1, ParsedRdf::canonicalQuads( $output ) );
+	}
+
 	public function testStreamingWriterRechecksAnIriAfterALaterWriteDeclaresAPrefix(): void {
 		$writer = $this->serializer()->newWriter( RdfFormat::TriG );
 
