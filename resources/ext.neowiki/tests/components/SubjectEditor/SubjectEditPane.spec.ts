@@ -355,7 +355,7 @@ describe( 'SubjectEditPane', () => {
 			await nextTick();
 
 			expect( ( wrapper.vm as any ).hasChanged ).toBe( true );
-			expect( wrapper.find( '.ext-neowiki-unsaved-dot' ).exists() ).toBe( false );
+			expect( wrapper.find( '[role="img"][aria-label="neowiki-subject-editor-unsaved"]' ).exists() ).toBe( false );
 		} );
 	} );
 

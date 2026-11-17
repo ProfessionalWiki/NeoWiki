@@ -447,14 +447,12 @@ defineExpose<SchemaEditorExposes>( {
 			}
 		}
 
-		/* As the Subject editor's list of open Subjects: a row reaches the dialog's edge, so the space
-			before its icon is the dialog's own gutter, and its hover and selected backgrounds start at
-			that edge. */
+		/* A row reaches the dialog's edge, so the space before its icon is the dialog's own gutter, and its hover and
+			selected backgrounds start at that edge. The rows have that gutter of their own; the Add row is given it. */
 		&__property-list {
 			@media ( min-width: @min-width-breakpoint-desktop ) {
 				padding-block: 0 @spacing-50;
 
-				.ext-neowiki-property-list__item,
 				.ext-neowiki-property-list__add-item {
 					padding-inline-start: @spacing-150;
 					border-start-start-radius: 0;
@@ -499,7 +497,9 @@ defineExpose<SchemaEditorExposes>( {
 				display: flex;
 				white-space: nowrap;
 
+				/* Side by side, the rows have no gutter: a mark sits on each row's icon. */
 				.ext-neowiki-property-list__item {
+					padding-inline-start: @spacing-75;
 					border-radius: 0;
 				}
 

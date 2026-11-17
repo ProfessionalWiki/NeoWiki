@@ -1489,12 +1489,12 @@ describe( 'SubjectEditorDialog', () => {
 		// failure — an unmounted pane loses unsaved work — so it throws rather than reading false.
 		function listRowHasDot( wrapper: VueWrapper, id: string ): boolean {
 			expect( listHasRow( wrapper, id ) ).toBe( true );
-			return listRow( wrapper, id ).find( '.ext-neowiki-unsaved-dot' ).exists();
+			return listRow( wrapper, id ).find( '[role="img"][aria-label="neowiki-subject-editor-unsaved"]' ).exists();
 		}
 
 		function listRowBlocksSaving( wrapper: VueWrapper, id: string ): boolean {
 			expect( listHasRow( wrapper, id ) ).toBe( true );
-			return listRow( wrapper, id ).find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
+			return listRow( wrapper, id ).findAll( 'svg title' ).some( ( title ) => title.text() === 'neowiki-subject-editor-save-blocked' );
 		}
 
 		function listRowLabel( wrapper: VueWrapper, id: string ): string {

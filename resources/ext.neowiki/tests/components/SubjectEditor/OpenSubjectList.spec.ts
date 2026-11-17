@@ -82,11 +82,11 @@ function selectedIds( wrapper: VueWrapper ): string[] {
 }
 
 function hasUnsavedDot( option: DOMWrapper<Element> ): boolean {
-	return option.find( '.ext-neowiki-unsaved-dot' ).exists();
+	return option.find( '[role="img"][aria-label="neowiki-subject-editor-unsaved"]' ).exists();
 }
 
 function saysSavingIsBlocked( option: DOMWrapper<Element> ): boolean {
-	return option.find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
+	return option.findAll( 'svg title' ).some( ( title ) => title.text() === 'neowiki-subject-editor-save-blocked' );
 }
 
 describe( 'OpenSubjectList', () => {
@@ -156,15 +156,6 @@ describe( 'OpenSubjectList', () => {
 		const wrapper = mountList( { unsavedIds: [ BIRTH_ID ] } );
 
 		expect( options( wrapper ).map( hasUnsavedDot ) ).toStrictEqual( [ false, true, false ] );
-	} );
-
-	// A row takes its accessible name from its content, and the marker is an empty span: without a
-	// role and a label of its own an edited subject announces exactly like a clean one.
-	it( 'says in words that a marked subject has unsaved changes', () => {
-		const dot = mountList( { unsavedIds: [ BIRTH_ID ] } ).get( '.ext-neowiki-unsaved-dot' );
-
-		expect( dot.attributes( 'role' ) ).toBe( 'img' );
-		expect( dot.attributes( 'aria-label' ) ).toBe( 'neowiki-subject-editor-unsaved' );
 	} );
 
 	it( 'says of the subjects whose errors block saving, and no others, that they do', () => {

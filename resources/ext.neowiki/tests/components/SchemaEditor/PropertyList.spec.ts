@@ -64,11 +64,11 @@ const LABEL_ROW_TITLE = 'neowiki-schema-editor-subject-label';
 const DELETE_BUTTON = '[aria-label="neowiki-schema-editor-delete-property"]';
 
 function rowTitle( row: DOMWrapper<Element> ): string {
-	return row.find( '.ext-neowiki-property-list__item__text__label' ).text();
+	return row.find( '.ext-neowiki-editor-list-item__label' ).text();
 }
 
 function rowDescription( row: DOMWrapper<Element> ): string {
-	return row.find( '.ext-neowiki-property-list__item__text__description' ).text();
+	return row.find( '.ext-neowiki-property-list__item__description' ).text();
 }
 
 function rowTitles( wrapper: VueWrapper ): string[] {
@@ -84,7 +84,7 @@ function focusableRowTitles( wrapper: VueWrapper ): string[] {
 }
 
 function highlightedRowTitles( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '.ext-neowiki-property-list__item--selected' ).map( rowTitle );
+	return wrapper.findAll( '.ext-neowiki-editor-list-item--selected' ).map( rowTitle );
 }
 
 function findRow( wrapper: VueWrapper, title: string ): DOMWrapper<Element> {
