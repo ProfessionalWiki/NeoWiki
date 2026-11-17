@@ -335,6 +335,14 @@ function initializeUi(): void {
 	].forEach( ( initialize ) => queueMicrotask( initialize ) );
 }
 
+function whenDocumentParsed( callback: () => void ): void {
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', callback );
+	} else {
+		callback();
+	}
+}
+
 if ( !isTestEnvironment ) {
 	keepMenuEscapesFromDialogs();
 
@@ -346,7 +354,10 @@ if ( !isTestEnvironment ) {
 	// mw.loader.using settles on the first failure in its list, with the rest possibly still loading.
 	const frontendModules = ( mw.config.get( 'wgNeoWikiFrontendModules' ) ?? [] ) as string[];
 	Promise.allSettled( frontendModules.map( ( moduleName ) => mw.loader.using( moduleName ) ) ).then( () => {
-		registrar.markUiStarted();
-		initializeUi();
+		// On a slow connection, this can run before the HTML holding the elements the UI mounts on has arrived.
+		whenDocumentParsed( () => {
+			registrar.markUiStarted();
+			initializeUi();
+		} );
 	} );
 }
