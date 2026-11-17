@@ -88,18 +88,6 @@ class CurieExpanderTest extends TestCase {
 		);
 	}
 
-	public function testIsSafeAbsoluteIriRejectsARelativeIri(): void {
-		$this->assertFalse( CurieExpander::isSafeAbsoluteIri( '/relative/path' ) );
-	}
-
-	public function testIsSafeAbsoluteIriRejectsAnIriThatBreaksOutOfThePrefixTable(): void {
-		$this->assertFalse( CurieExpander::isSafeAbsoluteIri( 'http://evil.example/"> .# ' ) );
-	}
-
-	public function testIsSafeAbsoluteIriAcceptsAcleanNamespaceIri(): void {
-		$this->assertTrue( CurieExpander::isSafeAbsoluteIri( 'http://www.europeana.eu/schemas/edm/' ) );
-	}
-
 	public function testIsValidPrefixLabelAcceptsALabelWithLettersDigitsUnderscoreAndHyphen(): void {
 		$this->assertTrue( CurieExpander::isValidPrefixLabel( 'edm' ) );
 		$this->assertTrue( CurieExpander::isValidPrefixLabel( 'rdaGr2' ) );

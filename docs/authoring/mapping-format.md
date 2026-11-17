@@ -131,10 +131,10 @@ A `class`, `linkPredicate`, `predicate`, `labelPredicate`, or `datatype` is eith
 prefix is declared in `prefixes`, or an **absolute IRI** containing `://`. A CURIE with an undeclared prefix is
 rejected; non-authority schemes (`urn:`, `mailto:`, …) are out of scope.
 
-Terms are reproduced verbatim, never percent-encoded. A term or a declared prefix namespace that would expand
-to an IRI containing an IRIREF-illegal character (`< > " { } | ^ \` backtick, space, control characters) is
-**rejected at save time**, as is a `lang` tag that is not BCP-47-shaped, a property entry that sets both
-`lang` and `datatype`, a structural error, and a `node` or `parent` reference that does not resolve.
+Terms are reproduced verbatim, never percent-encoded. A term or prefix namespace that does not expand to an
+[RFC 3987](https://www.rfc-editor.org/rfc/rfc3987) IRI, such as one with a space, `<`, a second `#`, or a `%` not
+followed by two hex digits, is **rejected at save time**, as is a `lang` tag that is not BCP-47-shaped, a property entry
+that sets both `lang` and `datatype`, a structural error, and a `node` or `parent` reference that does not resolve.
 
 The same checks re-run at **projection time**: a class, predicate, datatype, or prefix that does not re-expand
 safely is dropped, an unusable node takes everything below it with it, an invalid language tag falls back to a

@@ -127,6 +127,7 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\Mapping;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\MappingName;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
@@ -989,7 +990,7 @@ class NeoWikiExtension {
 		$prefixes = $this->getRdfNamespaces()->prefixMap();
 
 		foreach ( $mapping->prefixes as $label => $namespace ) {
-			if ( CurieExpander::isValidPrefixLabel( (string)$label ) && CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+			if ( CurieExpander::isValidPrefixLabel( (string)$label ) && Iri::isValid( $namespace ) ) {
 				$prefixes[$label] = $namespace;
 			}
 		}

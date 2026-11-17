@@ -10,6 +10,7 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator;
 use ProfessionalWiki\NeoWiki\Domain\Mapping\CurieExpander;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use RuntimeException;
@@ -158,7 +159,7 @@ class MappingContentValidator {
 		foreach ( $prefixes as $label => $namespace ) {
 			// The namespace also reaches the serializer's prefix table, so an unsafe one could inject a
 			// `@prefix` declaration even when no term uses it. Reject it up front.
-			if ( !CurieExpander::isSafeAbsoluteIri( $namespace ) ) {
+			if ( !Iri::isValid( $namespace ) ) {
 				$errors['/prefixes/' . $label] = 'The prefix namespace "' . $namespace . '" is not a valid, safe absolute IRI.';
 			}
 		}

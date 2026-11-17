@@ -99,7 +99,7 @@ class RdfValueMapperRegistry {
 	 * Maps a url value: each part becomes an IRI object when it is a valid absolute IRI, so the statement
 	 * joins the graph as a resource that SPARQL can follow rather than an inert string. A part that is not
 	 * a valid absolute IRI (e.g. the scheme-less values the url Property Type still accepts) keeps the
-	 * xsd:anyURI literal form, so nothing is lost. Reuses {@see Iri::isSafeAbsolute}, the same IRI-safety
+	 * xsd:anyURI literal form, so nothing is lost. Reuses {@see Iri::isValid}, the same IRI
 	 * check the Mapping layer applies to authored terms.
 	 *
 	 * @return RdfTerm[]
@@ -116,7 +116,7 @@ class RdfValueMapperRegistry {
 		foreach ( $scalars as $part ) {
 			if ( is_scalar( $part ) ) {
 				$string = (string)$part;
-				$terms[] = Iri::isSafeAbsolute( $string )
+				$terms[] = Iri::isValid( $string )
 					? new Iri( $string )
 					: RdfLiteralFactory::typed( $string, 'anyURI' );
 			}

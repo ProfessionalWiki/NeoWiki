@@ -393,6 +393,31 @@ class HardfRdfSerializerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * @dataProvider propertyNameOutsideRfc3987Provider
+	 */
+	public function testPropertyNamedWithCharactersRfc3987DisallowsKeepsItsTriple( string $propertyName ): void {
+		$subject = $this->ns->subject( new SubjectId( 's1demo8aaaaaab5' ) );
+		$predicate = $this->ns->property( $propertyName );
+
+		$output = $this->serializer()->serialize(
+			new QuadList( new Quad( $subject, $predicate, new Literal( '180', $this->ns->xsd( 'integer' ) ), $this->ns->page( new PageId( 1 ) ) ) ),
+			RdfFormat::Turtle
+		);
+
+		$this->assertSame(
+			ParsedRdf::canonicalQuads(
+				"<$subject->value> <$predicate->value> \"180\"^^<http://www.w3.org/2001/XMLSchema#integer> ."
+			),
+			ParsedRdf::canonicalQuads( $output )
+		);
+	}
+
+	public static function propertyNameOutsideRfc3987Provider(): iterable {
+		yield 'square brackets, allowed before property-name rules' => [ 'Height [cm]' ];
+		yield 'variation selector' => [ "Ward \u{845B}\u{E0100}" ];
+	}
+
 	public function testLanguageTaggedLiteralKeepsItsTag(): void {
 		$output = $this->serializer()->serialize(
 			new QuadList( new Quad(
