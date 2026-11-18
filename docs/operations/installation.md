@@ -211,6 +211,8 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiDataLanguages` | Languages the wiki's data is in: see [Data languages](#data-languages) | `[]` (the content language) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
+| `$wgNeoWikiModelBundleCatalogs` | With Model Bundles: the URLs of the [catalogs](../api/model-bundles.md#catalogs) to install bundles from | `[]` | No |
+| `$wgNeoWikiModelBundlePreselection` | With Model Bundles: the catalog entries the data model setup ticks by default | `[]` | No |
 
 ## Choosing page-first or subject-first
 

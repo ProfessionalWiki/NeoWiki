@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ImportPlan } from '../../src/application/importPlan';
-import { runImport, type ImportOutcome } from '../../src/application/importRun';
+import { runImport, runImports, type ImportOutcome } from '../../src/application/importRun';
 import { itemHash, schemaItem, subjectItem } from '../../src/application/canonical';
 import { recordedHash } from '../../src/application/InstallRecord';
 import { itemId, type SubjectEntry } from '../../src/application/ModelBundle';
 import { newSchema } from '@/TestHelpers';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from './InMemoryDataModel';
-import { bundleOf, installed, planOn, schemaJson, subjectEntry } from './builders';
+import { bundleOf, installed, planAllOn, planOn, schemaJson, subjectEntry } from './builders';
 
 const ID_1 = 's1demo1aaaaaaa1';
 const ID_2 = 's1demo1aaaaaaa2';
@@ -182,6 +182,54 @@ describe( 'runImport', () => {
 
 		expect( results( outcome ) ).toEqual( [ 'failed Gone: neowiki-bundle-remove-blocked-used' ] );
 		expect( wiki.schemas.has( 'Gone' ) ).toBe( true );
+	} );
+
+	describe( 'several bundles together', () => {
+
+		const BIRTH = newSchema( { title: 'Birth', subjectsAreDependent: true } );
+		const ADA = subjectEntry( { schema: 'Person', label: 'Ada', dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ] } );
+
+		function together(): Promise<ImportPlan[]> {
+			return planAllOn( wiki, [
+				bundleOf( [], [ BIRTH ], { metadata: { name: 'Model', version: '1', description: '' } } ),
+				bundleOf( [ [ ID_1, ADA ] ], [], { metadata: { name: 'People', version: '1', description: '' } } ),
+			] );
+		}
+
+		function runAll( plans: ImportPlan[], onProgress?: ( done: number, total: number ) => void ): Promise<ImportOutcome[]> {
+			return runImports( plans.map( ( plan ) => ( {
+				plan,
+				chosen: new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ),
+				context: { repository: wiki, recordRepository: wiki, comment: 'Install', source: 'file', subjectFirst: false },
+			} ) ), onProgress );
+		}
+
+		it( 'writes each bundle in turn, each with its own install record', async () => {
+			await runAll( await together() );
+
+			expect( wiki.writes ).toEqual( [ 'save schema:Birth', `create subject:${ ID_1 }` ] );
+			expect( [ wiki.recordOf( 'Model' )?.items.length, wiki.recordOf( 'People' )?.items.length ] ).toEqual( [ 1, 1 ] );
+		} );
+
+		it( 'counts its progress over every bundle', async () => {
+			const progress: [ number, number ][] = [];
+
+			await runAll( await together(), ( done, total ) => progress.push( [ done, total ] ) );
+
+			expect( progress[ progress.length - 1 ] ).toEqual( [ 2, 2 ] );
+		} );
+
+		it( 'finds what it wrote when planned again, so that running again resumes', async () => {
+			wiki.failingWrites.set( `subject:${ ID_1 }`, 'The page is protected' );
+			await runAll( await together() );
+			wiki.failingWrites.clear();
+
+			const plans = await together();
+
+			expect( plans.map( ( plan ) => plan.items.map( ( item ) => `${ item.key } ${ item.status }` ) ) )
+				.toEqual( [ [ 'Birth unchanged' ], [ `${ ID_1 } new` ] ] );
+		} );
+
 	} );
 
 	describe( 'install record', () => {

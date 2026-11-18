@@ -27,6 +27,9 @@ An update compares each item three ways: the recorded version, the wiki's versio
 changed is replaced by default; what the wiki changed too is shown in both versions and replaced only if the admin
 ticks it; what the bundle no longer has is offered for removal.
 
+Catalogs, JSON files at URLs that a wiki's settings name, list bundles by the URLs of their files, each as a model or a
+destination with the bundles it requires; the browser reads them, and installs a bundle with those it requires.
+
 For page weight, Model Bundles is an extension of its own in NeoWiki's repository, NeoWikiModelBundles, which a wiki
 enables besides NeoWiki. Its frontend is a ResourceLoader module that only Special:DataModel loads, and that reaches
 NeoWiki's frontend through `require( 'ext.neowiki' )`. NeoWiki's Special:Schemas imports and exports Schemas only.

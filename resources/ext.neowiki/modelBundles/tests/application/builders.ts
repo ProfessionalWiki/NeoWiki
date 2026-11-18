@@ -4,7 +4,7 @@ import { itemHash, schemaItem, subjectItem } from '../../src/application/canonic
 import type { BundleMetadata, JsonObject, ModelBundle, SubjectEntry } from '../../src/application/ModelBundle';
 import type { InstallRecord } from '../../src/application/InstallRecord';
 import { CurrentStateReader } from '../../src/application/CurrentStateReader';
-import { planImport, type ImportPlan } from '../../src/application/importPlan';
+import { planImport, planImports, type ImportPlan } from '../../src/application/importPlan';
 import type { InMemoryDataModel } from './InMemoryDataModel';
 
 export const VOCABULARIES: BundleMetadata = { name: 'Vocabularies', version: '2', description: 'Controlled lists' };
@@ -70,6 +70,18 @@ export function installed(
 		revisionId: 1,
 		...overrides,
 	};
+}
+
+/**
+ * The plans of bundles installed together, in the order given.
+ */
+export function planAllOn( wiki: InMemoryDataModel, bundles: ModelBundle[] ): Promise<ImportPlan[]> {
+	return planImports( bundles.map( ( bundle ) => ( { bundle, name: bundle.metadata?.name ?? '' } ) ), {
+		reader: new CurrentStateReader( wiki ),
+		repository: wiki,
+		records: wiki.records,
+		subjectFirst: false,
+	} );
 }
 
 export function planOn(

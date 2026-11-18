@@ -1,24 +1,28 @@
 import { ref, shallowRef, type Ref, type ShallowRef } from 'vue';
 import { ModelBundleServices } from '../ModelBundleServices.ts';
 import { isSubjectFirst } from 'ext.neowiki';
-import type { ModelBundle } from '../application/ModelBundle.ts';
+import type { BundleToInstall } from '../application/ModelBundle.ts';
 import type { InstallRecord } from '../application/InstallRecord.ts';
 import { CurrentStateReader } from '../application/CurrentStateReader.ts';
-import { planImport, type ImportPlan } from '../application/importPlan.ts';
-import { runImport, type ImportOutcome } from '../application/importRun.ts';
+import { planImports, type ImportPlan } from '../application/importPlan.ts';
+import { runImports, type ImportOutcome } from '../application/importRun.ts';
 
 interface BundleImport {
-	plan: ShallowRef<ImportPlan | null>;
-	chosen: Ref<Set<string>>;
+	/** One for each bundle, in the order they are installed. */
+	plans: ShallowRef<ImportPlan[] | null>;
+	/** What is ticked, for each plan. */
+	chosen: Ref<Set<string>[]>;
 	planning: Ref<boolean>;
 	running: Ref<boolean>;
 	progress: Ref<{ done: number; total: number }>;
-	outcome: ShallowRef<ImportOutcome | null>;
+	outcomes: ShallowRef<ImportOutcome[] | null>;
 	error: Ref<string | null>;
-	/** Compares the file with the wiki; again for another bundle name, without reading the wiki again. */
-	prepare: ( bundle: ModelBundle, bundleName: string, records: readonly InstallRecord[] ) => Promise<void>;
-	/** Writes the chosen items. Source is where the bundle was read from: its URL, or FILE_SOURCE. */
-	run: ( source: string ) => Promise<void>;
+	/**
+	 * Compares the files with the wiki, putting each bundle after those before it in the list; again for other
+	 * names, without reading the wiki again.
+	 */
+	prepare: ( bundles: readonly BundleToInstall[], records: readonly InstallRecord[] ) => Promise<void>;
+	run: () => Promise<void>;
 }
 
 export function useBundleImport(): BundleImport {
@@ -26,36 +30,33 @@ export function useBundleImport(): BundleImport {
 	const recordRepository = ModelBundleServices.getInstallRecordRepository();
 	const reader = new CurrentStateReader( repository );
 
-	const plan = shallowRef<ImportPlan | null>( null );
-	const chosen = ref( new Set<string>() );
+	const plans = shallowRef<ImportPlan[] | null>( null );
+	const chosen = ref<Set<string>[]>( [] );
 	const planning = ref( false );
 	const running = ref( false );
 	const progress = ref( { done: 0, total: 0 } );
-	const outcome = shallowRef<ImportOutcome | null>( null );
+	const outcomes = shallowRef<ImportOutcome[] | null>( null );
 	const error = ref<string | null>( null );
-	// Numbers the comparisons asked for, so one answered after a later one cannot replace its newer plan.
+	let sources: string[] = [];
+	// Numbers the comparisons asked for, so one answered after a later one cannot replace its newer plans.
 	let preparation = 0;
 
-	async function prepare( bundle: ModelBundle, bundleName: string, records: readonly InstallRecord[] ): Promise<void> {
+	async function prepare( bundles: readonly BundleToInstall[], records: readonly InstallRecord[] ): Promise<void> {
 		const sequence = ++preparation;
 		planning.value = true;
 		error.value = null;
 
 		try {
-			const prepared = await planImport( bundle, bundleName, {
-				reader,
-				repository,
-				records,
-				subjectFirst: isSubjectFirst(),
-			} );
+			const prepared = await planImports( bundles, { reader, repository, records, subjectFirst: isSubjectFirst() } );
 
 			if ( sequence === preparation ) {
-				plan.value = prepared;
-				chosen.value = new Set( prepared.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) );
+				plans.value = prepared;
+				chosen.value = prepared.map( ( plan ) => new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ) );
+				sources = bundles.map( ( bundle ) => bundle.source );
 			}
 		} catch ( planError ) {
 			if ( sequence === preparation ) {
-				plan.value = null;
+				plans.value = null;
 				error.value = planError instanceof Error ? planError.message : String( planError );
 			}
 		} finally {
@@ -65,20 +66,22 @@ export function useBundleImport(): BundleImport {
 		}
 	}
 
-	async function run( source: string ): Promise<void> {
-		const preparedPlan = plan.value;
+	async function run(): Promise<void> {
+		const preparedPlans = plans.value;
 
-		if ( preparedPlan === null ) {
+		if ( preparedPlans === null ) {
 			return;
 		}
 
 		running.value = true;
 
 		try {
-			outcome.value = await runImport(
-				preparedPlan,
-				chosen.value,
-				{ repository, recordRepository, comment: summaryOf( preparedPlan ), source, subjectFirst: isSubjectFirst() },
+			outcomes.value = await runImports(
+				preparedPlans.map( ( plan, index ) => ( {
+					plan,
+					chosen: chosen.value[ index ],
+					context: { repository, recordRepository, comment: summaryOf( plan ), source: sources[ index ], subjectFirst: isSubjectFirst() },
+				} ) ),
 				( done, total ) => {
 					progress.value = { done, total };
 				},
@@ -90,7 +93,7 @@ export function useBundleImport(): BundleImport {
 		}
 	}
 
-	return { plan, chosen, planning, running, progress, outcome, error, prepare, run };
+	return { plans, chosen, planning, running, progress, outcomes, error, prepare, run };
 }
 
 function summaryOf( plan: ImportPlan ): string {

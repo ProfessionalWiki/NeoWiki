@@ -47,6 +47,15 @@ export interface ModelBundle {
 	readonly subjects: ReadonlyMap<string, SubjectEntry>;
 }
 
+/**
+ * A bundle read to be installed under the name given, from its source: its URL, or FILE_SOURCE.
+ */
+export interface BundleToInstall {
+	readonly bundle: ModelBundle;
+	readonly name: string;
+	readonly source: string;
+}
+
 export function itemId( type: ItemType, key: string ): string {
 	return `${ type }:${ key }`;
 }

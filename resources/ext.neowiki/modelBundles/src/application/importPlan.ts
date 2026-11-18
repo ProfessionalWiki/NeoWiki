@@ -95,11 +95,37 @@ interface Upstream {
 /**
  * The wiki is read through the context's reader, which keeps what it read.
  */
-export async function planImport( bundle: ModelBundle, bundleName: string, context: PlanContext ): Promise<ImportPlan> {
+export function planImport( bundle: ModelBundle, bundleName: string, context: PlanContext ): Promise<ImportPlan> {
+	return planBundle( bundle, bundleName, context, [] );
+}
+
+/**
+ * Plans bundles installed together, in the order given, which puts a bundle after those it requires: what an
+ * earlier bundle provides counts as present for a later one, and belongs to the earlier one.
+ */
+export async function planImports(
+	bundles: readonly { readonly bundle: ModelBundle; readonly name: string }[],
+	context: PlanContext,
+): Promise<ImportPlan[]> {
+	const plans: ImportPlan[] = [];
+
+	for ( const { bundle, name } of bundles ) {
+		plans.push( await planBundle( bundle, name, context, [ ...plans ] ) );
+	}
+
+	return plans;
+}
+
+async function planBundle(
+	bundle: ModelBundle,
+	bundleName: string,
+	context: PlanContext,
+	earlier: readonly ImportPlan[],
+): Promise<ImportPlan> {
 	const record = context.records.find( ( installed ) => sameBundleName( installed.name, bundleName ) ) ?? null;
 	const recorded = recordedItems( record );
 	const declined = new Set( ( record?.declined ?? [] ).map( ( item ) => itemId( item.type, item.key ) ) );
-	const owners = ownersOtherThan( context.records, record );
+	const owners = new Map( [ ...ownersOtherThan( context.records, record ), ...ownersIn( earlier ) ] );
 	const upstream = upstreamItems( bundle );
 	const removed = [ ...recorded.values() ].filter( ( item ) => !upstream.has( itemId( item.type, item.key ) ) );
 	const dependents = dependentSubjects( bundle );
@@ -117,7 +143,7 @@ export async function planImport( bundle: ModelBundle, bundleName: string, conte
 		recorded.get( itemId( item.type, item.key ) ) ?? null,
 		declined.has( itemId( item.type, item.key ) ),
 		owners.get( itemId( item.type, item.key ) ) ?? null,
-	) ), states );
+	) ), states, earlier );
 
 	const removedItems = await classifyRemoved( removed, states, bundle, recorded, context.repository );
 
@@ -155,6 +181,12 @@ function ownersOtherThan( records: readonly InstallRecord[], own: InstallRecord 
 	return new Map( records
 		.filter( ( record ) => record !== own )
 		.flatMap( ( record ) => record.items.map( ( item ) => [ itemId( item.type, item.key ), record.name ] as const ) ) );
+}
+
+function ownersIn( plans: readonly ImportPlan[] ): Map<string, string> {
+	return new Map( plans.flatMap( ( plan ) => plan.items
+		.filter( ( item ) => item.content !== null )
+		.map( ( item ) => [ item.id, plan.bundleName ] as const ) ) );
 }
 
 function dependentSubjects( bundle: ModelBundle ): DependentSubjectEntry[] {
@@ -287,10 +319,14 @@ function subjectConflictOf(
 
 /**
  * The wiki refuses a Dependent Subject whose Schema it does not have as one of Dependent Subjects, so a
- * Subject to write with one is in conflict, unless the import creates that Schema.
+ * Subject to write with one is in conflict, unless the import, or an earlier bundle of it, creates that Schema.
  */
-function withDependentSchemasChecked( items: ImportItem[], states: Map<string, CurrentState> ): ImportItem[] {
-	const created = new Set( items
+function withDependentSchemasChecked(
+	items: ImportItem[],
+	states: Map<string, CurrentState>,
+	earlier: readonly ImportPlan[],
+): ImportItem[] {
+	const created = new Set( [ ...earlier.flatMap( ( plan ) => plan.items ), ...items ]
 		.filter( ( item ) => item.action === 'create' && item.content?.type === 'schema' && subjectsAreDependent( item.content.json ) )
 		.map( ( item ) => item.key ) );
 	const isAvailable = ( schema: string ): boolean => {

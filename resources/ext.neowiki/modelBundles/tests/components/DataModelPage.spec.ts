@@ -365,6 +365,70 @@ describe( 'DataModelPage', () => {
 		expect( hasButton( wrapper, 'neowiki-bundle-update-button' ) ).toBe( true );
 	} );
 
+	describe( 'from a catalog', () => {
+
+		const CATALOG_URL = 'https://example.org/catalog.json';
+
+		function serve( files: Record<string, unknown> ): void {
+			vi.stubGlobal( 'fetch', async ( url: string ) => url in files ?
+				new Response( JSON.stringify( files[ url ] ) ) :
+				new Response( 'Not found', { status: 404 } ) );
+		}
+
+		/**
+		 * Each kind's heading, with the name, installed version and description of each of its entries.
+		 */
+		function catalogEntries( wrapper: VueWrapper ): string[][] {
+			return wrapper.findAll( '.ext-neowiki-catalog-entries__group' ).map( ( group ) => [
+				group.find( 'h3' ).text(),
+				...group.findAll( '.ext-neowiki-catalog-entries__text' ).map( ( text ) => text.findAll( 'strong, span, p' )
+					.map( ( part ) => part.text() ).join( ' / ' ) ),
+			] );
+		}
+
+		beforeEach( () => {
+			setupMwMock( {
+				functions: [ 'msg', 'message', 'config', 'util', 'language' ],
+				config: { wgServerName: 'wiki.example.org', wgNeoWikiModelBundleCatalogs: [ CATALOG_URL ] },
+			} );
+			serve( {
+				[ CATALOG_URL ]: { bundles: [
+					{ url: 'https://example.org/edm.json', name: 'EDM', description: 'Exports as EDM', kind: 'destination', requires: [ 'Agents' ] },
+					{ url: 'https://example.org/agents.json', name: 'Agents', description: 'People and organisations' },
+					{ url: 'https://example.org/vocabularies.json', name: 'Vocabularies' },
+				] },
+				'https://example.org/agents.json': { bundle: { name: 'Agents', version: '1' }, schemas: { Agent: { propertyDefinitions: {} } } },
+				'https://example.org/edm.json': { bundle: { name: 'EDM', version: '3' }, mappings: { EDM: { version: 1, schemas: {} } } },
+			} );
+		} );
+
+		it( 'lists the bundles of the catalogs by kind, saying which are installed', async () => {
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+
+			expect( catalogEntries( wrapper ) ).toEqual( [
+				[ 'neowiki-bundle-catalog-models', 'Agents / People and organisations', 'Vocabularies / neowiki-bundle-catalog-installed-version1.0' ],
+				[ 'neowiki-bundle-catalog-destinations', 'EDM / Exports as EDM' ],
+			] );
+		} );
+
+		it( 'installs a bundle with the bundles it requires, each with its own install record', async () => {
+			wiki.mappings.clear();
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+			await wrapper.find( 'button[aria-label="neowiki-bundle-catalog-loadEDM"]' ).trigger( 'click' );
+			await flushPromises();
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( wiki.writes ).toEqual( [ 'save schema:Agent', 'save mapping:EDM' ] );
+			expect( [ wiki.recordOf( 'Agents' )?.source, wiki.recordOf( 'EDM' )?.source ] )
+				.toEqual( [ 'https://example.org/agents.json', 'https://example.org/edm.json' ] );
+		} );
+
+	} );
+
 	it( 'records the URL a bundle was installed from', async () => {
 		wiki.records = [];
 		vi.stubGlobal( 'fetch', async () => new Response( bundleFile( '1.0', {} ) ) );

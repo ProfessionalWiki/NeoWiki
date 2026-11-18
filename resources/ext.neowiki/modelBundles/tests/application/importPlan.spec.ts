@@ -3,7 +3,7 @@ import type { ImportPlan } from '../../src/application/importPlan';
 import { newSchema } from '@/TestHelpers';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from './InMemoryDataModel';
-import { bundleOf, installed, planOn, subjectEntry } from './builders';
+import { bundleOf, installed, planAllOn, planOn, subjectEntry } from './builders';
 
 const ID_1 = 's1demo1aaaaaaa1';
 const ID_2 = 's1demo1aaaaaaa2';
@@ -172,6 +172,31 @@ describe( 'planImport', () => {
 			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
 			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-unreadableCannot read subject:${ ID_1 }` );
+		} );
+
+	} );
+
+	describe( 'installing several bundles together', () => {
+
+		const MODEL = { name: 'Model', version: '1', description: '' };
+		const PEOPLE = { name: 'People', version: '1', description: '' };
+
+		it( 'counts what an earlier bundle provides as present', async () => {
+			const plans = await planAllOn( wiki, [
+				bundleOf( [], [ BIRTH ], { metadata: MODEL } ),
+				bundleOf( [ [ ID_1, ADA ] ], [], { metadata: PEOPLE } ),
+			] );
+
+			expect( row( plans[ 1 ], ID_1 ) ).toEqual( [ 'new', 'create', true ] );
+		} );
+
+		it( 'refuses in a later bundle what an earlier one has', async () => {
+			const plans = await planAllOn( wiki, [
+				bundleOf( [ [ ID_1, FEMALE ] ], [], { metadata: MODEL } ),
+				bundleOf( [ [ ID_1, FEMALE ] ], [], { metadata: PEOPLE } ),
+			] );
+
+			expect( reasonOf( plans[ 1 ], ID_1 ) ).toBe( 'neowiki-bundle-conflict-ownedModel' );
 		} );
 
 	} );

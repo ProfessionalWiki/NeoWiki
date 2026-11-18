@@ -20,7 +20,7 @@ export interface ImportOutcome {
 	readonly record: RecordOutcome;
 }
 
-interface RunContext {
+export interface RunContext {
 	readonly repository: DataModelRepository;
 	readonly recordRepository: InstallRecordRepository;
 	readonly comment: string;
@@ -39,9 +39,7 @@ export async function runImport(
 	context: RunContext,
 	onProgress?: ( done: number, total: number ) => void,
 ): Promise<ImportOutcome> {
-	const writes = ordered( plan.items, chosen, [ 'create', 'replace' ], ITEM_TYPES );
-	const removals = ordered( plan.items, chosen, [ 'remove' ], [ ...ITEM_TYPES ].reverse() );
-	const steps = [ ...writes, ...removals ];
+	const steps = stepsOf( plan, chosen );
 	const outcomes: ItemOutcome[] = [];
 
 	onProgress?.( 0, steps.length );
@@ -55,6 +53,38 @@ export async function runImport(
 		items: outcomes,
 		record: await saveRecord( plan, outcomes, context ),
 	};
+}
+
+export interface BundleRun {
+	readonly plan: ImportPlan;
+	readonly chosen: ReadonlySet<string>;
+	readonly context: RunContext;
+}
+
+/**
+ * Runs bundles installed together in the order given, each writing its items and then its install record, so
+ * that planning them again finds what was written.
+ */
+export async function runImports(
+	runs: readonly BundleRun[],
+	onProgress?: ( done: number, total: number ) => void,
+): Promise<ImportOutcome[]> {
+	const total = runs.reduce( ( sum, run ) => sum + stepsOf( run.plan, run.chosen ).length, 0 );
+	const outcomes: ImportOutcome[] = [];
+
+	for ( const run of runs ) {
+		const doneBefore = outcomes.reduce( ( sum, outcome ) => sum + outcome.items.length, 0 );
+		outcomes.push( await runImport( run.plan, run.chosen, run.context, ( done ) => onProgress?.( doneBefore + done, total ) ) );
+	}
+
+	return outcomes;
+}
+
+function stepsOf( plan: ImportPlan, chosen: ReadonlySet<string> ): ImportItem[] {
+	return [
+		...ordered( plan.items, chosen, [ 'create', 'replace' ], ITEM_TYPES ),
+		...ordered( plan.items, chosen, [ 'remove' ], [ ...ITEM_TYPES ].reverse() ),
+	];
 }
 
 function ordered(

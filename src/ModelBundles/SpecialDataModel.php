@@ -24,6 +24,10 @@ class SpecialDataModel extends SpecialPage {
 
 		NeoWikiExtension::getInstance()->newFrontendModuleLoader()->load( $this->getOutput(), $this->getSkin() );
 		$this->getOutput()->addModules( 'ext.neowiki.modelBundles' );
+		$this->getOutput()->addJsConfigVars( [
+			'wgNeoWikiModelBundleCatalogs' => $this->getConfig()->get( 'NeoWikiModelBundleCatalogs' ),
+			'wgNeoWikiModelBundlePreselection' => $this->getConfig()->get( 'NeoWikiModelBundlePreselection' ),
+		] );
 		$this->getOutput()->addHTML( '<div id="ext-neowiki-data-model"></div>' );
 	}
 

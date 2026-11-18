@@ -38,6 +38,16 @@
 			]
 		}
 	},
+	"config": {
+		"NeoWikiModelBundleCatalogs": {
+			"description": "The URLs of the catalogs of model bundles that Special:DataModel installs from. The browser reads them, so their servers have to let other websites read them (CORS). See https://neowiki.ai/docs/api/model-bundles#catalogs",
+			"value": []
+		},
+		"NeoWikiModelBundlePreselection": {
+			"description": "The names of the catalog entries that the data model setup ticks by default.",
+			"value": []
+		}
+	},
 	"ResourceFileModulePaths": {
 		"localBasePath": "",
 		"remoteExtPath": "NeoWiki"
@@ -99,6 +109,16 @@
 				"neowiki-bundle-source-file-button",
 				"neowiki-bundle-source-url",
 				"neowiki-bundle-source-url-button",
+				"neowiki-bundle-source-catalog",
+				"neowiki-bundle-catalog-models",
+				"neowiki-bundle-catalog-destinations",
+				"neowiki-bundle-catalog-installed",
+				"neowiki-bundle-catalog-installed-version",
+				"neowiki-bundle-catalog-load",
+				"neowiki-bundle-catalog-unreadable",
+				"neowiki-bundle-catalog-empty",
+				"neowiki-bundle-catalog-missing-requirement",
+				"neowiki-bundle-catalog-wrong-file",
 				"neowiki-bundle-url-not-web",
 				"neowiki-bundle-url-unreachable",
 				"neowiki-bundle-url-failed",

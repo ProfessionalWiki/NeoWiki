@@ -68,6 +68,33 @@ fields, as the Layout editor saves it.
 Two versions of an item are equal when their canonical forms are, a Subject's `pageTitle` left out. A Subject is
 compared as the wiki stores it.
 
+## Catalogs
+
+A catalog lists Model Bundles by the URLs of their files. It is a JSON file:
+
+```json
+{
+    "bundles": [
+        { "url": "https://example.org/core.json", "name": "Core", "description": "Agents, places and vocabularies" },
+        { "url": "https://example.org/edm.json", "name": "EDM", "kind": "destination", "requires": [ "Core" ] }
+    ]
+}
+```
+
+| Field | Content |
+|---|---|
+| `url` | The address of the bundle's file. |
+| `name` | The bundle's name. An install from the entry is refused when the file names another bundle. |
+| `description` | Optional. |
+| `kind` | `model`, the default, or `destination`. |
+| `requires` | Optional. The names of other entries, which are installed with this one, before it, unless the wiki has them. |
+
+Versions come from the files. An entry without a URL or a usable name, or of another kind, is left out.
+
+`$wgNeoWikiModelBundleCatalogs` lists the URLs of the catalogs that Special:DataModel installs from. The browser reads
+them, so their servers have to let other websites read them, as with bundle URLs. `$wgNeoWikiModelBundlePreselection`
+names the entries that the data model setup ticks by default.
+
 ## Exporting
 
 Special:DataModel exports the Schemas and Mappings you choose, all of them unless you untick some: each Schema with

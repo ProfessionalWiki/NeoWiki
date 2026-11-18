@@ -34,6 +34,21 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 		$this->assertContains( 'ext.neowiki.modelBundles', $this->outputOf( $this->newSpecialPage() )->getModules() );
 	}
 
+	public function testHandsTheFrontendTheCatalogsAndThePreselection(): void {
+		$this->overrideConfigValues( [
+			'NeoWikiModelBundleCatalogs' => [ 'https://example.org/catalog.json' ],
+			'NeoWikiModelBundlePreselection' => [ 'Core' ],
+		] );
+
+		$this->assertArrayContains(
+			[
+				'wgNeoWikiModelBundleCatalogs' => [ 'https://example.org/catalog.json' ],
+				'wgNeoWikiModelBundlePreselection' => [ 'Core' ],
+			],
+			$this->outputOf( $this->newSpecialPage() )->getJsConfigVars()
+		);
+	}
+
 	public function testTheHelpLinkLeadsToTheDocs(): void {
 		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}
