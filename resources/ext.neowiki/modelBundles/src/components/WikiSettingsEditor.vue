@@ -1,8 +1,5 @@
 <template>
 	<div class="ext-neowiki-wiki-settings">
-		<h2 class="ext-neowiki-wiki-settings__title">
-			{{ $i18n( 'neowiki-bundle-setup-settings' ).text() }}
-		</h2>
 		<p>
 			{{ config.canEditSettings ?
 				$i18n( 'neowiki-bundle-setup-settings-intro' ).text() :
@@ -23,7 +20,7 @@
 			>
 				{{ $i18n( 'neowiki-config-setting-subject-first-page-first' ).text() }}
 				<template #description>
-					{{ $i18n( 'neowiki-config-setting-subject-first-page-first-help' ).text() }}
+					{{ $i18n( 'neowiki-bundle-setup-page-first-help' ).text() }}
 				</template>
 			</CdxRadio>
 			<CdxRadio
@@ -33,7 +30,7 @@
 			>
 				{{ $i18n( 'neowiki-config-setting-subject-first-subject-first' ).text() }}
 				<template #description>
-					{{ $i18n( 'neowiki-config-setting-subject-first-subject-first-help' ).text() }}
+					{{ $i18n( 'neowiki-bundle-setup-subject-first-help' ).text() }}
 				</template>
 			</CdxRadio>
 		</CdxField>
@@ -55,15 +52,19 @@
 			{{ failure }}
 		</CdxMessage>
 
-		<CdxButton
-			class="ext-neowiki-wiki-settings__continue"
-			action="progressive"
-			weight="primary"
-			:disabled="saving"
-			@click="next"
-		>
-			{{ $i18n( 'neowiki-bundle-setup-continue' ).text() }}
-		</CdxButton>
+		<div class="ext-neowiki-wiki-settings__actions">
+			<CdxButton
+				class="ext-neowiki-wiki-settings__continue"
+				action="progressive"
+				weight="primary"
+				:disabled="saving"
+				@click="next"
+			>
+				{{ $i18n( 'neowiki-bundle-setup-continue' ).text() }}
+			</CdxButton>
+			<!-- The way out, beside Continue. -->
+			<slot name="actions" />
+		</div>
 	</div>
 </template>
 
@@ -131,13 +132,10 @@ async function next(): Promise<void> {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-wiki-settings {
-	max-width: @size-4000;
-
-	&__title {
-		margin-top: 0;
-	}
-
-	&__continue {
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: @spacing-50;
 		margin-top: @spacing-150;
 	}
 }

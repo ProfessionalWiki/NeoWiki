@@ -8,16 +8,25 @@
 			@go="returnTo"
 		/>
 
+		<h2 class="ext-neowiki-data-model-setup__title">
+			{{ $i18n( headings[ step ] ).text() }}
+		</h2>
+
 		<WikiSettingsEditor
 			v-if="step === 'settings'"
 			@done="next"
-		/>
+		>
+			<template #actions>
+				<a
+					class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled"
+					:href="dataModelUrl"
+				>
+					{{ $i18n( 'cancel' ).text() }}
+				</a>
+			</template>
+		</WikiSettingsEditor>
 
 		<template v-else>
-			<h2 class="ext-neowiki-data-model-setup__title">
-				{{ $i18n( headings[ step ] ).text() }}
-			</h2>
-
 			<CdxMessage
 				v-if="error !== null || importer.error.value !== null"
 				type="error"

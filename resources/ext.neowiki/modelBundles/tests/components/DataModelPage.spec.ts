@@ -540,7 +540,7 @@ describe( 'DataModelPage', () => {
 		}
 
 		function cancelLink( wrapper: VueWrapper ): DOMWrapper<Element> {
-			const found = wrapper.findAll( '.ext-neowiki-data-model-setup__actions a' ).find( ( link ) => link.text() === 'cancel' );
+			const found = wrapper.findAll( 'a' ).find( ( link ) => link.text() === 'cancel' );
 
 			expect( found ).toBeDefined();
 			return found!;
@@ -630,6 +630,14 @@ describe( 'DataModelPage', () => {
 			const wrapper = await mountPage( true, 'setup' );
 
 			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
+		} );
+
+		it( 'leads back to the data model from the first step too', async () => {
+			setUp( { wikiHasSubjects: false } );
+
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( cancelLink( wrapper ).attributes( 'href' ) ).toBe( '/wiki/Special:DataModel' );
 		} );
 
 		it( 'names the steps the choices lead through, marking the current one', async () => {
@@ -827,6 +835,25 @@ describe( 'DataModelPage', () => {
 			await click( wrapper, 'neowiki-bundle-install-title' );
 
 			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
+		} );
+
+		it( 'heads how the wiki works, before the first install from a file or URL, as the install', async () => {
+			setUp( { wikiHasSubjects: false } );
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+
+			expect( wrapper.find( 'h2' ).text() ).toBe( 'neowiki-bundle-install-title' );
+		} );
+
+		it( 'returns to the data model from how the wiki works, before the first install from a file or URL', async () => {
+			setUp( { wikiHasSubjects: false } );
+			const wrapper = await mountPage();
+			await click( wrapper, 'neowiki-bundle-install-title' );
+
+			await click( wrapper, 'cancel' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model__intro' ).exists() ).toBe( true );
 		} );
 
 	} );

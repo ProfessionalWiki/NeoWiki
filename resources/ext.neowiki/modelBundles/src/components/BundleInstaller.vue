@@ -1,8 +1,19 @@
 <template>
-	<WikiSettingsEditor
+	<div
 		v-if="!settingsDone"
-		@done="settingsDone = true"
-	/>
+		class="ext-neowiki-bundle-import"
+	>
+		<h2 class="ext-neowiki-bundle-import__title">
+			{{ $i18n( 'neowiki-bundle-install-title' ).text() }}
+		</h2>
+		<WikiSettingsEditor @done="settingsDone = true">
+			<template #actions>
+				<CdxButton @click="emit( 'close', false )">
+					{{ $i18n( 'cancel' ).text() }}
+				</CdxButton>
+			</template>
+		</WikiSettingsEditor>
+	</div>
 
 	<div
 		v-else
