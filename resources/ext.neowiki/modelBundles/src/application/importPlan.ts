@@ -7,6 +7,7 @@ import {
 	subjectsAreDependent,
 } from './canonical';
 import {
+	type BundleToInstall,
 	type DependentSubjectEntry,
 	itemId,
 	type ItemType,
@@ -51,7 +52,6 @@ export interface ImportItem {
 	readonly status: ImportStatus;
 	/** What importing the item does; null when there is nothing it may do. */
 	readonly action: ImportAction | null;
-	readonly selectedByDefault: boolean;
 	readonly reason: string | null;
 	/** For a Subject to create: the title to give its page, or null to leave it to the wiki. */
 	readonly pageTitle: string | null;
@@ -69,9 +69,22 @@ export interface ImportItem {
 	readonly revisionId: number | null;
 }
 
+/**
+ * Whether the preview ticks the item to begin with: what the wiki does not have, and what only the bundle changed.
+ */
+export function selectedByDefault( item: ImportItem ): boolean {
+	return item.status === 'new' || item.status === 'changed-upstream';
+}
+
+export function defaultChoice( plan: ImportPlan ): Set<string> {
+	return new Set( plan.items.filter( selectedByDefault ).map( ( item ) => item.id ) );
+}
+
 export interface ImportPlan {
 	readonly bundle: ModelBundle;
 	readonly bundleName: string;
+	/** Where the bundle was read from: its URL, or FILE_SOURCE. */
+	readonly source: string;
 	/** Null for a first install. */
 	readonly record: InstallRecord | null;
 	readonly items: readonly ImportItem[];
@@ -93,32 +106,22 @@ interface Upstream {
 }
 
 /**
- * The wiki is read through the context's reader, which keeps what it read.
- */
-export function planImport( bundle: ModelBundle, bundleName: string, context: PlanContext ): Promise<ImportPlan> {
-	return planBundle( bundle, bundleName, context, [] );
-}
-
-/**
  * Plans bundles installed together, in the order given, which puts a bundle after those it requires: what an
- * earlier bundle provides counts as present for a later one, and belongs to the earlier one.
+ * earlier bundle provides counts as present for a later one, and belongs to the earlier one. The wiki is read
+ * through the context's reader, which keeps what it read.
  */
-export async function planImports(
-	bundles: readonly { readonly bundle: ModelBundle; readonly name: string }[],
-	context: PlanContext,
-): Promise<ImportPlan[]> {
+export async function planImports( bundles: readonly BundleToInstall[], context: PlanContext ): Promise<ImportPlan[]> {
 	const plans: ImportPlan[] = [];
 
-	for ( const { bundle, name } of bundles ) {
-		plans.push( await planBundle( bundle, name, context, [ ...plans ] ) );
+	for ( const toInstall of bundles ) {
+		plans.push( await planBundle( toInstall, context, [ ...plans ] ) );
 	}
 
 	return plans;
 }
 
 async function planBundle(
-	bundle: ModelBundle,
-	bundleName: string,
+	{ bundle, name: bundleName, source }: BundleToInstall,
 	context: PlanContext,
 	earlier: readonly ImportPlan[],
 ): Promise<ImportPlan> {
@@ -150,6 +153,7 @@ async function planBundle(
 	return {
 		bundle,
 		bundleName,
+		source,
 		record,
 		items: await withPageTitles( [ ...fileItems, ...removedItems ].sort( byKey ), context ),
 	};
@@ -227,42 +231,42 @@ function classifyUpstream(
 	return { ...item, ...comparison( state.hash, upstream.hash, recorded === null ? null : recordedHash( recorded ), declined ) };
 }
 
-type Comparison = Pick<ImportItem, 'status' | 'action' | 'selectedByDefault'>;
+type Comparison = Pick<ImportItem, 'status' | 'action'>;
 
 function comparison( here: string | null, upstream: string, recorded: string | null, declined: boolean ): Comparison {
 	if ( recorded === null ) {
 		if ( here === null ) {
 			return declined ?
-				{ status: 'declined', action: 'create', selectedByDefault: false } :
-				{ status: 'new', action: 'create', selectedByDefault: true };
+				{ status: 'declined', action: 'create' } :
+				{ status: 'new', action: 'create' };
 		}
 
 		return here === upstream ?
-			{ status: 'unchanged', action: null, selectedByDefault: false } :
-			{ status: 'differs', action: 'replace', selectedByDefault: false };
+			{ status: 'unchanged', action: null } :
+			{ status: 'differs', action: 'replace' };
 	}
 
 	if ( upstream === recorded ) {
 		if ( here === null ) {
-			return { status: 'deleted-here', action: null, selectedByDefault: false };
+			return { status: 'deleted-here', action: null };
 		}
 
 		return here === recorded ?
-			{ status: 'unchanged', action: null, selectedByDefault: false } :
-			{ status: 'changed-here', action: null, selectedByDefault: false };
+			{ status: 'unchanged', action: null } :
+			{ status: 'changed-here', action: null };
 	}
 
 	if ( here === null ) {
-		return { status: 'deleted-here', action: 'create', selectedByDefault: false };
+		return { status: 'deleted-here', action: 'create' };
 	}
 
 	if ( here === upstream ) {
-		return { status: 'unchanged', action: null, selectedByDefault: false };
+		return { status: 'unchanged', action: null };
 	}
 
 	return here === recorded ?
-		{ status: 'changed-upstream', action: 'replace', selectedByDefault: true } :
-		{ status: 'changed-both', action: 'replace', selectedByDefault: false };
+		{ status: 'changed-upstream', action: 'replace' } :
+		{ status: 'changed-both', action: 'replace' };
 }
 
 function conflictOf(
@@ -352,7 +356,6 @@ function withDependentSchemasChecked(
 			...item,
 			status: 'conflict',
 			action: null,
-			selectedByDefault: false,
 			reason: mw.msg( 'neowiki-bundle-conflict-dependent-schema', missing.schema ),
 		};
 	} );
@@ -440,7 +443,6 @@ function removedItem( recorded: RecordedItem, states: Map<string, CurrentState>,
 		),
 		status: 'removed-upstream',
 		action: reason === null ? 'remove' : null,
-		selectedByDefault: false,
 		reason,
 		upstreamRecord: null,
 		recorded,
@@ -456,7 +458,6 @@ function baseItem( type: ItemType, key: string, name: string | null, schema: str
 		schema,
 		status: 'unchanged',
 		action: null,
-		selectedByDefault: false,
 		reason: null,
 		pageTitle: null,
 		pageTitleTaken: false,

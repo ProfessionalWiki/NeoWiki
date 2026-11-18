@@ -100,30 +100,30 @@ describe( 'resultLine', () => {
 
 describe( 'needsDecision', () => {
 
-	function itemWith( status: ImportItem[ 'status' ], action: ImportItem[ 'action' ], selectedByDefault: boolean ): ImportItem {
-		return { status, action, selectedByDefault } as ImportItem;
+	function itemWith( status: ImportItem[ 'status' ], action: ImportItem[ 'action' ] ): ImportItem {
+		return { status, action } as ImportItem;
 	}
 
 	it.each( [
-		[ 'differs', 'replace', false ],
-		[ 'changed-both', 'replace', false ],
-		[ 'declined', 'create', false ],
-		[ 'deleted-here', 'create', false ],
-		[ 'removed-upstream', 'remove', false ],
-		[ 'removed-upstream', null, false ],
-		[ 'conflict', null, false ],
-	] as const )( 'takes %s, to %s, for a decision', ( status, action, selectedByDefault ) => {
-		expect( needsDecision( itemWith( status, action, selectedByDefault ) ) ).toBe( true );
+		[ 'differs', 'replace' ],
+		[ 'changed-both', 'replace' ],
+		[ 'declined', 'create' ],
+		[ 'deleted-here', 'create' ],
+		[ 'removed-upstream', 'remove' ],
+		[ 'removed-upstream', null ],
+		[ 'conflict', null ],
+	] as const )( 'takes %s, to %s, for a decision', ( status, action ) => {
+		expect( needsDecision( itemWith( status, action ) ) ).toBe( true );
 	} );
 
 	it.each( [
-		[ 'new', 'create', true ],
-		[ 'changed-upstream', 'replace', true ],
-		[ 'unchanged', null, false ],
-		[ 'changed-here', null, false ],
-		[ 'deleted-here', null, false ],
-	] as const )( 'leaves %s, to %s, to installing', ( status, action, selectedByDefault ) => {
-		expect( needsDecision( itemWith( status, action, selectedByDefault ) ) ).toBe( false );
+		[ 'new', 'create' ],
+		[ 'changed-upstream', 'replace' ],
+		[ 'unchanged', null ],
+		[ 'changed-here', null ],
+		[ 'deleted-here', null ],
+	] as const )( 'leaves %s, to %s, to installing', ( status, action ) => {
+		expect( needsDecision( itemWith( status, action ) ) ).toBe( false );
 	} );
 
 } );

@@ -1,7 +1,7 @@
 import { enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import BundlePlans from '../../src/components/BundlePlans.vue';
-import type { ImportPlan } from '../../src/application/importPlan';
+import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
 import type { ImportOutcome } from '../../src/application/importRun';
 import { createI18nMock, setupMwMock } from '../../../tests/VueTestHelpers.ts';
 import { InMemoryDataModel } from '../application/InMemoryDataModel';
@@ -26,7 +26,7 @@ function mountPlans(
 			plans,
 			outcomes,
 			requiredBy,
-			modelValue: plans.map( ( plan ) => new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ) ),
+			modelValue: plans.map( defaultChoice ),
 			disabled: false,
 		},
 		global: { mocks: { $i18n: createI18nMock() }, stubs: { CdxIcon: true } },

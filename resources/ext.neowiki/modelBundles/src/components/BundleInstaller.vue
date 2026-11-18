@@ -203,7 +203,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue';
 import { CdxButton, CdxField, CdxIcon, CdxMessage, CdxProgressBar, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconUpload } from '@wikimedia/codex-icons';
 import { parseBundleFile } from '../persistence/bundleFile.ts';
-import type { BundleToInstall, ModelBundle } from '../application/ModelBundle.ts';
+import type { BundleToInstall } from '../application/ModelBundle.ts';
 import { type CatalogEntry, installOrder, requirersIn } from '../application/Catalog.ts';
 import { type Catalogs, readCatalogs, readEntryBundles } from '../persistence/catalogFile.ts';
 import { FILE_SOURCE, type InstallRecord } from '../application/InstallRecord.ts';
@@ -234,12 +234,11 @@ const fileInput = ref<HTMLInputElement | null>( null );
 const url = ref( '' );
 const reading = ref( false );
 const readError = ref<string | null>( null );
-const bundle = shallowRef<ModelBundle | null>( null );
-const source = ref( FILE_SOURCE );
-const name = ref( '' );
-// What a bundle from a catalog requires that the wiki has not installed, installed before it.
-const required = shallowRef<BundleToInstall[]>( [] );
+// The bundle chosen, last, after what it requires from a catalog that the wiki has not installed.
+const toInstall = shallowRef<BundleToInstall[]>( [] );
+const bundle = computed( () => toInstall.value[ toInstall.value.length - 1 ]?.bundle ?? null );
 const requiredBy = shallowRef<ReadonlyMap<string, string[]>>( new Map() );
+const name = ref( '' );
 const catalogUrls = ( mw.config.get( 'wgNeoWikiModelBundleCatalogs' ) ?? [] ) as string[];
 const catalogs = shallowRef<Catalogs | null>( null );
 
@@ -263,7 +262,7 @@ async function onFileChosen( event: Event ): Promise<void> {
 	input.value = '';
 
 	if ( file !== undefined ) {
-		await read( () => file.text(), FILE_SOURCE, file.name.replace( /\.json$/i, '' ) );
+		await read( () => readFile( () => file.text(), FILE_SOURCE, file.name.replace( /\.json$/i, '' ) ) );
 	}
 }
 
@@ -271,49 +270,42 @@ async function readUrl(): Promise<void> {
 	const address = url.value.trim();
 
 	if ( address !== '' ) {
-		await read( () => fetchBundleFile( address ), address, '' );
+		await read( () => readFile( () => fetchBundleFile( address ), address, '' ) );
 	}
 }
 
-async function read( text: () => Promise<string>, from: string, fileName: string ): Promise<void> {
-	reading.value = true;
-	readError.value = null;
-
-	try {
-		const parsed = parseBundleFile( await text() );
-		const metadataName = parsed.metadata?.name ?? null;
-
-		if ( props.updating !== null && metadataName !== null && !sameBundleName( metadataName, props.updating.name ) ) {
-			throw new Error( mw.msg( 'neowiki-bundle-other-bundle', metadataName, props.updating.name ) );
-		}
-
-		name.value = metadataName ?? props.updating?.name ?? fileName;
-		source.value = from;
-		required.value = [];
-		requiredBy.value = new Map();
-		bundle.value = parsed;
-		await replan();
-	} catch ( error ) {
-		readError.value = error instanceof Error ? error.message : String( error );
-	} finally {
-		reading.value = false;
-	}
-}
-
-async function readEntry( entry: CatalogEntry ): Promise<void> {
-	reading.value = true;
-	readError.value = null;
-
-	try {
+function readEntry( entry: CatalogEntry ): Promise<void> {
+	return read( async () => {
 		const order = installOrder( [ entry ], catalogs.value?.entries ?? [], props.records.map( ( record ) => record.name ) );
-		const read = await readEntryBundles( order );
-		const chosen = read[ read.length - 1 ];
+		return { bundles: await readEntryBundles( order ), requiredBy: requirersIn( order, [ entry ] ) };
+	} );
+}
 
-		name.value = chosen.name;
-		source.value = chosen.source;
-		required.value = read.slice( 0, -1 );
-		requiredBy.value = requirersIn( order, [ entry ] );
-		bundle.value = chosen.bundle;
+async function readFile( text: () => Promise<string>, source: string, fileName: string ): Promise<Read> {
+	const parsed = parseBundleFile( await text() );
+	const metadataName = parsed.metadata?.name ?? null;
+
+	if ( props.updating !== null && metadataName !== null && !sameBundleName( metadataName, props.updating.name ) ) {
+		throw new Error( mw.msg( 'neowiki-bundle-other-bundle', metadataName, props.updating.name ) );
+	}
+
+	return { bundles: [ { bundle: parsed, name: metadataName ?? props.updating?.name ?? fileName, source } ], requiredBy: new Map() };
+}
+
+interface Read {
+	readonly bundles: BundleToInstall[];
+	readonly requiredBy: ReadonlyMap<string, string[]>;
+}
+
+async function read( load: () => Promise<Read> ): Promise<void> {
+	reading.value = true;
+	readError.value = null;
+
+	try {
+		const loaded = await load();
+		name.value = loaded.bundles[ loaded.bundles.length - 1 ].name;
+		toInstall.value = loaded.bundles;
+		requiredBy.value = loaded.requiredBy;
 		await replan();
 	} catch ( error ) {
 		readError.value = error instanceof Error ? error.message : String( error );
@@ -323,11 +315,10 @@ async function readEntry( entry: CatalogEntry ): Promise<void> {
 }
 
 async function replan(): Promise<void> {
-	if ( bundle.value !== null && nameIsUsable.value ) {
-		await importer.prepare(
-			[ ...required.value, { bundle: bundle.value, name: name.value.trim(), source: source.value } ],
-			props.records
-		);
+	const chosen = toInstall.value[ toInstall.value.length - 1 ];
+
+	if ( chosen !== undefined && nameIsUsable.value ) {
+		await importer.prepare( [ ...toInstall.value.slice( 0, -1 ), { ...chosen, name: name.value.trim() } ], props.records );
 	}
 }
 

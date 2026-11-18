@@ -4,7 +4,7 @@ import { itemHash, schemaItem, subjectItem } from '../../src/application/canonic
 import type { BundleMetadata, JsonObject, ModelBundle, SubjectEntry } from '../../src/application/ModelBundle';
 import type { InstallRecord } from '../../src/application/InstallRecord';
 import { CurrentStateReader } from '../../src/application/CurrentStateReader';
-import { planImport, planImports, type ImportPlan } from '../../src/application/importPlan';
+import { planImports, type ImportPlan } from '../../src/application/importPlan';
 import type { InMemoryDataModel } from './InMemoryDataModel';
 
 export const VOCABULARIES: BundleMetadata = { name: 'Vocabularies', version: '2', description: 'Controlled lists' };
@@ -76,7 +76,7 @@ export function installed(
  * The plans of bundles installed together, in the order given.
  */
 export function planAllOn( wiki: InMemoryDataModel, bundles: ModelBundle[] ): Promise<ImportPlan[]> {
-	return planImports( bundles.map( ( bundle ) => ( { bundle, name: bundle.metadata?.name ?? '' } ) ), {
+	return planImports( bundles.map( ( bundle ) => ( { bundle, name: bundle.metadata?.name ?? '', source: 'file' } ) ), {
 		reader: new CurrentStateReader( wiki ),
 		repository: wiki,
 		records: wiki.records,
@@ -84,16 +84,19 @@ export function planAllOn( wiki: InMemoryDataModel, bundles: ModelBundle[] ): Pr
 	} );
 }
 
-export function planOn(
+export async function planOn(
 	wiki: InMemoryDataModel,
 	bundle: ModelBundle,
 	bundleName: string = VOCABULARIES.name,
 	subjectFirst = false,
+	source = 'https://example.org/vocabularies.json',
 ): Promise<ImportPlan> {
-	return planImport( bundle, bundleName, {
+	const [ plan ] = await planImports( [ { bundle, name: bundleName, source } ], {
 		reader: new CurrentStateReader( wiki ),
 		repository: wiki,
 		records: wiki.records,
 		subjectFirst,
 	} );
+
+	return plan;
 }

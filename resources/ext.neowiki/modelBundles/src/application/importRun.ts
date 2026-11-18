@@ -1,7 +1,7 @@
 import { PageTitleTakenError } from 'ext.neowiki';
 import { ITEM_TYPES, type ItemType, type SubjectEntry } from './ModelBundle';
 import type { DataModelRepository, InstallRecordRepository } from './DataModelRepository';
-import type { DeclinedItem, InstallRecord, RecordedItem } from './InstallRecord';
+import { type DeclinedItem, FILE_SOURCE, type InstallRecord, isUrlSource, type RecordedItem } from './InstallRecord';
 import type { ImportItem, ImportPlan } from './importPlan';
 
 export type ItemResult = 'created' | 'replaced' | 'removed' | 'failed';
@@ -23,8 +23,6 @@ export interface RunContext {
 	readonly repository: DataModelRepository;
 	readonly recordRepository: InstallRecordRepository;
 	readonly comment: string;
-	/** Where a bundle was read from: its URL, or FILE_SOURCE. */
-	readonly source: string;
 	readonly subjectFirst: boolean;
 }
 
@@ -186,7 +184,7 @@ async function remove( item: ImportItem, context: RunContext ): Promise<void> {
 
 async function saveRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], context: RunContext ): Promise<RecordOutcome> {
 	try {
-		await context.recordRepository.saveInstallRecord( nextRecord( plan, outcomes, context.source ), context.comment );
+		await context.recordRepository.saveInstallRecord( nextRecord( plan, outcomes ), context.comment );
 		return { saved: true };
 	} catch ( error ) {
 		return { saved: false, reason: error instanceof Error ? error.message : String( error ) };
@@ -199,7 +197,7 @@ async function saveRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], c
  * version recorded before. What the file no longer has leaves the record, removed or not. What the file
  * would have created, had it been ticked, is declined.
  */
-function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source: string ): InstallRecord {
+function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[] ): InstallRecord {
 	const results = new Map( outcomes.map( ( outcome ) => [ outcome.item.id, outcome.result ] ) );
 	const metadata = plan.bundle.metadata;
 
@@ -207,7 +205,7 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source:
 		name: plan.bundleName,
 		version: metadata?.version ?? '',
 		description: metadata?.description ?? '',
-		source,
+		source: recordedSource( plan ),
 		items: plan.items.flatMap( ( item ): RecordedItem[] => {
 			const recorded = recordedAfter( item, results.get( item.id ) );
 			return recorded === null ? [] : [ recorded ];
@@ -216,6 +214,14 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source:
 			isAbsent( item ) && !results.has( item.id ) ? [ { type: item.type, key: item.key } ] : [] ),
 		revisionId: plan.record?.revisionId ?? null,
 	};
+}
+
+/**
+ * A bundle installed from a URL keeps it when a file updates it, so that the wiki goes on checking that URL for
+ * other versions.
+ */
+function recordedSource( plan: ImportPlan ): string {
+	return plan.source === FILE_SOURCE && plan.record !== null && isUrlSource( plan.record.source ) ? plan.record.source : plan.source;
 }
 
 function recordedAfter( item: ImportItem, result: ItemResult | undefined ): RecordedItem | null {

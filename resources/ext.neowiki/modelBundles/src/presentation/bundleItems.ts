@@ -1,5 +1,5 @@
 import { ITEM_TYPES, type ItemType } from '../application/ModelBundle';
-import type { ImportItem, ImportPlan, ImportStatus } from '../application/importPlan';
+import { type ImportItem, type ImportPlan, type ImportStatus, selectedByDefault } from '../application/importPlan';
 import type { ImportOutcome, ItemOutcome } from '../application/importRun';
 import { generatedSubjectName } from 'ext.neowiki';
 
@@ -67,7 +67,7 @@ function byText( a: string, b: string ): number {
  * left unticked, what cannot be installed, and what the bundle no longer has.
  */
 export function needsDecision( item: ImportItem ): boolean {
-	return item.status === 'conflict' || item.status === 'removed-upstream' || ( item.action !== null && !item.selectedByDefault );
+	return item.status === 'conflict' || item.status === 'removed-upstream' || ( item.action !== null && !selectedByDefault( item ) );
 }
 
 const SUMMARY_TYPES = {

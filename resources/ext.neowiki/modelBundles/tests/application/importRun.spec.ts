@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ImportPlan } from '../../src/application/importPlan';
+import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
 import { runImport, runImports, type ImportOutcome } from '../../src/application/importRun';
 import { itemHash, schemaItem, subjectItem } from '../../src/application/canonical';
-import { recordedHash } from '../../src/application/InstallRecord';
+import { FILE_SOURCE, recordedHash } from '../../src/application/InstallRecord';
 import { itemId, type SubjectEntry } from '../../src/application/ModelBundle';
 import { newSchema } from '@/TestHelpers';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
@@ -23,14 +23,13 @@ function hashOf( entry: SubjectEntry ): string {
 
 function run(
 	importPlan: ImportPlan,
-	chosen: string[] = importPlan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ),
+	chosen: string[] = [ ...defaultChoice( importPlan ) ],
 	subjectFirst = false,
 ): Promise<ImportOutcome> {
 	return runImport( importPlan, new Set( chosen ), {
 		repository: wiki,
 		recordRepository: wiki,
 		comment: 'Install',
-		source: 'https://example.org/vocabularies.json',
 		subjectFirst,
 	} );
 }
@@ -135,7 +134,7 @@ describe( 'runImport', () => {
 		wiki.failingWrites.set( `subject:${ ID_1 }`, 'The page is protected' );
 
 		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ], [ 's1demo1aaaaaaa4', WOMAN ] ] ) );
-		const outcome = await run( importPlan, [ ...importPlan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ), itemId( 'subject', ID_3 ) ] );
+		const outcome = await run( importPlan, [ ...defaultChoice( importPlan ), itemId( 'subject', ID_3 ) ] );
 
 		expect( results( outcome ) ).toEqual( [
 			`failed ${ ID_1 }: The page is protected`,
@@ -222,8 +221,8 @@ describe( 'runImport', () => {
 		function runAll( plans: ImportPlan[], onProgress?: ( done: number, total: number ) => void ): Promise<ImportOutcome[]> {
 			return runImports( plans.map( ( plan ) => ( {
 				plan,
-				chosen: new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ),
-				context: { repository: wiki, recordRepository: wiki, comment: 'Install', source: 'file', subjectFirst: false },
+				chosen: defaultChoice( plan ),
+				context: { repository: wiki, recordRepository: wiki, comment: 'Install', subjectFirst: false },
 			} ) ), onProgress );
 		}
 
@@ -267,6 +266,22 @@ describe( 'runImport', () => {
 				source: 'https://example.org/vocabularies.json',
 				items: [ { type: 'subject', key: ID_1, hash: hashOf( FEMALE ), label: 'female', schema: 'Gender Types' } ],
 			} );
+		} );
+
+		it( 'keeps the URL a bundle was installed from when a file updates it', async () => {
+			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [], { source: 'https://example.org/vocabularies.json' } ) ];
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), 'Vocabularies', false, FILE_SOURCE ) );
+
+			expect( wiki.recordOf( 'Vocabularies' )?.source ).toBe( 'https://example.org/vocabularies.json' );
+		} );
+
+		it( 'records the URL an update read the bundle from', async () => {
+			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [], { source: 'https://old.example.org/vocabularies.json' } ) ];
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), 'Vocabularies', false, 'https://example.org/vocabularies.json' ) );
+
+			expect( wiki.recordOf( 'Vocabularies' )?.source ).toBe( 'https://example.org/vocabularies.json' );
 		} );
 
 		it( 'records a Schema it wrote whole, as the bundle has it', async () => {

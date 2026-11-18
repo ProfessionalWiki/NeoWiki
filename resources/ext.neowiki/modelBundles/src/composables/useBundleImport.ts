@@ -4,7 +4,7 @@ import { isSubjectFirst } from 'ext.neowiki';
 import type { BundleToInstall } from '../application/ModelBundle.ts';
 import type { InstallRecord } from '../application/InstallRecord.ts';
 import { CurrentStateReader } from '../application/CurrentStateReader.ts';
-import { planImports, type ImportPlan } from '../application/importPlan.ts';
+import { defaultChoice, planImports, type ImportPlan } from '../application/importPlan.ts';
 import { runImports, type ImportOutcome } from '../application/importRun.ts';
 
 interface BundleImport {
@@ -37,7 +37,6 @@ export function useBundleImport(): BundleImport {
 	const progress = ref( { done: 0, total: 0 } );
 	const outcomes = shallowRef<ImportOutcome[] | null>( null );
 	const error = ref<string | null>( null );
-	let sources: string[] = [];
 	// Numbers the comparisons asked for, so one answered after a later one cannot replace its newer plans.
 	let preparation = 0;
 
@@ -51,8 +50,7 @@ export function useBundleImport(): BundleImport {
 
 			if ( sequence === preparation ) {
 				plans.value = prepared;
-				chosen.value = prepared.map( ( plan ) => new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ) );
-				sources = bundles.map( ( bundle ) => bundle.source );
+				chosen.value = prepared.map( defaultChoice );
 			}
 		} catch ( planError ) {
 			if ( sequence === preparation ) {
@@ -80,7 +78,7 @@ export function useBundleImport(): BundleImport {
 				preparedPlans.map( ( plan, index ) => ( {
 					plan,
 					chosen: chosen.value[ index ],
-					context: { repository, recordRepository, comment: summaryOf( plan ), source: sources[ index ], subjectFirst: isSubjectFirst() },
+					context: { repository, recordRepository, comment: summaryOf( plan ), subjectFirst: isSubjectFirst() },
 				} ) ),
 				( done, total ) => {
 					progress.value = { done, total };

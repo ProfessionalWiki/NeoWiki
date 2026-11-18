@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ImportPlan } from '../../src/application/importPlan';
+import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
 import { newSchema } from '@/TestHelpers';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from './InMemoryDataModel';
@@ -23,7 +23,7 @@ function row( importPlan: ImportPlan, key: string ): [ string, string | null, bo
 	const item = importPlan.items.find( ( candidate ) => candidate.key === key );
 
 	expect( item ).toBeDefined();
-	return [ item!.status, item!.action, item!.selectedByDefault ];
+	return [ item!.status, item!.action, defaultChoice( importPlan ).has( item!.id ) ];
 }
 
 function reasonOf( importPlan: ImportPlan, key: string ): string | null {
