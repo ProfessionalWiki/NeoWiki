@@ -29,15 +29,26 @@ function mountPlans( plans: ImportPlan[], outcomes: ImportOutcome[] | null = nul
 }
 
 /**
- * The names of the items the preview or the results show.
+ * The names of the items the preview shows.
  */
 function shownItems( wrapper: VueWrapper ): string[] {
-	return [
-		...wrapper.findAll( '.ext-neowiki-bundle-preview__name, .ext-neowiki-bundle-preview__item .cdx-label__label__text' )
-			.map( ( name ) => name.text() ),
-		...wrapper.findAll( '.ext-neowiki-import-results__list li' )
-			.map( ( result ) => result.element.firstChild?.textContent?.trim() ?? '' ),
-	];
+	return wrapper.findAll( '.ext-neowiki-bundle-preview__name, .ext-neowiki-bundle-preview__item .cdx-label__label__text' )
+		.map( ( name ) => name.text() );
+}
+
+function failedItems( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.ext-neowiki-import-results__failures li' ).map( ( failure ) => failure.element.firstChild?.textContent?.trim() ?? '' );
+}
+
+function outcomeOf( plan: ImportPlan, ...results: ImportOutcome[ 'items' ][ number ][ 'result' ][] ): ImportOutcome {
+	return {
+		items: results.map( ( result, index ) => ( {
+			item: plan.items[ index ],
+			result,
+			reason: result === 'failed' ? 'The page is protected' : null,
+		} ) ),
+		record: { saved: true },
+	};
 }
 
 async function toggle( wrapper: VueWrapper ): Promise<void> {
@@ -85,21 +96,21 @@ describe( 'BundlePlans', () => {
 		expect( wrapper.find( '.ext-neowiki-bundle-plans__toggle' ).attributes( 'aria-expanded' ) ).toBe( 'true' );
 	} );
 
-	it( 'keeps failures in view after the install, and shows the rest once expanded', async () => {
+	it( 'tells, once installed, what each bundle came to on one line', async () => {
 		const plan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ] ] ) );
-		const outcome: ImportOutcome = {
-			items: [
-				{ item: plan.items[ 0 ], result: 'failed', reason: 'The page is protected' },
-				{ item: plan.items[ 1 ], result: 'created', reason: null },
-			],
-			record: { saved: true },
-		};
-		const wrapper = mountPlans( [ plan ], [ outcome ] );
 
-		const collapsed = shownItems( wrapper );
-		await toggle( wrapper );
+		const wrapper = mountPlans( [ plan ], [ outcomeOf( plan, 'created', 'created' ) ] );
 
-		expect( [ collapsed, shownItems( wrapper ) ] ).toEqual( [ [ 'female' ], [ 'female', 'male' ] ] );
+		expect( [ wrapper.find( '.ext-neowiki-bundle-plans__summary' ).exists(), wrapper.find( '.ext-neowiki-import-results' ).text() ] )
+			.toEqual( [ false, 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created2' ] );
+	} );
+
+	it( 'lists the items that failed under that line, and no others', async () => {
+		const plan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ] ] ) );
+
+		const wrapper = mountPlans( [ plan ], [ outcomeOf( plan, 'failed', 'created' ) ] );
+
+		expect( failedItems( wrapper ) ).toEqual( [ 'female' ] );
 	} );
 
 } );

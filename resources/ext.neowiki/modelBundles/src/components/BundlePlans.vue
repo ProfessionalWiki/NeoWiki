@@ -5,36 +5,35 @@
 			:key="plan.bundleName"
 			class="ext-neowiki-bundle-plans__bundle"
 		>
-			<div class="ext-neowiki-bundle-plans__header">
-				<div class="ext-neowiki-bundle-plans__summary">
-					<strong>{{ plan.bundleName }}</strong>{{ afterName( plan ) }}
-				</div>
-				<CdxButton
-					class="ext-neowiki-bundle-plans__toggle"
-					weight="quiet"
-					:aria-expanded="isExpanded( index )"
-					@click="toggle( index )"
-				>
-					{{ isExpanded( index ) ?
-						$i18n( 'neowiki-bundle-items-hide' ).text() :
-						$i18n( 'neowiki-bundle-items-show' ).text() }}
-				</CdxButton>
-			</div>
-
 			<ImportResults
 				v-if="outcomes !== null"
 				:plan="plan"
 				:outcome="outcomes[ index ]"
-				:expanded="isExpanded( index )"
 			/>
-			<BundlePreview
-				v-else
-				:model-value="modelValue[ index ]"
-				:plan="plan"
-				:disabled="disabled"
-				:expanded="isExpanded( index )"
-				@update:model-value="setChosen( index, $event )"
-			/>
+			<template v-else>
+				<div class="ext-neowiki-bundle-plans__header">
+					<div class="ext-neowiki-bundle-plans__summary">
+						<strong>{{ plan.bundleName }}</strong>{{ afterName( plan ) }}
+					</div>
+					<CdxButton
+						class="ext-neowiki-bundle-plans__toggle"
+						weight="quiet"
+						:aria-expanded="isExpanded( index )"
+						@click="toggle( index )"
+					>
+						{{ isExpanded( index ) ?
+							$i18n( 'neowiki-bundle-items-hide' ).text() :
+							$i18n( 'neowiki-bundle-items-show' ).text() }}
+					</CdxButton>
+				</div>
+				<BundlePreview
+					:model-value="modelValue[ index ]"
+					:plan="plan"
+					:disabled="disabled"
+					:expanded="isExpanded( index )"
+					@update:model-value="setChosen( index, $event )"
+				/>
+			</template>
 		</section>
 	</div>
 </template>
@@ -62,7 +61,7 @@ const emit = defineEmits<{
 	'update:modelValue': [ chosen: Set<string>[] ];
 }>();
 
-// By position: the bundles whose items are all shown. What needs a decision shows either way.
+// By position: the bundles whose items are all shown in the preview. What needs a decision shows either way.
 const expanded = reactive( new Set<number>() );
 
 function isExpanded( index: number ): boolean {

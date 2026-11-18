@@ -1,6 +1,6 @@
 import { ITEM_TYPES, type ItemType } from '../application/ModelBundle';
 import type { ImportItem, ImportPlan } from '../application/importPlan';
-import type { ImportOutcome, ItemOutcome, ItemResult } from '../application/importRun';
+import type { ImportOutcome, ItemOutcome } from '../application/importRun';
 import { generatedSubjectName } from 'ext.neowiki';
 
 export const TYPE_HEADINGS = {
@@ -151,45 +151,49 @@ export function importNotes( item: ImportItem ): string[] {
 	return item.pageTitleTaken ? [ mw.msg( 'neowiki-bundle-page-title-taken', item.pageTitle ?? '' ) ] : [];
 }
 
-interface ResultGroup {
-	readonly result: ItemResult;
-	readonly outcomes: readonly ItemOutcome[];
-}
-
-/**
- * What an import did, failures first, as they are what the reader has to act on.
- */
-export function resultGroups( outcomes: readonly ItemOutcome[] ): ResultGroup[] {
-	const results: ItemResult[] = [ 'failed', 'created', 'replaced', 'removed' ];
-
-	return results
-		.map( ( result ) => ( { result, outcomes: outcomes.filter( ( outcome ) => outcome.result === result ) } ) )
-		.filter( ( resultGroup ) => resultGroup.outcomes.length > 0 );
-}
-
-interface ResultHeadline {
-	readonly type: 'success' | 'warning';
+interface ResultLine {
+	readonly type: 'success' | 'warning' | 'error';
 	readonly text: string;
 	/** How many items were not written; null when all were. */
 	readonly note: string | null;
 }
 
 /**
- * What an install or update came to, once the bundle is recorded as installed. Null when the record could not
- * be saved, which is told after the items.
+ * What an install or update came to, on one line, as "Installed model bundle Vocabularies: 2 items created". When
+ * the bundle could not be recorded as installed, the line says that instead.
  */
-export function resultHeadline( plan: ImportPlan, outcome: ImportOutcome ): ResultHeadline | null {
-	if ( !outcome.record.saved ) {
-		return null;
-	}
-
+export function resultLine( plan: ImportPlan, outcome: ImportOutcome ): ResultLine {
 	const failed = outcome.items.filter( ( item ) => item.result === 'failed' ).length;
+	const note = failed === 0 ? null : mw.msg( 'neowiki-bundle-not-written', failed );
+
+	if ( !outcome.record.saved ) {
+		return { type: 'error', text: mw.msg( 'neowiki-bundle-record-failed', plan.bundleName, outcome.record.reason ), note };
+	}
 
 	return {
 		type: failed === 0 ? 'success' : 'warning',
-		text: doneText( plan, plan.bundleName ),
-		note: failed === 0 ? null : mw.msg( 'neowiki-bundle-not-written', failed ),
+		text: doneText( plan, plan.bundleName ) + mw.msg( 'colon-separator' ) + writtenCounts( outcome.items ),
+		note,
 	};
+}
+
+const WRITTEN_COUNTS = {
+	created: 'neowiki-bundle-count-created',
+	replaced: 'neowiki-bundle-count-replaced',
+	removed: 'neowiki-bundle-count-removed',
+} as const;
+
+function writtenCounts( outcomes: readonly ItemOutcome[] ): string {
+	const counts = ( [ 'created', 'replaced', 'removed' ] as const )
+		.map( ( result ) => [ result, outcomes.filter( ( outcome ) => outcome.result === result ).length ] as const )
+		.filter( ( [ , count ] ) => count > 0 )
+		// Messages used here:
+		// * neowiki-bundle-count-created
+		// * neowiki-bundle-count-replaced
+		// * neowiki-bundle-count-removed
+		.map( ( [ result, count ] ) => mw.msg( WRITTEN_COUNTS[ result ], count ) );
+
+	return counts.length === 0 ? mw.msg( 'neowiki-bundle-count-nothing' ) : counts.join( mw.msg( 'comma-separator' ) );
 }
 
 function doneText( plan: ImportPlan, bundleName: string ): string {

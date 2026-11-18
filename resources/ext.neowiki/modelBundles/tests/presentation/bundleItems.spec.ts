@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { needsDecision, planSummary, resultHeadline } from '../../src/presentation/bundleItems';
+import { needsDecision, planSummary, resultLine } from '../../src/presentation/bundleItems';
 import type { ImportItem, ImportPlan } from '../../src/application/importPlan';
 import type { ImportOutcome, ItemResult } from '../../src/application/importRun';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
@@ -8,7 +8,11 @@ import { bundleOf, installed, planOn, subjectEntry, VOCABULARIES } from '../appl
 import { newSchema } from '@/TestHelpers';
 
 const ID_1 = 's1demo1aaaaaaa1';
+const ID_2 = 's1demo1aaaaaaa2';
+const ID_3 = 's1demo1aaaaaaa3';
 const FEMALE = subjectEntry( { label: 'female' } );
+const MALE = subjectEntry( { label: 'male' } );
+const OTHER = subjectEntry( { label: 'other' } );
 
 let wiki: InMemoryDataModel;
 
@@ -16,58 +20,80 @@ function plan( version = VOCABULARIES.version ): Promise<ImportPlan> {
 	return planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ], [], { metadata: { ...VOCABULARIES, version } } ) );
 }
 
-function outcome( importPlan: ImportPlan, result: ItemResult = 'created' ): ImportOutcome {
+function outcome( importPlan: ImportPlan, ...results: ItemResult[] ): ImportOutcome {
 	return {
-		items: importPlan.items.map( ( item ) => ( { item, result, reason: result === 'failed' ? 'The page is protected' : null } ) ),
+		items: results.map( ( result, index ) => ( {
+			item: importPlan.items[ index ],
+			result,
+			reason: result === 'failed' ? 'The page is protected' : null,
+		} ) ),
 		record: { saved: true },
 	};
 }
 
-describe( 'resultHeadline', () => {
+describe( 'resultLine', () => {
 
 	beforeEach( () => {
-		setupMwMock();
+		setupMwMock( { messages: { 'colon-separator': ': ', 'comma-separator': ', ' } } );
 		wiki = new InMemoryDataModel();
 	} );
 
-	it( 'says that the bundle was installed', async () => {
+	it( 'says that the bundle was installed, and how many items it wrote', async () => {
 		const importPlan = await plan();
 
-		expect( resultHeadline( importPlan, outcome( importPlan ) ) ).toEqual( {
+		expect( resultLine( importPlan, outcome( importPlan, 'created' ) ) ).toEqual( {
 			type: 'success',
-			text: 'neowiki-bundle-installedVocabularies',
+			text: 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1',
 			note: null,
 		} );
+	} );
+
+	it( 'counts the items created, replaced and removed apart', async () => {
+		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ], [ ID_3, OTHER ] ] ) );
+
+		expect( resultLine( importPlan, outcome( importPlan, 'removed', 'created', 'replaced' ) ).text ).toBe(
+			'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1, neowiki-bundle-count-replaced1, neowiki-bundle-count-removed1',
+		);
+	} );
+
+	it( 'says when it wrote nothing', async () => {
+		const importPlan = await plan();
+
+		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'says which version the bundle was updated to', async () => {
 		wiki.records = [ installed( [ [ ID_1, FEMALE ] ] ) ];
 		const importPlan = await plan();
 
-		expect( resultHeadline( importPlan, outcome( importPlan ) )?.text ).toBe( 'neowiki-bundle-updatedVocabularies2' );
+		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-updatedVocabularies2: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'says that the bundle was updated when the file gives no version', async () => {
 		wiki.records = [ installed( [ [ ID_1, FEMALE ] ] ) ];
 		const importPlan = await plan( '' );
 
-		expect( resultHeadline( importPlan, outcome( importPlan ) )?.text ).toBe( 'neowiki-bundle-updated-unversionedVocabularies' );
+		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-updated-unversionedVocabularies: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'warns, saying how many items were not written, when a write failed', async () => {
 		const importPlan = await plan();
 
-		expect( resultHeadline( importPlan, outcome( importPlan, 'failed' ) ) ).toEqual( {
+		expect( resultLine( importPlan, outcome( importPlan, 'failed' ) ) ).toEqual( {
 			type: 'warning',
-			text: 'neowiki-bundle-installedVocabularies',
+			text: 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-nothing',
 			note: 'neowiki-bundle-not-written1',
 		} );
 	} );
 
-	it( 'heads nothing when the record could not be saved, which is told apart', async () => {
+	it( 'says instead that the bundle could not be recorded as installed', async () => {
 		const importPlan = await plan();
 
-		expect( resultHeadline( importPlan, { ...outcome( importPlan ), record: { saved: false, reason: 'Edit conflict' } } ) ).toBeNull();
+		expect( resultLine( importPlan, { ...outcome( importPlan, 'created' ), record: { saved: false, reason: 'Edit conflict' } } ) ).toEqual( {
+			type: 'error',
+			text: 'neowiki-bundle-record-failedVocabulariesEdit conflict',
+			note: null,
+		} );
 	} );
 
 } );

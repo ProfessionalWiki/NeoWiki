@@ -61,6 +61,7 @@ const savedPages = vi.hoisted( () => [] as { page: string; source: string }[] );
 function mockMw( config: Record<string, unknown> = {} ): void {
 	setupMwMock( {
 		functions: [ 'msg', 'message', 'config', 'util', 'language' ],
+		messages: { 'colon-separator': ': ', 'comma-separator': ', ' },
 		config: { wgServerName: 'wiki.example.org', wgNeoWikiModelBundlesSetup: SETUP, ...config },
 	} );
 }
@@ -330,7 +331,8 @@ describe( 'DataModelPage', () => {
 		await click( wrapper, 'neowiki-bundle-install-button' );
 
 		expect( wiki.writes ).toEqual( [ `create subject:${ FEMALE_ID }` ] );
-		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--success' ).text() ).toBe( 'neowiki-bundle-installedVocabularies' );
+		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--success' ).text() )
+			.toBe( 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1' );
 
 		await click( wrapper, 'neowiki-bundle-back' );
 
@@ -546,6 +548,17 @@ describe( 'DataModelPage', () => {
 			return found!;
 		}
 
+		/**
+		 * The links that end the setup: their labels and targets, and whether each is the primary one.
+		 */
+		function endLinks( wrapper: VueWrapper ): [ string, string | undefined, boolean ][] {
+			return wrapper.findAll( '.ext-neowiki-data-model-setup__actions a' ).map( ( link ) => [
+				link.text(),
+				link.attributes( 'href' ),
+				link.classes( 'cdx-button--weight-primary' ),
+			] );
+		}
+
 		function holdInstall(): void {
 			vi.spyOn( wiki, 'saveSchema' ).mockImplementationOnce( () => new Promise( () => {
 				// The first write never ends, which holds the install.
@@ -614,14 +627,49 @@ describe( 'DataModelPage', () => {
 			expect( wrapper.find( 'a[href="/wiki/Special:CreateSubject"]' ).exists() ).toBe( true );
 		} );
 
-		it( 'installs nothing when starting empty, and leads to creating a subject', async () => {
+		it( 'leads on from the end to creating a subject, or to the data model', async () => {
 			const wrapper = await mountPage( true, 'setup' );
-
-			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
 			await click( wrapper, 'neowiki-bundle-setup-continue' );
 
-			expect( wiki.records ).toEqual( [] );
-			expect( wrapper.find( 'a[href="/wiki/Special:CreateSubject"]' ).exists() ).toBe( true );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( endLinks( wrapper ) ).toEqual( [
+				[ 'neowiki-bundle-setup-create-subject', '/wiki/Special:CreateSubject', true ],
+				[ 'neowiki-bundle-setup-open-data-model', '/wiki/Special:DataModel', false ],
+			] );
+		} );
+
+		it( 'installs nothing when starting empty, and says so', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( [ wiki.records, wrapper.find( '.ext-neowiki-data-model-setup' ).text() ] )
+				.toEqual( [ [], expect.stringContaining( 'neowiki-bundle-setup-nothing-installed' ) ] );
+		} );
+
+		it( 'says nothing was installed only when it was', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( wrapper.text() ).not.toContain( 'neowiki-bundle-setup-nothing-installed' );
+		} );
+
+		it( 'leads on from starting empty to creating a schema, or to the data model', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( endLinks( wrapper ) ).toEqual( [
+				[ 'neowiki-bundle-setup-create-schema', '/wiki/Special:Schemas', true ],
+				[ 'neowiki-bundle-setup-open-data-model', '/wiki/Special:DataModel', false ],
+			] );
 		} );
 
 		it( 'asks how the wiki works first on a wiki without Subjects', async () => {

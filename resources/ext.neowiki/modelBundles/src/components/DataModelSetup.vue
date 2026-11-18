@@ -115,8 +115,8 @@
 				/>
 			</template>
 
-			<p v-if="step === 'done'">
-				<a :href="createSubjectUrl">{{ $i18n( 'neowiki-bundle-setup-create-subject' ).text() }}</a>
+			<p v-if="step === 'done' && modelName === START_EMPTY">
+				{{ $i18n( 'neowiki-bundle-setup-nothing-installed' ).text() }}
 			</p>
 
 			<div class="ext-neowiki-data-model-setup__actions">
@@ -145,13 +145,30 @@
 				>
 					{{ $i18n( 'neowiki-bundle-setup-back' ).text() }}
 				</CdxButton>
+				<template v-if="step === 'done'">
+					<a
+						class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-primary"
+						:href="modelName === START_EMPTY ? schemasUrl : createSubjectUrl"
+					>
+						{{ modelName === START_EMPTY ?
+							$i18n( 'neowiki-bundle-setup-create-schema' ).text() :
+							$i18n( 'neowiki-bundle-setup-create-subject' ).text() }}
+					</a>
+					<a
+						class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled"
+						:href="dataModelUrl"
+					>
+						{{ $i18n( 'neowiki-bundle-setup-open-data-model' ).text() }}
+					</a>
+				</template>
 				<a
+					v-else
 					class="cdx-button cdx-button--fake-button"
 					:class="importer.running.value ? 'cdx-button--fake-button--disabled' : 'cdx-button--fake-button--enabled'"
 					:href="importer.running.value ? undefined : dataModelUrl"
 					:aria-disabled="importer.running.value ? 'true' : undefined"
 				>
-					{{ step === 'done' ? $i18n( 'neowiki-bundle-back' ).text() : $i18n( 'cancel' ).text() }}
+					{{ $i18n( 'cancel' ).text() }}
 				</a>
 			</div>
 		</template>
@@ -217,6 +234,7 @@ const destinationNames = ref<string[]>( [] );
 // The names of the model and destinations the plans were made for.
 const plannedFor = ref<string | null>( null );
 const createSubjectUrl = mw.util.getUrl( 'Special:CreateSubject' );
+const schemasUrl = mw.util.getUrl( 'Special:Schemas' );
 const dataModelUrl = mw.util.getUrl( 'Special:DataModel' );
 
 const entries = computed( () => catalogs.value?.entries ?? [] );
