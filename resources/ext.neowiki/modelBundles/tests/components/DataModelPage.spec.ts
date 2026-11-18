@@ -498,6 +498,7 @@ describe( 'DataModelPage', () => {
 				{ url: 'https://example.org/museum.json', name: 'Museum', description: 'Objects in collections', requires: [ 'Core' ] },
 				{ url: 'https://example.org/edm.json', name: 'EDM', description: 'Exports as EDM', kind: 'destination', requires: [ 'Core' ] },
 				{ url: 'https://example.org/bibframe.json', name: 'BIBFRAME', kind: 'destination', requires: [ 'Library' ] },
+				{ url: 'https://example.org/linked-art.json', name: 'Linked Art', kind: 'destination', requires: [ 'Core', 'Library' ] },
 			] },
 			'https://example.org/core.json': { bundle: { name: 'Core', version: '1' }, schemas: { Agent: { propertyDefinitions: {} } } },
 			'https://example.org/museum.json': { bundle: { name: 'Museum', version: '1' }, schemas: { Artwork: { propertyDefinitions: {} } } },
@@ -644,7 +645,7 @@ describe( 'DataModelPage', () => {
 			expect( options( wrapper ) ).toEqual( [ [ 'Core', false ], [ 'Museum', true ], [ 'neowiki-bundle-setup-empty', false ] ] );
 		} );
 
-		it( 'offers the destinations the chosen model serves, the preselected ones ticked', async () => {
+		it( 'offers the destinations the chosen model serves, and no other, the preselected ones ticked', async () => {
 			const wrapper = await mountPage( true, 'setup' );
 
 			await click( wrapper, 'neowiki-bundle-setup-continue' );

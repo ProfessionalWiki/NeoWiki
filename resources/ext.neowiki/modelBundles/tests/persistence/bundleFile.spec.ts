@@ -87,6 +87,14 @@ describe( 'serializeBundleFile', () => {
 ` );
 	} );
 
+	it( 'writes the items of each section by key, whatever order the bundle holds them in', () => {
+		const file = JSON.parse( serializeBundleFile( bundle( {
+			layouts: new Map( [ [ 'Zebra card', { schema: 'Zebra', type: 'infobox' } ], [ 'Ant card', { schema: 'Ant', type: 'infobox' } ] ] ),
+		} ) ) );
+
+		expect( Object.keys( file.layouts ) ).toEqual( [ 'Ant card', 'Zebra card' ] );
+	} );
+
 	it( 'keeps a Schema\'s properties in their order', () => {
 		const file = bundle( { schemas: new Map( [ [ 'Person', schema( 'Person', {
 			propertyDefinitions: { Name: { type: 'text' }, Born: { type: 'date' }, Age: { type: 'number' } },

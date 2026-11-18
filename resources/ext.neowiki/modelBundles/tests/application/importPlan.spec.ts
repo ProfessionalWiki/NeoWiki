@@ -98,6 +98,17 @@ describe( 'planImport', () => {
 			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
 		} );
 
+		it( 'refuses a Subject whose Dependent Subject it holds is of another Schema on the wiki', async () => {
+			wiki.withSubject( ID_1, subjectEntry( { schema: 'Person', dependentSubjects: [ { id: ID_2, schema: 'Death', statements: {} } ] } ) );
+
+			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
+				schema: 'Person',
+				dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ],
+			} ) ] ] ) );
+
+			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
+		} );
+
 		it( 'replaces the Dependent Subjects a Subject holds already', async () => {
 			wiki.withSchemas( BIRTH );
 			wiki.withSubject( ID_1, subjectEntry( {
@@ -302,6 +313,27 @@ describe( 'planImport', () => {
 			wiki.referencingSubjects.set( ID_1, [ ID_2 ] );
 
 			expect( row( await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) ), ID_1 ) ).toEqual( [ 'removed-upstream', 'remove', false ] );
+		} );
+
+		it( 'offers to remove Subjects the bundle no longer has that point at each other', async () => {
+			wiki.records = [ installed( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) ];
+			wiki.withSubject( ID_1, FEMALE ).withSubject( ID_2, WOMAN );
+			wiki.referencingSubjects.set( ID_1, [ ID_2 ] );
+
+			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
+
+			expect( [ row( importPlan, ID_1 ), row( importPlan, ID_2 ) ] )
+				.toEqual( [ [ 'removed-upstream', 'remove', false ], [ 'removed-upstream', 'remove', false ] ] );
+		} );
+
+		it( 'does not offer to remove a Subject whose list of referencing Subjects was cut short', async () => {
+			wiki.withSubject( ID_1, FEMALE ).withSubject( ID_2, WOMAN );
+			wiki.referencingSubjects.set( ID_1, [ ID_2 ] );
+			wiki.truncatedReferences.add( ID_1 );
+
+			const importPlan = await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) );
+
+			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-remove-blocked-referenced' );
 		} );
 
 		it( 'does not offer to remove a Schema that Subjects outside the bundle use', async () => {

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RestDataModelRepository } from '../../src/persistence/RestDataModelRepository';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InMemorySchemaRepository } from '@/application/SchemaRepository';
+import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
+import { SchemaSerializer } from '@/persistence/SchemaSerializer';
 import type { PageRevisionSaver, RevisionSaveStatus } from '@/persistence/PageSaver';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import type { ActionApi } from '../../src/persistence/ActionApi';
@@ -126,6 +128,20 @@ describe( 'RestDataModelRepository', () => {
 
 	beforeEach( () => {
 		setupMwMock( { messages: { 'comma-separator': ', ' } } );
+	} );
+
+	it( 'reads a Schema as NeoWiki saves it, so that one saved by hand compares alike', async () => {
+		const handSaved = { propertyDefinitions: { Name: { type: 'text' } } };
+		const http = new RoutedHttpClient( {
+			[ `GET ${ REST }/v1/page/Schema:Person` ]: [ 200, { source: JSON.stringify( handSaved ), latest: { id: 3 } } ],
+		} );
+
+		const schema = await repository( http ).getSchema( 'Person' );
+
+		expect( schema ).toEqual( {
+			json: new SchemaSerializer().schemaToJson( new SchemaDeserializer().deserialize( 'Person', handSaved ) ),
+			revisionId: 3,
+		} );
 	} );
 
 	describe( 'getSubject', () => {

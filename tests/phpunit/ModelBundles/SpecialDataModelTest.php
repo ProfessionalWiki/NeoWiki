@@ -89,6 +89,15 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 		$this->assertArrayHasKey( 'pageValues', $setup['settings'] );
 	}
 
+	public function testHandsTheSetupTheRevisionOfTheSettingsPageToSaveOver(): void {
+		$revisionId = $this->editPage( 'MediaWiki:NeoWiki', '{}' )->getNewRevision()->getId();
+
+		$setup = $this->outputOf( $this->newSpecialPage(), $this->getTestSysop()->getAuthority() )
+			->getJsConfigVars()['wgNeoWikiModelBundlesSetup'];
+
+		$this->assertSame( $revisionId, $setup['settings']['revisionId'] );
+	}
+
 	public function testTheHelpLinkLeadsToTheDocs(): void {
 		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}

@@ -41,6 +41,9 @@ export class InMemoryDataModel implements DataModelRepository, InstallRecordRepo
 
 	public readonly referencingSubjects = new Map<string, string[]>();
 
+	/** Of the Subjects whose list of referencing Subjects the wiki cuts short. */
+	public readonly truncatedReferences = new Set<string>();
+
 	public readonly unreadable = new Set<string>();
 
 	/** Writes that fail, by `<type>:<key>`, with the reason they fail with. */
@@ -133,7 +136,7 @@ export class InMemoryDataModel implements DataModelRepository, InstallRecordRepo
 	}
 
 	public async getReferencingSubjectIds( id: string ): Promise<{ ids: string[]; truncated: boolean }> {
-		return { ids: this.referencingSubjects.get( id ) ?? [], truncated: false };
+		return { ids: this.referencingSubjects.get( id ) ?? [], truncated: this.truncatedReferences.has( id ) };
 	}
 
 	public async getUnavailablePageTitles( titles: string[] ): Promise<Set<string>> {

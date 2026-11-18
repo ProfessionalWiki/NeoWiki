@@ -180,12 +180,15 @@ describe( 'OverviewPage', () => {
 		expect( findCard( wrapper, '/wiki/Special:DataModel' )!.text() ).toMatch( /Data model.*Install model bundles\./s );
 	} );
 
-	it( 'offers a card that leads to the schemas', async () => {
+	it( 'offers a card that leads to the schemas, in the reader\'s language', async () => {
+		setupMwMock( {
+			functions: [ 'util', 'msg' ],
+			messages: { 'neowiki-special-schemas': 'Schemas', 'neowiki-overview-schemas-description': 'Define the types of subjects.' },
+		} );
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findCard( wrapper, '/wiki/Special:Schemas' )!.text() )
-			.toMatch( /neowiki-special-schemas.*neowiki-overview-schemas-description/s );
+		expect( findCard( wrapper, '/wiki/Special:Schemas' )!.text() ).toMatch( /Schemas.*Define the types of subjects\./s );
 	} );
 
 	it( 'shows the create button, then the map, then the recent Subjects', async () => {
