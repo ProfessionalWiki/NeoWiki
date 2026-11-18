@@ -32,7 +32,7 @@ import { newStringValue } from '@/domain/Value.ts';
 import { Schema } from '@/domain/Schema.ts';
 
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
-import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { PageTitleTakenError } from '@/domain/PageTitleTakenError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';

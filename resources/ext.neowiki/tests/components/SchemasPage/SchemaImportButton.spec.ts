@@ -4,25 +4,14 @@ import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton } from '@wikimedia/codex';
 import SchemaImportButton from '@/components/SchemasPage/SchemaImportButton.vue';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
-import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
-import type { SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
+import type { ModelBundle } from '@/application/modelBundle/ModelBundle.ts';
 import { Service } from '@/NeoWikiServices.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { newSchema } from '@/TestHelpers.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseFile, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { InMemoryDataModel } from '../../application/modelBundle/InMemoryDataModel.ts';
 
 enableAutoUnmount( afterEach );
 
 let pinia: ReturnType<typeof createPinia>;
-
-function summary( name: string ): SchemaSummary {
-	return { name, description: '', propertyCount: 0, subjectsAreDependent: false };
-}
-
-function listSchemas( ...names: string[] ): void {
-	useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( names.map( summary ) );
-}
 
 function exportFile( ...names: string[] ): string {
 	return JSON.stringify( {
@@ -30,13 +19,23 @@ function exportFile( ...names: string[] ): string {
 	} );
 }
 
-function mountButton( repository = new InMemorySchemaRepository( [] ) ): VueWrapper {
+function bundleFile( name: string ): string {
+	return JSON.stringify( { bundle: { name }, schemas: { Museum: { propertyDefinitions: {} } } } );
+}
+
+function mountButton( mayInstall = false ): VueWrapper {
+	const wiki = new InMemoryDataModel();
+
 	return mount( SchemaImportButton, {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.SchemaRepository ]: repository },
-			stubs: { CdxIcon: true, teleport: true },
+			provide: {
+				[ Service.DataModelRepository ]: wiki,
+				[ Service.InstallRecordRepository ]: wiki,
+				[ Service.ModelBundlePermissionHints ]: { canInstallModelBundles: async () => mayInstall },
+			},
+			stubs: { CdxIcon: true, SchemaImportDialog: true },
 		},
 	} );
 }
@@ -45,19 +44,9 @@ function fileInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {
 	return wrapper.find<HTMLInputElement>( 'input[type="file"]' );
 }
 
-// jsdom has no file chooser, so the choice is put on the input as a browser would put it there.
-async function chooseFile( wrapper: VueWrapper, content: string ): Promise<void> {
-	Object.defineProperty( fileInput( wrapper ).element, 'files', {
-		value: [ new File( [ content ], 'schemas.json', { type: 'application/json' } ) ],
-		configurable: true,
-	} );
-	await fileInput( wrapper ).trigger( 'change' );
-	await flushPromises();
-}
-
-function plannedImport( wrapper: VueWrapper ): [ string, string ][] {
-	return ( wrapper.findComponent( SchemaImportDialog ).props( 'items' ) as SchemaImportItem[] )
-		.map( ( item ) => [ item.schema.getName(), item.status ] );
+function offeredFile( wrapper: VueWrapper ): ModelBundle | undefined {
+	const dialog = wrapper.findComponent( SchemaImportDialog );
+	return dialog.exists() ? dialog.props( 'bundle' ) as ModelBundle : undefined;
 }
 
 describe( 'SchemaImportButton', () => {
@@ -66,7 +55,6 @@ describe( 'SchemaImportButton', () => {
 
 		pinia = createPinia();
 		setActivePinia( pinia );
-		listSchemas();
 	} );
 
 	it( 'opens a file chooser for JSON files', async () => {
@@ -79,16 +67,12 @@ describe( 'SchemaImportButton', () => {
 		expect( fileInput( wrapper ).attributes( 'accept' ) ).toContain( '.json' );
 	} );
 
-	it( 'offers the Schemas of the chosen file, compared with the wiki\'s', async () => {
-		listSchemas( 'Company', 'Person' );
-		const wrapper = mountButton( new InMemorySchemaRepository( [
-			newSchema( { title: 'Company' } ),
-			newSchema( { title: 'Person', description: 'A human being' } ),
-		] ) );
+	it( 'offers the import of what the chosen file holds', async () => {
+		const wrapper = mountButton();
 
 		await chooseFile( wrapper, exportFile( 'Person', 'Museum' ) );
 
-		expect( plannedImport( wrapper ) ).toEqual( [ [ 'Person', 'changed' ], [ 'Museum', 'new' ] ] );
+		expect( [ ...offeredFile( wrapper )!.schemas.keys() ].sort() ).toEqual( [ 'Museum', 'Person' ] );
 	} );
 
 	it( 'reports a file it cannot import, and opens no dialog', async () => {
@@ -97,10 +81,30 @@ describe( 'SchemaImportButton', () => {
 		await chooseFile( wrapper, 'Person,Museum' );
 
 		expect( mw.notify ).toHaveBeenCalledWith(
-			'neowiki-schemas-import-error-not-json',
+			'neowiki-bundle-file-not-json',
 			{ title: 'neowiki-schemas-import-error', type: 'error' },
 		);
-		expect( wrapper.findComponent( SchemaImportDialog ).exists() ).toBe( false );
+		expect( offeredFile( wrapper ) ).toBeUndefined();
+	} );
+
+	it( 'offers the install of a model bundle to a user who may install one', async () => {
+		const wrapper = mountButton( true );
+
+		await chooseFile( wrapper, bundleFile( 'Vocabularies' ) );
+
+		expect( offeredFile( wrapper )?.metadata?.name ).toBe( 'Vocabularies' );
+	} );
+
+	it( 'refuses a model bundle to a user who may not install one', async () => {
+		const wrapper = mountButton( false );
+
+		await chooseFile( wrapper, bundleFile( 'Vocabularies' ) );
+
+		expect( mw.notify ).toHaveBeenCalledWith(
+			'neowiki-bundle-install-not-allowed',
+			{ title: 'neowiki-schemas-import-error', type: 'error' },
+		);
+		expect( offeredFile( wrapper ) ).toBeUndefined();
 	} );
 
 	it( 'lets go of the chosen file, so choosing the same file again reads it again', async () => {
@@ -120,10 +124,10 @@ describe( 'SchemaImportButton', () => {
 		wrapper.findComponent( SchemaImportDialog ).vm.$emit( 'close' );
 		await flushPromises();
 
-		expect( wrapper.findComponent( SchemaImportDialog ).exists() ).toBe( false );
+		expect( offeredFile( wrapper ) ).toBeUndefined();
 	} );
 
-	it( 'tells the page once Schemas were imported', async () => {
+	it( 'tells the page once something was imported', async () => {
 		const wrapper = mountButton();
 		await chooseFile( wrapper, exportFile( 'Museum' ) );
 

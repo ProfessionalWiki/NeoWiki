@@ -17,6 +17,7 @@ import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SubjectsPage from '@/components/SubjectsPage/SubjectsPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
+import DataModelPage from '@/components/DataModelPage/DataModelPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
@@ -215,6 +216,19 @@ function initializeMappingsPage(): void {
 	}
 }
 
+function initializeDataModelPage(): void {
+	const dataModelPage = document.getElementById( 'ext-neowiki-data-model' );
+
+	if ( dataModelPage !== null ) {
+		const ext = NeoWikiExtension.getInstance();
+
+		const app = createMwApp( DataModelPage );
+		app.use( ext.getPinia() );
+		NeoWikiServices.registerServices( app );
+		mountNeoWikiApp( app, dataModelPage );
+	}
+}
+
 function initializeSubjectsManagerPage(): void {
 	const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
 
@@ -326,6 +340,7 @@ function initializeUi(): void {
 		initializeSubjectsPage,
 		initializeLayoutsPage,
 		initializeMappingsPage,
+		initializeDataModelPage,
 		initializeSubjectsManagerPage,
 		initializeCreateSubjectPage,
 		initializeSubjectPage,

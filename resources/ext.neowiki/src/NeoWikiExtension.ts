@@ -41,6 +41,12 @@ import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { RightsBasedLayoutPermissionHints } from '@/persistence/RightsBasedLayoutPermissionHints.ts';
 import { MappingPermissionHints } from '@/application/MappingPermissionHints.ts';
 import { RightsBasedMappingPermissionHints } from '@/persistence/RightsBasedMappingPermissionHints.ts';
+import type { ModelBundlePermissionHints } from '@/application/ModelBundlePermissionHints.ts';
+import { RightsBasedModelBundlePermissionHints } from '@/persistence/RightsBasedModelBundlePermissionHints.ts';
+import type { DataModelRepository, InstallRecordRepository } from '@/application/modelBundle/DataModelRepository.ts';
+import { RestDataModelRepository } from '@/persistence/RestDataModelRepository.ts';
+import { MediaWikiInstallRecordRepository } from '@/persistence/MediaWikiInstallRecordRepository.ts';
+import type { ActionApi } from '@/persistence/ActionApi.ts';
 import { CsrfSendingHttpClient } from '@/infrastructure/HttpClient/CsrfSendingHttpClient.ts';
 import { SchemaSerializer } from '@/persistence/SchemaSerializer.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
@@ -279,6 +285,37 @@ export class NeoWikiExtension {
 		return new RightsBasedMappingPermissionHints(
 			this.getUserObjectBasedRightsFetcher(),
 		);
+	}
+
+	public newModelBundlePermissionHints(): ModelBundlePermissionHints {
+		return new RightsBasedModelBundlePermissionHints(
+			this.getUserObjectBasedRightsFetcher(),
+		);
+	}
+
+	public newDataModelRepository(): DataModelRepository {
+		return new RestDataModelRepository(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+			this.getSchemaRepository(),
+			new MediaWikiPageSaver( this.getMediaWiki() ),
+			this.newActionApi(),
+		);
+	}
+
+	public newInstallRecordRepository(): InstallRecordRepository {
+		return new MediaWikiInstallRecordRepository( this.newActionApi() );
+	}
+
+	// Made on use rather than here, as the services are made for every page with NeoWiki on it.
+	private newActionApi(): ActionApi {
+		const mediaWiki = this.getMediaWiki();
+
+		return {
+			get: ( parameters ) => new mediaWiki.Api().get( parameters ),
+			post: ( parameters ) => new mediaWiki.Api().post( parameters ),
+			postWithEditToken: ( parameters ) => new mediaWiki.Api().postWithEditToken( parameters ),
+		};
 	}
 
 	public newHttpClient(): HttpClient {

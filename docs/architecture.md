@@ -86,3 +86,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 37: Subject Lookups in MediaWiki Tables](adr/037-subject-lookups-in-mediawiki-tables.md)
 * [ADR 38: Property Names](adr/038-property-names.md)
 * [ADR 39: Property Labels](adr/039-property-labels.md)
+* [ADR 41: Model Bundles](adr/041-model-bundles.md)

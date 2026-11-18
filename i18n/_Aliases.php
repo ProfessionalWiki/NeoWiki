@@ -8,6 +8,7 @@ $specialPageAliases['en'] = [
 	'Subjects' => [ 'Subjects' ],
 	'Layouts' => [ 'Layouts' ],
 	'Mappings' => [ 'Mappings' ],
+	'DataModel' => [ 'DataModel' ],
 	'GraphStores' => [ 'GraphStores' ],
 	'CreateSubject' => [ 'CreateSubject', 'NewSubject' ],
 	'Subject' => [ 'Subject' ],

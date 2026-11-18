@@ -48,6 +48,7 @@ For developers building on NeoWiki from outside the wiki.
 * [JSON Schema](api/json-schema.md) — a Schema's Subjects as a JSON Schema document, for validating data before upload
 * [MediaWiki API](api/mediawiki-api.md) — pages, revisions, users, recent changes, and search, through the Action API
 * [MCP](api/mcp.md) — connect AI agents through the MediaWiki MCP Server
+* [Model Bundles](api/model-bundles.md) — Schemas, Layouts, Mappings and Subjects as one file wikis install and update
 
 ## Extending
 

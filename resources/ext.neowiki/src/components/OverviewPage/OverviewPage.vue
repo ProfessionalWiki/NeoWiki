@@ -58,6 +58,7 @@ import {
 	cdxIconLayout,
 	cdxIconListBullet,
 	cdxIconNext,
+	cdxIconPuzzle,
 	cdxIconSettings,
 	cdxIconTable
 } from '@wikimedia/codex-icons';
@@ -90,6 +91,12 @@ const PAGE_LINKS = [
 		label: 'neowiki-special-layouts',
 		description: 'neowiki-overview-layouts-description',
 		icon: cdxIconLayout
+	},
+	{
+		page: 'Special:DataModel',
+		label: 'neowiki-special-datamodel',
+		description: 'neowiki-overview-datamodel-description',
+		icon: cdxIconPuzzle
 	}
 ];
 

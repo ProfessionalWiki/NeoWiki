@@ -7,11 +7,13 @@ import type { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 import type { SubjectCountLookup } from '@/application/SubjectCountLookup.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
+import { InMemoryDataModel } from './application/modelBundle/InMemoryDataModel.ts';
 
 export class NeoWikiTestServices extends NeoWikiServices {
 
 	public static getServices(): Record<string, unknown> {
 		const neoWiki = NeoWikiExtension.getInstance();
+		const dataModel = new InMemoryDataModel();
 
 		return {
 			[ Service.ComponentRegistry ]: neoWiki.getTypeSpecificComponentRegistry(),
@@ -33,6 +35,9 @@ export class NeoWikiTestServices extends NeoWikiServices {
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
 			[ Service.LayoutRepository ]: new InMemoryLayoutLookup( [] ),
 			[ Service.MappingPermissionHints ]: neoWiki.newMappingPermissionHints(),
+			[ Service.ModelBundlePermissionHints ]: { canInstallModelBundles: () => Promise.resolve( false ) },
+			[ Service.DataModelRepository ]: dataModel,
+			[ Service.InstallRecordRepository ]: dataModel,
 		};
 	}
 

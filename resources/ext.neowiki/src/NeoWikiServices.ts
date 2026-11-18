@@ -14,6 +14,8 @@ import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
 import { MappingPermissionHints } from '@/application/MappingPermissionHints.ts';
+import type { ModelBundlePermissionHints } from '@/application/ModelBundlePermissionHints.ts';
+import type { DataModelRepository, InstallRecordRepository } from '@/application/modelBundle/DataModelRepository.ts';
 
 export enum Service { // TODO: make private
 	ComponentRegistry = 'ComponentRegistry',
@@ -29,7 +31,10 @@ export enum Service { // TODO: make private
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
 	LayoutRepository = 'LayoutRepository',
-	MappingPermissionHints = 'MappingPermissionHints'
+	MappingPermissionHints = 'MappingPermissionHints',
+	ModelBundlePermissionHints = 'ModelBundlePermissionHints',
+	DataModelRepository = 'DataModelRepository',
+	InstallRecordRepository = 'InstallRecordRepository'
 }
 
 export class NeoWikiServices {
@@ -58,6 +63,9 @@ export class NeoWikiServices {
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
 			[ Service.LayoutRepository ]: neoWiki.getLayoutRepository(),
 			[ Service.MappingPermissionHints ]: neoWiki.newMappingPermissionHints(),
+			[ Service.ModelBundlePermissionHints ]: neoWiki.newModelBundlePermissionHints(),
+			[ Service.DataModelRepository ]: neoWiki.newDataModelRepository(),
+			[ Service.InstallRecordRepository ]: neoWiki.newInstallRecordRepository(),
 		};
 	}
 
@@ -115,6 +123,18 @@ export class NeoWikiServices {
 
 	public static getMappingPermissionHints(): MappingPermissionHints {
 		return inject( Service.MappingPermissionHints ) as MappingPermissionHints;
+	}
+
+	public static getModelBundlePermissionHints(): ModelBundlePermissionHints {
+		return inject( Service.ModelBundlePermissionHints ) as ModelBundlePermissionHints;
+	}
+
+	public static getDataModelRepository(): DataModelRepository {
+		return inject( Service.DataModelRepository ) as DataModelRepository;
+	}
+
+	public static getInstallRecordRepository(): InstallRecordRepository {
+		return inject( Service.InstallRecordRepository ) as InstallRecordRepository;
 	}
 
 }

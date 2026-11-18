@@ -15,7 +15,7 @@ import { Subject } from '@/domain/Subject.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
-import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { PageTitleTakenError } from '@/domain/PageTitleTakenError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {

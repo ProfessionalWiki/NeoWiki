@@ -1,4 +1,4 @@
-import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
+import { flushPromises, mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { Component, DefineComponent, nextTick } from 'vue';
 import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
@@ -136,6 +136,25 @@ export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> )
 export function offeredActions( element: VueWrapper | DOMWrapper<Element> ): string[] {
 	return element.findAll( 'button, .cdx-menu-item' )
 		.map( ( control ) => control.attributes( 'aria-label' ) ?? control.text() );
+}
+
+/** The input of the checkbox whose label reads as given. */
+export function checkboxLabelled( wrapper: VueWrapper, label: string ): DOMWrapper<HTMLInputElement> {
+	const checkbox = wrapper.findAll( '.cdx-checkbox' ).find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === label );
+
+	expect( checkbox, `checkbox ${ label }` ).toBeDefined();
+	return checkbox!.find<HTMLInputElement>( 'input' );
+}
+
+// jsdom has no file chooser, so the choice is put on the input as a browser would put it there.
+export async function chooseFile( wrapper: VueWrapper, content: string, fileName = 'schemas.json' ): Promise<void> {
+	const input = wrapper.find<HTMLInputElement>( 'input[type="file"]' );
+	Object.defineProperty( input.element, 'files', {
+		value: [ new File( [ content ], fileName, { type: 'application/json' } ) ],
+		configurable: true,
+	} );
+	await input.trigger( 'change' );
+	await flushPromises();
 }
 
 export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>, buttonLabel: string, itemText: string ): Promise<void> {

@@ -12,10 +12,10 @@
 			@change="onFileChosen"
 		>
 		<SchemaImportDialog
-			v-if="items !== null"
-			:items="items"
+			v-if="bundle !== null"
+			:bundle="bundle"
 			@imported="emit( 'imported' )"
-			@close="items = null"
+			@close="bundle = null"
 		/>
 	</span>
 </template>
@@ -25,20 +25,22 @@ import { ref, shallowRef } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconUpload } from '@wikimedia/codex-icons';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
-import { parseSchemaExport } from '@/components/SchemasPage/schemaExport.ts';
-import { planSchemaImport, type SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
+import { parseBundleFile } from '@/persistence/bundleFile.ts';
+import type { ModelBundle } from '@/application/modelBundle/ModelBundle.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const emit = defineEmits<{
 	imported: [];
 }>();
 
-const schemaStore = useSchemaStore();
-const schemaLookup = NeoWikiServices.getSchemaRepository();
+const permissionHints = NeoWikiServices.getModelBundlePermissionHints();
 const fileInput = ref<HTMLInputElement | null>( null );
-const items = shallowRef<SchemaImportItem[] | null>( null );
+const bundle = shallowRef<ModelBundle | null>( null );
 
+/**
+ * A file with a Model bundle's metadata installs that bundle, which takes the right to write its install
+ * record; any other imports its items as they are.
+ */
 async function onFileChosen( event: Event ): Promise<void> {
 	const input = event.target as HTMLInputElement;
 	const file = input.files?.[ 0 ];
@@ -51,9 +53,13 @@ async function onFileChosen( event: Event ): Promise<void> {
 	}
 
 	try {
-		const schemas = parseSchemaExport( await file.text() );
-		const summaries = await schemaStore.fetchAllSchemaSummaries();
-		items.value = await planSchemaImport( schemas, summaries.map( ( summary ) => summary.name ), schemaLookup );
+		const chosen = parseBundleFile( await file.text() );
+
+		if ( chosen.metadata !== null && !await permissionHints.canInstallModelBundles() ) {
+			throw new Error( mw.msg( 'neowiki-bundle-install-not-allowed' ) );
+		}
+
+		bundle.value = chosen;
 	} catch ( error ) {
 		mw.notify(
 			error instanceof Error ? error.message : String( error ),

@@ -2,112 +2,81 @@
 	<CdxDialog
 		:open="true"
 		class="ext-neowiki-ui ext-neowiki-schema-import-dialog"
-		:title="$i18n( 'neowiki-schemas-import-title' ).text()"
+		:title="title"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
-		@primary="importCheckedSchemas"
+		@primary="runImport"
 		@default="emit( 'close' )"
 		@update:open="onUpdateOpen"
 	>
 		<template #header>
 			<DialogHeader
-				:title="$i18n( 'neowiki-schemas-import-title' ).text()"
-				:use-close-button="!importing"
+				:title="title"
+				:use-close-button="!importer.running.value"
 				@close="onUpdateOpen( false )"
-			/>
-		</template>
-
-		<template v-if="outcome === null">
-			<div
-				v-for="section in selectableSections"
-				:key="section.heading"
-				class="ext-neowiki-schema-import-dialog__section"
 			>
-				<CdxCheckbox
-					class="ext-neowiki-schema-import-dialog__heading"
-					:model-value="section.names.every( isChecked )"
-					:indeterminate="isPartlyChecked( section.names )"
-					:disabled="importing"
-					@update:model-value="setChecked( section.names, $event )"
+				<template
+					v-if="bundle.metadata !== null && bundle.metadata.version !== ''"
+					#supporting-text
 				>
-					<strong>{{ $i18n( section.heading, section.names.length ).text() }}</strong>
-					<template
-						v-if="section.description !== null"
-						#description
-					>
-						{{ $i18n( section.description, section.names.length ).text() }}
-					</template>
-				</CdxCheckbox>
-				<div class="ext-neowiki-schema-import-dialog__items">
-					<CdxCheckbox
-						v-for="name in section.names"
-						:key="name"
-						v-model="checkedNames"
-						:input-value="name"
-						:disabled="importing"
-					>
-						{{ name }}
-					</CdxCheckbox>
-				</div>
-			</div>
-
-			<div
-				v-if="unchangedNames.length > 0"
-				class="ext-neowiki-schema-import-dialog__section"
-			>
-				<p class="ext-neowiki-schema-import-dialog__heading">
-					<strong>{{ $i18n( 'neowiki-schemas-import-unchanged', unchangedNames.length ).text() }}</strong>
-				</p>
-				<p>
-					{{ $i18n( 'neowiki-schemas-import-unchanged-names', nameList( unchangedNames ) ).text() }}
-				</p>
-			</div>
+					{{ $i18n( 'neowiki-bundle-version', bundle.metadata.version ).text() }}
+				</template>
+			</DialogHeader>
 		</template>
+
+		<CdxMessage
+			v-if="importer.error.value !== null"
+			type="error"
+		>
+			{{ importer.error.value }}
+		</CdxMessage>
+
+		<p v-else-if="importer.plan.value === null">
+			<CdxProgressBar :inline="true" />
+			{{ $i18n( 'neowiki-bundle-comparing' ).text() }}
+		</p>
+
+		<BundlePreview
+			v-else-if="importer.outcome.value === null"
+			v-model="importer.chosen.value"
+			:plan="importer.plan.value"
+			:disabled="importer.running.value"
+		/>
+
+		<p v-if="importer.running.value">
+			<CdxProgressBar :inline="true" />
+			{{ $i18n( 'neowiki-bundle-progress', importer.progress.value.done, importer.progress.value.total ).text() }}
+		</p>
 
 		<div
-			v-else
+			v-if="importer.outcome.value !== null && importer.plan.value !== null"
 			ref="outcomeElement"
-			class="ext-neowiki-schema-import-dialog__outcome"
 			tabindex="-1"
 		>
-			<CdxMessage
-				v-if="outcome.created.length > 0"
-				type="success"
-			>
-				{{ $i18n( 'neowiki-schemas-import-created', outcome.created.length, nameList( outcome.created ) ).text() }}
-			</CdxMessage>
-			<CdxMessage
-				v-if="outcome.replaced.length > 0"
-				type="success"
-			>
-				{{ $i18n( 'neowiki-schemas-import-replaced', outcome.replaced.length, nameList( outcome.replaced ) ).text() }}
-			</CdxMessage>
-			<CdxMessage
-				v-for="failure in outcome.failed"
-				:key="failure.name"
-				type="error"
-			>
-				{{ $i18n( 'neowiki-schemas-import-failed', failure.name, failure.reason ).text() }}
-			</CdxMessage>
+			<ImportResults
+				:plan="importer.plan.value"
+				:outcome="importer.outcome.value"
+			/>
 		</div>
 	</CdxDialog>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef } from 'vue';
-import { CdxCheckbox, CdxDialog, CdxMessage } from '@wikimedia/codex';
-import DialogHeader from '@/components/common/DialogHeader.vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
+import { CdxDialog, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
 import type { DialogAction, PrimaryDialogAction } from '@wikimedia/codex';
-import {
-	importSchemas,
-	type SchemaImportItem,
-	type SchemaImportOutcome,
-	type SchemaImportStatus
-} from '@/components/SchemasPage/schemaImport.ts';
+import DialogHeader from '@/components/common/DialogHeader.vue';
+import BundlePreview from '@/components/DataModelPage/BundlePreview.vue';
+import ImportResults from '@/components/DataModelPage/ImportResults.vue';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { useBundleImport } from '@/composables/useBundleImport.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { ModelBundle } from '@/application/modelBundle/ModelBundle.ts';
+import { FILE_SOURCE } from '@/application/modelBundle/InstallRecord.ts';
 
 const props = defineProps<{
-	items: SchemaImportItem[];
+	/** With metadata, a Model bundle to install or update; without, items to import as they are. */
+	bundle: ModelBundle;
 }>();
 
 const emit = defineEmits<{
@@ -116,60 +85,58 @@ const emit = defineEmits<{
 }>();
 
 const schemaStore = useSchemaStore();
-
-const listedItems = [ ...props.items ].sort(
-	( a, b ) => a.schema.getName().localeCompare( b.schema.getName() )
-);
-
-function namesWith( status: SchemaImportStatus ): string[] {
-	return listedItems.filter( ( item ) => item.status === status ).map( ( item ) => item.schema.getName() );
-}
-
-const selectableSections = [
-	{ heading: 'neowiki-schemas-import-new', description: null, names: namesWith( 'new' ) },
-	{ heading: 'neowiki-schemas-import-changed', description: 'neowiki-schemas-import-replaces', names: namesWith( 'changed' ) }
-].filter( ( section ) => section.names.length > 0 );
-
-const unchangedNames = namesWith( 'unchanged' );
-
-const checkedNames = ref<string[]>( namesWith( 'new' ) );
-const importing = ref( false );
-const outcome = shallowRef<SchemaImportOutcome | null>( null );
+const recordRepository = NeoWikiServices.getInstallRecordRepository();
+const importer = useBundleImport();
 const outcomeElement = ref<HTMLElement | null>( null );
 
+const title = computed( () => {
+	if ( props.bundle.metadata === null ) {
+		return mw.msg( 'neowiki-schemas-import-title' );
+	}
+
+	return mw.msg( importer.plan.value?.record ? 'neowiki-bundle-update-title' : 'neowiki-bundle-install-title-named', props.bundle.metadata.name );
+} );
+
+// A bundle install writes its record even when no item changes; a plain import with none chosen does nothing.
 const primaryAction = computed( (): PrimaryDialogAction | undefined => {
-	if ( outcome.value !== null ) {
+	const plan = importer.plan.value;
+
+	if ( plan === null || importer.outcome.value !== null ) {
 		return undefined;
 	}
 
 	return {
-		label: mw.msg( 'neowiki-schemas-import-confirm', checkedNames.value.length ),
+		label: mw.msg( plan.bundleName === null ?
+			'neowiki-schemas-import-confirm' :
+			( plan.record === null ? 'neowiki-bundle-install-button' : 'neowiki-bundle-update-button' ) ),
 		actionType: 'progressive',
-		disabled: importing.value || checkedNames.value.length === 0
+		disabled: importer.running.value || importer.planning.value ||
+			( plan.bundleName === null && importer.chosen.value.size === 0 )
 	};
 } );
 
 const defaultAction = computed( (): DialogAction => ( {
-	label: mw.msg( outcome.value === null ? 'cancel' : 'cdx-dialog-close-button-label' ),
-	disabled: importing.value
+	label: mw.msg( importer.outcome.value === null ? 'cancel' : 'cdx-dialog-close-button-label' ),
+	disabled: importer.running.value
 } ) );
 
-// Closing mid-run would hide which saves went through.
+// Closing mid-run would hide which writes went through.
 function onUpdateOpen( open: boolean ): void {
-	if ( !open && !importing.value ) {
+	if ( !open && !importer.running.value ) {
 		emit( 'close' );
 	}
 }
 
-async function importCheckedSchemas(): Promise<void> {
-	importing.value = true;
+async function runImport(): Promise<void> {
+	await importer.run( FILE_SOURCE );
 
-	outcome.value = await importSchemas(
-		listedItems.filter( ( item ) => checkedNames.value.includes( item.schema.getName() ) ),
-		( schema ) => schemaStore.saveSchema( schema, mw.msg( 'neowiki-schemas-import-summary' ) )
-	);
+	// The store keeps the Schemas it read; those the import wrote are read anew when next needed.
+	for ( const outcome of importer.outcome.value?.items ?? [] ) {
+		if ( outcome.item.type === 'schema' && outcome.result !== 'failed' ) {
+			schemaStore.removeSchema( outcome.item.key );
+		}
+	}
 
-	importing.value = false;
 	emit( 'imported' );
 
 	// Focus left with the import action. The outcome takes it, so the keyboard can close the dialog.
@@ -177,40 +144,33 @@ async function importCheckedSchemas(): Promise<void> {
 	outcomeElement.value?.focus();
 }
 
-function isChecked( name: string ): boolean {
-	return checkedNames.value.includes( name );
-}
-
-function isPartlyChecked( names: string[] ): boolean {
-	return names.some( isChecked ) && !names.every( isChecked );
-}
-
-function setChecked( names: string[], checked: boolean ): void {
-	const others = checkedNames.value.filter( ( name ) => !names.includes( name ) );
-	checkedNames.value = checked ? [ ...others, ...names ] : others;
-}
-
-function nameList( names: string[] ): string {
-	return names.join( mw.msg( 'comma-separator' ) );
-}
+onMounted( async () => {
+	try {
+		const records = await recordRepository.getInstallRecords();
+		await importer.prepare( props.bundle, props.bundle.metadata?.name ?? null, records );
+	} catch ( error ) {
+		importer.error.value = error instanceof Error ? error.message : String( error );
+	}
+} );
 </script>
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-schema-import-dialog {
-	&__section + &__section {
-		margin-top: @spacing-100;
-	}
+	&.cdx-dialog {
+		max-width: @size-5600;
+		max-height: @ext-neowiki-dialog-height-limit;
 
-	&__items {
-		padding-inline-start: calc( @min-size-input-binary + @spacing-50 );
-	}
+		@media ( min-width: @min-width-breakpoint-desktop ) {
+			height: 40rem;
+		}
 
-	&__outcome {
-		display: flex;
-		flex-direction: column;
-		gap: @spacing-75;
+		/* Codex 2 does not grow the body of a dialog given a height, as Codex 1 does. */
+		.cdx-dialog__body {
+			flex-grow: 1;
+		}
 	}
 }
 </style>

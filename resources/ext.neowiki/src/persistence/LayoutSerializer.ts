@@ -3,6 +3,10 @@ import type { Layout } from '@/domain/Layout';
 export class LayoutSerializer {
 
 	public serializeLayout( layout: Layout ): string {
+		return JSON.stringify( this.layoutToJson( layout ), null, '\t' );
+	}
+
+	public layoutToJson( layout: Layout ): Record<string, unknown> {
 		const data: Record<string, unknown> = {
 			schema: layout.getSchema(),
 			type: layout.getType(),
@@ -30,7 +34,7 @@ export class LayoutSerializer {
 			data.settings = settings;
 		}
 
-		return JSON.stringify( data, null, '\t' );
+		return data;
 	}
 
 }
