@@ -35,6 +35,15 @@ const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Schemas', '/wik
 
 let pinia: ReturnType<typeof createPinia>;
 
+// A notice that takes the place of the first steps, as the setup of a data model does on a wiki without one.
+const FIRST_STEPS_REPLACEMENT: Component = {
+	emits: [ 'replacesFirstSteps' ],
+	setup: ( _props: unknown, { emit }: { emit: ( event: 'replacesFirstSteps', replaces: boolean ) => void } ) => {
+		emit( 'replacesFirstSteps', true );
+		return () => h( 'p', 'Set up your data model' );
+	},
+};
+
 interface OverviewProps {
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
@@ -204,16 +213,17 @@ describe( 'OverviewPage', () => {
 	} );
 
 	it( 'leaves out the first steps while a notice takes their place', async () => {
-		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ {
-			emits: [ 'replacesFirstSteps' ],
-			setup: ( _props: unknown, { emit }: { emit: ( event: 'replacesFirstSteps', replaces: boolean ) => void } ) => {
-				emit( 'replacesFirstSteps', true );
-				return () => h( 'p', 'Set up your data model' );
-			},
-		} ] } );
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ FIRST_STEPS_REPLACEMENT ] } );
 		await flushPromises();
 
 		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
+	} );
+
+	it( 'loads no recent Subjects while a notice takes the place of the first steps', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ FIRST_STEPS_REPLACEMENT ] } );
+		await flushPromises();
+
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
 	} );
 
 	it( 'shows first steps on a wiki without Subjects to a user who may create one', async () => {

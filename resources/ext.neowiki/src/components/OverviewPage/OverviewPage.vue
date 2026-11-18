@@ -144,9 +144,10 @@ const firstStepsReplacements = reactive( new Set<number>() );
 // The note points at the create button, so only those offered the button get it.
 const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value && firstStepsReplacements.size === 0 );
 
-// On a wiki without Subjects the table waits for the permission check, so it never loads for a user who gets the note.
+// On a wiki without Subjects the table waits for the permission check, so it never loads for a user who gets the note,
+// nor for one who gets a notice in its place.
 const showsRecentSubjects = computed(
-	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value )
+	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value && firstStepsReplacements.size === 0 )
 );
 
 // The puzzle stands for an extension, whose pages are mapped after NeoWiki's own.
