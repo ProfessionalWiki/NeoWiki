@@ -13,10 +13,10 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
  * This is a security boundary (the #1029 lesson). Mapping terms are user-authored JSON that end up as
  * class, predicate, and datatype IRIs in the projected RDF. An unsafe term is **rejected**, never
  * escaped: a Mapping must reproduce the ontology's exact term, so a percent-encoded variant would
- * silently point at the wrong thing. The expanded IRI must therefore be a syntactically valid absolute
- * IRI containing none of the IRIREF-illegal characters, or the term is unusable. The same expander is
- * used by the content validator (to reject bad Mappings at save time) and by the projector (to expand
- * at projection time), so a stored Mapping can never inject triples into the output document.
+ * silently point at the wrong thing. The expanded IRI must therefore be a valid IRI ({@see Iri::isValid}),
+ * or the term is unusable. The same expander is used by the content validator (to reject bad Mappings at
+ * save time) and by the projector (to expand at projection time), so a stored Mapping can never inject
+ * triples into the output document.
  */
 readonly class CurieExpander {
 
@@ -55,7 +55,7 @@ readonly class CurieExpander {
 	}
 
 	private static function newSafeIri( string $iri ): ?Iri {
-		return self::isSafeAbsoluteIri( $iri ) ? new Iri( $iri ) : null;
+		return Iri::isValid( $iri ) ? new Iri( $iri ) : null;
 	}
 
 	/**
@@ -68,15 +68,6 @@ readonly class CurieExpander {
 	 */
 	public static function isValidPrefixLabel( string $label ): bool {
 		return preg_match( '/^[A-Za-z][A-Za-z0-9_-]*$/', $label ) === 1;
-	}
-
-	/**
-	 * Whether the string is a syntactically valid absolute IRI safe to place raw in an RDF document.
-	 * Used for prefix namespace IRIs too, which reach the serializer's prefix table and so are an
-	 * injection vector even when unused. The check itself lives on the {@see Iri} value object.
-	 */
-	public static function isSafeAbsoluteIri( string $iri ): bool {
-		return Iri::isSafeAbsolute( $iri );
 	}
 
 }
