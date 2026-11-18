@@ -141,6 +141,10 @@ function setSelected( items: ImportItem[], selected: boolean ): void {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-bundle-preview {
+	&__section:first-child {
+		margin-top: @spacing-50;
+	}
+
 	&__section + &__section {
 		margin-top: @spacing-150;
 	}

@@ -6,9 +6,9 @@
 			class="ext-neowiki-bundle-plans__bundle"
 		>
 			<div class="ext-neowiki-bundle-plans__header">
-				<p class="ext-neowiki-bundle-plans__summary">
+				<div class="ext-neowiki-bundle-plans__summary">
 					<strong>{{ plan.bundleName }}</strong>{{ afterName( plan ) }}
-				</p>
+				</div>
 				<CdxButton
 					class="ext-neowiki-bundle-plans__toggle"
 					weight="quiet"
@@ -105,11 +105,6 @@ function setChosen( index: number, chosen: Set<string> ): void {
 		flex-wrap: wrap;
 		align-items: baseline;
 		column-gap: @spacing-50;
-		margin-bottom: @spacing-50;
-	}
-
-	&__summary {
-		margin: 0;
 	}
 }
 </style>

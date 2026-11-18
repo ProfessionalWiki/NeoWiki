@@ -93,6 +93,8 @@ const groups = computed( () => resultGroups( props.outcome.items ) );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-import-results {
+	margin-top: @spacing-50;
+
 	&__group + &__group {
 		margin-top: @spacing-100;
 	}
