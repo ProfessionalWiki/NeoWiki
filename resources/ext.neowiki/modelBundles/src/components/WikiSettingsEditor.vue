@@ -119,6 +119,12 @@ async function next(): Promise<void> {
 			failure.value = status.message;
 			return;
 		}
+
+		// What the step starts from, and saves over, when it is shown again before the page reloads.
+		mw.config.set( 'wgNeoWikiModelBundlesSetup', {
+			...config,
+			settings: { ...config.settings, pageValues: { ...values.value }, revisionId: status.revisionId }
+		} );
 	}
 
 	// What later steps read, and the frontend reads as the page loads.

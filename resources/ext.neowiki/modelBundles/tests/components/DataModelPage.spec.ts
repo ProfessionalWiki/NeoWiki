@@ -27,6 +27,7 @@ enableAutoUnmount( afterEach );
 
 const FEMALE_ID = 's1demo1aaaaaaa1';
 const MALE_ID = 's1demo1aaaaaaa2';
+const COMPOSER_ID = 's1demo1aaaaaaa9';
 const FEMALE = subjectEntry( { label: 'female' } );
 const MALE = subjectEntry( { label: 'male' } );
 const GENDER_TYPES = newSchema( { title: 'Gender Types' } );
@@ -951,6 +952,26 @@ describe( 'DataModelPage', () => {
 			await click( wrapper, 'neowiki-bundle-install-title' );
 
 			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
+		} );
+
+		it( 'installs as the wiki type chosen, after leaving the install and coming back', async () => {
+			setUp( { wikiHasSubjects: false } );
+			const wrapper = await mountPage();
+			await click( wrapper, 'neowiki-bundle-install-title' );
+			await wrapper.findAll( '.ext-neowiki-wiki-settings input[type="radio"]' )[ 1 ].setValue( true );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'cancel' );
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await chooseFile( wrapper, JSON.stringify( {
+				bundle: { name: 'Composers' },
+				schemas: { Composer: { propertyDefinitions: {} } },
+				subjects: { [ COMPOSER_ID ]: { label: 'Ada', pageTitle: 'Ada Lovelace', schema: 'Composer', statements: {} } },
+			} ), 'composers.json' );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( wiki.writes.filter( ( write ) => write.startsWith( 'create subject' ) ) ).toEqual( [ `create subject:${ COMPOSER_ID }` ] );
 		} );
 
 		it( 'heads how the wiki works, before the first install from a file or URL, as the install', async () => {

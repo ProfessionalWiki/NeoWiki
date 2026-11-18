@@ -24,6 +24,13 @@ let saveFailure: string | null;
 function mountEditor( setup: SetupConfig = SETUP ): VueWrapper {
 	setupMwMock( { functions: [ 'msg', 'message', 'config', 'util', 'language' ], config: { wgNeoWikiModelBundlesSetup: setup } } );
 
+	return mountEditorAgain();
+}
+
+/**
+ * As the setup shows the step once more, before the page reloads.
+ */
+function mountEditorAgain(): VueWrapper {
 	return mount( WikiSettingsEditor, {
 		global: {
 			mocks: { $i18n: createI18nMock() },
@@ -108,6 +115,30 @@ describe( 'WikiSettingsEditor', () => {
 		expect( wikiTypeRadio( wrapper, true ).disabled ).toBe( true );
 		expect( saves ).toEqual( [] );
 		expect( wrapper.emitted( 'done' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'starts again from what it saved when it is shown once more', async () => {
+		const first = mountEditor();
+		await chooseSubjectFirst( first );
+		await next( first );
+		first.unmount();
+
+		const again = mountEditorAgain();
+
+		expect( wikiTypeRadio( again, true ).checked ).toBe( true );
+	} );
+
+	it( 'saves a later change over the revision it saved', async () => {
+		const first = mountEditor();
+		await chooseSubjectFirst( first );
+		await next( first );
+		first.unmount();
+		const again = mountEditorAgain();
+
+		await again.findAll( 'input[type="radio"]' )[ 0 ].setValue( true );
+		await next( again );
+
+		expect( saves.map( ( save ) => save.baseRevisionId ) ).toEqual( [ 7, 8 ] );
 	} );
 
 	it( 'stays, saying why, when the settings could not be saved', async () => {
