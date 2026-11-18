@@ -5,7 +5,7 @@
 			:key="plan.bundleName"
 			class="ext-neowiki-bundle-plans__bundle"
 		>
-			<ImportResults
+			<InstallResults
 				v-if="outcomes !== null"
 				:plan="plan"
 				:outcome="outcomes[ index ]"
@@ -45,17 +45,17 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import { CdxButton } from '@wikimedia/codex';
-import type { ImportPlan } from '../application/importPlan.ts';
-import type { ImportOutcome } from '../application/importRun.ts';
+import type { InstallPlan } from '../application/installPlan.ts';
+import type { InstallOutcome } from '../application/installRun.ts';
 import { planSummary } from '../presentation/bundleItems.ts';
 import BundlePreview from './BundlePreview.vue';
-import ImportResults from './ImportResults.vue';
+import InstallResults from './InstallResults.vue';
 
 const props = defineProps<{
 	/** One for each bundle, in the order they are installed. */
-	plans: readonly ImportPlan[];
+	plans: readonly InstallPlan[];
 	/** Once they ran: one for each plan. */
-	outcomes: readonly ImportOutcome[] | null;
+	outcomes: readonly InstallOutcome[] | null;
 	/** What is ticked, for each plan. */
 	modelValue: readonly Set<string>[];
 	/** The names of the bundles that pulled each bundle in, by its name; none for those chosen. */
@@ -85,14 +85,14 @@ function toggle( index: number ): void {
 /**
  * What the summary line says after the bundle's name: its version, if it has one, and what installing it does.
  */
-function afterName( plan: ImportPlan ): string {
+function afterName( plan: InstallPlan ): string {
 	const version = plan.bundle.metadata?.version ?? '';
 	const versionText = version === '' ? '' : ' ' + mw.msg( 'neowiki-bundle-version', version );
 
 	return versionText + mw.msg( 'colon-separator' ) + planSummary( plan );
 }
 
-function requiredText( plan: ImportPlan ): string | null {
+function requiredText( plan: InstallPlan ): string | null {
 	const requirers = props.requiredBy.get( plan.bundleName ) ?? [];
 	return requirers.length === 0 ? null : mw.msg( 'neowiki-bundle-required-by', mw.language.listToText( [ ...requirers ] ) );
 }

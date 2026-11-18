@@ -260,7 +260,7 @@ describe( 'DataModelPage', () => {
 
 		await click( wrapper, 'neowiki-bundle-update-from-source' );
 
-		expect( wrapper.find( '.ext-neowiki-bundle-import__name' ).text() ).toContain( 'neowiki-bundle-version1.1' );
+		expect( wrapper.find( '.ext-neowiki-bundle-install__name' ).text() ).toContain( 'neowiki-bundle-version1.1' );
 	} );
 
 	it( 'links no source and offers no update from it for a record whose source is no web address', async () => {
@@ -342,7 +342,7 @@ describe( 'DataModelPage', () => {
 		await click( wrapper, 'neowiki-bundle-install-button' );
 
 		expect( wiki.writes ).toEqual( [ `create subject:${ FEMALE_ID }` ] );
-		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--success' ).text() )
+		expect( wrapper.find( '.ext-neowiki-install-results .cdx-message--success' ).text() )
 			.toBe( 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1' );
 
 		await click( wrapper, 'neowiki-bundle-back' );
@@ -360,7 +360,7 @@ describe( 'DataModelPage', () => {
 		await chooseFile( wrapper, bundleFile( '1.0', { [ FEMALE_ID ]: { label: 'female', schema: 'Gender Types', statements: {} } } ) );
 		await click( wrapper, 'neowiki-bundle-install-button' );
 
-		const warning = wrapper.find( '.ext-neowiki-import-results .cdx-message--warning' );
+		const warning = wrapper.find( '.ext-neowiki-install-results .cdx-message--warning' );
 		expect( [ warning.text().includes( 'neowiki-bundle-installedVocabularies' ), warning.text().includes( 'neowiki-bundle-not-written1' ) ] )
 			.toEqual( [ true, true ] );
 	} );
@@ -374,9 +374,9 @@ describe( 'DataModelPage', () => {
 		await chooseFile( wrapper, bundleFile( '1.0', {} ) );
 		await click( wrapper, 'neowiki-bundle-install-button' );
 
-		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--error' ).text() )
+		expect( wrapper.find( '.ext-neowiki-install-results .cdx-message--error' ).text() )
 			.toBe( 'neowiki-bundle-record-failedVocabulariesEdit conflict' );
-		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--success' ).exists() ).toBe( false );
+		expect( wrapper.find( '.ext-neowiki-install-results .cdx-message--success' ).exists() ).toBe( false );
 	} );
 
 	it( 'heads the view as an update when the file chosen to install holds an installed bundle', async () => {
@@ -385,7 +385,7 @@ describe( 'DataModelPage', () => {
 		await click( wrapper, 'neowiki-bundle-install-title' );
 		await chooseFile( wrapper, bundleFile( '1.1', {} ) );
 
-		expect( wrapper.find( '.ext-neowiki-bundle-import__title' ).text() ).toBe( 'neowiki-bundle-update-titleVocabularies' );
+		expect( wrapper.find( '.ext-neowiki-bundle-install__title' ).text() ).toBe( 'neowiki-bundle-update-titleVocabularies' );
 	} );
 
 	it( 'names the bundle of a file that names none after the file', async () => {
@@ -395,7 +395,7 @@ describe( 'DataModelPage', () => {
 		await click( wrapper, 'neowiki-bundle-install-title' );
 		await chooseFile( wrapper, PLAIN_FILE, 'gender-types.json' );
 
-		expect( ( wrapper.find( '.ext-neowiki-bundle-import__summary input' ).element as HTMLInputElement ).value ).toBe( 'gender-types' );
+		expect( ( wrapper.find( '.ext-neowiki-bundle-install__summary input' ).element as HTMLInputElement ).value ).toBe( 'gender-types' );
 	} );
 
 	it( 'says when the installed version of a bundle it updates has no version', async () => {
@@ -405,7 +405,7 @@ describe( 'DataModelPage', () => {
 		await click( wrapper, 'neowiki-bundle-update-from-file' );
 		await chooseFile( wrapper, bundleFile( '2.0', {} ) );
 
-		expect( wrapper.find( '.ext-neowiki-bundle-import__summary' ).text() ).toContain( 'neowiki-bundle-updates-unversioned' );
+		expect( wrapper.find( '.ext-neowiki-bundle-install__summary' ).text() ).toContain( 'neowiki-bundle-updates-unversioned' );
 	} );
 
 	it( 'updates the bundle from a file that names none', async () => {

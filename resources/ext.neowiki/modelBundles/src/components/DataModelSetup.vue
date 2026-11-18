@@ -4,7 +4,7 @@
 			v-if="step !== 'done'"
 			:steps="barSteps"
 			:current="step"
-			:disabled="importer.running.value"
+			:disabled="installer.running.value"
 			@go="returnTo"
 		/>
 
@@ -28,14 +28,14 @@
 
 		<template v-else>
 			<CdxMessage
-				v-if="error !== null || importer.error.value !== null"
+				v-if="error !== null || installer.error.value !== null"
 				type="error"
 			>
-				{{ error ?? importer.error.value }}
+				{{ error ?? installer.error.value }}
 			</CdxMessage>
 
 			<CdxProgressBar
-				v-if="catalogs === null || reading || importer.planning.value"
+				v-if="catalogs === null || reading || installer.planning.value"
 				:inline="true"
 			/>
 
@@ -106,16 +106,16 @@
 			</template>
 
 			<template v-else-if="plans !== null">
-				<p v-if="importer.running.value">
+				<p v-if="installer.running.value">
 					<CdxProgressBar :inline="true" />
-					{{ $i18n( 'neowiki-bundle-progress', importer.progress.value.done, importer.progress.value.total ).text() }}
+					{{ $i18n( 'neowiki-bundle-progress', installer.progress.value.done, installer.progress.value.total ).text() }}
 				</p>
 				<BundlePlans
-					v-model="importer.chosen.value"
+					v-model="installer.chosen.value"
 					:plans="plans"
-					:outcomes="importer.outcomes.value"
+					:outcomes="installer.outcomes.value"
 					:required-by="requirers"
-					:disabled="importer.running.value"
+					:disabled="installer.running.value"
 				/>
 			</template>
 
@@ -128,7 +128,7 @@
 					v-if="step === 'review'"
 					action="progressive"
 					weight="primary"
-					:disabled="plans === null || importer.planning.value || importer.running.value"
+					:disabled="plans === null || installer.planning.value || installer.running.value"
 					@click="install"
 				>
 					{{ $i18n( 'neowiki-bundle-install-button' ).text() }}
@@ -144,7 +144,7 @@
 				</CdxButton>
 				<CdxButton
 					v-if="previousStep !== null"
-					:disabled="importer.running.value"
+					:disabled="installer.running.value"
 					@click="back"
 				>
 					{{ $i18n( 'neowiki-bundle-setup-back' ).text() }}
@@ -168,9 +168,9 @@
 				<a
 					v-else
 					class="cdx-button cdx-button--fake-button"
-					:class="importer.running.value ? 'cdx-button--fake-button--disabled' : 'cdx-button--fake-button--enabled'"
-					:href="importer.running.value ? undefined : dataModelUrl"
-					:aria-disabled="importer.running.value ? 'true' : undefined"
+					:class="installer.running.value ? 'cdx-button--fake-button--disabled' : 'cdx-button--fake-button--enabled'"
+					:href="installer.running.value ? undefined : dataModelUrl"
+					:aria-disabled="installer.running.value ? 'true' : undefined"
 				>
 					{{ $i18n( 'cancel' ).text() }}
 				</a>
@@ -188,7 +188,7 @@ import { sameBundleName } from '../application/bundleName.ts';
 import { type Catalogs, readCatalogs, readEntryBundles } from '../persistence/catalogFile.ts';
 import { asksHowTheWikiWorks } from '../presentation/setupConfig.ts';
 import { cameFrom, enterStep, reloadPage, saveChoices, savedChoices, stepInUrl } from '../presentation/setupHistory.ts';
-import { useBundleImport } from '../composables/useBundleImport.ts';
+import { useBundleInstall } from '../composables/useBundleInstall.ts';
 import BundlePlans from './BundlePlans.vue';
 import SetupSteps from './SetupSteps.vue';
 import WikiSettingsEditor from './WikiSettingsEditor.vue';
@@ -224,7 +224,7 @@ const props = defineProps<{
 	records: readonly InstallRecord[];
 }>();
 
-const importer = useBundleImport();
+const installer = useBundleInstall();
 const asksSettings = asksHowTheWikiWorks( props.records.length );
 const firstStep: Step = asksSettings ? 'settings' : 'model';
 const step = ref<Step>( initialStep() );
@@ -251,7 +251,7 @@ const destinations = computed( () => chosenModel.value === null ? [] :
 	entries.value.filter( ( entry ) => entry.kind === 'destination' && isServedBy( entry, chosenModel.value as CatalogEntry ) ) );
 const chosenEntries = computed( () => chosenModel.value === null ? [] :
 	[ chosenModel.value, ...destinations.value.filter( ( entry ) => destinationNames.value.includes( entry.name ) ) ] );
-const plans = computed( () => plannedFor.value === namesOf( chosenEntries.value ) ? importer.plans.value : null );
+const plans = computed( () => plannedFor.value === namesOf( chosenEntries.value ) ? installer.plans.value : null );
 
 /**
  * The steps the choices made so far lead through.
@@ -367,11 +367,11 @@ function isReachable( target: Step ): boolean {
 }
 
 function onPopState(): void {
-	if ( importer.running.value ) {
+	if ( installer.running.value ) {
 		return;
 	}
 
-	if ( importer.outcomes.value !== null ) {
+	if ( installer.outcomes.value !== null ) {
 		// The plans compare the wiki as it was before the install, and a reload reads it anew, the choices kept.
 		reloadPage();
 		return;
@@ -391,7 +391,7 @@ async function plan(): Promise<void> {
 
 	try {
 		const order = installOrder( chosen, entries.value, props.records.map( ( record ) => record.name ) );
-		await importer.prepare( await readEntryBundles( order ), props.records );
+		await installer.prepare( await readEntryBundles( order ), props.records );
 		requirers.value = requirersIn( order, chosen );
 		plannedFor.value = namesOf( chosen );
 	} catch ( readError ) {
@@ -402,9 +402,9 @@ async function plan(): Promise<void> {
 }
 
 async function install(): Promise<void> {
-	await importer.run();
+	await installer.run();
 
-	if ( importer.outcomes.value !== null ) {
+	if ( installer.outcomes.value !== null ) {
 		// What was installed is not to be installed again from the review, so its end takes the review's place.
 		enterStep( 'done', 'replace' );
 		step.value = 'done';

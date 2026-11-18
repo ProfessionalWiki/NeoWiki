@@ -21,11 +21,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { CdxButton } from '@wikimedia/codex';
-import type { ImportItem } from '../application/importPlan.ts';
+import type { InstallItem } from '../application/installPlan.ts';
 import VersionDiff from './VersionDiff.vue';
 
 defineProps<{
-	item: ImportItem;
+	item: InstallItem;
 }>();
 
 const shown = ref( false );

@@ -1,24 +1,24 @@
 <template>
-	<div class="ext-neowiki-import-results">
+	<div class="ext-neowiki-install-results">
 		<CdxMessage :type="line.type">
 			{{ line.text }}
 			<span
 				v-if="line.note !== null"
-				class="ext-neowiki-import-results__note"
+				class="ext-neowiki-install-results__note"
 			>
 				{{ line.note }}
 			</span>
 			<ul
 				v-if="failures.length > 0"
-				class="ext-neowiki-import-results__failures"
+				class="ext-neowiki-install-results__failures"
 			>
 				<li
 					v-for="failure in failures"
 					:key="failure.item.id"
 				>
 					{{ itemName( failure.item ) }}
-					<span class="ext-neowiki-import-results__type">{{ $i18n( TYPE_NOUNS[ failure.item.type ] ).text() }}</span>
-					<span class="ext-neowiki-import-results__reason">{{ failure.reason }}</span>
+					<span class="ext-neowiki-install-results__type">{{ $i18n( TYPE_NOUNS[ failure.item.type ] ).text() }}</span>
+					<span class="ext-neowiki-install-results__reason">{{ failure.reason }}</span>
 				</li>
 			</ul>
 		</CdxMessage>
@@ -28,13 +28,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { CdxMessage } from '@wikimedia/codex';
-import type { ImportPlan } from '../application/importPlan.ts';
-import type { ImportOutcome } from '../application/importRun.ts';
+import type { InstallPlan } from '../application/installPlan.ts';
+import type { InstallOutcome } from '../application/installRun.ts';
 import { itemName, resultLine } from '../presentation/bundleItems.ts';
 
 const props = defineProps<{
-	plan: ImportPlan;
-	outcome: ImportOutcome;
+	plan: InstallPlan;
+	outcome: InstallOutcome;
 }>();
 
 const TYPE_NOUNS = {
@@ -51,7 +51,7 @@ const failures = computed( () => props.outcome.items.filter( ( itemOutcome ) => 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-import-results {
+.ext-neowiki-install-results {
 	&__note {
 		display: block;
 	}

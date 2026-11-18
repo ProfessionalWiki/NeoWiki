@@ -33,25 +33,25 @@ import { sameBundleName } from './bundleName';
  * - removed-upstream: the installed version had it, and the file does not
  * - conflict: it cannot be written; the reason says why
  */
-export type ImportStatus = 'new' | 'declined' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
+export type InstallStatus = 'new' | 'declined' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
 	'deleted-here' | 'removed-upstream' | 'conflict';
 
-type ImportAction = 'create' | 'replace' | 'remove';
+type InstallAction = 'create' | 'replace' | 'remove';
 
 export type ItemContent =
 	| { readonly type: 'schema' | 'layout' | 'mapping'; readonly json: JsonObject }
 	| { readonly type: 'subject'; readonly entry: SubjectEntry };
 
-export interface ImportItem {
+export interface InstallItem {
 	readonly id: string;
 	readonly type: ItemType;
 	readonly key: string;
 	/** Its name, or a Subject's label, else its page's title; null for a Subject with neither. */
 	readonly name: string | null;
 	readonly schema: string | null;
-	readonly status: ImportStatus;
-	/** What importing the item does; null when there is nothing it may do. */
-	readonly action: ImportAction | null;
+	readonly status: InstallStatus;
+	/** What installing the item does; null when there is nothing it may do. */
+	readonly action: InstallAction | null;
 	readonly reason: string | null;
 	/** For a Subject to create: the title to give its page, or null to leave it to the wiki. */
 	readonly pageTitle: string | null;
@@ -72,22 +72,22 @@ export interface ImportItem {
 /**
  * Whether the preview ticks the item to begin with: what the wiki does not have, and what only the bundle changed.
  */
-export function selectedByDefault( item: ImportItem ): boolean {
+export function selectedByDefault( item: InstallItem ): boolean {
 	return item.status === 'new' || item.status === 'changed-upstream';
 }
 
-export function defaultChoice( plan: ImportPlan ): Set<string> {
+export function defaultChoice( plan: InstallPlan ): Set<string> {
 	return new Set( plan.items.filter( selectedByDefault ).map( ( item ) => item.id ) );
 }
 
-export interface ImportPlan {
+export interface InstallPlan {
 	readonly bundle: ModelBundle;
 	readonly bundleName: string;
 	/** Where the bundle was read from: its URL, or FILE_SOURCE. */
 	readonly source: string;
 	/** Null for a first install. */
 	readonly record: InstallRecord | null;
-	readonly items: readonly ImportItem[];
+	readonly items: readonly InstallItem[];
 }
 
 interface PlanContext {
@@ -110,8 +110,8 @@ interface Upstream {
  * earlier bundle provides counts as present for a later one, and belongs to the earlier one. The wiki is read
  * through the context's reader, which keeps what it read.
  */
-export async function planImports( bundles: readonly BundleToInstall[], context: PlanContext ): Promise<ImportPlan[]> {
-	const plans: ImportPlan[] = [];
+export async function planInstalls( bundles: readonly BundleToInstall[], context: PlanContext ): Promise<InstallPlan[]> {
+	const plans: InstallPlan[] = [];
 
 	for ( const toInstall of bundles ) {
 		plans.push( await planBundle( toInstall, context, [ ...plans ] ) );
@@ -123,8 +123,8 @@ export async function planImports( bundles: readonly BundleToInstall[], context:
 async function planBundle(
 	{ bundle, name: bundleName, source }: BundleToInstall,
 	context: PlanContext,
-	earlier: readonly ImportPlan[],
-): Promise<ImportPlan> {
+	earlier: readonly InstallPlan[],
+): Promise<InstallPlan> {
 	const record = context.records.find( ( installed ) => sameBundleName( installed.name, bundleName ) ) ?? null;
 	const recorded = recordedItems( record );
 	const declined = new Set( ( record?.declined ?? [] ).map( ( item ) => itemId( item.type, item.key ) ) );
@@ -162,7 +162,7 @@ async function planBundle(
 /**
  * Within each type, items are written in the order of their names, or of their IDs.
  */
-function byKey( a: ImportItem, b: ImportItem ): number {
+function byKey( a: InstallItem, b: InstallItem ): number {
 	return a.key.localeCompare( b.key );
 }
 
@@ -196,7 +196,7 @@ function ownersOtherThan( records: readonly InstallRecord[], own: InstallRecord 
 		.flatMap( ( record ) => record.items.map( ( item ) => [ itemId( item.type, item.key ), record.name ] as const ) ) );
 }
 
-function ownersIn( plans: readonly ImportPlan[] ): Map<string, string> {
+function ownersIn( plans: readonly InstallPlan[] ): Map<string, string> {
 	return new Map( plans.flatMap( ( plan ) => plan.items
 		.filter( ( item ) => item.content !== null )
 		.map( ( item ) => [ item.id, plan.bundleName ] as const ) ) );
@@ -212,7 +212,7 @@ function classifyUpstream(
 	recorded: RecordedItem | null,
 	declined: boolean,
 	owner: string | null,
-): ImportItem {
+): InstallItem {
 	const state = states.get( itemId( upstream.type, upstream.key ) ) as CurrentState;
 	const item = {
 		...baseItem( upstream.type, upstream.key, upstreamName( upstream ), upstreamSchema( upstream ) ),
@@ -231,7 +231,7 @@ function classifyUpstream(
 	return { ...item, ...comparison( state.hash, upstream.hash, recorded === null ? null : recordedHash( recorded ), declined ) };
 }
 
-type Comparison = Pick<ImportItem, 'status' | 'action'>;
+type Comparison = Pick<InstallItem, 'status' | 'action'>;
 
 function comparison( here: string | null, upstream: string, recorded: string | null, declined: boolean ): Comparison {
 	if ( recorded === null ) {
@@ -332,13 +332,13 @@ function subjectConflictOf(
 
 /**
  * The wiki refuses a Dependent Subject whose Schema it does not have as one of Dependent Subjects, so a
- * Subject to write with one is in conflict, unless the import, or an earlier bundle of it, creates that Schema.
+ * Subject to write with one is in conflict, unless the install, or an earlier bundle of it, creates that Schema.
  */
 function withDependentSchemasChecked(
-	items: ImportItem[],
+	items: InstallItem[],
 	states: Map<string, CurrentState>,
-	earlier: readonly ImportPlan[],
-): ImportItem[] {
+	earlier: readonly InstallPlan[],
+): InstallItem[] {
 	const created = new Set( [ ...earlier.flatMap( ( plan ) => plan.items ), ...items ]
 		.filter( ( item ) => item.action === 'create' && item.content?.type === 'schema' && subjectsAreDependent( item.content.json ) )
 		.map( ( item ) => item.key ) );
@@ -375,7 +375,7 @@ async function classifyRemoved(
 	bundle: ModelBundle,
 	recorded: Map<string, RecordedItem>,
 	repository: DataModelRepository,
-): Promise<ImportItem[]> {
+): Promise<InstallItem[]> {
 	const present = removed.filter( ( item ) => {
 		const state = states.get( itemId( item.type, item.key ) ) as CurrentState;
 		return state.item !== null || state.error !== null;
@@ -430,7 +430,7 @@ async function subjectRemovalBlocker(
 		null;
 }
 
-function removedItem( recorded: RecordedItem, states: Map<string, CurrentState>, blocker: string | null ): ImportItem {
+function removedItem( recorded: RecordedItem, states: Map<string, CurrentState>, blocker: string | null ): InstallItem {
 	const state = states.get( itemId( recorded.type, recorded.key ) ) as CurrentState;
 	const reason = state.error !== null ? mw.msg( 'neowiki-bundle-remove-blocked-unreadable', state.error ) : blocker;
 
@@ -449,7 +449,7 @@ function removedItem( recorded: RecordedItem, states: Map<string, CurrentState>,
 	};
 }
 
-function baseItem( type: ItemType, key: string, name: string | null, schema: string | null ): ImportItem {
+function baseItem( type: ItemType, key: string, name: string | null, schema: string | null ): InstallItem {
 	return {
 		id: itemId( type, key ),
 		type,
@@ -480,7 +480,7 @@ function upstreamSchema( upstream: Upstream ): string | null {
 	return upstream.content.type === 'subject' ? upstream.content.entry.schema : null;
 }
 
-function versions( state: CurrentState, upstream: Upstream ): Pick<ImportItem, 'versionHere' | 'versionUpstream'> {
+function versions( state: CurrentState, upstream: Upstream ): Pick<InstallItem, 'versionHere' | 'versionUpstream'> {
 	if ( state.item === null || state.hash === upstream.hash ) {
 		return { versionHere: null, versionUpstream: null };
 	}
@@ -492,7 +492,7 @@ function versions( state: CurrentState, upstream: Upstream ): Pick<ImportItem, '
  * On a page-first wiki a new Subject's page takes the title the file names, else its label, else its ID.
  * A title that is taken would fail the create, so the page takes the Subject's ID instead.
  */
-async function withPageTitles( items: ImportItem[], context: PlanContext ): Promise<ImportItem[]> {
+async function withPageTitles( items: InstallItem[], context: PlanContext ): Promise<InstallItem[]> {
 	if ( context.subjectFirst ) {
 		return items;
 	}

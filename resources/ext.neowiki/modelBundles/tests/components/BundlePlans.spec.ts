@@ -1,8 +1,8 @@
 import { enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import BundlePlans from '../../src/components/BundlePlans.vue';
-import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
-import type { ImportOutcome } from '../../src/application/importRun';
+import { defaultChoice, type InstallPlan } from '../../src/application/installPlan';
+import type { InstallOutcome } from '../../src/application/installRun';
 import { createI18nMock, setupMwMock } from '../../../tests/VueTestHelpers.ts';
 import { InMemoryDataModel } from '../application/InMemoryDataModel';
 import { bundleOf, planOn, subjectEntry } from '../application/builders';
@@ -17,8 +17,8 @@ const MALE = subjectEntry( { label: 'male' } );
 let wiki: InMemoryDataModel;
 
 function mountPlans(
-	plans: ImportPlan[],
-	outcomes: ImportOutcome[] | null = null,
+	plans: InstallPlan[],
+	outcomes: InstallOutcome[] | null = null,
 	requiredBy: ReadonlyMap<string, string[]> = new Map(),
 ): VueWrapper {
 	return mount( BundlePlans, {
@@ -42,10 +42,10 @@ function shownItems( wrapper: VueWrapper ): string[] {
 }
 
 function failedItems( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '.ext-neowiki-import-results__failures li' ).map( ( failure ) => failure.element.firstChild?.textContent?.trim() ?? '' );
+	return wrapper.findAll( '.ext-neowiki-install-results__failures li' ).map( ( failure ) => failure.element.firstChild?.textContent?.trim() ?? '' );
 }
 
-function outcomeOf( plan: ImportPlan, ...results: ImportOutcome[ 'items' ][ number ][ 'result' ][] ): ImportOutcome {
+function outcomeOf( plan: InstallPlan, ...results: InstallOutcome[ 'items' ][ number ][ 'result' ][] ): InstallOutcome {
 	return {
 		items: results.map( ( result, index ) => ( {
 			item: plan.items[ index ],
@@ -136,7 +136,7 @@ describe( 'BundlePlans', () => {
 
 		const wrapper = mountPlans( [ plan ], [ outcomeOf( plan, 'created', 'created' ) ] );
 
-		expect( [ wrapper.find( '.ext-neowiki-bundle-plans__summary' ).exists(), wrapper.find( '.ext-neowiki-import-results' ).text() ] )
+		expect( [ wrapper.find( '.ext-neowiki-bundle-plans__summary' ).exists(), wrapper.find( '.ext-neowiki-install-results' ).text() ] )
 			.toEqual( [ false, 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created2' ] );
 	} );
 

@@ -1,9 +1,9 @@
 <template>
 	<div
 		v-if="!settingsDone"
-		class="ext-neowiki-bundle-import"
+		class="ext-neowiki-bundle-install"
 	>
-		<h2 class="ext-neowiki-bundle-import__title">
+		<h2 class="ext-neowiki-bundle-install__title">
 			{{ $i18n( 'neowiki-bundle-install-title' ).text() }}
 		</h2>
 		<WikiSettingsEditor @done="settingsDone = true">
@@ -17,24 +17,24 @@
 
 	<div
 		v-else
-		class="ext-neowiki-bundle-import"
+		class="ext-neowiki-bundle-install"
 	>
-		<h2 class="ext-neowiki-bundle-import__title">
+		<h2 class="ext-neowiki-bundle-install__title">
 			{{ updated === null ?
 				$i18n( 'neowiki-bundle-install-title' ).text() :
 				$i18n( 'neowiki-bundle-update-title', updated.name ).text() }}
 		</h2>
 
 		<CdxMessage
-			v-if="readError !== null || importer.error.value !== null"
+			v-if="readError !== null || installer.error.value !== null"
 			type="error"
 		>
-			{{ readError ?? importer.error.value }}
+			{{ readError ?? installer.error.value }}
 		</CdxMessage>
 
 		<div
 			v-if="bundle === null"
-			class="ext-neowiki-bundle-import__sources"
+			class="ext-neowiki-bundle-install__sources"
 		>
 			<p v-if="reading">
 				<CdxProgressBar :inline="true" />
@@ -91,7 +91,7 @@
 					<template #label>
 						{{ $i18n( 'neowiki-bundle-source-url' ).text() }}
 					</template>
-					<div class="ext-neowiki-bundle-import__url">
+					<div class="ext-neowiki-bundle-install__url">
 						<CdxTextInput
 							v-model="url"
 							input-type="url"
@@ -110,7 +110,7 @@
 		</div>
 
 		<template v-else>
-			<div class="ext-neowiki-bundle-import__summary">
+			<div class="ext-neowiki-bundle-install__summary">
 				<CdxField
 					v-if="bundle.metadata === null && updating === null"
 					:status="nameIsUsable ? 'default' : 'error'"
@@ -124,13 +124,13 @@
 					</template>
 					<CdxTextInput
 						v-model="name"
-						:disabled="importer.running.value || importer.outcomes.value !== null"
+						:disabled="installer.running.value || installer.outcomes.value !== null"
 						@change="replan"
 					/>
 				</CdxField>
 				<p
 					v-else
-					class="ext-neowiki-bundle-import__name"
+					class="ext-neowiki-bundle-install__name"
 				>
 					<strong>{{ name }}</strong>
 					<span v-if="bundle.metadata !== null && bundle.metadata.version !== ''">
@@ -154,43 +154,43 @@
 				</p>
 			</div>
 
-			<p v-if="importer.planning.value">
+			<p v-if="installer.planning.value">
 				<CdxProgressBar :inline="true" />
 				{{ $i18n( 'neowiki-bundle-comparing' ).text() }}
 			</p>
 
-			<p v-if="importer.running.value">
+			<p v-if="installer.running.value">
 				<CdxProgressBar :inline="true" />
-				{{ $i18n( 'neowiki-bundle-progress', importer.progress.value.done, importer.progress.value.total ).text() }}
+				{{ $i18n( 'neowiki-bundle-progress', installer.progress.value.done, installer.progress.value.total ).text() }}
 			</p>
 
 			<BundlePlans
-				v-if="importer.plans.value !== null && !importer.planning.value"
-				v-model="importer.chosen.value"
-				:plans="importer.plans.value"
-				:outcomes="importer.outcomes.value"
+				v-if="installer.plans.value !== null && !installer.planning.value"
+				v-model="installer.chosen.value"
+				:plans="installer.plans.value"
+				:outcomes="installer.outcomes.value"
 				:required-by="requiredBy"
-				:disabled="importer.running.value"
+				:disabled="installer.running.value"
 			/>
 		</template>
 
-		<div class="ext-neowiki-bundle-import__actions">
+		<div class="ext-neowiki-bundle-install__actions">
 			<CdxButton
-				v-if="bundle !== null && importer.outcomes.value === null"
+				v-if="bundle !== null && installer.outcomes.value === null"
 				action="progressive"
 				weight="primary"
 				:disabled="!canRun"
-				@click="importer.run()"
+				@click="installer.run()"
 			>
 				{{ mainPlan?.record ?
 					$i18n( 'neowiki-bundle-update-button' ).text() :
 					$i18n( 'neowiki-bundle-install-button' ).text() }}
 			</CdxButton>
 			<CdxButton
-				:disabled="importer.running.value"
-				@click="emit( 'close', importer.outcomes.value !== null )"
+				:disabled="installer.running.value"
+				@click="emit( 'close', installer.outcomes.value !== null )"
 			>
-				{{ importer.outcomes.value === null ?
+				{{ installer.outcomes.value === null ?
 					$i18n( 'cancel' ).text() :
 					$i18n( 'neowiki-bundle-back' ).text() }}
 			</CdxButton>
@@ -209,7 +209,7 @@ import { type Catalogs, readCatalogs, readEntryBundles } from '../persistence/ca
 import { FILE_SOURCE, type InstallRecord } from '../application/InstallRecord.ts';
 import { isUsableBundleName, sameBundleName } from '../application/bundleName.ts';
 import { fetchBundleFile } from '../persistence/fetchBundleFile.ts';
-import { useBundleImport } from '../composables/useBundleImport.ts';
+import { useBundleInstall } from '../composables/useBundleInstall.ts';
 import BundlePlans from './BundlePlans.vue';
 import CatalogEntryPicker from './CatalogEntryPicker.vue';
 import WikiSettingsEditor from './WikiSettingsEditor.vue';
@@ -224,11 +224,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	/** Whether the import wrote anything, so that the page reads the wiki again. */
-	close: [ imported: boolean ];
+	/** Whether the install wrote anything, so that the page reads the wiki again. */
+	close: [ installed: boolean ];
 }>();
 
-const importer = useBundleImport();
+const installer = useBundleInstall();
 const settingsDone = ref( props.updating !== null || !asksHowTheWikiWorks( props.records.length ) );
 const fileInput = ref<HTMLInputElement | null>( null );
 const url = ref( '' );
@@ -245,13 +245,13 @@ const catalogs = shallowRef<Catalogs | null>( null );
 const nameIsUsable = computed( () => isUsableBundleName( name.value ) );
 
 // The bundle chosen, after those it requires.
-const mainPlan = computed( () => importer.plans.value?.[ importer.plans.value.length - 1 ] ?? null );
+const mainPlan = computed( () => installer.plans.value?.[ installer.plans.value.length - 1 ] ?? null );
 
 // Installing a file whose bundle the wiki has installed updates that bundle.
 const updated = computed( () => props.updating ?? mainPlan.value?.record ?? null );
 
 // A bundle install writes its record even when no item changes, as for a wiki that already has the items.
-const canRun = computed( () => importer.plans.value !== null && !importer.planning.value && !importer.running.value &&
+const canRun = computed( () => installer.plans.value !== null && !installer.planning.value && !installer.running.value &&
 	nameIsUsable.value );
 
 async function onFileChosen( event: Event ): Promise<void> {
@@ -318,7 +318,7 @@ async function replan(): Promise<void> {
 	const chosen = toInstall.value[ toInstall.value.length - 1 ];
 
 	if ( chosen !== undefined && nameIsUsable.value ) {
-		await importer.prepare( [ ...toInstall.value.slice( 0, -1 ), { ...chosen, name: name.value.trim() } ], props.records );
+		await installer.prepare( [ ...toInstall.value.slice( 0, -1 ), { ...chosen, name: name.value.trim() } ], props.records );
 	}
 }
 
@@ -337,7 +337,7 @@ onMounted( async () => {
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
-.ext-neowiki-bundle-import {
+.ext-neowiki-bundle-install {
 	&__title {
 		margin-top: 0;
 	}

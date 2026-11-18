@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
-import { runImport, runImports, type ImportOutcome } from '../../src/application/importRun';
+import { defaultChoice, type InstallPlan } from '../../src/application/installPlan';
+import { runInstall, runInstalls, type InstallOutcome } from '../../src/application/installRun';
 import { itemHash, schemaItem, subjectItem } from '../../src/application/canonical';
 import { FILE_SOURCE, recordedHash } from '../../src/application/InstallRecord';
 import { itemId, type SubjectEntry } from '../../src/application/ModelBundle';
@@ -22,11 +22,11 @@ function hashOf( entry: SubjectEntry ): string {
 }
 
 function run(
-	importPlan: ImportPlan,
-	chosen: string[] = [ ...defaultChoice( importPlan ) ],
+	installPlan: InstallPlan,
+	chosen: string[] = [ ...defaultChoice( installPlan ) ],
 	subjectFirst = false,
-): Promise<ImportOutcome> {
-	return runImport( importPlan, new Set( chosen ), {
+): Promise<InstallOutcome> {
+	return runInstall( installPlan, new Set( chosen ), {
 		repository: wiki,
 		recordRepository: wiki,
 		comment: 'Install',
@@ -34,7 +34,7 @@ function run(
 	} );
 }
 
-function results( outcome: ImportOutcome ): string[] {
+function results( outcome: InstallOutcome ): string[] {
 	return outcome.items.map( ( item ) => `${ item.result } ${ item.item.key }` + ( item.reason === null ? '' : `: ${ item.reason }` ) );
 }
 
@@ -42,7 +42,7 @@ function recordedHashes(): Record<string, string> {
 	return Object.fromEntries( ( wiki.recordOf( 'Vocabularies' )?.items ?? [] ).map( ( item ) => [ item.key, recordedHash( item ) ] ) );
 }
 
-describe( 'runImport', () => {
+describe( 'runInstall', () => {
 
 	beforeEach( () => {
 		setupMwMock();
@@ -54,11 +54,11 @@ describe( 'runImport', () => {
 		wiki.records = [ installed( [ [ ID_3, subjectEntry( { schema: 'Gone' } ) ] ], [ gone ] ) ];
 		wiki.withSchemas( gone ).withSubject( ID_3, subjectEntry( { schema: 'Gone' } ) );
 
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ], [ newSchema( { title: 'Gender Types' } ) ], {
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ], [ newSchema( { title: 'Gender Types' } ) ], {
 			layouts: new Map( [ [ 'Card', { schema: 'Gender Types', type: 'infobox' } ] ] ),
 			mappings: new Map( [ [ 'EDM', { version: 1, schemas: {} } ] ] ),
 		} ) );
-		await run( importPlan, importPlan.items.filter( ( item ) => item.action !== null ).map( ( item ) => item.id ) );
+		await run( installPlan, installPlan.items.filter( ( item ) => item.action !== null ).map( ( item ) => item.id ) );
 
 		expect( wiki.writes ).toEqual( [
 			'save schema:Gender Types',
@@ -89,11 +89,11 @@ describe( 'runImport', () => {
 
 	it( 'does not save over a Schema edited since the preview', async () => {
 		wiki.withSchemas( newSchema( { title: 'Person', description: 'Old' } ) );
-		const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Person', description: 'New' } ) ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Person', description: 'New' } ) ] ) );
 		const edited = schemaJson( newSchema( { title: 'Person', description: 'Edited' } ) );
 		await wiki.saveSchema( 'Person', edited, 'Edit', ( await wiki.getSchema( 'Person' ) ).revisionId );
 
-		const outcome = await run( importPlan, [ itemId( 'schema', 'Person' ) ] );
+		const outcome = await run( installPlan, [ itemId( 'schema', 'Person' ) ] );
 
 		expect( results( outcome ) ).toEqual( [ 'failed Person: Edit conflict' ] );
 		expect( wiki.schemas.get( 'Person' ) ).toEqual( edited );
@@ -121,9 +121,9 @@ describe( 'runImport', () => {
 	} );
 
 	it( 'writes only the chosen items', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
 
-		await run( importPlan, [ itemId( 'subject', ID_2 ) ] );
+		await run( installPlan, [ itemId( 'subject', ID_2 ) ] );
 
 		expect( wiki.writes ).toEqual( [ `create subject:${ ID_2 }` ] );
 	} );
@@ -133,8 +133,8 @@ describe( 'runImport', () => {
 		wiki.withSubject( ID_2, FEMALE ).withSubject( ID_3, FEMALE );
 		wiki.failingWrites.set( `subject:${ ID_1 }`, 'The page is protected' );
 
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ], [ 's1demo1aaaaaaa4', WOMAN ] ] ) );
-		const outcome = await run( importPlan, [ ...defaultChoice( importPlan ), itemId( 'subject', ID_3 ) ] );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ], [ 's1demo1aaaaaaa4', WOMAN ] ] ) );
+		const outcome = await run( installPlan, [ ...defaultChoice( installPlan ), itemId( 'subject', ID_3 ) ] );
 
 		expect( results( outcome ) ).toEqual( [
 			`failed ${ ID_1 }: The page is protected`,
@@ -145,10 +145,10 @@ describe( 'runImport', () => {
 	} );
 
 	it( 'gives a Subject\'s page its ID when its title was taken since the preview', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
 		wiki.takenPageTitles.add( 'Female' );
 
-		await run( importPlan );
+		await run( installPlan );
 
 		expect( wiki.writes ).toEqual( [ `create subject:${ ID_1 } on ${ ID_1 }` ] );
 	} );
@@ -157,7 +157,7 @@ describe( 'runImport', () => {
 
 		const UNNAMED = subjectEntry( { label: null } );
 
-		async function removeAndInstallAgain( subjectFirst: boolean ): Promise<ImportOutcome> {
+		async function removeAndInstallAgain( subjectFirst: boolean ): Promise<InstallOutcome> {
 			wiki.subjectFirst = subjectFirst;
 			await run( await planOn( wiki, bundleOf( [ [ ID_1, UNNAMED ] ] ), 'Vocabularies', subjectFirst ), undefined, subjectFirst );
 			await run( await planOn( wiki, bundleOf( [] ), 'Vocabularies', subjectFirst ), [ itemId( 'subject', ID_1 ) ], subjectFirst );
@@ -178,11 +178,11 @@ describe( 'runImport', () => {
 	} );
 
 	it( 'does not put a Subject on an empty page titled by its label', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 		wiki.takenPageTitles.add( 'female' );
 		wiki.emptyPageTitles.add( 'female' );
 
-		await run( importPlan );
+		await run( installPlan );
 
 		expect( wiki.writes ).toEqual( [ `create subject:${ ID_1 } on ${ ID_1 }` ] );
 	} );
@@ -211,15 +211,15 @@ describe( 'runImport', () => {
 		const BIRTH = newSchema( { title: 'Birth', subjectsAreDependent: true } );
 		const ADA = subjectEntry( { schema: 'Person', label: 'Ada', dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ] } );
 
-		function together(): Promise<ImportPlan[]> {
+		function together(): Promise<InstallPlan[]> {
 			return planAllOn( wiki, [
 				bundleOf( [], [ BIRTH ], { metadata: { name: 'Model', version: '1', description: '' } } ),
 				bundleOf( [ [ ID_1, ADA ] ], [], { metadata: { name: 'People', version: '1', description: '' } } ),
 			] );
 		}
 
-		function runAll( plans: ImportPlan[], onProgress?: ( done: number, total: number ) => void ): Promise<ImportOutcome[]> {
-			return runImports( plans.map( ( plan ) => ( {
+		function runAll( plans: InstallPlan[], onProgress?: ( done: number, total: number ) => void ): Promise<InstallOutcome[]> {
+			return runInstalls( plans.map( ( plan ) => ( {
 				plan,
 				chosen: defaultChoice( plan ),
 				context: { repository: wiki, recordRepository: wiki, comment: 'Install', subjectFirst: false },
@@ -301,17 +301,17 @@ describe( 'runImport', () => {
 		} );
 
 		it( 'leaves out what it did not create', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
 
-			await run( importPlan, [ itemId( 'subject', ID_2 ) ] );
+			await run( installPlan, [ itemId( 'subject', ID_2 ) ] );
 
 			expect( Object.keys( recordedHashes() ) ).toEqual( [ ID_2 ] );
 		} );
 
 		it( 'records what was left unticked as declined', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
 
-			await run( importPlan, [ itemId( 'subject', ID_1 ) ] );
+			await run( installPlan, [ itemId( 'subject', ID_1 ) ] );
 
 			expect( wiki.recordOf( 'Vocabularies' )?.declined ).toEqual( [ { type: 'subject', key: ID_2 } ] );
 		} );
@@ -374,8 +374,8 @@ describe( 'runImport', () => {
 			wiki.records = [ installed( [ [ ID_2, FEMALE ], [ ID_3, FEMALE ] ] ) ];
 			wiki.withSubject( ID_2, FEMALE ).withSubject( ID_3, FEMALE );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
-			await run( importPlan, [ itemId( 'subject', ID_1 ), itemId( 'subject', ID_2 ) ] );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			await run( installPlan, [ itemId( 'subject', ID_1 ), itemId( 'subject', ID_2 ) ] );
 
 			expect( Object.keys( recordedHashes() ) ).toEqual( [ ID_1 ] );
 		} );

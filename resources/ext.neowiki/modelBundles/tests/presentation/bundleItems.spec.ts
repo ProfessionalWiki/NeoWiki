@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { needsDecision, planSummary, resultLine } from '../../src/presentation/bundleItems';
-import type { ImportItem, ImportPlan } from '../../src/application/importPlan';
-import type { ImportOutcome, ItemResult } from '../../src/application/importRun';
+import type { InstallItem, InstallPlan } from '../../src/application/installPlan';
+import type { InstallOutcome, ItemResult } from '../../src/application/installRun';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from '../application/InMemoryDataModel';
 import { bundleOf, installed, planOn, subjectEntry, VOCABULARIES } from '../application/builders';
@@ -16,14 +16,14 @@ const OTHER = subjectEntry( { label: 'other' } );
 
 let wiki: InMemoryDataModel;
 
-function plan( version = VOCABULARIES.version ): Promise<ImportPlan> {
+function plan( version = VOCABULARIES.version ): Promise<InstallPlan> {
 	return planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ], [], { metadata: { ...VOCABULARIES, version } } ) );
 }
 
-function outcome( importPlan: ImportPlan, ...results: ItemResult[] ): ImportOutcome {
+function outcome( installPlan: InstallPlan, ...results: ItemResult[] ): InstallOutcome {
 	return {
 		items: results.map( ( result, index ) => ( {
-			item: importPlan.items[ index ],
+			item: installPlan.items[ index ],
 			result,
 			reason: result === 'failed' ? 'The page is protected' : null,
 		} ) ),
@@ -39,9 +39,9 @@ describe( 'resultLine', () => {
 	} );
 
 	it( 'says that the bundle was installed, and how many items it wrote', async () => {
-		const importPlan = await plan();
+		const installPlan = await plan();
 
-		expect( resultLine( importPlan, outcome( importPlan, 'created' ) ) ).toEqual( {
+		expect( resultLine( installPlan, outcome( installPlan, 'created' ) ) ).toEqual( {
 			type: 'success',
 			text: 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1',
 			note: null,
@@ -49,37 +49,37 @@ describe( 'resultLine', () => {
 	} );
 
 	it( 'counts the items created, replaced and removed apart', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ], [ ID_3, OTHER ] ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ], [ ID_3, OTHER ] ] ) );
 
-		expect( resultLine( importPlan, outcome( importPlan, 'removed', 'created', 'replaced' ) ).text ).toBe(
+		expect( resultLine( installPlan, outcome( installPlan, 'removed', 'created', 'replaced' ) ).text ).toBe(
 			'neowiki-bundle-installedVocabularies: neowiki-bundle-count-created1, neowiki-bundle-count-replaced1, neowiki-bundle-count-removed1',
 		);
 	} );
 
 	it( 'says when it wrote nothing', async () => {
-		const importPlan = await plan();
+		const installPlan = await plan();
 
-		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-nothing' );
+		expect( resultLine( installPlan, outcome( installPlan ) ).text ).toBe( 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'says which version the bundle was updated to', async () => {
 		wiki.records = [ installed( [ [ ID_1, FEMALE ] ] ) ];
-		const importPlan = await plan();
+		const installPlan = await plan();
 
-		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-updatedVocabularies2: neowiki-bundle-count-nothing' );
+		expect( resultLine( installPlan, outcome( installPlan ) ).text ).toBe( 'neowiki-bundle-updatedVocabularies2: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'says that the bundle was updated when the file gives no version', async () => {
 		wiki.records = [ installed( [ [ ID_1, FEMALE ] ] ) ];
-		const importPlan = await plan( '' );
+		const installPlan = await plan( '' );
 
-		expect( resultLine( importPlan, outcome( importPlan ) ).text ).toBe( 'neowiki-bundle-updated-unversionedVocabularies: neowiki-bundle-count-nothing' );
+		expect( resultLine( installPlan, outcome( installPlan ) ).text ).toBe( 'neowiki-bundle-updated-unversionedVocabularies: neowiki-bundle-count-nothing' );
 	} );
 
 	it( 'warns, saying how many items were not written, when a write failed', async () => {
-		const importPlan = await plan();
+		const installPlan = await plan();
 
-		expect( resultLine( importPlan, outcome( importPlan, 'failed' ) ) ).toEqual( {
+		expect( resultLine( installPlan, outcome( installPlan, 'failed' ) ) ).toEqual( {
 			type: 'warning',
 			text: 'neowiki-bundle-installedVocabularies: neowiki-bundle-count-nothing',
 			note: 'neowiki-bundle-not-written1',
@@ -87,9 +87,9 @@ describe( 'resultLine', () => {
 	} );
 
 	it( 'says instead that the bundle could not be recorded as installed', async () => {
-		const importPlan = await plan();
+		const installPlan = await plan();
 
-		expect( resultLine( importPlan, { ...outcome( importPlan, 'created' ), record: { saved: false, reason: 'Edit conflict' } } ) ).toEqual( {
+		expect( resultLine( installPlan, { ...outcome( installPlan, 'created' ), record: { saved: false, reason: 'Edit conflict' } } ) ).toEqual( {
 			type: 'error',
 			text: 'neowiki-bundle-record-failedVocabulariesEdit conflict',
 			note: null,
@@ -100,8 +100,8 @@ describe( 'resultLine', () => {
 
 describe( 'needsDecision', () => {
 
-	function itemWith( status: ImportItem[ 'status' ], action: ImportItem[ 'action' ] ): ImportItem {
-		return { status, action } as ImportItem;
+	function itemWith( status: InstallItem[ 'status' ], action: InstallItem[ 'action' ] ): InstallItem {
+		return { status, action } as InstallItem;
 	}
 
 	it.each( [
@@ -139,23 +139,23 @@ describe( 'planSummary', () => {
 	} );
 
 	it( 'sums up a first install as its items by type, all new', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, FEMALE ] ], [ newSchema( { title: 'Gender Types' } ) ] ) );
+		const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, FEMALE ] ], [ newSchema( { title: 'Gender Types' } ) ] ) );
 
-		expect( planSummary( importPlan ) ).toBe( 'neowiki-bundle-summary-schemas1, neowiki-bundle-summary-subjects2, neowiki-bundle-summary-all-new' );
+		expect( planSummary( installPlan ) ).toBe( 'neowiki-bundle-summary-schemas1, neowiki-bundle-summary-subjects2, neowiki-bundle-summary-all-new' );
 	} );
 
 	it( 'counts what an update creates, updates, leaves to a decision and leaves as it is', async () => {
 		wiki.records = [ installed( [ [ ID_1, FEMALE ], [ ID_2, FEMALE ], [ ID_3, FEMALE ] ] ) ];
 		wiki.withSubject( ID_1, FEMALE ).withSubject( ID_2, subjectEntry( { label: 'female (edited)' } ) ).withSubject( ID_3, FEMALE );
 
-		const importPlan = await planOn( wiki, bundleOf( [
+		const installPlan = await planOn( wiki, bundleOf( [
 			[ ID_1, subjectEntry( { label: 'woman' } ) ],
 			[ ID_2, subjectEntry( { label: 'woman' } ) ],
 			[ ID_3, FEMALE ],
 			[ 's1demo1aaaaaaa4', FEMALE ],
 		] ) );
 
-		expect( planSummary( importPlan ) ).toBe( 'neowiki-bundle-summary-subjects4, neowiki-bundle-summary-new1, ' +
+		expect( planSummary( installPlan ) ).toBe( 'neowiki-bundle-summary-subjects4, neowiki-bundle-summary-new1, ' +
 			'neowiki-bundle-summary-update1, neowiki-bundle-summary-decide1, neowiki-bundle-summary-unchanged1' );
 	} );
 

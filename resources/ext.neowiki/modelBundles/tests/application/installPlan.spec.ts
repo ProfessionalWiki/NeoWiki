@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { defaultChoice, type ImportPlan } from '../../src/application/importPlan';
+import { defaultChoice, type InstallPlan } from '../../src/application/installPlan';
 import { newSchema } from '@/TestHelpers';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from './InMemoryDataModel';
@@ -17,20 +17,20 @@ const ADA = subjectEntry( { schema: 'Person', label: 'Ada', dependentSubjects: [
 let wiki: InMemoryDataModel;
 
 /**
- * What the preview shows of an item: its status, what importing it does, and whether it starts ticked.
+ * What the preview shows of an item: its status, what installing it does, and whether it starts ticked.
  */
-function row( importPlan: ImportPlan, key: string ): [ string, string | null, boolean ] {
-	const item = importPlan.items.find( ( candidate ) => candidate.key === key );
+function row( installPlan: InstallPlan, key: string ): [ string, string | null, boolean ] {
+	const item = installPlan.items.find( ( candidate ) => candidate.key === key );
 
 	expect( item ).toBeDefined();
-	return [ item!.status, item!.action, defaultChoice( importPlan ).has( item!.id ) ];
+	return [ item!.status, item!.action, defaultChoice( installPlan ).has( item!.id ) ];
 }
 
-function reasonOf( importPlan: ImportPlan, key: string ): string | null {
-	return importPlan.items.find( ( item ) => item.key === key )?.reason ?? null;
+function reasonOf( installPlan: InstallPlan, key: string ): string | null {
+	return installPlan.items.find( ( item ) => item.key === key )?.reason ?? null;
 }
 
-describe( 'planImport', () => {
+describe( 'planInstalls', () => {
 
 	beforeEach( () => {
 		setupMwMock();
@@ -59,11 +59,11 @@ describe( 'planImport', () => {
 		it( 'offers to replace what the wiki has otherwise, unticked, with both versions', async () => {
 			wiki.withSubject( ID_1, FEMALE_EDITED );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'differs', 'replace', false ] );
-			expect( importPlan.items[ 0 ].versionHere ).toContain( 'female (edited)' );
-			expect( importPlan.items[ 0 ].versionUpstream ).toContain( '"female"' );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'differs', 'replace', false ] );
+			expect( installPlan.items[ 0 ].versionHere ).toContain( 'female (edited)' );
+			expect( installPlan.items[ 0 ].versionUpstream ).toContain( '"female"' );
 		} );
 
 		it( 'tells relation IDs apart from content', async () => {
@@ -71,42 +71,42 @@ describe( 'planImport', () => {
 				statements: { Metatype: { propertyType: 'relation', value: [ { id: 'r1demo1rrrrrrr1', target: ID_2 } ] } },
 			} ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
 				statements: { Metatype: { propertyType: 'relation', value: [ { target: ID_2 } ] } },
 			} ) ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'unchanged', null, false ] );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'unchanged', null, false ] );
 		} );
 
 		it( 'refuses a Subject whose ID a Subject of another Schema has', async () => {
 			wiki.withSubject( ID_1, subjectEntry( { schema: 'Person' } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'conflict', null, false ] );
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-subject-schemaPerson' );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'conflict', null, false ] );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-subject-schemaPerson' );
 		} );
 
 		it( 'refuses a Subject whose Dependent Subject ID another Subject holds', async () => {
 			wiki.withSubject( ID_3, subjectEntry( { schema: 'Person', dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ] } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
 				schema: 'Person',
 				dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ],
 			} ) ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
 		} );
 
 		it( 'refuses a Subject whose Dependent Subject it holds is of another Schema on the wiki', async () => {
 			wiki.withSubject( ID_1, subjectEntry( { schema: 'Person', dependentSubjects: [ { id: ID_2, schema: 'Death', statements: {} } ] } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
 				schema: 'Person',
 				dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: {} } ],
 			} ) ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_2 }` );
 		} );
 
 		it( 'replaces the Dependent Subjects a Subject holds already', async () => {
@@ -116,73 +116,73 @@ describe( 'planImport', () => {
 				dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: { Year: { propertyType: 'number', value: 1900 } } } ],
 			} ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( {
 				schema: 'Person',
 				dependentSubjects: [ { id: ID_2, schema: 'Birth', statements: { Year: { propertyType: 'number', value: 1901 } } } ],
 			} ) ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'differs', 'replace', false ] );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'differs', 'replace', false ] );
 		} );
 
 		it( 'refuses a Subject whose Dependent Subjects are of a Schema the wiki lacks', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'conflict', null, false ] );
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-dependent-schemaBirth' );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'conflict', null, false ] );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-dependent-schemaBirth' );
 		} );
 
 		it( 'refuses a Subject whose Dependent Subjects are of a Schema of standalone Subjects', async () => {
 			wiki.withSchemas( newSchema( { title: 'Birth', subjectsAreDependent: false } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-dependent-schemaBirth' );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-dependent-schemaBirth' );
 		} );
 
 		it( 'creates a Subject whose Dependent Subjects are of a Schema the file creates', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ], [ BIRTH ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ], [ BIRTH ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'new', 'create', true ] );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'new', 'create', true ] );
 		} );
 
 		it( 'refuses a Subject whose ID is a Dependent Subject of another', async () => {
 			wiki.withSubject( ID_3, subjectEntry( { schema: 'Person', dependentSubjects: [ { id: ID_1, schema: 'Gender Types', statements: {} } ] } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_1 }` );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-id-in-use${ ID_1 }` );
 		} );
 
 		it( 'refuses a Schema that would change whether its Subjects are dependent', async () => {
 			wiki.withSchemas( newSchema( { title: 'Birth', subjectsAreDependent: false } ) );
 
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Birth', subjectsAreDependent: true } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Birth', subjectsAreDependent: true } ) ] ) );
 
-			expect( reasonOf( importPlan, 'Birth' ) ).toBe( 'neowiki-bundle-conflict-dependence' );
+			expect( reasonOf( installPlan, 'Birth' ) ).toBe( 'neowiki-bundle-conflict-dependence' );
 		} );
 
 		it( 'refuses a Schema that would make its dependent Subjects standalone', async () => {
 			wiki.withSchemas( BIRTH );
 
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Birth', subjectsAreDependent: false } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Birth', subjectsAreDependent: false } ) ] ) );
 
-			expect( reasonOf( importPlan, 'Birth' ) ).toBe( 'neowiki-bundle-conflict-dependence' );
+			expect( reasonOf( installPlan, 'Birth' ) ).toBe( 'neowiki-bundle-conflict-dependence' );
 		} );
 
 		it( 'refuses an item another installed bundle owns', async () => {
 			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [], { name: 'Genders' } ) ];
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-ownedGenders' );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-ownedGenders' );
 		} );
 
 		it( 'refuses an item whose version on the wiki cannot be read', async () => {
 			wiki.unreadable.add( `subject:${ ID_1 }` );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-unreadableCannot read subject:${ ID_1 }` );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( `neowiki-bundle-conflict-unreadableCannot read subject:${ ID_1 }` );
 		} );
 
 	} );
@@ -234,11 +234,11 @@ describe( 'planImport', () => {
 		it( 'offers to replace what both changed, unticked, with both versions', async () => {
 			wiki.withSubject( ID_1, FEMALE_EDITED );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, WOMAN ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, WOMAN ] ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'changed-both', 'replace', false ] );
-			expect( importPlan.items[ 0 ].versionHere ).toContain( 'female (edited)' );
-			expect( importPlan.items[ 0 ].versionUpstream ).toContain( 'woman' );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'changed-both', 'replace', false ] );
+			expect( installPlan.items[ 0 ].versionHere ).toContain( 'female (edited)' );
+			expect( installPlan.items[ 0 ].versionUpstream ).toContain( 'woman' );
 		} );
 
 		it( 'keeps what only this wiki changed', async () => {
@@ -262,10 +262,10 @@ describe( 'planImport', () => {
 		it( 'treats what the bundle added as on an install', async () => {
 			wiki.withSubject( ID_1, FEMALE ).withSubject( ID_3, FEMALE_EDITED );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ], [ ID_3, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ], [ ID_3, FEMALE ] ] ) );
 
-			expect( row( importPlan, ID_2 ) ).toEqual( [ 'new', 'create', true ] );
-			expect( row( importPlan, ID_3 ) ).toEqual( [ 'differs', 'replace', false ] );
+			expect( row( installPlan, ID_2 ) ).toEqual( [ 'new', 'create', true ] );
+			expect( row( installPlan, ID_3 ) ).toEqual( [ 'differs', 'replace', false ] );
 		} );
 
 		it( 'offers to re-create, unticked, what this wiki deleted and the bundle changed', async () => {
@@ -284,28 +284,28 @@ describe( 'planImport', () => {
 		} );
 
 		it( 'lists nothing for what the bundle no longer has and this wiki deleted', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
 
-			expect( importPlan.items.map( ( item ) => item.key ) ).toEqual( [ 'Gender Types' ] );
+			expect( installPlan.items.map( ( item ) => item.key ) ).toEqual( [ 'Gender Types' ] );
 		} );
 
 		it( 'does not offer to remove a Subject that Subjects outside the bundle point at', async () => {
 			wiki.withSubject( ID_1, FEMALE ).withSubject( ID_3, subjectEntry( { schema: 'Person' } ) );
 			wiki.referencingSubjects.set( ID_1, [ ID_3 ] );
 
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
 
-			expect( row( importPlan, ID_1 ) ).toEqual( [ 'removed-upstream', null, false ] );
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-remove-blocked-referenced' );
+			expect( row( installPlan, ID_1 ) ).toEqual( [ 'removed-upstream', null, false ] );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-remove-blocked-referenced' );
 		} );
 
 		it( 'does not offer to remove what the bundle no longer has when its version on the wiki cannot be read', async () => {
 			wiki.withSubject( ID_1, FEMALE );
 			wiki.unreadable.add( `subject:${ ID_1 }` );
 
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( `neowiki-bundle-remove-blocked-unreadableCannot read subject:${ ID_1 }` );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( `neowiki-bundle-remove-blocked-unreadableCannot read subject:${ ID_1 }` );
 		} );
 
 		it( 'offers to remove a Subject that only Subjects of the bundle point at', async () => {
@@ -320,9 +320,9 @@ describe( 'planImport', () => {
 			wiki.withSubject( ID_1, FEMALE ).withSubject( ID_2, WOMAN );
 			wiki.referencingSubjects.set( ID_1, [ ID_2 ] );
 
-			const importPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [], [ newSchema( { title: 'Gender Types' } ) ] ) );
 
-			expect( [ row( importPlan, ID_1 ), row( importPlan, ID_2 ) ] )
+			expect( [ row( installPlan, ID_1 ), row( installPlan, ID_2 ) ] )
 				.toEqual( [ [ 'removed-upstream', 'remove', false ], [ 'removed-upstream', 'remove', false ] ] );
 		} );
 
@@ -331,9 +331,9 @@ describe( 'planImport', () => {
 			wiki.referencingSubjects.set( ID_1, [ ID_2 ] );
 			wiki.truncatedReferences.add( ID_1 );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) );
 
-			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-remove-blocked-referenced' );
+			expect( reasonOf( installPlan, ID_1 ) ).toBe( 'neowiki-bundle-remove-blocked-referenced' );
 		} );
 
 		it( 'does not offer to remove a Schema that Subjects outside the bundle use', async () => {
@@ -341,10 +341,10 @@ describe( 'planImport', () => {
 			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [ genderTypes ] ) ];
 			wiki.withSchemas( genderTypes ).withSubject( ID_1, FEMALE ).withSubject( ID_3, WOMAN );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_2, subjectEntry( { schema: 'Other' } ) ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_2, subjectEntry( { schema: 'Other' } ) ] ] ) );
 
-			expect( row( importPlan, 'Gender Types' ) ).toEqual( [ 'removed-upstream', null, false ] );
-			expect( reasonOf( importPlan, 'Gender Types' ) ).toBe( 'neowiki-bundle-remove-blocked-used' );
+			expect( row( installPlan, 'Gender Types' ) ).toEqual( [ 'removed-upstream', null, false ] );
+			expect( reasonOf( installPlan, 'Gender Types' ) ).toBe( 'neowiki-bundle-remove-blocked-used' );
 		} );
 
 		it( 'offers to remove a Schema whose Subjects are all removed with it', async () => {
@@ -352,27 +352,27 @@ describe( 'planImport', () => {
 			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [ genderTypes ] ) ];
 			wiki.withSchemas( genderTypes ).withSubject( ID_1, FEMALE );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_2, subjectEntry( { schema: 'Other' } ) ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_2, subjectEntry( { schema: 'Other' } ) ] ] ) );
 
-			expect( row( importPlan, 'Gender Types' ) ).toEqual( [ 'removed-upstream', 'remove', false ] );
+			expect( row( installPlan, 'Gender Types' ) ).toEqual( [ 'removed-upstream', 'remove', false ] );
 		} );
 
 		it( 'offers to remove a dependent Schema whose Host Subjects are all removed', async () => {
 			wiki.records = [ installed( [ [ ID_1, ADA ] ], [ BIRTH ] ) ];
 			wiki.withSchemas( BIRTH ).withSubject( ID_1, ADA );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_3, subjectEntry( { schema: 'Other' } ) ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_3, subjectEntry( { schema: 'Other' } ) ] ] ) );
 
-			expect( row( importPlan, 'Birth' ) ).toEqual( [ 'removed-upstream', 'remove', false ] );
+			expect( row( installPlan, 'Birth' ) ).toEqual( [ 'removed-upstream', 'remove', false ] );
 		} );
 
 		it( 'does not offer to remove a dependent Schema whose Host Subject stays', async () => {
 			wiki.records = [ installed( [ [ ID_1, ADA ] ], [ BIRTH ] ) ];
 			wiki.withSchemas( BIRTH ).withSubject( ID_1, ADA );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, ADA ] ] ) );
 
-			expect( row( importPlan, 'Birth' ) ).toEqual( [ 'removed-upstream', null, false ] );
+			expect( row( installPlan, 'Birth' ) ).toEqual( [ 'removed-upstream', null, false ] );
 		} );
 
 		it( 'offers to remove a Subject that only a bundle Subject\'s Dependent Subject points at', async () => {
@@ -403,33 +403,33 @@ describe( 'planImport', () => {
 	describe( 'page titles', () => {
 
 		it( 'keeps the title the file names when it is free', async () => {
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
 
-			expect( importPlan.items[ 0 ] ).toMatchObject( { pageTitle: 'Female', pageTitleTaken: false } );
+			expect( installPlan.items[ 0 ] ).toMatchObject( { pageTitle: 'Female', pageTitleTaken: false } );
 		} );
 
 		it( 'gives the page the Subject\'s ID when the title the file names is taken', async () => {
 			wiki.takenPageTitles.add( 'Female' );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ) );
 
-			expect( importPlan.items[ 0 ] ).toMatchObject( { pageTitle: ID_1, pageTitleTaken: true } );
+			expect( installPlan.items[ 0 ] ).toMatchObject( { pageTitle: ID_1, pageTitleTaken: true } );
 		} );
 
 		it( 'gives the page the Subject\'s ID when the title its label gives is taken', async () => {
 			wiki.takenPageTitles.add( 'female' );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) );
 
-			expect( importPlan.items[ 0 ] ).toMatchObject( { pageTitle: ID_1, pageTitleTaken: true } );
+			expect( installPlan.items[ 0 ] ).toMatchObject( { pageTitle: ID_1, pageTitleTaken: true } );
 		} );
 
 		it( 'leaves titles to a subject-first wiki', async () => {
 			wiki.takenPageTitles.add( 'Female' );
 
-			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ), 'Vocabularies', true );
+			const installPlan = await planOn( wiki, bundleOf( [ [ ID_1, subjectEntry( { pageTitle: 'Female' } ) ] ] ), 'Vocabularies', true );
 
-			expect( importPlan.items[ 0 ] ).toMatchObject( { pageTitle: null, pageTitleTaken: false } );
+			expect( installPlan.items[ 0 ] ).toMatchObject( { pageTitle: null, pageTitleTaken: false } );
 		} );
 
 	} );

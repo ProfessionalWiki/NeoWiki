@@ -8,7 +8,7 @@
 			:records="records"
 			:updating="updating"
 			:from-source="fromSource"
-			@close="onImportClosed"
+			@close="onInstallClosed"
 		/>
 
 		<BundleExporter
@@ -31,7 +31,7 @@
 					v-if="canInstall"
 					action="progressive"
 					:weight="offersSetup ? 'normal' : 'primary'"
-					@click="openImport( null, false )"
+					@click="openInstall( null, false )"
 				>
 					<CdxIcon :icon="cdxIconUpload" />
 					{{ $i18n( 'neowiki-bundle-install-title' ).text() }}
@@ -77,7 +77,7 @@
 					:record="record"
 					:can-install="canInstall"
 					:load-items="() => readOwnedItems( record, reader )"
-					@update="openImport( record, $event )"
+					@update="openInstall( record, $event )"
 				/>
 				<BundleGroup
 					:record="null"
@@ -119,7 +119,7 @@ const loadError = ref<string | null>( null );
 const canInstall = ref( false );
 const updating = shallowRef<InstallRecord | null>( null );
 const fromSource = ref( false );
-// A new reader for each load, so that what an import changed is read anew.
+// A new reader for each load, so that what an install changed is read anew.
 const reader = shallowRef( new CurrentStateReader( repository ) );
 const setupUrl = mw.util.getUrl( 'Special:DataModel/setup' );
 
@@ -139,16 +139,16 @@ function loadUnownedItems(): Promise<DataModelItem[]> {
 	return readUnownedItems( records.value ?? [], reader.value );
 }
 
-function openImport( record: InstallRecord | null, readFromSource: boolean ): void {
+function openInstall( record: InstallRecord | null, readFromSource: boolean ): void {
 	updating.value = record;
 	fromSource.value = readFromSource;
 	show( 'import' );
 }
 
-function onImportClosed( imported: boolean ): void {
+function onInstallClosed( installed: boolean ): void {
 	show( 'overview' );
 
-	if ( imported ) {
+	if ( installed ) {
 		loadRecords();
 	}
 }

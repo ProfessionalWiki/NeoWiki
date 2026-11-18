@@ -1,6 +1,6 @@
 import { ITEM_TYPES, type ItemType } from '../application/ModelBundle';
-import { type ImportItem, type ImportPlan, type ImportStatus, selectedByDefault } from '../application/importPlan';
-import type { ImportOutcome, ItemOutcome } from '../application/importRun';
+import { type InstallItem, type InstallPlan, type InstallStatus, selectedByDefault } from '../application/installPlan';
+import type { InstallOutcome, ItemOutcome } from '../application/installRun';
 import { generatedSubjectName } from 'ext.neowiki';
 
 export const TYPE_HEADINGS = {
@@ -66,7 +66,7 @@ function byText( a: string, b: string ): number {
  * What installing does not settle, which a preview shows without being expanded: what an item would change
  * left unticked, what cannot be installed, and what the bundle no longer has.
  */
-export function needsDecision( item: ImportItem ): boolean {
+export function needsDecision( item: InstallItem ): boolean {
 	return item.status === 'conflict' || item.status === 'removed-upstream' || ( item.action !== null && !selectedByDefault( item ) );
 }
 
@@ -80,7 +80,7 @@ const SUMMARY_TYPES = {
 /**
  * The file's items by type, then what installing it does, as "8 schemas, 30 subjects, all new".
  */
-export function planSummary( plan: ImportPlan ): string {
+export function planSummary( plan: InstallPlan ): string {
 	const fileItems = plan.items.filter( ( item ) => item.upstreamRecord !== null );
 	const counts = ITEM_TYPES
 		.map( ( type ) => [ type, fileItems.filter( ( item ) => item.type === type ).length ] as const )
@@ -97,7 +97,7 @@ interface ActionCounts {
 	readonly left: number;
 }
 
-function actionCounts( items: readonly ImportItem[] ): ActionCounts {
+function actionCounts( items: readonly InstallItem[] ): ActionCounts {
 	const created = items.filter( ( item ) => item.status === 'new' ).length;
 	const updated = items.filter( ( item ) => item.status === 'changed-upstream' ).length;
 	const decided = items.filter( needsDecision ).length;
@@ -109,7 +109,7 @@ function actionCounts( items: readonly ImportItem[] ): ActionCounts {
  * The status the summary line gives every item, as "all new", which their rows then leave out: new when all are,
  * unchanged when installing changes none. Null when the line counts the items apart.
  */
-export function statusSaidBySummary( items: readonly ImportItem[] ): ImportStatus | null {
+export function statusSaidBySummary( items: readonly InstallItem[] ): InstallStatus | null {
 	const { created, left } = actionCounts( items );
 
 	if ( created === items.length ) {
@@ -119,7 +119,7 @@ export function statusSaidBySummary( items: readonly ImportItem[] ): ImportStatu
 	return left === items.length ? 'unchanged' : null;
 }
 
-function actionSummary( items: readonly ImportItem[] ): string[] {
+function actionSummary( items: readonly InstallItem[] ): string[] {
 	const said = statusSaidBySummary( items );
 
 	if ( said === 'new' ) {
@@ -146,7 +146,7 @@ function actionSummary( items: readonly ImportItem[] ): string[] {
 	return parts.filter( ( [ , count ] ) => count > 0 ).map( ( [ key, count ] ) => mw.msg( key, count ) );
 }
 
-export function importStatusText( item: ImportItem ): string {
+export function installStatusText( item: InstallItem ): string {
 	if ( item.status === 'conflict' ) {
 		return mw.msg( 'neowiki-bundle-status-conflict', item.reason ?? '' );
 	}
@@ -174,7 +174,7 @@ export function importStatusText( item: ImportItem ): string {
 /**
  * What a row of the preview says besides its status, each on a line of its own.
  */
-export function importNotes( item: ImportItem ): string[] {
+export function installNotes( item: InstallItem ): string[] {
 	return item.pageTitleTaken ? [ mw.msg( 'neowiki-bundle-page-title-taken', item.pageTitle ?? '' ) ] : [];
 }
 
@@ -189,7 +189,7 @@ interface ResultLine {
  * What an install or update came to, on one line, as "Installed model bundle Vocabularies: 2 items created". When
  * the bundle could not be recorded as installed, the line says that instead.
  */
-export function resultLine( plan: ImportPlan, outcome: ImportOutcome ): ResultLine {
+export function resultLine( plan: InstallPlan, outcome: InstallOutcome ): ResultLine {
 	const failed = outcome.items.filter( ( item ) => item.result === 'failed' ).length;
 	const note = failed === 0 ? null : mw.msg( 'neowiki-bundle-not-written', failed );
 
@@ -223,7 +223,7 @@ function writtenCounts( outcomes: readonly ItemOutcome[] ): string {
 	return counts.length === 0 ? mw.msg( 'neowiki-bundle-count-nothing' ) : counts.join( mw.msg( 'comma-separator' ) );
 }
 
-function doneText( plan: ImportPlan, bundleName: string ): string {
+function doneText( plan: InstallPlan, bundleName: string ): string {
 	if ( plan.record === null ) {
 		return mw.msg( 'neowiki-bundle-installed', bundleName );
 	}

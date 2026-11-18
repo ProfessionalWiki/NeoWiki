@@ -2,19 +2,19 @@ import { PageTitleTakenError } from 'ext.neowiki';
 import { ITEM_TYPES, type ItemType, type SubjectEntry } from './ModelBundle';
 import type { DataModelRepository, InstallRecordRepository } from './DataModelRepository';
 import { type DeclinedItem, FILE_SOURCE, type InstallRecord, isUrlSource, type RecordedItem } from './InstallRecord';
-import type { ImportItem, ImportPlan } from './importPlan';
+import type { InstallItem, InstallPlan } from './installPlan';
 
 export type ItemResult = 'created' | 'replaced' | 'removed' | 'failed';
 
 export interface ItemOutcome {
-	readonly item: ImportItem;
+	readonly item: InstallItem;
 	readonly result: ItemResult;
 	readonly reason: string | null;
 }
 
 type RecordOutcome = { readonly saved: true } | { readonly saved: false; readonly reason: string };
 
-export interface ImportOutcome {
+export interface InstallOutcome {
 	readonly items: readonly ItemOutcome[];
 	readonly record: RecordOutcome;
 }
@@ -30,12 +30,12 @@ export interface RunContext {
  * Writes the chosen items one at a time: Schemas, then Layouts, Mappings and Subjects, then the removals in the
  * opposite order. A failure does not stop the others. The install record is written last.
  */
-export async function runImport(
-	plan: ImportPlan,
+export async function runInstall(
+	plan: InstallPlan,
 	chosen: ReadonlySet<string>,
 	context: RunContext,
 	onProgress?: ( done: number, total: number ) => void,
-): Promise<ImportOutcome> {
+): Promise<InstallOutcome> {
 	const steps = stepsOf( plan, chosen );
 	const outcomes: ItemOutcome[] = [];
 
@@ -53,7 +53,7 @@ export async function runImport(
 }
 
 export interface BundleRun {
-	readonly plan: ImportPlan;
+	readonly plan: InstallPlan;
 	readonly chosen: ReadonlySet<string>;
 	readonly context: RunContext;
 }
@@ -62,22 +62,22 @@ export interface BundleRun {
  * Runs bundles installed together in the order given, each writing its items and then its install record, so
  * that planning them again finds what was written.
  */
-export async function runImports(
+export async function runInstalls(
 	runs: readonly BundleRun[],
 	onProgress?: ( done: number, total: number ) => void,
-): Promise<ImportOutcome[]> {
+): Promise<InstallOutcome[]> {
 	const total = runs.reduce( ( sum, run ) => sum + stepsOf( run.plan, run.chosen ).length, 0 );
-	const outcomes: ImportOutcome[] = [];
+	const outcomes: InstallOutcome[] = [];
 
 	for ( const run of runs ) {
 		const doneBefore = outcomes.reduce( ( sum, outcome ) => sum + outcome.items.length, 0 );
-		outcomes.push( await runImport( run.plan, run.chosen, run.context, ( done ) => onProgress?.( doneBefore + done, total ) ) );
+		outcomes.push( await runInstall( run.plan, run.chosen, run.context, ( done ) => onProgress?.( doneBefore + done, total ) ) );
 	}
 
 	return outcomes;
 }
 
-function stepsOf( plan: ImportPlan, chosen: ReadonlySet<string> ): ImportItem[] {
+function stepsOf( plan: InstallPlan, chosen: ReadonlySet<string> ): InstallItem[] {
 	return [
 		...ordered( plan.items, chosen, [ 'create', 'replace' ], ITEM_TYPES ),
 		...ordered( plan.items, chosen, [ 'remove' ], [ ...ITEM_TYPES ].reverse() ),
@@ -85,17 +85,17 @@ function stepsOf( plan: ImportPlan, chosen: ReadonlySet<string> ): ImportItem[] 
 }
 
 function ordered(
-	items: readonly ImportItem[],
+	items: readonly InstallItem[],
 	chosen: ReadonlySet<string>,
 	actions: readonly string[],
 	types: readonly ItemType[],
-): ImportItem[] {
+): InstallItem[] {
 	return types.flatMap( ( type ) => items.filter(
 		( item ) => item.type === type && item.action !== null && actions.includes( item.action ) && chosen.has( item.id ),
 	) );
 }
 
-async function runStep( item: ImportItem, context: RunContext ): Promise<ItemOutcome> {
+async function runStep( item: InstallItem, context: RunContext ): Promise<ItemOutcome> {
 	try {
 		await ( item.action === 'remove' ? remove( item, context ) : write( item, context ) );
 		return { item, result: resultOf( item ), reason: null };
@@ -104,7 +104,7 @@ async function runStep( item: ImportItem, context: RunContext ): Promise<ItemOut
 	}
 }
 
-function resultOf( item: ImportItem ): ItemResult {
+function resultOf( item: InstallItem ): ItemResult {
 	if ( item.action === 'remove' ) {
 		return 'removed';
 	}
@@ -112,7 +112,7 @@ function resultOf( item: ImportItem ): ItemResult {
 	return item.action === 'create' ? 'created' : 'replaced';
 }
 
-async function write( item: ImportItem, context: RunContext ): Promise<void> {
+async function write( item: InstallItem, context: RunContext ): Promise<void> {
 	const { repository, comment } = context;
 	const content = item.content;
 
@@ -135,7 +135,7 @@ async function write( item: ImportItem, context: RunContext ): Promise<void> {
  * preview found taken did. When the ID is taken too, by the page that removing the Subject left empty, the
  * Subject goes back on that page.
  */
-async function createSubject( item: ImportItem, entry: SubjectEntry, context: RunContext ): Promise<void> {
+async function createSubject( item: InstallItem, entry: SubjectEntry, context: RunContext ): Promise<void> {
 	const titles = context.subjectFirst || item.pageTitle === item.key ? [ item.pageTitle ] : [ item.pageTitle, item.key ];
 	let refusal: PageTitleTakenError | null = null;
 
@@ -163,7 +163,7 @@ async function createSubject( item: ImportItem, entry: SubjectEntry, context: Ru
  * A Schema is removed after the Subjects, so that one whose Subjects were all removed goes too, and one that
  * Subjects still use stays.
  */
-async function remove( item: ImportItem, context: RunContext ): Promise<void> {
+async function remove( item: InstallItem, context: RunContext ): Promise<void> {
 	const { repository, comment } = context;
 
 	switch ( item.type ) {
@@ -182,7 +182,7 @@ async function remove( item: ImportItem, context: RunContext ): Promise<void> {
 	}
 }
 
-async function saveRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], context: RunContext ): Promise<RecordOutcome> {
+async function saveRecord( plan: InstallPlan, outcomes: readonly ItemOutcome[], context: RunContext ): Promise<RecordOutcome> {
 	try {
 		await context.recordRepository.saveInstallRecord( nextRecord( plan, outcomes ), context.comment );
 		return { saved: true };
@@ -197,7 +197,7 @@ async function saveRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], c
  * version recorded before. What the file no longer has leaves the record, removed or not. What the file
  * would have created, had it been ticked, is declined.
  */
-function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[] ): InstallRecord {
+function nextRecord( plan: InstallPlan, outcomes: readonly ItemOutcome[] ): InstallRecord {
 	const results = new Map( outcomes.map( ( outcome ) => [ outcome.item.id, outcome.result ] ) );
 	const metadata = plan.bundle.metadata;
 
@@ -220,11 +220,11 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[] ): Insta
  * A bundle installed from a URL keeps it when a file updates it, so that the wiki goes on checking that URL for
  * other versions.
  */
-function recordedSource( plan: ImportPlan ): string {
+function recordedSource( plan: InstallPlan ): string {
 	return plan.source === FILE_SOURCE && plan.record !== null && isUrlSource( plan.record.source ) ? plan.record.source : plan.source;
 }
 
-function recordedAfter( item: ImportItem, result: ItemResult | undefined ): RecordedItem | null {
+function recordedAfter( item: InstallItem, result: ItemResult | undefined ): RecordedItem | null {
 	if ( item.upstreamRecord === null ) {
 		return null;
 	}
@@ -236,6 +236,6 @@ function recordedAfter( item: ImportItem, result: ItemResult | undefined ): Reco
 	return isAbsent( item ) && result !== 'created' ? null : item.upstreamRecord;
 }
 
-function isAbsent( item: ImportItem ): boolean {
+function isAbsent( item: InstallItem ): boolean {
 	return item.status === 'new' || item.status === 'declined';
 }

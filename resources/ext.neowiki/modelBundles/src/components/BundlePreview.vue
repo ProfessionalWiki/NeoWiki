@@ -45,12 +45,12 @@
 						>
 							{{ itemName( item ) }}
 							<template
-								v-if="shownStatus( item ) !== null || importNotes( item ).length > 0"
+								v-if="shownStatus( item ) !== null || installNotes( item ).length > 0"
 								#description
 							>
 								{{ shownStatus( item ) }}
 								<span
-									v-for="note in importNotes( item )"
+									v-for="note in installNotes( item )"
 									:key="note"
 									class="ext-neowiki-bundle-preview__note"
 								>
@@ -68,7 +68,7 @@
 								class="ext-neowiki-bundle-preview__status"
 							>{{ shownStatus( item ) }}</span>
 							<span
-								v-for="note in importNotes( item )"
+								v-for="note in installNotes( item )"
 								:key="note"
 								class="ext-neowiki-bundle-preview__note"
 							>
@@ -87,10 +87,10 @@
 import { computed } from 'vue';
 import { CdxCheckbox } from '@wikimedia/codex';
 import type { ItemType } from '../application/ModelBundle.ts';
-import type { ImportItem, ImportPlan } from '../application/importPlan.ts';
+import type { InstallItem, InstallPlan } from '../application/installPlan.ts';
 import {
-	importNotes,
-	importStatusText,
+	installNotes,
+	installStatusText,
 	itemName,
 	itemSections,
 	type ItemGroup,
@@ -101,7 +101,7 @@ import {
 import ItemChanges from './ItemChanges.vue';
 
 const props = defineProps<{
-	plan: ImportPlan;
+	plan: InstallPlan;
 	modelValue: ReadonlySet<string>;
 	disabled: boolean;
 	/** Whether to show every item, rather than only those that need a decision. */
@@ -116,11 +116,11 @@ const sections = computed( () => itemSections( props.expanded ? props.plan.items
 const statusOfAll = computed( () => statusSaidBySummary( props.plan.items ) );
 
 // Left out where the bundle's summary line already says it of every item.
-function shownStatus( item: ImportItem ): string | null {
-	return item.status === statusOfAll.value ? null : importStatusText( item );
+function shownStatus( item: InstallItem ): string | null {
+	return item.status === statusOfAll.value ? null : installStatusText( item );
 }
 
-function groupTitle( type: ItemType, group: ItemGroup<ImportItem> ): string {
+function groupTitle( type: ItemType, group: ItemGroup<InstallItem> ): string {
 	const count = group.items.length;
 
 	return type === 'subject' ?
@@ -131,19 +131,19 @@ function groupTitle( type: ItemType, group: ItemGroup<ImportItem> ): string {
 /**
  * A group's heading ticks what may be written, but never a removal: that takes ticking the item itself.
  */
-function tickedTogether( items: readonly ImportItem[] ): ImportItem[] {
+function tickedTogether( items: readonly InstallItem[] ): InstallItem[] {
 	return items.filter( ( item ) => item.action !== null && item.action !== 'remove' );
 }
 
-function isSelected( item: ImportItem ): boolean {
+function isSelected( item: InstallItem ): boolean {
 	return props.modelValue.has( item.id );
 }
 
-function isPartlySelected( items: ImportItem[] ): boolean {
+function isPartlySelected( items: InstallItem[] ): boolean {
 	return items.some( isSelected ) && !items.every( isSelected );
 }
 
-function setSelected( items: ImportItem[], selected: boolean ): void {
+function setSelected( items: InstallItem[], selected: boolean ): void {
 	const chosen = new Set( props.modelValue );
 	items.forEach( ( item ) => selected ? chosen.add( item.id ) : chosen.delete( item.id ) );
 	emit( 'update:modelValue', chosen );

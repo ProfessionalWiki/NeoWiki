@@ -4,18 +4,18 @@ import { isSubjectFirst } from 'ext.neowiki';
 import type { BundleToInstall } from '../application/ModelBundle.ts';
 import type { InstallRecord } from '../application/InstallRecord.ts';
 import { CurrentStateReader } from '../application/CurrentStateReader.ts';
-import { defaultChoice, planImports, type ImportPlan } from '../application/importPlan.ts';
-import { runImports, type ImportOutcome } from '../application/importRun.ts';
+import { defaultChoice, planInstalls, type InstallPlan } from '../application/installPlan.ts';
+import { runInstalls, type InstallOutcome } from '../application/installRun.ts';
 
-interface BundleImport {
+interface BundleInstall {
 	/** One for each bundle, in the order they are installed. */
-	plans: ShallowRef<ImportPlan[] | null>;
+	plans: ShallowRef<InstallPlan[] | null>;
 	/** What is ticked, for each plan. */
 	chosen: Ref<Set<string>[]>;
 	planning: Ref<boolean>;
 	running: Ref<boolean>;
 	progress: Ref<{ done: number; total: number }>;
-	outcomes: ShallowRef<ImportOutcome[] | null>;
+	outcomes: ShallowRef<InstallOutcome[] | null>;
 	error: Ref<string | null>;
 	/**
 	 * Compares the files with the wiki, putting each bundle after those before it in the list; again for other
@@ -25,17 +25,17 @@ interface BundleImport {
 	run: () => Promise<void>;
 }
 
-export function useBundleImport(): BundleImport {
+export function useBundleInstall(): BundleInstall {
 	const repository = ModelBundleServices.getDataModelRepository();
 	const recordRepository = ModelBundleServices.getInstallRecordRepository();
 	const reader = new CurrentStateReader( repository );
 
-	const plans = shallowRef<ImportPlan[] | null>( null );
+	const plans = shallowRef<InstallPlan[] | null>( null );
 	const chosen = ref<Set<string>[]>( [] );
 	const planning = ref( false );
 	const running = ref( false );
 	const progress = ref( { done: 0, total: 0 } );
-	const outcomes = shallowRef<ImportOutcome[] | null>( null );
+	const outcomes = shallowRef<InstallOutcome[] | null>( null );
 	const error = ref<string | null>( null );
 	// Numbers the comparisons asked for, so one answered after a later one cannot replace its newer plans.
 	let preparation = 0;
@@ -46,7 +46,7 @@ export function useBundleImport(): BundleImport {
 		error.value = null;
 
 		try {
-			const prepared = await planImports( bundles, { reader, repository, records, subjectFirst: isSubjectFirst() } );
+			const prepared = await planInstalls( bundles, { reader, repository, records, subjectFirst: isSubjectFirst() } );
 
 			if ( sequence === preparation ) {
 				plans.value = prepared;
@@ -74,7 +74,7 @@ export function useBundleImport(): BundleImport {
 		running.value = true;
 
 		try {
-			outcomes.value = await runImports(
+			outcomes.value = await runInstalls(
 				preparedPlans.map( ( plan, index ) => ( {
 					plan,
 					chosen: chosen.value[ index ],
@@ -94,6 +94,6 @@ export function useBundleImport(): BundleImport {
 	return { plans, chosen, planning, running, progress, outcomes, error, prepare, run };
 }
 
-function summaryOf( plan: ImportPlan ): string {
+function summaryOf( plan: InstallPlan ): string {
 	return mw.msg( plan.record === null ? 'neowiki-bundle-install-summary' : 'neowiki-bundle-update-summary', plan.bundleName );
 }
