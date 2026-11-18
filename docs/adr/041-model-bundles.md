@@ -66,8 +66,8 @@ install bundles, to offer the setup and tell of updates. NeoWiki's Special:Schem
 
 ### Part of NeoWiki's frontend
 
-Built into NeoWiki, Model Bundles added 68 KB of script (16 KB gzipped, some 12%) and 97 messages to the module that
-every page with NeoWiki's interface loads.
+Built into NeoWiki, Model Bundles would add 100 KB of script (24 KB gzipped, some 17%) and 155 messages to the module
+that every page with NeoWiki's interface loads.
 
 ### MediaWiki XML import
 
