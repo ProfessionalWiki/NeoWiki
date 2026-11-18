@@ -59,11 +59,10 @@ export interface DataModelRepository {
 	 */
 	createSubject( id: string, entry: SubjectEntry, pageTitle: string | null, comment: string ): Promise<void>;
 	/**
-	 * Puts the Subject, keeping its ID, on the page titled by its ID as that page's Main Subject, when the page
-	 * holds no Subjects and is no redirect, as deleting the Subject leaves it. False, writing nothing, for any
-	 * other page.
+	 * Puts the Subject, keeping its ID, on the page of that title as that page's Main Subject, when the page holds no
+	 * Subjects and is no redirect, as deleting the Subject leaves it. False, writing nothing, for any other page.
 	 */
-	addSubjectToEmptyIdPage( id: string, entry: SubjectEntry, comment: string ): Promise<boolean>;
+	addSubjectToEmptyPage( pageTitle: string, id: string, entry: SubjectEntry, comment: string ): Promise<boolean>;
 	replaceSubject( id: string, entry: SubjectEntry, comment: string ): Promise<void>;
 	deleteSchema( name: string, comment: string ): Promise<void>;
 	deleteLayout( name: string, comment: string ): Promise<void>;

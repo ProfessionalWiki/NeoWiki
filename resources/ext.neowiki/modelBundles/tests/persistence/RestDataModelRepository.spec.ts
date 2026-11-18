@@ -311,7 +311,7 @@ describe( 'RestDataModelRepository', () => {
 			await expect( repository( http ).deleteSubject( HOST, '' ) ).rejects.toThrow( 'You may not edit this page' );
 		} );
 
-		describe( 'addSubjectToEmptyIdPage', () => {
+		describe( 'addSubjectToEmptyPage', () => {
 
 			/**
 			 * Answers a query for the title given with the page given, and for any other title with a missing page.
@@ -329,17 +329,29 @@ describe( 'RestDataModelRepository', () => {
 				} );
 
 				const added = await repository( http, titleQuery( HOST, { pageid: 9, title: HOST } ) )
-					.addSubjectToEmptyIdPage( HOST, subjectEntry(), 'Install' );
+					.addSubjectToEmptyPage( HOST, HOST, subjectEntry(), 'Install' );
 
 				expect( added ).toBe( true );
 				expect( http.sent.find( ( request ) => request.method === 'POST' )?.body ).toMatchObject( { id: HOST, schema: 'Gender Types' } );
+			} );
+
+			it( 'puts the Subject on the empty page of the title given, in whatever namespace', async () => {
+				const http = new RoutedHttpClient( {
+					[ `GET ${ REST }/neowiki/v0/page/9/subjects` ]: [ 200, { pageId: 9, mainSubjectId: null, subjects: [] } ],
+					[ `POST ${ REST }/neowiki/v0/page/9/mainSubject` ]: [ 201, { status: 'created' } ],
+				} );
+
+				const added = await repository( http, titleQuery( `Subject:${ HOST }`, { pageid: 9, title: `Subject:${ HOST }` } ) )
+					.addSubjectToEmptyPage( `Subject:${ HOST }`, HOST, subjectEntry(), 'Install' );
+
+				expect( added ).toBe( true );
 			} );
 
 			it( 'leaves a redirect alone', async () => {
 				const http = new RoutedHttpClient( {} );
 
 				const added = await repository( http, titleQuery( HOST, { pageid: 9, title: HOST, redirect: true } ) )
-					.addSubjectToEmptyIdPage( HOST, subjectEntry(), 'Install' );
+					.addSubjectToEmptyPage( HOST, HOST, subjectEntry(), 'Install' );
 
 				expect( added ).toBe( false );
 				expect( http.sent ).toEqual( [] );
@@ -353,7 +365,7 @@ describe( 'RestDataModelRepository', () => {
 				} );
 
 				const added = await repository( http, titleQuery( HOST, { pageid: 9, title: HOST } ) )
-					.addSubjectToEmptyIdPage( HOST, subjectEntry(), 'Install' );
+					.addSubjectToEmptyPage( HOST, HOST, subjectEntry(), 'Install' );
 
 				expect( added ).toBe( false );
 				expect( http.sent.map( ( request ) => request.method ) ).toEqual( [ 'GET' ] );

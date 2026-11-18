@@ -154,7 +154,10 @@ async function createSubject( item: ImportItem, entry: SubjectEntry, context: Ru
 		}
 	}
 
-	if ( !await context.repository.addSubjectToEmptyIdPage( item.key, entry, context.comment ) ) {
+	// The page the last title took, which on a subject-first wiki is in the namespace of Subject pages.
+	const takenPage = ( refusal as PageTitleTakenError ).pageTitle;
+
+	if ( !await context.repository.addSubjectToEmptyPage( takenPage, item.key, entry, context.comment ) ) {
 		throw refusal;
 	}
 }

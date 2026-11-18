@@ -295,8 +295,8 @@ export class RestDataModelRepository implements DataModelRepository {
 		failUnlessOk( response, body );
 	}
 
-	public async addSubjectToEmptyIdPage( id: string, entry: SubjectEntry, comment: string ): Promise<boolean> {
-		const pageId = await this.emptyPageId( id );
+	public async addSubjectToEmptyPage( pageTitle: string, id: string, entry: SubjectEntry, comment: string ): Promise<boolean> {
+		const pageId = await this.emptyPageId( pageTitle );
 
 		if ( pageId === null ) {
 			return false;

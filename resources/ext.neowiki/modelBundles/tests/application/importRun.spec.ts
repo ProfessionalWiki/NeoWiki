@@ -138,6 +138,7 @@ describe( 'runImport', () => {
 		const UNNAMED = subjectEntry( { label: null } );
 
 		async function removeAndInstallAgain( subjectFirst: boolean ): Promise<ImportOutcome> {
+			wiki.subjectFirst = subjectFirst;
 			await run( await planOn( wiki, bundleOf( [ [ ID_1, UNNAMED ] ] ), 'Vocabularies', subjectFirst ), undefined, subjectFirst );
 			await run( await planOn( wiki, bundleOf( [] ), 'Vocabularies', subjectFirst ), [ itemId( 'subject', ID_1 ) ], subjectFirst );
 
@@ -151,6 +152,7 @@ describe( 'runImport', () => {
 
 		it( 'goes back on the page its removal left on a subject-first wiki', async () => {
 			expect( results( await removeAndInstallAgain( true ) ) ).toEqual( [ `created ${ ID_1 }` ] );
+			expect( wiki.writes ).toEqual( [ `create subject:${ ID_1 }`, `delete subject:${ ID_1 }`, `create subject:${ ID_1 } on Subject:${ ID_1 }` ] );
 		} );
 
 	} );

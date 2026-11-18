@@ -29,6 +29,9 @@ export class InMemoryDataModel implements DataModelRepository, InstallRecordRepo
 	/** Standalone Subjects, their Dependent Subjects inside. */
 	public readonly subjects = new Map<string, SubjectEntry>();
 
+	/** Whether the wiki is subject-first, which titles each Subject's own page by its ID, in the Subject namespace. */
+	public subjectFirst = false;
+
 	public readonly takenPageTitles = new Set<string>();
 
 	/** Of pages left without Subjects, as deleting a Subject leaves its page. */
@@ -167,7 +170,7 @@ export class InMemoryDataModel implements DataModelRepository, InstallRecordRepo
 	}
 
 	public async createSubject( id: string, entry: SubjectEntry, pageTitle: string | null ): Promise<void> {
-		const title = pageTitle ?? entry.label ?? id;
+		const title = this.subjectFirst ? `Subject:${ id }` : pageTitle ?? entry.label ?? id;
 
 		if ( this.takenPageTitles.has( title ) ) {
 			throw new PageTitleTakenError( title );
@@ -179,14 +182,14 @@ export class InMemoryDataModel implements DataModelRepository, InstallRecordRepo
 		this.subjects.set( id, { ...entry, pageTitle: null } );
 	}
 
-	public async addSubjectToEmptyIdPage( id: string, entry: SubjectEntry ): Promise<boolean> {
-		if ( !this.emptyPageTitles.has( id ) ) {
+	public async addSubjectToEmptyPage( pageTitle: string, id: string, entry: SubjectEntry ): Promise<boolean> {
+		if ( !this.emptyPageTitles.has( pageTitle ) ) {
 			return false;
 		}
 
-		this.write( 'create', `subject:${ id }`, ` on ${ id }` );
-		this.emptyPageTitles.delete( id );
-		this.pageTitles.set( id, id );
+		this.write( 'create', `subject:${ id }`, ` on ${ pageTitle }` );
+		this.emptyPageTitles.delete( pageTitle );
+		this.pageTitles.set( id, pageTitle );
 		this.subjects.set( id, { ...entry, pageTitle: null } );
 		return true;
 	}
