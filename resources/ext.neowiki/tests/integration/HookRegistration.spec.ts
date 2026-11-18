@@ -108,16 +108,16 @@ describe( 'ext.neowiki module load', () => {
 			component: markRaw( { render: (): null => null } ),
 		} );
 		const notice = { render: (): null => null };
-		receivedRegistrar!.registerOverviewNotice( notice );
+		receivedRegistrar!.registerOverviewNotice( notice, true );
 		const schemasNotice = { render: (): null => null };
-		receivedRegistrar!.registerSchemasNotice( schemasNotice );
+		receivedRegistrar!.registerSchemasNotice( schemasNotice, false );
 
 		const ext = NeoWikiExtension.getInstance();
 		expect( ext.getPropertyTypeRegistry().getTypeNames() ).toContain( 'boot-fake' );
 		expect( ext.getTypeSpecificComponentRegistry().getPropertyTypes() ).toContain( 'boot-fake' );
 		expect( ext.getViewTypeRegistry().hasType( 'boot-fake-view' ) ).toBe( true );
-		expect( ext.getOverviewNotices() ).toContain( notice );
-		expect( ext.getSchemasNotices() ).toContain( schemasNotice );
+		expect( ext.getOverviewNotices() ).toContainEqual( { component: notice, replacesNote: true } );
+		expect( ext.getSchemasNotices() ).toContainEqual( { component: schemasNotice, replacesNote: false } );
 	} );
 
 	async function loadNeoWikiAndLetItsUiStart(): Promise<void> {

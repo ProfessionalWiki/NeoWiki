@@ -1,9 +1,10 @@
 import { enableAutoUnmount, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type Component, h, ref } from 'vue';
+import { h, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton, CdxCard, CdxMessage } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -36,20 +37,14 @@ const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Schemas', '/wik
 let pinia: ReturnType<typeof createPinia>;
 
 // A notice that takes the place of the first steps, as the setup of a data model does on a wiki without one.
-const FIRST_STEPS_REPLACEMENT: Component = {
-	emits: [ 'replacesFirstSteps' ],
-	setup: ( _props: unknown, { emit }: { emit: ( event: 'replacesFirstSteps', replaces: boolean ) => void } ) => {
-		emit( 'replacesFirstSteps', true );
-		return () => h( 'p', 'Set up your data model' );
-	},
-};
+const FIRST_STEPS_REPLACEMENT: RegisteredNotice = { component: { render: () => h( 'p', 'Set up your data model' ) }, replacesNote: true };
 
 interface OverviewProps {
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
 	wikiHasSubjects: boolean;
 	extensionLinks: { page: string; label: string; description: string }[];
-	notices: Component[];
+	notices: RegisteredNotice[];
 }
 
 function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
@@ -206,7 +201,9 @@ describe( 'OverviewPage', () => {
 	} );
 
 	it( 'shows the notices other extensions register above the map', async () => {
-		const wrapper = mountPage( { notices: [ { render: () => h( 'p', { class: 'test-notice' }, 'Updates are available' ) } ] } );
+		const wrapper = mountPage( { notices: [
+			{ component: { render: () => h( 'p', { class: 'test-notice' }, 'Updates are available' ) }, replacesNote: false },
+		] } );
 		await flushPromises();
 
 		expect( precedes( wrapper.find( '.test-notice' ).element, wrapper.findComponent( CdxCard ).element ) ).toBe( true );

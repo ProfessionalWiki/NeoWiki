@@ -19,8 +19,11 @@ function withModelBundleServices( component: Component ): Component {
 
 mw.hook( 'neowiki.registration' ).add( ( registrar: FrontendRegistrar ) => {
 	const notice = withModelBundleServices( ModelBundlesNotice );
-	registrar.registerOverviewNotice( notice );
-	registrar.registerSchemasNotice( notice );
+	// Set by the page for a user who may install bundles; the notice offers the setup then.
+	const setupOffered = mw.config.get( 'wgNeoWikiModelBundlesSetupOffered' ) === true;
+
+	registrar.registerOverviewNotice( notice, setupOffered );
+	registrar.registerSchemasNotice( notice, setupOffered );
 } );
 
 onUiStart( () => {

@@ -1,4 +1,4 @@
-import type { Component } from 'vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
 import { CurrentPageSubjectPermissionHints } from '@/persistence/CurrentPageSubjectPermissionHints.ts';
 import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
@@ -202,15 +202,15 @@ export class NeoWikiExtension {
 		return registry;
 	}
 
-	private readonly overviewNotices: Component[] = [];
+	private readonly overviewNotices: RegisteredNotice[] = [];
 
-	public getOverviewNotices(): Component[] {
+	public getOverviewNotices(): RegisteredNotice[] {
 		return this.overviewNotices;
 	}
 
-	private readonly schemasNotices: Component[] = [];
+	private readonly schemasNotices: RegisteredNotice[] = [];
 
-	public getSchemasNotices(): Component[] {
+	public getSchemasNotices(): RegisteredNotice[] {
 		return this.schemasNotices;
 	}
 

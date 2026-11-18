@@ -15,10 +15,9 @@
 		</div>
 
 		<component
-			:is="notice"
+			:is="notice.component"
 			v-for="( notice, index ) in notices"
 			:key="index"
-			@replaces-first-steps="setReplacesFirstSteps( index, $event )"
 		/>
 
 		<CdxMessage
@@ -56,7 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import { type Component, computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import { CdxButton, CdxCard, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
@@ -130,7 +130,7 @@ const props = defineProps<{
 	/** Pages other extensions add, with their label and description in the reader's language. */
 	extensionLinks: { page: string; label: string; description: string }[];
 	/** What other extensions show above the cards. */
-	notices: Component[];
+	notices: RegisteredNotice[];
 }>();
 
 const subjectStore = useSubjectStore();
@@ -138,16 +138,15 @@ const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPer
 
 const permissionKnown = ref( false );
 
-// The notices that take the place of the note, by their position.
-const firstStepsReplacements = reactive( new Set<number>() );
+const firstStepsReplaced = computed( () => props.notices.some( ( notice ) => notice.replacesNote ) );
 
 // The note points at the create button, so only those offered the button get it.
-const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value && firstStepsReplacements.size === 0 );
+const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value && !firstStepsReplaced.value );
 
 // On a wiki without Subjects the table waits for the permission check, so it never loads for a user who gets the note,
 // nor for one who gets a notice in its place.
 const showsRecentSubjects = computed(
-	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value && firstStepsReplacements.size === 0 )
+	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value && !firstStepsReplaced.value )
 );
 
 // The puzzle stands for an extension, whose pages are mapped after NeoWiki's own.
@@ -160,14 +159,6 @@ const pageLinks = computed( () => [
 
 function inReaderLanguage( link: PageLink ): PageLink {
 	return { ...link, label: mw.msg( link.label ), description: mw.msg( link.description ) };
-}
-
-function setReplacesFirstSteps( index: number, replaces: boolean ): void {
-	if ( replaces ) {
-		firstStepsReplacements.add( index );
-	} else {
-		firstStepsReplacements.delete( index );
-	}
 }
 
 function pageUrl( page: string ): string {

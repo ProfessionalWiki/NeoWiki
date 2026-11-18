@@ -1,6 +1,7 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { type Component, h, ref } from 'vue';
+import { h, ref } from 'vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
@@ -115,6 +116,10 @@ function neverLands(): Mock<() => Promise<never>> {
 	} ) );
 }
 
+function notice( replacesNote: boolean ): RegisteredNotice {
+	return { component: { render: () => h( 'p', { class: 'test-notice' }, 'Set up your data model' ) }, replacesNote };
+}
+
 function listSchemas( names: string[] ): void {
 	schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( summaries( names ) );
 }
@@ -125,7 +130,7 @@ interface PageOptions {
 	subjectSummaryLookup?: SubjectSummaryLookup;
 	/** The counts of a reader who sees them; a reader who sees none without it. */
 	subjectCountLookup?: SubjectCountLookup;
-	notices?: Component[];
+	notices?: RegisteredNotice[];
 }
 
 function mountPage( options: PageOptions = {} ): VueWrapper {
@@ -414,10 +419,18 @@ describe( 'SchemasPage', () => {
 
 	it( 'shows the notices other extensions register above the Schemas', async () => {
 		listSchemas( [] );
-		const wrapper = mountPage( { notices: [ { render: () => h( 'p', { class: 'test-notice' }, 'Set up your data model' ) } ] } );
+		const wrapper = mountPage( { notices: [ notice( false ) ] } );
 		await flushPromises();
 
-		expect( wrapper.find( '.test-notice' ).exists() ).toBe( true );
+		expect( [ wrapper.find( '.test-notice' ).exists(), wrapper.text().includes( 'neowiki-schemas-empty' ) ] ).toEqual( [ true, true ] );
+	} );
+
+	it( 'leaves out that the wiki has no Schemas while a notice takes the place of that note', async () => {
+		listSchemas( [] );
+		const wrapper = mountPage( { notices: [ notice( true ) ] } );
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-empty' );
 	} );
 
 	it( 'shows that the Schemas are loading, rather than that there are none', async () => {

@@ -103,10 +103,13 @@ is in place before it reads any data, and a slow module delays it. It does not w
 
 ### Notices on Special:NeoWiki and Special:Schemas
 
-In the `neowiki.registration` hook, `registrar.registerOverviewNotice( component )` shows the component above the
-cards of Special:NeoWiki, and `registrar.registerSchemasNotice( component )` above the Schemas of Special:Schemas.
-While an overview notice emits `replacesFirstSteps` with `true`, the note that tells a new wiki how to start is left
-out. Load the notice's module on those pages through the `NeoWikiGetFrontendModules` hook. Example:
+In the `neowiki.registration` hook, `registrar.registerOverviewNotice( component, replacesFirstSteps )` shows the
+component above the cards of Special:NeoWiki, and `registrar.registerSchemasNotice( component, replacesEmptyNote )`
+above the Schemas of Special:Schemas. With `true`, the notice takes the place of the note that tells a new wiki how to
+start, or of the note that the wiki has no Schemas. Load the notice's module on those pages through the
+`NeoWikiGetFrontendModules` hook. Example:
+[`modelBundles.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/modelBundles/src/modelBundles.ts)
+registers
 [`ModelBundlesNotice.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/modelBundles/src/components/ModelBundlesNotice.vue).
 
 ### Links on Special:NeoWiki

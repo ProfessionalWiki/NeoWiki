@@ -29,19 +29,13 @@ import { cdxIconPuzzle } from '@wikimedia/codex-icons';
 import { ModelBundleServices } from '../ModelBundleServices.ts';
 import { otherVersionAtSource } from '../persistence/sourceVersion.ts';
 
-const emit = defineEmits<{
-	replacesFirstSteps: [ replaces: boolean ];
-}>();
-
 const recordRepository = ModelBundleServices.getInstallRecordRepository();
 
-// Set by the page for a user who may install model bundles, while the wiki has no Schemas.
+// Set by the page for a user who may install model bundles, while the wiki has no Schemas and no installed bundle.
 const setupOffered = mw.config.get( 'wgNeoWikiModelBundlesSetupOffered' ) === true;
 const setupUrl = mw.util.getUrl( 'Special:DataModel/setup' );
 const dataModelUrl = mw.util.getUrl( 'Special:DataModel' );
 const updateCount = ref( 0 );
-
-emit( 'replacesFirstSteps', setupOffered );
 
 onMounted( async () => {
 	try {

@@ -40,7 +40,6 @@ describe( 'ModelBundlesNotice', () => {
 		const wrapper = await mountNotice( true );
 
 		expect( wrapper.find( 'a.cdx-card' ).attributes( 'href' ) ).toBe( '/wiki/Special:DataModel/setup' );
-		expect( wrapper.emitted( 'replacesFirstSteps' ) ).toEqual( [ [ true ] ] );
 	} );
 
 	it( 'offers no setup when the page does not offer it', async () => {
@@ -49,7 +48,6 @@ describe( 'ModelBundlesNotice', () => {
 		const wrapper = await mountNotice( false, [ installed( [], [], { name: 'Agents', version: '1', source: 'https://example.org/Agents.json' } ) ] );
 
 		expect( wrapper.find( '.cdx-card' ).exists() ).toBe( false );
-		expect( wrapper.emitted( 'replacesFirstSteps' ) ).toEqual( [ [ false ] ] );
 	} );
 
 	it( 'counts the installed bundles with another version at their source, leading to the data model', async () => {
