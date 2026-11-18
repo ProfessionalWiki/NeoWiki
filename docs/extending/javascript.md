@@ -55,6 +55,10 @@ nw.NeoWikiServices.registerServices( app );
 app.mount( '#my-mount-point' );
 ```
 
+To mount on a page where NeoWiki's UI starts too, mount in `nw.onUiStart( initialize )`. It calls `initialize` once
+the modules the `NeoWikiGetFrontendModules` hook names have registered their types and the page's HTML has been
+parsed, or at once when the UI has started, so the values your app reads know every Property Type.
+
 Examples: [`resources/createSubject/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/createSubject),
 [`resources/editMainSubject/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/editMainSubject), and
 [`resources/subjectFinder/`](https://github.com/ProfessionalWiki/NeoWiki/tree/master/tests/RedHerb/resources/subjectFinder).

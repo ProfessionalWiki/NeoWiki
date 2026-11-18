@@ -101,6 +101,21 @@ JavaScript with no build step; [TypeScript](javascript.md#authoring-in-typescrip
 NeoWiki's UI starts once the modules this hook names have loaded or failed to load, so what they register as they run
 is in place before it reads any data, and a slow module delays it. It does not wait for a module you load yourself.
 
+### Links on Special:NeoWiki
+
+Special:NeoWiki offers a card for each page your `extension.json` lists under `OverviewLinks`, after NeoWiki's own,
+with your messages as its label and description:
+
+```json
+"attributes": {
+	"NeoWiki": {
+		"OverviewLinks": [
+			{ "page": "Special:MyPage", "label": "myext-overview-label", "description": "myext-overview-description" }
+		]
+	}
+}
+```
+
 ## Internal surfaces
 
 Not for extensions to build on, however reachable:
