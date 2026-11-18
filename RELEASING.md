@@ -23,8 +23,8 @@ git show --stat 0.1.0-rc.1
 
 The script builds on origin's master head; to build on an earlier master commit, pass it as a second argument. It
 prints the master commit it used, which should be the one from step 1, and `git show` should list only
-`Docker/image-tag`, `resources/ext.neowiki/dist/neowiki.css` and `resources/ext.neowiki/dist/neowiki.js`. If anything
-is off, run `git tag -d 0.1.0-rc.1`: nothing is pushed yet. Otherwise:
+`Docker/image-tag` and the CSS and JavaScript files of NeoWiki and of Model Bundles in `resources/ext.neowiki/dist/`. If
+anything is off, run `git tag -d 0.1.0-rc.1`: nothing is pushed yet. Otherwise:
 
 ```bash
 git push origin refs/tags/0.1.0-rc.1

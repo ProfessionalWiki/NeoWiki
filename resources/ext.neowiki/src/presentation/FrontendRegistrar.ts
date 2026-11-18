@@ -1,3 +1,4 @@
+import { type Component, markRaw } from 'vue';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import type { PropertyTypeRegistration } from '@/domain/PropertyTypeRegistration';
@@ -11,6 +12,15 @@ import { PropertyTypeAdapter } from '@/presentation/PropertyTypeAdapter';
  * provide() to the Vue app — the same registry instances, guaranteed by
  * memoization on NeoWikiExtension / Neo.
  */
+/**
+ * A component another extension shows on one of NeoWiki's pages, and whether it takes the place of the note the page
+ * shows otherwise.
+ */
+export interface RegisteredNotice {
+	readonly component: Component;
+	readonly replacesNote: boolean;
+}
+
 export class FrontendRegistrar {
 
 	private uiStarted = false;
@@ -19,6 +29,8 @@ export class FrontendRegistrar {
 		private readonly componentRegistry: TypeSpecificComponentRegistry,
 		private readonly propertyTypeRegistry: PropertyTypeRegistry,
 		private readonly viewTypeRegistry: ViewTypeRegistry,
+		private readonly overviewNotices: RegisteredNotice[],
+		private readonly schemasNotices: RegisteredNotice[],
 	) {
 	}
 
@@ -42,6 +54,22 @@ export class FrontendRegistrar {
 
 	public registerViewType( registration: ViewTypeRegistration ): void {
 		this.viewTypeRegistry.registerType( registration.typeName, registration.component );
+	}
+
+	/**
+	 * Shows the component above the cards of Special:NeoWiki, in place of the note that tells a new wiki how to start
+	 * when it replaces the first steps.
+	 */
+	public registerOverviewNotice( component: Component, replacesFirstSteps: boolean ): void {
+		this.overviewNotices.push( { component: markRaw( component ), replacesNote: replacesFirstSteps } );
+	}
+
+	/**
+	 * Shows the component above the Schemas of Special:Schemas, in place of the note that the wiki has none when it
+	 * replaces that note.
+	 */
+	public registerSchemasNotice( component: Component, replacesEmptyNote: boolean ): void {
+		this.schemasNotices.push( { component: markRaw( component ), replacesNote: replacesEmptyNote } );
 	}
 
 	public markUiStarted(): void {

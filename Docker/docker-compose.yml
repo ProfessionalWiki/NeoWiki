@@ -54,6 +54,7 @@ services:
       # Empty means "no SMTP" to SettingsTemplate.php (set by the Makefile when the
       # mailcatcher service is deselected); unset means "use the mode's default".
       - MW_SMTP_HOST
+      - NEOWIKI_MODEL_BUNDLES
     healthcheck:
       test: "curl -fs http://localhost:80/wiki/Special:Version | grep -q 'Jeroen De Dauw'"
       interval: 60s

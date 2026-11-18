@@ -46,6 +46,19 @@ export function parseSchemaExport( text: string ): Schema[] {
 	return entries.map( ( [ name, json ] ) => readSchema( name, json ) );
 }
 
+// What the files of Special:DataModel, from the Model Bundles extension, hold besides Schemas.
+const MODEL_BUNDLE_KEYS = [ 'bundle', 'layouts', 'mappings', 'subjects' ];
+
+/**
+ * Whether the file also holds a model bundle's metadata, Layouts, Mappings or Subjects, which
+ * parseSchemaExport leaves out.
+ */
+export function holdsMoreThanSchemas( text: string ): boolean {
+	const file = parseJson( text );
+
+	return isJsonObject( file ) && MODEL_BUNDLE_KEYS.some( ( key ) => key in file );
+}
+
 function parseJson( text: string ): unknown {
 	try {
 		return JSON.parse( text );

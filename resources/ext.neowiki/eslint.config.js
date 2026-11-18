@@ -97,6 +97,20 @@ export default defineConfig( [
 	},
 	{
 		files: [
+			'modelBundles/src/**/*.ts',
+			'modelBundles/src/**/*.vue'
+		],
+		rules: {
+			'no-restricted-imports': [ 'error', {
+				patterns: [ {
+					group: [ '@/*', '../../*' ],
+					message: 'Model Bundles is a module of its own that reaches NeoWiki through require( \'ext.neowiki\' ), so a page loads NeoWiki once: import from ext.neowiki.'
+				} ]
+			} ]
+		}
+	},
+	{
+		files: [
 			'src/infrastructure/**/*.ts',
 			'src/persistence/*.ts'
 		],
@@ -106,7 +120,8 @@ export default defineConfig( [
 	},
 	{
 		files: [
-			'tests/**/*.ts'
+			'tests/**/*.ts',
+			'modelBundles/tests/**/*.ts'
 		],
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'off'

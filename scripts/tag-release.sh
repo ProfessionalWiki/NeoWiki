@@ -9,7 +9,7 @@
 set -euo pipefail
 
 BUNDLE_DIR=resources/ext.neowiki/dist
-BUNDLE_FILES=( neowiki.css neowiki.js )
+BUNDLE_FILES=( modelBundles.css modelBundles.js neowiki.css neowiki.js )
 IMAGE_TAG_FILE=Docker/image-tag
 ARTIFACT=frontend-bundle
 MASTER=refs/remotes/origin/master

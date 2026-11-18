@@ -102,6 +102,8 @@ export DECOY_DIR="$WORK/decoy"
 mkdir "$DECOY_DIR"
 echo 'console.log( "decoy" );' > "$DECOY_DIR/neowiki.js"
 echo '.decoy {}' > "$DECOY_DIR/neowiki.css"
+echo 'console.log( "decoy" );' > "$DECOY_DIR/modelBundles.js"
+echo '.decoy {}' > "$DECOY_DIR/modelBundles.css"
 
 # The fixture every case copies: an origin whose master has the commits $FIRST and
 # $SECOND, a clone of it, and the artifact of $SECOND's run.
@@ -121,6 +123,8 @@ git -C "$TEMPLATE/clone" push -q origin master
 mkdir "$TEMPLATE/artifact"
 echo 'console.log( "built" );' > "$TEMPLATE/artifact/neowiki.js"
 echo '.built {}' > "$TEMPLATE/artifact/neowiki.css"
+echo 'console.log( "built" );' > "$TEMPLATE/artifact/modelBundles.js"
+echo '.built {}' > "$TEMPLATE/artifact/modelBundles.css"
 
 # Sets $ORIGIN, $CLONE and $ARTIFACT_DIR to a fresh copy of the fixture.
 setup_case() {
@@ -200,7 +204,7 @@ setup_case head
 run_sut 0.1.0
 assert_eq "Parent is master's head" "$(tag_parent 0.1.0)" "$SECOND"
 assert_eq "Adds only the bundle and the image tag" "$(added_files "$SECOND" 0.1.0)" \
-    "Docker/image-tag $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
+    "Docker/image-tag $BUNDLE_DIR/modelBundles.css $BUNDLE_DIR/modelBundles.js $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
 assert_eq "Names the version's demo image" "$(git -C "$CLONE" show 0.1.0:Docker/image-tag 2>&1)" '0.1.0'
 assert_eq "Holds the successful master run's JavaScript" \
     "$(git -C "$CLONE" show "0.1.0:$BUNDLE_DIR/neowiki.js" 2>&1)" 'console.log( "built" );'
@@ -225,7 +229,7 @@ BUILT_COMMIT=$FIRST
 run_sut 0.1.0 "$FIRST"
 assert_eq "Parent is the given commit" "$(tag_parent 0.1.0)" "$FIRST"
 assert_eq "Adds only the bundle and the image tag to it" "$(added_files "$FIRST" 0.1.0)" \
-    "Docker/image-tag $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
+    "Docker/image-tag $BUNDLE_DIR/modelBundles.css $BUNDLE_DIR/modelBundles.js $BUNDLE_DIR/neowiki.css $BUNDLE_DIR/neowiki.js "
 
 echo
 color '36' "Case 4: the default is origin's current master, whatever the clone tracks"

@@ -228,8 +228,8 @@ rejected with `400`, and so is a Statement whose key breaks a [property name rul
 Statement keys are not checked for near-duplicates. For schema/value validation outcomes see
 [Validation Codes](validation-codes.md).
 
-A relation may omit `id`; the server generates one. The Subject's `id` and `schema` are immutable and ignored if
-sent, as are its page fields on these endpoints: the page a Subject is on changes only through
+A relation may omit `id`; the server generates one. A body that sends the Subject's `id`, `schema` or page fields is
+refused with `400`: the first two never change, and the page a Subject is on changes only through
 [the move endpoint](rest-api.md).
 
 ### Writing one Statement

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { exportSchemas, parseSchemaExport } from '@/components/SchemasPage/schemaExport.ts';
+import { exportSchemas, holdsMoreThanSchemas, parseSchemaExport } from '@/components/SchemasPage/schemaExport.ts';
 import { InMemorySchemaLookup } from '@/application/SchemaLookup.ts';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { newSchema } from '@/TestHelpers.ts';
@@ -114,5 +114,24 @@ describe( 'parseSchemaExport', () => {
 
 		expect( () => parseSchemaExport( text ) )
 			.toThrow( 'neowiki-schemas-import-error-unreadable-schemaMuseumInvalid severity: "fatal"' );
+	} );
+} );
+
+describe( 'holdsMoreThanSchemas', () => {
+	it.each( [
+		[ 'a model bundle\'s metadata', { bundle: { name: 'Vocabularies' } } ],
+		[ 'Layouts', { layouts: { 'Museum card': { schema: 'Museum', type: 'infobox' } } } ],
+		[ 'Mappings', { mappings: { EDM: { schemas: {}, version: 1 } } } ],
+		[ 'Subjects', { subjects: { s1demo1aaaaaaa1: { schema: 'Museum', statements: {} } } } ],
+	] )( 'tells a file that also holds %s', ( _case, more ) => {
+		expect( holdsMoreThanSchemas( JSON.stringify( { schemas: {}, ...more } ) ) ).toBe( true );
+	} );
+
+	it( 'tells a file of Schemas only', () => {
+		expect( holdsMoreThanSchemas( fileWithSchemas( { Museum: { propertyDefinitions: {} } } ) ) ).toBe( false );
+	} );
+
+	it( 'leaves out keys the file format does not name', () => {
+		expect( holdsMoreThanSchemas( JSON.stringify( { schemas: {}, comment: 'Exported for the Rijksmuseum' } ) ) ).toBe( false );
 	} );
 } );

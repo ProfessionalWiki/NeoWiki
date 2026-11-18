@@ -61,7 +61,7 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
  * extensions can render in dialogs of their own; `ext-neowiki-view` marks the on-page view placeholder.
  * Focusable Codex UI NeoWiki renders must sit inside one of these.
  */
-function mountNeoWikiApp( app: App, element: Element ): void {
+export function mountNeoWikiApp( app: App, element: Element ): void {
 	element.classList.add( 'ext-neowiki-ui' );
 	app.mount( element );
 }
@@ -73,6 +73,8 @@ function newFrontendRegistrar(): FrontendRegistrar {
 		ext.getTypeSpecificComponentRegistry(),
 		ext.getPropertyTypeRegistry(),
 		ext.getViewTypeRegistry(),
+		ext.getOverviewNotices(),
+		ext.getSchemasNotices(),
 	);
 }
 
@@ -139,7 +141,7 @@ function initializeSchemasPage(): void {
 	if ( schemasPage !== null ) {
 		const ext = NeoWikiExtension.getInstance();
 
-		const app = createMwApp( SchemasPage ).directive( 'tooltip', CdxTooltip );
+		const app = createMwApp( SchemasPage, { notices: ext.getSchemasNotices() } ).directive( 'tooltip', CdxTooltip );
 		app.use( ext.getPinia() );
 		NeoWikiServices.registerServices( app );
 		mountNeoWikiApp( app, schemasPage );
@@ -286,9 +288,11 @@ function initializeOverviewPage(): void {
 		const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
 		const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
 		const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
+		const extensionLinks = JSON.parse( overviewPage.dataset.mwNeowikiExtensionLinks ?? '[]' );
+		const notices = ext.getOverviewNotices();
 
 		// The Subject creator this page opens reaches value inputs that use v-tooltip.
-		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects } )
+		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects, extensionLinks, notices } )
 			.directive( 'tooltip', CdxTooltip );
 		app.use( ext.getPinia() );
 		NeoWikiServices.registerServices( app );
@@ -316,7 +320,24 @@ function initializeConfigEditor(): void {
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
+const extensionInitializers: ( () => void )[] = [];
+let uiStarted = false;
+
+/**
+ * Runs the initializer as NeoWiki's UI starts, or at once when it has started: once the modules named
+ * in the NeoWikiGetFrontendModules hook have registered their types, and the page's HTML has been parsed.
+ */
+export function onUiStart( initialize: () => void ): void {
+	if ( uiStarted ) {
+		queueMicrotask( initialize );
+	} else {
+		extensionInitializers.push( initialize );
+	}
+}
+
 function initializeUi(): void {
+	uiStarted = true;
+
 	// Each in its own microtask, so that one that throws leaves the others running.
 	[
 		initializeNeoWikiApp,
@@ -332,6 +353,7 @@ function initializeUi(): void {
 		initializeSubjectCreatorButtons,
 		initializeOverviewPage,
 		initializeConfigEditor,
+		...extensionInitializers,
 	].forEach( ( initialize ) => queueMicrotask( initialize ) );
 }
 

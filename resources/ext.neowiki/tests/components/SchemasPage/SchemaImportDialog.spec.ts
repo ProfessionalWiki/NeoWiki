@@ -19,7 +19,7 @@ function item( name: string, status: SchemaImportStatus = 'new' ): SchemaImportI
 
 function mountDialog( items: SchemaImportItem[] ): VueWrapper {
 	return mount( SchemaImportDialog, {
-		props: { items },
+		props: { items, leavesOutOtherItems: false },
 		attachTo: document.body,
 		global: {
 			plugins: [ pinia ],
