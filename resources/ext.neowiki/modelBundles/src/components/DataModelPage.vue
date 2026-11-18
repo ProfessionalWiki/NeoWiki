@@ -19,7 +19,6 @@
 		<DataModelSetup
 			v-else-if="shown === 'setup' && records !== null"
 			:records="records"
-			@close="onImportClosed"
 		/>
 
 		<template v-else>
@@ -55,12 +54,12 @@
 				class="ext-neowiki-data-model__setup"
 			>
 				<p>{{ $i18n( 'neowiki-bundle-setup-empty-state' ).text() }}</p>
-				<CdxButton
-					action="progressive"
-					@click="show( 'setup' )"
+				<a
+					class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive"
+					:href="setupUrl"
 				>
 					{{ $i18n( 'neowiki-bundle-setup-title' ).text() }}
-				</CdxButton>
+				</a>
 			</CdxMessage>
 
 			<CdxProgressBar
@@ -119,6 +118,7 @@ const updating = shallowRef<InstallRecord | null>( null );
 const fromSource = ref( false );
 // A new reader for each load, so that what an import changed is read anew.
 const reader = shallowRef( new CurrentStateReader( repository ) );
+const setupUrl = mw.util.getUrl( 'Special:DataModel/setup' );
 
 async function loadRecords(): Promise<void> {
 	records.value = null;

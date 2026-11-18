@@ -68,7 +68,8 @@
 				"vue",
 				"pinia",
 				"mediawiki.api",
-				"mediawiki.util"
+				"mediawiki.util",
+				"mediawiki.storage"
 			],
 			"packageFiles": [
 				"resources/ext.neowiki/dist/modelBundles.js",
@@ -131,6 +132,7 @@
 				"neowiki-bundle-catalog-missing-requirement",
 				"neowiki-bundle-catalog-wrong-file",
 				"neowiki-bundle-setup-title",
+				"neowiki-bundle-setup-steps",
 				"neowiki-bundle-setup-card-description",
 				"neowiki-bundle-setup-empty-state",
 				"neowiki-bundle-setup-settings",
@@ -146,6 +148,8 @@
 				"neowiki-bundle-setup-create-subject",
 				"neowiki-bundle-setup-continue",
 				"neowiki-bundle-setup-back",
+				"neowiki-bundle-setup-step-model",
+				"neowiki-bundle-setup-step-destinations",
 				"neowiki-bundle-updates-available",
 				"neowiki-bundle-url-not-web",
 				"neowiki-bundle-url-unreachable",

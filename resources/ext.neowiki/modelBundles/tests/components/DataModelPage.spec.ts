@@ -15,6 +15,14 @@ vi.mock( '@/presentation/downloadFile.ts', () => ( {
 	downloadFile: ( fileName: string, content: string ) => downloads.push( { fileName, content } ),
 } ) );
 
+const reloadPage = vi.hoisted( () => vi.fn() );
+
+// jsdom cannot reload a page.
+vi.mock( '../../src/presentation/setupHistory.ts', async ( importOriginal ) => ( {
+	...await importOriginal<object>(),
+	reloadPage,
+} ) );
+
 enableAutoUnmount( afterEach );
 
 const FEMALE_ID = 's1demo1aaaaaaa1';
@@ -472,12 +480,19 @@ describe( 'DataModelPage', () => {
 			'https://example.org/edm.json': { bundle: { name: 'EDM', version: '1' }, mappings: { EDM: { version: 1, schemas: {} } } },
 		};
 
+		// What the browser keeps of the page for a reload, as its session storage keeps it.
+		const sessionStore = new Map<string, string>();
+
 		function setUp( setup: Partial<typeof SETUP> = {} ): void {
 			mockMw( {
 				wgNeoWikiModelBundleCatalogs: [ CATALOG_URL ],
 				wgNeoWikiModelBundlePreselection: [ 'Museum', 'EDM' ],
 				wgNeoWikiModelBundlesSetup: { ...SETUP, wikiHasSchemas: false, ...setup },
 			} );
+			Object.assign( mw, { storage: { session: {
+				getObject: ( key: string ) => JSON.parse( sessionStore.get( key ) ?? 'null' ),
+				setObject: ( key: string, value: unknown ) => sessionStore.set( key, JSON.stringify( value ) ).has( key ),
+			} } } );
 		}
 
 		/**
@@ -490,9 +505,71 @@ describe( 'DataModelPage', () => {
 			] );
 		}
 
+		async function chooseModel( wrapper: VueWrapper, label: string ): Promise<void> {
+			const option = wrapper.findAll( '.ext-neowiki-data-model-setup__option' )
+				.find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === label );
+
+			expect( option, `option ${ label }` ).toBeDefined();
+			await option!.find( 'input' ).setValue( true );
+		}
+
+		function shownStep( wrapper: VueWrapper ): string {
+			return wrapper.find( 'h2' ).text();
+		}
+
+		/**
+		 * The steps the step bar names, the current one in brackets.
+		 */
+		function stepBar( wrapper: VueWrapper ): string[] {
+			return wrapper.findAll( '.ext-neowiki-setup-steps__step' ).map( ( step ) => {
+				const label = step.find( '.ext-neowiki-setup-steps__label' ).text();
+				return step.find( '[aria-current="step"]' ).exists() ? `[${ label }]` : label;
+			} );
+		}
+
+		function stepButton( wrapper: VueWrapper, label: string ): DOMWrapper<HTMLButtonElement> {
+			const found = wrapper.findAll<HTMLButtonElement>( '.ext-neowiki-setup-steps button' )
+				.find( ( candidate ) => candidate.find( '.ext-neowiki-setup-steps__label' ).text() === label );
+
+			expect( found, `step ${ label }` ).toBeDefined();
+			return found!;
+		}
+
+		function plannedBundles( wrapper: VueWrapper ): string[] {
+			return wrapper.findAll( '.ext-neowiki-bundle-plans__summary strong' ).map( ( name ) => name.text() );
+		}
+
+		function cancelLink( wrapper: VueWrapper ): DOMWrapper<Element> {
+			const found = wrapper.findAll( '.ext-neowiki-data-model-setup__actions a' ).find( ( link ) => link.text() === 'cancel' );
+
+			expect( found ).toBeDefined();
+			return found!;
+		}
+
+		function holdInstall(): void {
+			vi.spyOn( wiki, 'saveSchema' ).mockImplementationOnce( () => new Promise( () => {
+				// The first write never ends, which holds the install.
+			} ) );
+		}
+
+		/**
+		 * Moves through the history as the browser does, and waits for the page to follow.
+		 */
+		async function traverse( move: () => unknown ): Promise<void> {
+			const popped = new Promise( ( resolve ) => {
+				window.addEventListener( 'popstate', resolve, { once: true } );
+			} );
+			move();
+			await popped;
+			await flushPromises();
+		}
+
 		beforeEach( () => {
 			wiki.records = [];
 			wiki.mappings.clear();
+			sessionStore.clear();
+			reloadPage.mockClear();
+			history.replaceState( null, '', '/wiki/Special:DataModel/setup' );
 			setUp();
 			vi.stubGlobal( 'fetch', async ( url: string ) => url in FILES ?
 				new Response( JSON.stringify( FILES[ url ] ) ) :
@@ -502,9 +579,7 @@ describe( 'DataModelPage', () => {
 		it( 'offers it on a wiki without a data model', async () => {
 			const wrapper = await mountPage();
 
-			await click( wrapper, 'neowiki-bundle-setup-title' );
-
-			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).exists() ).toBe( true );
+			expect( wrapper.find( '.ext-neowiki-data-model__setup a' ).attributes( 'href' ) ).toBe( '/wiki/Special:DataModel/setup' );
 		} );
 
 		it( 'opens it on its subpage', async () => {
@@ -542,7 +617,7 @@ describe( 'DataModelPage', () => {
 		it( 'installs nothing when starting empty, and leads to creating a subject', async () => {
 			const wrapper = await mountPage( true, 'setup' );
 
-			await wrapper.findAll( 'input[type="radio"]' )[ 2 ].setValue( true );
+			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
 			await click( wrapper, 'neowiki-bundle-setup-continue' );
 
 			expect( wiki.records ).toEqual( [] );
@@ -555,6 +630,194 @@ describe( 'DataModelPage', () => {
 			const wrapper = await mountPage( true, 'setup' );
 
 			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
+		} );
+
+		it( 'names the steps the choices lead through, marking the current one', async () => {
+			setUp( { wikiHasSubjects: false } );
+
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( stepBar( wrapper ) ).toEqual( [
+				'[neowiki-bundle-setup-settings]',
+				'neowiki-bundle-setup-step-model',
+				'neowiki-bundle-setup-step-destinations',
+				'neowiki-bundle-setup-review',
+			] );
+		} );
+
+		it( 'names no step after the model for starting empty', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
+
+			expect( stepBar( wrapper ) ).toEqual( [ '[neowiki-bundle-setup-step-model]' ] );
+		} );
+
+		it( 'returns to a completed step from the step bar, the choices kept', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await chooseModel( wrapper, 'Core' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			await stepButton( wrapper, 'neowiki-bundle-setup-step-model' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( [ shownStep( wrapper ), options( wrapper ) ] ).toEqual( [
+				'neowiki-bundle-setup-model',
+				[ [ 'Core', true ], [ 'Museum', false ], [ 'neowiki-bundle-setup-empty', false ] ],
+			] );
+		} );
+
+		it( 'returns to the step before on the browser\'s Back, the choices kept', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await checkboxLabelled( wrapper, 'EDM' ).setValue( false );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			await traverse( () => history.back() );
+
+			expect( [ shownStep( wrapper ), options( wrapper ) ] ).toEqual( [ 'neowiki-bundle-setup-destinations', [ [ 'EDM', false ] ] ] );
+		} );
+
+		it( 'returns to the review on the browser\'s Forward as it was left', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await wrapper.find( '.ext-neowiki-bundle-plans__toggle' ).trigger( 'click' );
+			await checkboxLabelled( wrapper, 'Agent' ).setValue( false );
+
+			await traverse( () => history.back() );
+			await traverse( () => history.forward() );
+			await wrapper.find( '.ext-neowiki-bundle-plans__toggle' ).trigger( 'click' );
+
+			expect( [ shownStep( wrapper ), checkboxLabelled( wrapper, 'Agent' ).element.checked ] ).toEqual( [ 'neowiki-bundle-setup-review', false ] );
+		} );
+
+		it( 'plans the review anew for the choices changed since', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await traverse( () => history.back() );
+			await checkboxLabelled( wrapper, 'EDM' ).setValue( false );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( plannedBundles( wrapper ) ).toEqual( [ 'Core', 'Museum' ] );
+		} );
+
+		it( 'goes back on the Back button as on the browser\'s, so that Forward returns', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			await traverse( () => button( wrapper, 'neowiki-bundle-setup-back' ).trigger( 'click' ) );
+			await traverse( () => history.forward() );
+
+			expect( shownStep( wrapper ) ).toBe( 'neowiki-bundle-setup-destinations' );
+		} );
+
+		it( 'shows the first step for a step the choices no longer lead to', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await traverse( () => history.back() );
+			await chooseModel( wrapper, 'neowiki-bundle-setup-empty' );
+
+			await traverse( () => history.forward() );
+
+			expect( shownStep( wrapper ) ).toBe( 'neowiki-bundle-setup-model' );
+		} );
+
+		it( 'keeps the step and the choices through a reload', async () => {
+			const before = await mountPage( true, 'setup' );
+			await chooseModel( before, 'Core' );
+			await click( before, 'neowiki-bundle-setup-continue' );
+			await checkboxLabelled( before, 'EDM' ).setValue( false );
+			before.unmount();
+
+			const after = await mountPage( true, 'setup' );
+
+			expect( [ shownStep( after ), options( after ) ] ).toEqual( [ 'neowiki-bundle-setup-destinations', [ [ 'EDM', false ] ] ] );
+			await click( after, 'neowiki-bundle-setup-continue' );
+			expect( plannedBundles( after ) ).toEqual( [ 'Core' ] );
+		} );
+
+		it( 'shows the step a reload left while it reads the catalogs', async () => {
+			setUp( { wikiHasSubjects: false } );
+			const before = await mountPage( true, 'setup' );
+			await click( before, 'neowiki-bundle-setup-continue' );
+			before.unmount();
+			vi.stubGlobal( 'fetch', () => new Promise( () => {
+				// The catalogs are still being read.
+			} ) );
+
+			const after = await mountPage( true, 'setup' );
+
+			expect( shownStep( after ) ).toBe( 'neowiki-bundle-setup-model' );
+		} );
+
+		it( 'shows the first step rather than the end while it reads the catalogs after an install', async () => {
+			const before = await mountPage( true, 'setup' );
+			await click( before, 'neowiki-bundle-setup-continue' );
+			await click( before, 'neowiki-bundle-setup-continue' );
+			await click( before, 'neowiki-bundle-install-button' );
+			before.unmount();
+			vi.stubGlobal( 'fetch', () => new Promise( () => {
+				// The catalogs are still being read.
+			} ) );
+
+			const after = await mountPage( true, 'setup' );
+
+			expect( shownStep( after ) ).toBe( 'neowiki-bundle-setup-model' );
+		} );
+
+		it( 'starts afresh when opened anew', async () => {
+			const before = await mountPage( true, 'setup' );
+			await chooseModel( before, 'Core' );
+			before.unmount();
+			history.replaceState( null, '', '/wiki/Special:DataModel/setup' );
+
+			const after = await mountPage( true, 'setup' );
+
+			expect( options( after ) ).toEqual( [ [ 'Core', false ], [ 'Museum', true ], [ 'neowiki-bundle-setup-empty', false ] ] );
+		} );
+
+		it( 'reloads at the step before the review on the browser\'s Back once installed', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			await traverse( () => history.back() );
+
+			expect( [ reloadPage.mock.calls.length, location.search ] ).toEqual( [ 1, '?step=destinations' ] );
+		} );
+
+		it( 'stays on the review while installing, whatever the browser\'s Back', async () => {
+			holdInstall();
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			await traverse( () => history.back() );
+
+			expect( shownStep( wrapper ) ).toBe( 'neowiki-bundle-setup-review' );
+		} );
+
+		it( 'offers no way out of the review while installing', async () => {
+			holdInstall();
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( [ button( wrapper, 'neowiki-bundle-setup-back' ).element.disabled, cancelLink( wrapper ).attributes( 'href' ) ] )
+				.toEqual( [ true, undefined ] );
+		} );
+
+		it( 'leads back to the data model on cancelling', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( cancelLink( wrapper ).attributes( 'href' ) ).toBe( '/wiki/Special:DataModel' );
 		} );
 
 		it( 'asks how the wiki works before the first install from a file or URL too', async () => {
