@@ -83,6 +83,14 @@ class UrlTypeValidateTest extends TestCase {
 		yield 'commas and a url in query' => [ 'https://example.com/search?q=a,b&redirect=https://x.org/' ];
 		yield 'dot in fragment' => [ 'https://en.wikipedia.org/wiki/Foo#Section.2C_bar' ];
 		yield 'at sign in path' => [ 'https://example.com/@user' ];
+		yield 'pipe in query, as in MediaWiki API URLs' => [ 'https://www.mediawiki.org/w/api.php?action=query&prop=info|revisions' ];
+		yield 'braces, caret and backtick in query' => [ 'https://example.com/search?q={a}^b`c`' ];
+		yield 'internationalized domain name' => [ 'https://öbb.at/' ];
+		yield 'internationalized top-level domain' => [ 'https://example.рф/' ];
+		yield 'punycode top-level domain' => [ 'https://xn--e1afmkfd.xn--p1ai/' ];
+		yield 'uppercase punycode top-level domain' => [ 'HTTPS://EXAMPLE.XN--P1AI/' ];
+		yield 'IPv6 host with a port' => [ 'http://[2001:db8::1]:8080/' ];
+		yield 'IPv6 host ending in an IPv4 address' => [ 'http://[::ffff:192.0.2.1]/' ];
 	}
 
 	/**
@@ -112,8 +120,14 @@ class UrlTypeValidateTest extends TestCase {
 		yield 'https with spaces in path' => [ 'https://example.com/path with spaces' ];
 		yield 'tab in query' => [ "https://example.com/?a=1\tb=2" ];
 		yield 'less-than sign in path' => [ 'https://example.com/a<b' ];
+		yield 'greater-than sign in path' => [ 'https://example.com/a>b' ];
+		yield 'double quote in path' => [ 'https://example.com/a"b' ];
 		yield 'backslash in path' => [ 'https://example.com/a\\b' ];
 		yield 'user info before the host' => [ 'https://example.org@example.com' ];
+		yield 'host label ending in a hyphen' => [ 'http://exa-.com' ];
+		yield 'quotation mark right after the top-level domain' => [ 'https://example.com”' ];
+		yield 'number with a decimal point' => [ '3.14' ];
+		yield 'square brackets around a name with letters beyond f' => [ 'http://[example.com]/' ];
 	}
 
 	public function testEachInvalidPartReturnsIndexedViolation(): void {
