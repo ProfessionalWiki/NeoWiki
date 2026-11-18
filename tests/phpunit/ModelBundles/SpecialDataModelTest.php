@@ -46,7 +46,21 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 				'wgNeoWikiModelBundleCatalogs' => [ 'https://example.org/catalog.json' ],
 				'wgNeoWikiModelBundlePreselection' => [ 'Core' ],
 			],
-			$this->outputOf( $this->newSpecialPage() )->getJsConfigVars()
+			$this->outputOf( $this->newSpecialPage(), $this->getTestSysop()->getAuthority() )->getJsConfigVars()
+		);
+	}
+
+	public function testTellsTheCatalogsToNoUserWhoMayNotInstall(): void {
+		$this->overrideConfigValues( [
+			'NeoWikiModelBundleCatalogs' => [ 'https://example.org/catalog.json' ],
+			'NeoWikiModelBundlePreselection' => [ 'Core' ],
+		] );
+
+		$variables = $this->outputOf( $this->newSpecialPage(), $this->getTestUser()->getAuthority() )->getJsConfigVars();
+
+		$this->assertSame(
+			[ false, false ],
+			[ array_key_exists( 'wgNeoWikiModelBundleCatalogs', $variables ), array_key_exists( 'wgNeoWikiModelBundlePreselection', $variables ) ]
 		);
 	}
 
@@ -68,7 +82,7 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 		$setup = $this->outputOf( $this->newSpecialPage(), $this->getTestSysop()->getAuthority() )
 			->getJsConfigVars()['wgNeoWikiModelBundlesSetup'];
 
-		$this->assertSame(
+		$this->assertEquals(
 			[ 'wikiHasSchemas' => false, 'wikiHasSubjects' => false, 'canEditSettings' => true ],
 			array_diff_key( $setup, [ 'settings' => null ] )
 		);

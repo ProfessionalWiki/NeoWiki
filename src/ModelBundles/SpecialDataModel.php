@@ -28,9 +28,14 @@ class SpecialDataModel extends SpecialPage {
 		$extension = NeoWikiExtension::getInstance();
 		$extension->newFrontendModuleLoader()->load( $this->getOutput(), $this->getSkin() );
 		$this->getOutput()->addModules( 'ext.neowiki.modelBundles' );
+		if ( $this->getAuthority()->isAllowedAll( ...ModelBundlesNoticeHook::INSTALL_RIGHTS ) ) {
+			$this->getOutput()->addJsConfigVars( [
+				'wgNeoWikiModelBundleCatalogs' => $this->getConfig()->get( 'NeoWikiModelBundleCatalogs' ),
+				'wgNeoWikiModelBundlePreselection' => $this->getConfig()->get( 'NeoWikiModelBundlePreselection' ),
+			] );
+		}
+
 		$this->getOutput()->addJsConfigVars( [
-			'wgNeoWikiModelBundleCatalogs' => $this->getConfig()->get( 'NeoWikiModelBundleCatalogs' ),
-			'wgNeoWikiModelBundlePreselection' => $this->getConfig()->get( 'NeoWikiModelBundlePreselection' ),
 			'wgNeoWikiModelBundlesSetup' => [
 				'wikiHasSchemas' => ModelBundlesNoticeHook::wikiHasSchemas(),
 				'wikiHasSubjects' => $extension->getPageIdentifiersLookup()->wikiHasSubjects(),
