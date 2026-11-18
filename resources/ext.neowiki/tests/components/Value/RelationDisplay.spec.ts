@@ -292,12 +292,18 @@ describe( 'RelationDisplay.vue', () => {
 		const RECORD_ID = 's1111111111111D';
 		const PLACE_ID = 's1111111111111E';
 
-		function storeDependentSubject( id: string, schemaName: string, statements: StatementList ): void {
+		function storeDependentSubject(
+			id: string,
+			schemaName: string,
+			statements: StatementList,
+			schemaLabels?: Record<string, string>,
+		): void {
 			useSubjectStore().setSubject( newSubject( {
 				id,
 				label: null,
 				displayNameIsGenerated: true,
 				schemaName,
+				schemaLabels,
 				statements,
 				pageIdentifiers: new PageIdentifiers( 42, 'Pablo Picasso' ),
 				hostSubject: {
@@ -329,12 +335,16 @@ describe( 'RelationDisplay.vue', () => {
 			);
 		}
 
-		function storeBirth( ...statements: Statement[] ): void {
+		function storeBirthSchema(): void {
 			storeSchema( 'Birth', [
 				newTextProperty( { name: 'Date' } ),
 				newRelationProperty( { name: 'Place', targetSchemas: [ 'Place' ] } ),
 				newRelationProperty( { name: 'Record', targetSchemas: [ 'Record' ] } ),
 			], true );
+		}
+
+		function storeBirth( ...statements: Statement[] ): void {
+			storeBirthSchema();
 			storeDependentSubject( BIRTH_ID, 'Birth', new StatementList( statements ) );
 		}
 
@@ -423,6 +433,19 @@ describe( 'RelationDisplay.vue', () => {
 			);
 
 			expect( wrapper.find( '.ext-neowiki-schema-name' ).text() ).toContain( 'Birth' );
+		} );
+
+		it( 'carries the label of its Schema in the reader\'s language', () => {
+			storeBirthSchema();
+			storeDependentSubject( BIRTH_ID, 'Birth', new StatementList( [ text( 'Date', '25 October 1881' ) ] ), { en: 'Birth record' } );
+
+			const wrapper = mountNested(
+				relationsTo( BIRTH_ID ),
+				{},
+				newRelationProperty( { targetSchemas: [ 'Birth', 'Baptism' ] } ),
+			);
+
+			expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Birth record' );
 		} );
 
 		it( 'carries no Schema name where the property holds Subjects of one', () => {
@@ -592,6 +615,19 @@ describe( 'RelationDisplay.vue', () => {
 
 				expect( tables( wrapper ).map( ( table ) => accessibleName( table.element ) ) )
 					.toEqual( [ 'neowiki-schema-labelName', 'neowiki-schema-labelPseudonym' ] );
+			} );
+
+			it( 'names a table after the label of its Schema in the reader\'s language', () => {
+				const names = newRelationProperty( { name: 'Names', targetSchemas: [ 'Name', 'Pseudonym' ], multiple: true } );
+				storeSchema( 'Name', [ newTextProperty( { name: 'Text' } ) ], true );
+				storeSchema( 'Pseudonym', [ newTextProperty( { name: 'Text' } ) ], true );
+				useSchemaStore().setSchema( 'Name', useSchemaStore().getSchema( 'Name' ).withLabels( { en: 'Given name' } ) );
+				storeDependentSubject( NAME_ID, 'Name', new StatementList( [ text( 'Text', 'Pablo' ) ] ) );
+				storeDependentSubject( PSEUDONYM_ID, 'Pseudonym', new StatementList( [ text( 'Text', 'P. Ruiz' ) ] ) );
+
+				const wrapper = mountNested( relationsTo( NAME_ID, PSEUDONYM_ID ), {}, names );
+
+				expect( accessibleName( tables( wrapper )[ 0 ].element ) ).toBe( 'neowiki-schema-labelGiven name' );
 			} );
 
 			it( 'repeats the name of the property nowhere in a table of its one target Schema', () => {

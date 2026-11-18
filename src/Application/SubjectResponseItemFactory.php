@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 
@@ -19,6 +20,7 @@ readonly class SubjectResponseItemFactory {
 	public function __construct(
 		private PageSubjectsAtRevisionLookup $pageSubjectsLookup,
 		private HostSubjectBuilder $hostSubjectBuilder,
+		private SchemaReferenceResolver $schemaResolver,
 	) {
 	}
 
@@ -71,7 +73,8 @@ readonly class SubjectResponseItemFactory {
 			$chosenName,
 			$chosenName === null && $pageSubjects !== null
 				? $this->hostSubjectBuilder->build( $subject, $pageSubjects, $pageName )
-				: null
+				: null,
+			$this->schemaResolver->getSchema( $subject->getSchemaReference() )
 		);
 	}
 

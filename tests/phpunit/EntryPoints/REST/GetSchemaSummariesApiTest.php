@@ -93,6 +93,18 @@ JSON
 		);
 	}
 
+	public function testSummariesCarryTheLabelsOfSchemasThatHaveThem(): void {
+		$this->createSchema( 'Company', '{"labels":{"de":"Unternehmen"},"propertyDefinitions":{}}' );
+		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );
+
+		$response = $this->executeHandler( new GetSchemaSummariesApi(), new RequestData( [ 'method' => 'GET' ] ) );
+
+		$this->assertSame(
+			[ 'Company' => [ 'de' => 'Unternehmen' ] ],
+			array_column( json_decode( $response->getBody()->getContents(), true )['schemas'], 'labels', 'name' )
+		);
+	}
+
 	public function testFollowingTheCursorWalksAllPages(): void {
 		$this->createSchema( 'Alpha', '{"title":"Alpha","description":"First","propertyDefinitions":{}}' );
 		$this->createSchema( 'Beta', '{"title":"Beta","description":"Second","propertyDefinitions":{}}' );

@@ -5,6 +5,7 @@ import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
 import type { AttributesEditorExposes } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
+import LabelsInput from '@/components/SchemaEditor/LabelsInput.vue';
 
 export interface FieldProps {
 	status: ValidationStatusType;
@@ -220,6 +221,13 @@ export function dialogOfAnotherExtension(): HTMLElement {
 	onTestFinished( () => dialog.remove() );
 
 	return dialog;
+}
+
+/**
+ * The text fields of the labels of a Schema or property, not those of a value field beside them.
+ */
+export function labelTextInputs( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement>[] {
+	return wrapper.findComponent( LabelsInput ).findAll<HTMLInputElement>( '.ext-neowiki-monolingual-text-input__text input' );
 }
 
 export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {

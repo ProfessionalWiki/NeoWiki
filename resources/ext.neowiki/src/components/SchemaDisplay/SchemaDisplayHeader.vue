@@ -2,7 +2,7 @@
 	<div class="ext-neowiki-schema-display-header">
 		<div class="ext-neowiki-schema-display-header__content">
 			<div class="ext-neowiki-schema-display-header__title">
-				{{ schema.getName() }}
+				{{ displayName }}
 			</div>
 			<div
 				v-if="schema.getDescription()"
@@ -24,7 +24,7 @@
 				@click="emit( 'create-subject' )"
 			>
 				<CdxIcon :icon="cdxIconAdd" />
-				{{ $i18n( 'neowiki-schema-create-subject', schema.getName() ).text() }}
+				{{ $i18n( 'neowiki-schema-create-subject', displayName ).text() }}
 			</CdxButton>
 		</div>
 		<div class="ext-neowiki-schema-display-header__actions">
@@ -41,11 +41,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Schema } from '@/domain/Schema.ts';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconEdit } from '@wikimedia/codex-icons';
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
-defineProps( {
+const props = defineProps( {
 	schema: {
 		type: Schema,
 		required: true
@@ -64,6 +66,8 @@ const emit = defineEmits<{
 	edit: [];
 	'create-subject': [];
 }>();
+
+const displayName = computed( (): string => schemaDisplayName( props.schema ) );
 </script>
 
 <style lang="less">

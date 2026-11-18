@@ -140,6 +140,16 @@ describe( 'SchemaSerializer', () => {
 			expect( JSON.parse( serializer.serializeSchema( schema ) ).propertyDefinitions[ 'Birth date' ].labels )
 				.toEqual( { en: 'Date of birth', de: 'Geburtsdatum' } );
 		} );
+
+		it( 'serializes the labels of a schema', () => {
+			const schema = newSchema( { title: 'Company', labels: { de: 'Unternehmen' } } );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ).labels ).toEqual( { de: 'Unternehmen' } );
+		} );
+
+		it( 'leaves the labels of a schema without them out', () => {
+			expect( JSON.parse( serializer.serializeSchema( newSchema() ) ) ).not.toHaveProperty( 'labels' );
+		} );
 	} );
 
 	describe( 'unregistered-type round-trip', () => {

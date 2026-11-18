@@ -216,6 +216,20 @@ export function readerLanguageTags(): string[] {
 }
 
 /**
+ * The label of a Schema or Property Definition in the first language the reader reads that it has one in.
+ */
+export function labelForReader( labels: Readonly<Record<string, string>> | undefined ): string | undefined {
+	if ( labels === undefined ) {
+		return undefined;
+	}
+
+	// Own keys only: `?uselang=constructor` would otherwise find the one every object inherits.
+	const language = readerLanguageTags().find( ( tag ) => Object.prototype.hasOwnProperty.call( labels, tag ) );
+
+	return language === undefined ? undefined : labels[ language ];
+}
+
+/**
  * The parts to show a reader: the ones in the first of their languages that any part is in, or,
  * when they read none of them, the ones in the language of the first part.
  */

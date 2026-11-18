@@ -66,7 +66,16 @@ class SubjectSummaryHostSubjectsTest extends TestCase {
 		);
 	}
 
-	private function summaryOf( string $id, string $schema ): SubjectSummary {
+	public function testASummaryKeepsTheLabelsOfItsSchemaWhenItGetsItsHostSubject(): void {
+		$summary = $this->summaryOf( self::BIRTH, 'Birth', [ 'de' => 'Geburt' ] );
+
+		$this->assertSame( [ 'de' => 'Geburt' ], $this->newHostSubjects()->addTo( [ $summary ] )[0]->schemaLabels );
+	}
+
+	/**
+	 * @param array<string, string> $schemaLabels
+	 */
+	private function summaryOf( string $id, string $schema, array $schemaLabels = [] ): SubjectSummary {
 		return new SubjectSummary(
 			subjectId: $id,
 			displayName: $schema,
@@ -76,6 +85,7 @@ class SubjectSummaryHostSubjectsTest extends TestCase {
 			pageTitle: 'Pablo Picasso',
 			lastEdited: '2026-10-14T00:00:00Z',
 			hostSubject: null,
+			schemaLabels: $schemaLabels,
 		);
 	}
 

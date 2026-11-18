@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Labels;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinitions;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
@@ -39,6 +40,7 @@ class SchemaPersistenceDeserializer {
 			description: $json['description'] ?? '',
 			properties: $this->propertiesFromJson( $json ),
 			subjectsAreDependent: ( $json['subjectsAreDependent'] ?? false ) === true,
+			labels: Labels::fromJson( $json['labels'] ?? [] ),
 		);
 	}
 

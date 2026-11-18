@@ -6,7 +6,7 @@ import { setupMwMock, createI18nMock } from '../../VueTestHelpers.ts';
 import { newSchema } from '@/TestHelpers.ts';
 
 function mountComponent( schema: Schema, canEditSchema: boolean = false, canCreateSubject: boolean = false ): VueWrapper {
-	setupMwMock( { functions: [ 'msg' ] } );
+	setupMwMock( { functions: [ 'msg', 'config', 'language' ] } );
 
 	return mount( SchemaDisplayHeader, {
 		props: { schema, canEditSchema, canCreateSubject },
@@ -28,6 +28,20 @@ describe( 'SchemaDisplayHeader', () => {
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__title' ).text() ).toBe( 'Test schema' );
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__description' ).text() ).toBe( 'A schema for people' );
+	} );
+
+	// The page heading names the Schema already.
+	it( 'shows the label in the reader\'s language alone', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company', labels: { en: 'Firm' } } ) );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__title' ).text() ).toBe( 'Firm' );
+		expect( wrapper.text() ).not.toContain( 'Company' );
+	} );
+
+	it( 'shows the name of a schema without a label in the reader\'s language', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company', labels: { de: 'Unternehmen' } } ) );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__title' ).text() ).toBe( 'Company' );
 	} );
 
 	it( 'hides description when schema has none', () => {
@@ -73,6 +87,13 @@ describe( 'SchemaDisplayHeader', () => {
 
 		expect( wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).text() )
 			.toContain( 'neowiki-schema-create-subjectCompany' );
+	} );
+
+	it( 'names the schema by its label in the creation button', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company', labels: { en: 'Firm' } } ), false, true );
+
+		expect( wrapper.find( '.ext-neowiki-schema-display-header__create-subject' ).text() )
+			.toContain( 'neowiki-schema-create-subjectFirm' );
 	} );
 
 	it( 'asks for the subject creator when the creation button is clicked', async () => {

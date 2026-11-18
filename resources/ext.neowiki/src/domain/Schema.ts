@@ -13,6 +13,10 @@ export class Schema {
 		private readonly description: string,
 		private readonly properties: PropertyDefinitionList,
 		private readonly subjectsDependent: boolean,
+		/**
+		 * Keyed by lowercase language tag. Absent when the Schema has none.
+		 */
+		private readonly labels: Readonly<Record<string, string>> | undefined,
 	) {
 	}
 
@@ -22,6 +26,10 @@ export class Schema {
 
 	public getDescription(): string {
 		return this.description;
+	}
+
+	public getLabels(): Readonly<Record<string, string>> | undefined {
+		return this.labels;
 	}
 
 	public getPropertyDefinitions(): PropertyDefinitionList {
@@ -39,15 +47,19 @@ export class Schema {
 	}
 
 	public withName( name: SchemaName ): Schema {
-		return new Schema( name, this.description, this.properties, this.subjectsDependent );
+		return new Schema( name, this.description, this.properties, this.subjectsDependent, this.labels );
 	}
 
 	public withDescription( description: string ): Schema {
-		return new Schema( this.name, description, this.properties, this.subjectsDependent );
+		return new Schema( this.name, description, this.properties, this.subjectsDependent, this.labels );
+	}
+
+	public withLabels( labels: Readonly<Record<string, string>> | undefined ): Schema {
+		return new Schema( this.name, this.description, this.properties, this.subjectsDependent, labels );
 	}
 
 	public withSubjectsAreDependent( subjectsAreDependent: boolean ): Schema {
-		return new Schema( this.name, this.description, this.properties, subjectsAreDependent );
+		return new Schema( this.name, this.description, this.properties, subjectsAreDependent, this.labels );
 	}
 
 	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
@@ -56,6 +68,7 @@ export class Schema {
 			this.description,
 			new PropertyDefinitionList( [ ...this.properties, property ] ),
 			this.subjectsDependent,
+			this.labels,
 		);
 	}
 
@@ -65,6 +78,7 @@ export class Schema {
 			this.description,
 			this.properties.reordered( names ),
 			this.subjectsDependent,
+			this.labels,
 		);
 	}
 
@@ -74,6 +88,7 @@ export class Schema {
 			this.description,
 			this.properties.withoutNames( [ propertyName ] ),
 			this.subjectsDependent,
+			this.labels,
 		);
 	}
 

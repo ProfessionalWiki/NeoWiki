@@ -26,6 +26,7 @@ Per-type value constraints (`options`, ranges, string formats, `uniqueItems`) ar
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `description` | string | No | Human-readable description of the schema |
+| `labels` | object | No | What the UI calls the Schema, keyed by [language tag](subject-format.md#text-with-language), such as `{ "de": "Unternehmen" }`. Everything else refers to the Schema by its name. |
 | `subjectsAreDependent` | boolean | No | Whether the Schema's Subjects are [Dependent Subjects](subject-format.md#dependent-subjects). Set when the Schema is created: a save that changes it is refused. Omitted when `false`. |
 | `propertyDefinitions` | object | Yes | Map of [property names](#property-names) to property definition objects |
 

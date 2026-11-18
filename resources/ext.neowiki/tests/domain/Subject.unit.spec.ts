@@ -90,6 +90,10 @@ describe( 'Subject', () => {
 
 			expect( newSubject( { pageIdentifiers: page } ).withLabel( 'Acme Anvil' ).getPageIdentifiers() ).toEqual( page );
 		} );
+
+		it( 'keeps the labels of the Schema', () => {
+			expect( newSubject( { schemaLabels: { de: 'Firma' } } ).withLabel( 'Acme' ).getSchemaLabels() ).toEqual( { de: 'Firma' } );
+		} );
 	} );
 
 	describe( 'withStatements', () => {
@@ -116,6 +120,12 @@ describe( 'Subject', () => {
 			const page = new PageIdentifiers( 7, 'Acme' );
 
 			expect( newSubject( { pageIdentifiers: page } ).withStatements( new StatementList( [] ) ).getPageIdentifiers() ).toEqual( page );
+		} );
+
+		it( 'keeps the labels of the Schema', () => {
+			const subject = newSubject( { schemaLabels: { de: 'Firma' } } );
+
+			expect( subject.withStatements( new StatementList( [] ) ).getSchemaLabels() ).toEqual( { de: 'Firma' } );
 		} );
 	} );
 

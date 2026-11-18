@@ -8,11 +8,15 @@ use OutOfBoundsException;
 
 readonly class Schema {
 
+	/**
+	 * @param array<string, string> $labels Keyed by lowercase language tag
+	 */
 	public function __construct(
 		private SchemaName $name,
 		private string $description,
 		private PropertyDefinitions $properties,
 		private bool $subjectsAreDependent,
+		private array $labels = [],
 	) {
 	}
 
@@ -22,6 +26,13 @@ readonly class Schema {
 
 	public function getDescription(): string {
 		return $this->description;
+	}
+
+	/**
+	 * @return array<string, string> Keyed by lowercase language tag
+	 */
+	public function getLabels(): array {
+		return $this->labels;
 	}
 
 	/**

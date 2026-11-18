@@ -2,6 +2,7 @@ import { Neo } from '@/Neo';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import type { Severity } from '@/domain/Severity';
 import { extractSeverities } from '@/domain/SeverityNormalizer';
+import { labelsFromJson } from '@/domain/labels';
 import { Value } from '@/domain/Value';
 import { ValueDeserializer } from '@/persistence/ValueDeserializer';
 
@@ -173,16 +174,4 @@ export class PropertyDefinitionDeserializer {
 		return this.registry.getType( json.type ).createPropertyDefinitionFromJson( base, values );
 	}
 
-}
-
-function labelsFromJson( json: unknown ): Record<string, string> | undefined {
-	const labels: Record<string, string> = {};
-
-	for ( const [ language, label ] of Object.entries( json ?? {} ) ) {
-		if ( typeof label === 'string' && label.trim() !== '' ) {
-			labels[ language.toLowerCase() ] = label.trim();
-		}
-	}
-
-	return Object.keys( labels ).length > 0 ? labels : undefined;
 }

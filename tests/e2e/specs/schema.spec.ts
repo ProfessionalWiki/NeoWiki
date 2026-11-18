@@ -30,6 +30,19 @@ test( 'a new Schema saves a Relation property with its target Schema', async ( {
 	} );
 } );
 
+test( 'a Schema saves the labels given in the pane of its own row', async ( { page, request } ) => {
+	const schemaName = uniqueName( 'Labelled' );
+	await createSchema( request, schemaName, {} );
+
+	const dialog = await openSchemaEditor( page, schemaName );
+	await dialog.getByRole( 'option', { name: 'Schema', exact: true } ).click();
+	await dialog.getByRole( 'textbox', { name: 'Labels text 1' } ).fill( 'Firm' );
+	await dialog.getByRole( 'button', { name: 'Save schema' } ).click();
+	await expect( dialog ).toBeHidden();
+
+	expect( await pageJson( request, `Schema:${ schemaName }` ) ).toMatchObject( { labels: { en: 'Firm' } } );
+} );
+
 // A menu opening past the bottom of the pane it is in escapes the pane's scrolling, as Codex intends for
 // menus in a dialog; nothing between it and the dialog may mask it either.
 test( 'the property editor shows a menu that runs past the bottom of its pane', async ( { page, request } ) => {
@@ -37,9 +50,7 @@ test( 'the property editor shows a menu that runs past the bottom of its pane', 
 	await createSchema( request, schemaName, { Founded: { type: 'number' } } );
 	await page.setViewportSize( { width: 1280, height: 600 } );
 
-	await page.goto( `index.php?title=Schema:${ schemaName }` );
-	await page.getByRole( 'button', { name: 'Edit schema' } ).click();
-	const dialog = page.getByRole( 'dialog', { name: `Editing ${ schemaName } schema` } );
+	const dialog = await openSchemaEditor( page, schemaName );
 	await dialog.getByRole( 'combobox' ).first().click();
 	const lastOption = page.getByRole( 'option' ).last();
 	await lastOption.scrollIntoViewIfNeeded();
@@ -72,10 +83,7 @@ test( 'the property editor fades its pane by as much as the content runs past ea
 	await createSchema( request, schemaName, { Founded: { type: 'number' } } );
 	await page.setViewportSize( { width: 1280, height: 500 } );
 
-	await page.goto( `index.php?title=Schema:${ schemaName }` );
-	await page.getByRole( 'button', { name: 'Edit schema' } ).click();
-	const pane = page.getByRole( 'dialog', { name: `Editing ${ schemaName } schema` } )
-		.locator( '.ext-neowiki-editor-panes__pane' ).last();
+	const pane = ( await openSchemaEditor( page, schemaName ) ).locator( '.ext-neowiki-editor-panes__pane' ).last();
 
 	await scrollTo( pane, 10 );
 	await expect.poll( () => fadeDepths( pane ) ).toEqual( { start: 10, end: 24 } );
@@ -105,6 +113,12 @@ test( 'the Create schema dialog scrolls its property editor with the wheel', asy
 } );
 
 // Titled with the Schema's name once one is entered.
+async function openSchemaEditor( page: Page, schemaName: string ): Promise<Locator> {
+	await page.goto( `index.php?title=Schema:${ schemaName }` );
+	await page.getByRole( 'button', { name: 'Edit schema' } ).click();
+	return page.getByRole( 'dialog', { name: `Editing ${ schemaName } schema` } );
+}
+
 function schemaCreator( page: Page ): Locator {
 	return page.getByRole( 'dialog', { name: /^Creating (.+ )?schema$/ } );
 }

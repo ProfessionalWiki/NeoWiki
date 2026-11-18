@@ -156,10 +156,14 @@ Subject and the Schema name for any other Subject, or for a main Subject whose p
 stored on it ([ADR 31](../adr/031-optional-subject-labels.md)). `displayNameIsGenerated` is true wherever that Schema
 name is used.
 
+`schemaLabels` holds the [labels](schema-format.md#top-level-structure) of the Subject's Schema, keyed by language
+tag, where the Schema has any and the reader may read it. Show the Schema, and names composed from it, by its label in
+the reader's language, or by `schema` where it has none.
+
 A [Dependent Subject](#dependent-subjects) also carries `hostSubject`: name it after its Schema and its Host Subject,
 as in "Birth of Pablo Picasso", rather than by `displayName`. `hostSubject` holds the Host Subject's `id`, `schema`,
-`displayName` and `displayNameIsGenerated`, plus its own `hostSubject`, named the same way, where the Host Subject is a
-Dependent Subject too. The rows of the Subject lists carry `hostSubject` as well.
+`schemaLabels`, `displayName` and `displayNameIsGenerated`, plus its own `hostSubject`, named the same way, where the
+Host Subject is a Dependent Subject too. The rows of the Subject lists carry `schemaLabels` and `hostSubject` as well.
 
 - `?expand=page` adds `pageId`, `pageTitle`, and `pageNamespaceId` to each Subject. `pageTitle` is the full page
   title with namespace prefix (e.g. `Help:Installation`); `pageNamespaceId` is the canonical MediaWiki namespace

@@ -88,7 +88,9 @@ A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Pers
 
 ![A Schema as its page shows it; callouts name its name, description and Property Definitions, and a Property Definition's property name and Property Type](schema.svg)
 
-Schemas have a name, description, and a list of Property Definitions, and declare whether their Subjects are [Dependent Subjects](#dependent-subject).
+Schemas have a name, optional **labels**, a description, and a list of Property Definitions, and declare whether their
+Subjects are [Dependent Subjects](#dependent-subject). Labels are what the UI calls the Schema, one per language, as
+for a Property Definition; references to the Schema use its name.
 
 #### Property Definition
 

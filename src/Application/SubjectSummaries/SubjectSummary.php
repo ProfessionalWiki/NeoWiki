@@ -23,6 +23,10 @@ readonly class SubjectSummary {
 		/** ISO 8601 in UTC: when the Subject was last edited, which SubjectSummaryLookup takes from the page's last edit. */
 		public string $lastEdited,
 		public ?HostSubject $hostSubject,
+		/**
+		 * @var array<string, string> Those of the Schema, as on {@see HostSubject}
+		 */
+		public array $schemaLabels,
 	) {
 	}
 

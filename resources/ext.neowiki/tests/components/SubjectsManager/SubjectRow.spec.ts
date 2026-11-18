@@ -3,6 +3,7 @@ import { mount, shallowMount, VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
+import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
@@ -29,7 +30,7 @@ let writeText: ReturnType<typeof vi.fn>;
 
 function stubMw( config: Record<string, unknown> = {} ): void {
 	setupMwMock( {
-		functions: [ 'config', 'msg', 'message', 'notify', 'util' ],
+		functions: [ 'config', 'msg', 'message', 'notify', 'util', 'language' ],
 		config: { wgNeoWikiSubjectIriBase: IRI_BASE, ...config },
 	} );
 }
@@ -130,6 +131,12 @@ describe( 'SubjectRow', () => {
 			expect( mw.notify ).toHaveBeenCalledWith( message, { type: 'error' } );
 		} );
 
+	} );
+
+	it( 'badges the Subject\'s Schema with its label in the reader\'s language', () => {
+		const wrapper = mountRow( { subject: newSubject( { id: SUBJECT_ID, label: 'ACME Inc', schemaName: 'Company', schemaLabels: { en: 'Firm' } } ) } );
+
+		expect( wrapper.findComponent( SchemaNameDisplay ).props( 'displayName' ) ).toBe( 'Firm' );
 	} );
 
 	// The row's only computation: a property the Subject leaves unset is not one of its statements.

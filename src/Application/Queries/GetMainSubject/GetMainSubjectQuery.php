@@ -8,10 +8,10 @@ use ProfessionalWiki\NeoWiki\Application\PageIdentifiersResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\PageSubjectsLookup;
 use ProfessionalWiki\NeoWiki\Application\Queries\GetSubject\GetSubjectResponseItem;
+use ProfessionalWiki\NeoWiki\Application\SubjectResponseItemFactory;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
-use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
 
 readonly class GetMainSubjectQuery {
 
@@ -20,6 +20,7 @@ readonly class GetMainSubjectQuery {
 		private PageSubjectsLookup $pageSubjectsLookup,
 		private PageIdentifiersResolver $pageIdentifiersResolver,
 		private PageReadAuthorizer $readAuthorizer,
+		private SubjectResponseItemFactory $responseItemFactory,
 	) {
 	}
 
@@ -47,13 +48,10 @@ readonly class GetMainSubjectQuery {
 	 * from the page itself rather than from the subject-to-page index.
 	 */
 	private function newResponseItem( Subject $mainSubject, PageSubjects $pageSubjects, PageId $pageId ): GetSubjectResponseItem {
-		$pageIdentifiers = $this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId );
-
-		return GetSubjectResponseItem::fromSubject(
+		return $this->responseItemFactory->createResponseItem(
 			$mainSubject,
-			$pageIdentifiers,
-			SubjectDisplayName::labelOrPageName( $mainSubject, $pageSubjects, $pageIdentifiers?->getTitle() ?? '' ),
-			hostSubject: null
+			$this->pageIdentifiersResolver->getIdentifiersOfPage( $pageId ),
+			$pageSubjects
 		);
 	}
 

@@ -277,7 +277,7 @@ export class StubSubjectRepository implements SubjectRepository {
 	): SubjectWriteResult {
 		return {
 			subjectId: id,
-			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), null ),
+			subject: new Subject( id, label, label ?? schemaName, label === null, schemaName, statements, new PageIdentifiers( pageId, 'page-title' ), null, undefined ),
 			schema: null,
 		};
 	}

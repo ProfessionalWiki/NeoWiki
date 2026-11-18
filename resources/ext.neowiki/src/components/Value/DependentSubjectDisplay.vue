@@ -4,7 +4,10 @@
 			v-if="showsSchemaName"
 			class="ext-neowiki-dependent-subject-display__schema"
 		>
-			<SchemaNameDisplay :schema-name="subject.getSchemaName()" />
+			<SchemaNameDisplay
+				:schema-name="subject.getSchemaName()"
+				:display-name="subjectSchemaDisplayName( subject )"
+			/>
 		</div>
 		<SubjectStatementsView :subject="subject" />
 	</div>
@@ -14,6 +17,7 @@
 import type { Subject } from '@/domain/Subject';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
+import { subjectSchemaDisplayName } from '@/presentation/schemaNameToShow';
 
 defineProps<{
 	subject: Subject;

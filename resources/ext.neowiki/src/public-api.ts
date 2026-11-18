@@ -97,6 +97,7 @@ export * from './presentation/FrontendRegistrar';
 export * from './presentation/PendingNotification';
 export * from './presentation/PropertyTypeAdapter';
 export * from './presentation/propertyDisplayName';
+export { schemaDisplayName } from './presentation/schemaDisplayName';
 export * from './presentation/subjectDisplayName';
 export * from './stores/LayoutStore';
 export * from './stores/SchemaStore';

@@ -1,9 +1,11 @@
 import type { HostSubject } from '@/domain/HostSubject';
 import { type SchemaReference, schemaReferenceName } from '@/domain/SchemaReference';
+import { labelsFromJson } from '@/domain/labels';
 
 export interface HostSubjectJson {
 	id: string;
 	schema: SchemaReference;
+	schemaLabels?: unknown;
 	displayName: string;
 	displayNameIsGenerated: boolean;
 	hostSubject?: HostSubjectJson;
@@ -17,6 +19,7 @@ export function hostSubjectFromJson( json: HostSubjectJson | undefined ): HostSu
 	return {
 		id: json.id,
 		schemaName: schemaReferenceName( json.schema ),
+		schemaLabels: labelsFromJson( json.schemaLabels ),
 		displayName: json.displayName,
 		displayNameIsGenerated: json.displayNameIsGenerated,
 		hostSubject: hostSubjectFromJson( json.hostSubject ),

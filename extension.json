@@ -765,6 +765,8 @@
 				"neowiki-schema-editor-subject-label",
 				"neowiki-schema-editor-subject-label-help",
 				"neowiki-schema-editor-optional-property-type",
+				"neowiki-schema-editor-labels",
+				"neowiki-schema-editor-labels-description",
 				"neowiki-schema-editor-description",
 				"neowiki-schema-editor-description-placeholder",
 				"neowiki-editing-schema",

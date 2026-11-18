@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Persistence\MediaWiki;
 
+use InvalidArgumentException;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
@@ -15,6 +16,9 @@ use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummaryQuery;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySearchTimeoutException;
 use ProfessionalWiki\NeoWiki\Application\SubjectSummaries\SubjectSummarySort;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReference;
+use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaReferenceResolver;
 use stdClass;
 use Wikimedia\Rdbms\DBQueryTimeoutError;
 use Wikimedia\Rdbms\IExpression;
@@ -47,6 +51,7 @@ class DatabaseSubjectSummaryLookup implements SubjectSummaryLookup {
 		private readonly int $scanBound,
 		/** Milliseconds a search may run on MySQL and MariaDB, 0 for no limit. Other databases do not limit it. */
 		private readonly int $searchTimeLimit,
+		private readonly SchemaReferenceResolver $schemaResolver,
 	) {
 	}
 
@@ -244,6 +249,17 @@ class DatabaseSubjectSummaryLookup implements SubjectSummaryLookup {
 	}
 
 	/**
+	 * @return array<string, string>
+	 */
+	private function schemaLabels( string $schemaName ): array {
+		try {
+			return $this->schemaResolver->getSchema( SchemaReference::local( new SchemaName( $schemaName ) ) )?->getLabels() ?? [];
+		} catch ( InvalidArgumentException ) {
+			return [];
+		}
+	}
+
+	/**
 	 * @return array{summary: SubjectSummary, title: Title, cursor: SubjectSummaryCursor}
 	 */
 	private function toRow( stdClass $row, SubjectSummaryQuery $query ): array {
@@ -262,6 +278,7 @@ class DatabaseSubjectSummaryLookup implements SubjectSummaryLookup {
 				pageTitle: $title->getPrefixedText(),
 				lastEdited: (string)ConvertibleTimestamp::convert( TS_ISO_8601, $row->nws_edited ),
 				hostSubject: null,
+				schemaLabels: $this->schemaLabels( $schemaName ),
 			),
 			'title' => $title,
 			'cursor' => new SubjectSummaryCursor( $query->sort, $query->direction, $this->sortValueOf( $row, $query->sort ), $id ),

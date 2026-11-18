@@ -24,6 +24,7 @@ interface NewTestSubjectOptions {
 	statements?: StatementList;
 	pageIdentifiers?: PageIdentifiers;
 	hostSubject?: HostSubject | null;
+	schemaLabels?: Readonly<Record<string, string>>;
 }
 
 export function newSubject( {
@@ -35,6 +36,7 @@ export function newSubject( {
 	statements = new StatementList( [] ),
 	pageIdentifiers = new PageIdentifiers( 0, 'TestSubjectPage' ),
 	hostSubject = null,
+	schemaLabels,
 }: NewTestSubjectOptions = {} ): Subject {
 	return new Subject(
 		id instanceof SubjectId ? id : new SubjectId( id ),
@@ -46,6 +48,7 @@ export function newSubject( {
 		statements,
 		pageIdentifiers,
 		hostSubject,
+		schemaLabels,
 	);
 }
 
@@ -72,6 +75,7 @@ interface NewTestSchemaOptions {
 	description?: string;
 	properties?: PropertyDefinitionList;
 	subjectsAreDependent?: boolean;
+	labels?: Readonly<Record<string, string>>;
 }
 
 export function newSchema( {
@@ -79,12 +83,14 @@ export function newSchema( {
 	description = 'TestSchema description',
 	properties,
 	subjectsAreDependent = false,
+	labels,
 }: NewTestSchemaOptions = {} ): Schema {
 	return new Schema(
 		title,
 		description,
 		properties ?? new PropertyDefinitionList( [] ),
 		subjectsAreDependent,
+		labels,
 	);
 }
 

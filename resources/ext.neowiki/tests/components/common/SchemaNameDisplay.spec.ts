@@ -6,11 +6,12 @@ import { setupMwMock } from '../../VueTestHelpers.ts';
 
 interface BadgeProps {
 	schemaName: string;
+	displayName?: string;
 	link?: SchemaNameLink;
 }
 
 function newWrapper( props: BadgeProps ): ReturnType<typeof mount> {
-	return mount( SchemaNameDisplay, { props } );
+	return mount( SchemaNameDisplay, { props: { displayName: props.schemaName, ...props } } );
 }
 
 describe( 'SchemaNameDisplay', () => {
@@ -18,12 +19,16 @@ describe( 'SchemaNameDisplay', () => {
 		setupMwMock( { functions: [ 'message', 'util' ] } );
 	} );
 
-	it( 'shows the schema name', () => {
-		const wrapper = newWrapper( { schemaName: 'Company' } );
+	it( 'shows the name it is given to show', () => {
+		const wrapper = newWrapper( { schemaName: 'Company', displayName: 'Firm' } );
 
-		// The visible span, not wrapper.text(): that also holds the visually-hidden noun,
-		// which contains the name, so a `toContain` on it survives an empty badge.
-		expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Company' );
+		expect( wrapper.get( '.ext-neowiki-schema-name__text' ).text() ).toBe( 'Firm' );
+	} );
+
+	it( 'links to the page of the schema it names, whatever it shows', () => {
+		const wrapper = newWrapper( { schemaName: 'Company', displayName: 'Firm' } );
+
+		expect( wrapper.get( 'a' ).attributes( 'href' ) ).toBe( '/wiki/Schema:Company' );
 	} );
 
 	it( 'links to the schema page by default', () => {
@@ -62,5 +67,11 @@ describe( 'SchemaNameDisplay', () => {
 			.toBe( 'neowiki-schema-labelCompany' );
 		expect( wrapper.get( '.ext-neowiki-schema-name__text' ).attributes( 'aria-hidden' ) )
 			.toBe( 'true' );
+	} );
+
+	it( 'announces the schema by the name it shows', () => {
+		const wrapper = newWrapper( { schemaName: 'Company', displayName: 'Firm' } );
+
+		expect( wrapper.get( '.ext-neowiki-schema-name__noun' ).text() ).toBe( 'neowiki-schema-labelFirm' );
 	} );
 } );

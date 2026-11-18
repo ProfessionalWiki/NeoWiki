@@ -27,7 +27,7 @@ let editorShowedSchema = false;
 // Shows the creator's fields for the Schema's own row, as the real editor does while that row is selected.
 const SchemaEditorStub = defineComponent( {
 	name: 'SchemaEditor',
-	template: '<div class="schema-editor-stub"><slot name="schema" /></div>',
+	template: '<div class="schema-editor-stub"><div class="name-slot"><slot name="name" /></div><slot name="schema" /></div>',
 	props: {
 		initialSchema: { type: Object, required: true },
 		subjectsAreDependent: { type: Boolean, default: undefined },
@@ -343,6 +343,29 @@ describe( 'SchemaCreator', () => {
 
 			expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getDescription() ).toBe( '' );
 		} );
+	} );
+
+	it( 'gives its name field the place the editor keeps for it, before the Schema\'s labels', () => {
+		const wrapper = mountComponent();
+
+		expect( wrapper.find( '.name-slot .cdx-text-input-stub' ).exists() ).toBe( true );
+	} );
+
+	it( 'starts a duplicate without the labels of the original, which name that Schema', () => {
+		const wrapper = mountComponent( { duplicateOf: newSchema( { title: EXISTING_SCHEMA_NAME, labels: { en: 'Human' } } ) } );
+
+		const startingSchema = wrapper.findComponent( SchemaEditorStub ).props( 'initialSchema' ) as Schema;
+
+		expect( startingSchema.getLabels() ).toBeUndefined();
+	} );
+
+	it( 'creates the Schema with the labels given in the editor', async () => {
+		editorSchema = newSchema( { title: '', labels: { en: 'Firm' } } );
+		const wrapper = mountComponent();
+
+		await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getLabels() ).toEqual( { en: 'Firm' } );
 	} );
 
 	describe( 'saveBlocker', () => {

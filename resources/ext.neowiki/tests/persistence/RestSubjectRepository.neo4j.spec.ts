@@ -80,7 +80,7 @@ const birth = new Subject(
 	true,
 	'Birth',
 	new StatementList( [ new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( '1881' ) ) ] ),
-	new PageIdentifiers( 42, 'Employees' ), null );
+	new PageIdentifiers( 42, 'Employees' ), null, undefined );
 const birthField = [ {
 	id: 's1birthAAAAAAA1',
 	schema: 'Birth',
@@ -128,6 +128,7 @@ describe( 'RestSubjectRepository', () => {
 				] ),
 				new PageIdentifiers( subjectResponse.pageId, subjectResponse.pageTitle ),
 				null,
+				undefined,
 			) );
 			expect( subject.getLabel() ).toEqual( 'John Doe' );
 		} );

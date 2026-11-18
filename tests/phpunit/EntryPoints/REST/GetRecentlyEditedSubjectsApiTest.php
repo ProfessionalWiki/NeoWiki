@@ -94,6 +94,32 @@ class GetRecentlyEditedSubjectsApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [ 'sTestGRE1111111' ], array_column( $this->get( [] )['subjects'], 'id' ) );
 	}
 
+	public function testCarriesTheLabelsOfTheSchemaOfEachSubject(): void {
+		$this->createSchema( 'Computer', '{"labels":{"de":"Rechner"},"propertyDefinitions":{}}' );
+		$this->createSubjectOnPage( 'sTestGRE1111111', 'ZX Spectrum 48K', 'Sinclair ZX Spectrum' );
+
+		$this->assertSame( [ 'de' => 'Rechner' ], $this->get( [] )['subjects'][0]['schemaLabels'] );
+	}
+
+	public function testLeavesOutTheLabelsOfASchemaTheCallerMayNotRead(): void {
+		$this->createSchema( 'Computer', '{"labels":{"de":"Rechner"},"propertyDefinitions":{}}' );
+		$this->createSubjectOnPage( 'sTestGRE1111111', 'ZX Spectrum 48K', 'Sinclair ZX Spectrum' );
+		RequestContext::getMain()->setUser( $this->getTestUser()->getUser() );
+		NeoWikiExtension::resetInstance();
+		$this->setTemporaryHook(
+			'getUserPermissionsErrors',
+			static function ( $title, $user, $action, &$result ): bool {
+				if ( $action === 'read' && $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+					$result = [ 'badaccess-group0' ];
+					return false;
+				}
+				return true;
+			}
+		);
+
+		$this->assertArrayNotHasKey( 'schemaLabels', $this->get( [] )['subjects'][0] );
+	}
+
 	private function createSubjectOnPage( string $id, string $label, string $pageName ): int {
 		$revision = $this->createPageWithSubjects(
 			$pageName,

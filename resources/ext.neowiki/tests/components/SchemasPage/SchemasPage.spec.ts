@@ -178,6 +178,21 @@ async function askToDelete( wrapper: VueWrapper, cardIndex: number ): Promise<vo
 	await flushPromises();
 }
 
+// The summary on Artwork's card once the Schema editor opened from it saves the given Schema.
+async function artworkSummaryAfterSaving( saved: Schema ): Promise<SchemaSummary> {
+	mayEditSchemas = true;
+	getSchemaMock.mockResolvedValue( newSchema( { title: 'Artwork' } ) );
+	const wrapper = mountPage();
+	await flushPromises();
+	cards( wrapper )[ 1 ].vm.$emit( 'edit' );
+	await flushPromises();
+
+	await wrapper.findComponent( SchemaEditorDialog ).props( 'onSave' )( saved, 'comment' );
+	await flushPromises();
+
+	return cards( wrapper ).find( ( card ) => card.props( 'summary' ).name === 'Artwork' )!.props( 'summary' );
+}
+
 async function confirmDeleted( wrapper: VueWrapper, pageTitle: string ): Promise<void> {
 	wrapper.findComponent( DeletePageDialog ).vm.$emit( 'deleted', pageTitle );
 	await flushPromises();
@@ -373,6 +388,30 @@ describe( 'SchemasPage', () => {
 		await find( wrapper, 'ART' );
 
 		expect( cardNames( wrapper ) ).toEqual( [ 'Artist', 'Artwork', 'Department' ] );
+	} );
+
+	it( 'keeps the Schemas whose label in the reader\'s language contains the find text', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			...summaries( [ 'Artist', 'City' ] ),
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Museum wing' } },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		await find( wrapper, 'wing' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Department' ] );
+	} );
+
+	it( 'lists the Schemas in the order of what the reader sees them called', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			...summaries( [ 'Artist', 'City' ] ),
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Annex' } },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Department', 'Artist', 'City' ] );
 	} );
 
 	it( 'ignores spaces around the find text', async () => {
@@ -588,20 +627,19 @@ describe( 'SchemasPage', () => {
 	} );
 
 	it( 'shows the saved description on the card of the edited Schema', async () => {
-		mayEditSchemas = true;
-		getSchemaMock.mockResolvedValue( newSchema( { title: 'Artwork' } ) );
-		const wrapper = mountPage();
-		await flushPromises();
-		cards( wrapper )[ 1 ].vm.$emit( 'edit' );
-		await flushPromises();
-
-		await wrapper.findComponent( SchemaEditorDialog ).props( 'onSave' )(
+		const summary = await artworkSummaryAfterSaving(
 			newSchema( { title: 'Artwork', description: 'A work of art.', properties: new PropertyDefinitionList( [] ) } ),
-			'comment',
 		);
-		await flushPromises();
 
-		expect( cards( wrapper )[ 1 ].props( 'summary' ).description ).toBe( 'A work of art.' );
+		expect( summary.description ).toBe( 'A work of art.' );
+	} );
+
+	it( 'shows the saved labels on the card of the edited Schema', async () => {
+		const summary = await artworkSummaryAfterSaving(
+			newSchema( { title: 'Artwork', labels: { en: 'Painting' }, properties: new PropertyDefinitionList( [] ) } ),
+		);
+
+		expect( summary.labels ).toEqual( { en: 'Painting' } );
 	} );
 
 	it( 'lets the cards offer duplicating to a user who may create Schemas', async () => {

@@ -225,6 +225,7 @@
 </template>
 
 <script setup lang="ts">
+import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { ref, shallowRef, computed, watch, nextTick, onMounted } from 'vue';
 import { CdxAccordion, CdxButton, CdxDialog, CdxField, CdxIcon, CdxMessage, CdxRadio } from '@wikimedia/codex';
 import { cdxIconArrowPrevious } from '@wikimedia/codex-icons';
@@ -785,7 +786,7 @@ async function loadSchema( schemaName: string ): Promise<void> {
 		if ( schema.subjectsAreDependent() ) {
 			if ( currentSequence === requestSequence ) {
 				leaveSchemaStepOpen();
-				mw.notify( mw.msg( 'neowiki-create-subject-error-dependent-subjects', schema.getName() ), { type: 'error' } );
+				mw.notify( mw.msg( 'neowiki-create-subject-error-dependent-subjects', schemaDisplayName( schema ) ), { type: 'error' } );
 			}
 
 			return;
@@ -826,7 +827,8 @@ function openSubjectStep( schema: Schema, id: SubjectId ): void {
 		schema.getName(),
 		new StatementList( [] ),
 		UNANSWERED_PAGE,
-		null
+		null,
+		schema.getLabels()
 	);
 }
 
@@ -940,7 +942,8 @@ function asWrittenRoot( subject: Subject, written: { subjectId: SubjectId; pageI
 		subject.getSchemaName(),
 		subject.getStatements(),
 		new PageIdentifiers( written.pageId ?? 0, written.pageTitle ?? '' ),
-		subject.getHostSubject()
+		subject.getHostSubject(),
+		subject.getSchemaLabels()
 	);
 }
 

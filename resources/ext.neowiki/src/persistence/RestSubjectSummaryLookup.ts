@@ -3,12 +3,13 @@ import type {
 } from '@/application/SubjectSummaryLookup';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 import { hostSubjectFromJson, type HostSubjectJson } from '@/persistence/hostSubjectFromJson';
+import { labelsFromJson } from '@/domain/labels';
 import { SubjectSummarySearchTimeoutError } from '@/application/SubjectSummarySearchTimeoutError';
 
 type SubjectSummaryJson = Omit<SubjectSummary, 'hostSubject'> & { hostSubject?: HostSubjectJson };
 
 function summaryFromJson( json: SubjectSummaryJson ): SubjectSummary {
-	return { ...json, hostSubject: hostSubjectFromJson( json.hostSubject ) };
+	return { ...json, schemaLabels: labelsFromJson( json.schemaLabels ), hostSubject: hostSubjectFromJson( json.hostSubject ) };
 }
 
 export class RestSubjectSummaryLookup implements SubjectSummaryLookup {

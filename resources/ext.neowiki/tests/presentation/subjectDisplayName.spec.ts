@@ -79,6 +79,25 @@ describe( 'subjectDisplayName', () => {
 		).toBe( 'Record of Birth of Pablo Picasso' );
 	} );
 
+	it( 'names a Dependent Subject after the labels of the Schemas up the chain, in the reader\'s language', () => {
+		expect(
+			subjectDisplayName( newSubject( {
+				label: null,
+				displayNameIsGenerated: true,
+				schemaName: 'Record',
+				schemaLabels: { en: 'Register entry' },
+				hostSubject: {
+					id: 's1demo5sssssss4',
+					schemaName: 'Birth',
+					schemaLabels: { en: 'Birth event' },
+					displayName: 'Birth',
+					displayNameIsGenerated: true,
+					hostSubject: PICASSO,
+				},
+			} ) ),
+		).toBe( 'Register entry of Birth event of Pablo Picasso' );
+	} );
+
 	it( 'names a Dependent Subject after a Host Subject nobody named by that Host Subject\'s id', () => {
 		expect(
 			subjectDisplayName( newSubject( {

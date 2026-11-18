@@ -80,12 +80,19 @@ describe( 'SchemaDisplay', () => {
 		getSchemaMock.mockReset();
 	} );
 
+	it( 'captions the table of properties with the label in the reader\'s language', () => {
+		const wrapper = mountComponent( newSchema( { title: 'Company', labels: { de: 'Unternehmen' } } ) );
+
+		expect( wrapper.get( 'caption' ).text() ).toBe( 'Unternehmen' );
+	} );
+
 	it( 'lists the Schema\'s Subjects', () => {
-		const wrapper = mountComponent( newSchema( { title: 'Computer' } ) );
+		const schema = newSchema( { title: 'Computer' } );
+		const wrapper = mountComponent( schema );
 
 		const table = wrapper.findComponent( { name: 'SubjectsTable' } );
 		expect( table.exists() ).toBe( true );
-		expect( table.props( 'fixedSchema' ) ).toBe( 'Computer' );
+		expect( table.props( 'fixedSchema' ) ).toEqual( schema );
 	} );
 
 	it( 'passes schema and canEditSchema to header component', () => {

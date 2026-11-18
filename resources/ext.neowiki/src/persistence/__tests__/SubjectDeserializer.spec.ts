@@ -37,6 +37,7 @@ describe( 'SubjectDeserializer', () => {
 			new StatementList( [] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 			null,
+			undefined,
 		) );
 	} );
 
@@ -62,6 +63,37 @@ describe( 'SubjectDeserializer', () => {
 			displayNameIsGenerated: false,
 			hostSubject: null,
 		} );
+	} );
+
+	it( 'reads the labels of the Subject\'s Schema', () => {
+		const json = {
+			id: 's13333333333337',
+			label: 'ACME Inc',
+			displayName: 'ACME Inc',
+			displayNameIsGenerated: false,
+			schema: 'Company',
+			schemaLabels: { de: 'Unternehmen' },
+			statements: {},
+		};
+
+		expect( deserializer.deserialize( json ).getSchemaLabels() ).toEqual( { de: 'Unternehmen' } );
+	} );
+
+	it( 'reads the labels of the Schema of the Host Subject', () => {
+		const json = {
+			id: 's13333333333337',
+			label: null,
+			displayName: 'Birth',
+			displayNameIsGenerated: true,
+			schema: 'Birth',
+			hostSubject: {
+				id: 's13333333333338', schema: 'Person', schemaLabels: { de: 'Mensch' }, displayName: 'Pablo Picasso',
+				displayNameIsGenerated: false,
+			},
+			statements: {},
+		};
+
+		expect( deserializer.deserialize( json ).getHostSubject()?.schemaLabels ).toEqual( { de: 'Mensch' } );
 	} );
 
 	it( 'carries the server\'s generated-name verdict through to the Subject', () => {
@@ -182,6 +214,7 @@ describe( 'SubjectDeserializer', () => {
 			] ),
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 			null,
+			undefined,
 		) );
 	} );
 

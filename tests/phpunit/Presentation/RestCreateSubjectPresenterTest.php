@@ -33,6 +33,7 @@ class RestCreateSubjectPresenterTest extends TestCase {
 			pageTitle: $pageId === null ? null : 'ACME Corp',
 			pageNamespaceId: $pageId === null ? null : 0,
 			hostSubject: null,
+			schemaLabels: [],
 		);
 	}
 

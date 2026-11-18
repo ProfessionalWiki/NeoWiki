@@ -909,6 +909,25 @@ class CreateSubjectActionTest extends TestCase {
 		);
 	}
 
+	public function testPresentsTheSubjectWithTheLabelsOfItsSchema(): void {
+		$this->schemaLookup->updateSchema(
+			TestSchema::build( name: new SchemaName( self::SELECT_SCHEMA_NAME ), labels: [ 'de' => 'Auswahl' ] )
+		);
+		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
+
+		$this->newCreateSubjectAction()->createSubject(
+			new CreateSubjectRequest(
+				pageId: 1,
+				isMainSubject: true,
+				label: 'Some Label',
+				schemaName: self::SELECT_SCHEMA_NAME,
+				statements: []
+			)
+		);
+
+		$this->assertSame( [ 'de' => 'Auswahl' ], $this->presenterSpy->subject?->schemaLabels );
+	}
+
 	public function testPresentsNoSchemaWhenTheNamedSchemaDoesNotExist(): void {
 		$this->registerSelectSchema();
 		$this->subjectRepository->savePageSubjects( PageSubjects::newEmpty(), new PageId( 1 ) );
