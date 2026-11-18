@@ -91,6 +91,15 @@ export function parseBundleFile( text: string ): ModelBundle {
 	return bundle;
 }
 
+/**
+ * The name, version and description a file gives, without reading its items, so that a version this wiki cannot
+ * install still tells of itself. Null for a file that gives none.
+ */
+export function parseBundleMetadata( text: string ): BundleMetadata | null {
+	const file = parseJson( text );
+	return isJsonObject( file ) && file.bundle !== undefined ? readMetadata( file.bundle ) : null;
+}
+
 function parseJson( text: string ): unknown {
 	try {
 		return JSON.parse( text );
