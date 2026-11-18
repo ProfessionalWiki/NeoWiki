@@ -4,6 +4,7 @@ namespace ProfessionalWiki\NeoWiki\Tests\ModelBundles;
 
 use ProfessionalWiki\NeoWiki\ModelBundles\SpecialDataModel;
 use ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages\HelpLinkAssertions;
+use SpecialPageExecutor;
 use SpecialPageTestBase;
 
 /**
@@ -54,6 +55,13 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 		[ $output ] = $this->executeSpecialPage( 'setup' );
 
 		$this->assertStringContainsString( 'data-mw-neowiki-view="setup"', $output );
+	}
+
+	public function testTitlesTheSetupAsSuch(): void {
+		$page = $this->newSpecialPage();
+		( new SpecialPageExecutor() )->executeSpecialPage( $page, 'setup', null, 'qqx' );
+
+		$this->assertSame( '(neowiki-bundle-setup-title)', $page->getOutput()->getPageTitle() );
 	}
 
 	public function testHandsTheSetupWhatTheWikiHolds(): void {

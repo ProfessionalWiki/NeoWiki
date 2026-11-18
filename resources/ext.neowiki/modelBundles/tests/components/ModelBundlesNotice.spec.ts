@@ -44,7 +44,9 @@ describe( 'ModelBundlesNotice', () => {
 	} );
 
 	it( 'offers no setup when the page does not offer it', async () => {
-		const wrapper = await mountNotice( false );
+		serveVersions( { 'https://example.org/Agents.json': '2' } );
+
+		const wrapper = await mountNotice( false, [ installed( [], [], { name: 'Agents', version: '1', source: 'https://example.org/Agents.json' } ) ] );
 
 		expect( wrapper.find( '.cdx-card' ).exists() ).toBe( false );
 		expect( wrapper.emitted( 'replacesFirstSteps' ) ).toEqual( [ [ false ] ] );

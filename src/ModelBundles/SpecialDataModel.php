@@ -41,6 +41,10 @@ class SpecialDataModel extends SpecialPage {
 			],
 		] );
 
+		if ( $subPage === 'setup' ) {
+			$this->getOutput()->setPageTitleMsg( $this->msg( 'neowiki-bundle-setup-title' ) );
+		}
+
 		$this->getOutput()->addHTML( Html::element( 'div', array_merge(
 			[ 'id' => 'ext-neowiki-data-model' ],
 			$subPage === 'setup' ? [ 'data-mw-neowiki-view' => 'setup' ] : []
