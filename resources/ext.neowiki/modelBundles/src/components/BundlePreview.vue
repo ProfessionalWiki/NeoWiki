@@ -71,33 +71,6 @@
 						</p>
 						<ItemChanges :item="item" />
 					</div>
-
-					<details
-						v-if="group.quietItems.length > 0"
-						class="ext-neowiki-bundle-preview__quiet"
-					>
-						<summary>
-							{{ $i18n( 'neowiki-bundle-preview-quiet', group.quietItems.length ).text() }}
-						</summary>
-						<div
-							v-for="item in group.quietItems"
-							:key="item.id"
-							class="ext-neowiki-bundle-preview__item"
-						>
-							<p class="ext-neowiki-bundle-preview__static-item">
-								<span class="ext-neowiki-bundle-preview__name">{{ itemName( item ) }}</span>
-								<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item ) }}</span>
-								<span
-									v-for="note in importNotes( item )"
-									:key="note"
-									class="ext-neowiki-bundle-preview__note"
-								>
-									{{ note }}
-								</span>
-							</p>
-							<ItemChanges :item="item" />
-						</div>
-					</details>
 				</div>
 			</div>
 		</section>
@@ -113,8 +86,9 @@ import {
 	importNotes,
 	importStatusText,
 	itemName,
-	previewSections,
-	type PreviewGroup,
+	itemSections,
+	type ItemGroup,
+	needsDecision,
 	TYPE_HEADINGS
 } from '../presentation/bundleItems.ts';
 import ItemChanges from './ItemChanges.vue';
@@ -123,16 +97,18 @@ const props = defineProps<{
 	plan: ImportPlan;
 	modelValue: ReadonlySet<string>;
 	disabled: boolean;
+	/** Whether to show every item, rather than only those that need a decision. */
+	expanded: boolean;
 }>();
 
 const emit = defineEmits<{
 	'update:modelValue': [ chosen: Set<string> ];
 }>();
 
-const sections = computed( () => previewSections( props.plan.items ) );
+const sections = computed( () => itemSections( props.expanded ? props.plan.items : props.plan.items.filter( needsDecision ) ) );
 
-function groupTitle( type: ItemType, group: PreviewGroup ): string {
-	const count = group.items.length + group.quietItems.length;
+function groupTitle( type: ItemType, group: ItemGroup<ImportItem> ): string {
+	const count = group.items.length;
 
 	return type === 'subject' ?
 		mw.msg( 'neowiki-bundle-preview-schema-group', group.schema ?? '', count ) :
@@ -201,15 +177,6 @@ function setSelected( items: ImportItem[], selected: boolean ): void {
 
 	&__note {
 		display: block;
-	}
-
-	&__quiet {
-		margin-top: @spacing-50;
-
-		summary {
-			cursor: pointer;
-			color: @color-subtle;
-		}
 	}
 }
 </style>

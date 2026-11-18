@@ -5,26 +5,34 @@
 			:key="plan.bundleName"
 			class="ext-neowiki-bundle-plans__bundle"
 		>
-			<h3
-				v-if="plans.length > 1"
-				class="ext-neowiki-bundle-plans__name"
-			>
-				{{ plan.bundleName }}
-				<span v-if="plan.bundle.metadata !== null && plan.bundle.metadata.version !== ''">
-					{{ $i18n( 'neowiki-bundle-version', plan.bundle.metadata.version ).text() }}
-				</span>
-			</h3>
+			<div class="ext-neowiki-bundle-plans__header">
+				<p class="ext-neowiki-bundle-plans__summary">
+					<strong>{{ plan.bundleName }}</strong>{{ afterName( plan ) }}
+				</p>
+				<CdxButton
+					class="ext-neowiki-bundle-plans__toggle"
+					weight="quiet"
+					:aria-expanded="isExpanded( index )"
+					@click="toggle( index )"
+				>
+					{{ isExpanded( index ) ?
+						$i18n( 'neowiki-bundle-items-hide' ).text() :
+						$i18n( 'neowiki-bundle-items-show' ).text() }}
+				</CdxButton>
+			</div>
 
 			<ImportResults
 				v-if="outcomes !== null"
 				:plan="plan"
 				:outcome="outcomes[ index ]"
+				:expanded="isExpanded( index )"
 			/>
 			<BundlePreview
 				v-else
 				:model-value="modelValue[ index ]"
 				:plan="plan"
 				:disabled="disabled"
+				:expanded="isExpanded( index )"
 				@update:model-value="setChosen( index, $event )"
 			/>
 		</section>
@@ -32,8 +40,11 @@
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue';
+import { CdxButton } from '@wikimedia/codex';
 import type { ImportPlan } from '../application/importPlan.ts';
 import type { ImportOutcome } from '../application/importRun.ts';
+import { planSummary } from '../presentation/bundleItems.ts';
 import BundlePreview from './BundlePreview.vue';
 import ImportResults from './ImportResults.vue';
 
@@ -51,6 +62,31 @@ const emit = defineEmits<{
 	'update:modelValue': [ chosen: Set<string>[] ];
 }>();
 
+// By position: the bundles whose items are all shown. What needs a decision shows either way.
+const expanded = reactive( new Set<number>() );
+
+function isExpanded( index: number ): boolean {
+	return expanded.has( index );
+}
+
+function toggle( index: number ): void {
+	if ( expanded.has( index ) ) {
+		expanded.delete( index );
+	} else {
+		expanded.add( index );
+	}
+}
+
+/**
+ * What the summary line says after the bundle's name: its version, if it has one, and what installing it does.
+ */
+function afterName( plan: ImportPlan ): string {
+	const version = plan.bundle.metadata?.version ?? '';
+	const versionText = version === '' ? '' : ' ' + mw.msg( 'neowiki-bundle-version', version );
+
+	return versionText + mw.msg( 'colon-separator' ) + planSummary( plan );
+}
+
 function setChosen( index: number, chosen: Set<string> ): void {
 	emit( 'update:modelValue', props.modelValue.map( ( set, at ) => at === index ? chosen : set ) );
 }
@@ -61,17 +97,19 @@ function setChosen( index: number, chosen: Set<string> ): void {
 
 .ext-neowiki-bundle-plans {
 	&__bundle + &__bundle {
-		margin-top: @spacing-200;
+		margin-top: @spacing-150;
 	}
 
-	&__name {
-		margin: 0 0 @spacing-75;
+	&__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		column-gap: @spacing-50;
+		margin-bottom: @spacing-50;
+	}
 
-		span {
-			margin-inline-start: @spacing-50;
-			color: @color-subtle;
-			font-weight: @font-weight-normal;
-		}
+	&__summary {
+		margin: 0;
 	}
 }
 </style>

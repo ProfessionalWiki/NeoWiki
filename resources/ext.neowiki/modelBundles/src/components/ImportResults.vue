@@ -26,7 +26,10 @@
 			<h3 class="ext-neowiki-import-results__heading">
 				{{ $i18n( RESULT_HEADINGS[ group.result ], group.outcomes.length ).text() }}
 			</h3>
-			<ul class="ext-neowiki-import-results__list">
+			<ul
+				v-if="expanded || group.result === 'failed'"
+				class="ext-neowiki-import-results__list"
+			>
 				<li
 					v-for="itemOutcome in group.outcomes"
 					:key="itemOutcome.item.id"
@@ -64,6 +67,8 @@ import { itemName, resultGroups, resultHeadline } from '../presentation/bundleIt
 const props = defineProps<{
 	plan: ImportPlan;
 	outcome: ImportOutcome;
+	/** Whether to list every item, rather than only those that failed. */
+	expanded: boolean;
 }>();
 
 const RESULT_HEADINGS = {

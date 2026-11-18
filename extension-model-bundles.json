@@ -168,7 +168,18 @@
 				"neowiki-bundle-type-subject",
 				"neowiki-bundle-preview-all",
 				"neowiki-bundle-preview-schema-group",
-				"neowiki-bundle-preview-quiet",
+				"neowiki-bundle-summary-schemas",
+				"neowiki-bundle-summary-layouts",
+				"neowiki-bundle-summary-mappings",
+				"neowiki-bundle-summary-subjects",
+				"neowiki-bundle-summary-all-new",
+				"neowiki-bundle-summary-all-unchanged",
+				"neowiki-bundle-summary-new",
+				"neowiki-bundle-summary-update",
+				"neowiki-bundle-summary-decide",
+				"neowiki-bundle-summary-unchanged",
+				"neowiki-bundle-items-show",
+				"neowiki-bundle-items-hide",
 				"neowiki-bundle-preview-show-changes",
 				"neowiki-bundle-preview-hide-changes",
 				"neowiki-bundle-diff-here",
@@ -244,6 +255,7 @@
 				"neowiki-layout-noun",
 				"neowiki-mapping-noun",
 				"cancel",
+				"colon-separator",
 				"comma-separator"
 			]
 		}

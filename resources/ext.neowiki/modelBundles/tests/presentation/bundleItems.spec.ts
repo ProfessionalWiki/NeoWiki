@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { resultHeadline } from '../../src/presentation/bundleItems';
-import type { ImportPlan } from '../../src/application/importPlan';
+import { needsDecision, planSummary, resultHeadline } from '../../src/presentation/bundleItems';
+import type { ImportItem, ImportPlan } from '../../src/application/importPlan';
 import type { ImportOutcome, ItemResult } from '../../src/application/importRun';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 import { InMemoryDataModel } from '../application/InMemoryDataModel';
 import { bundleOf, installed, planOn, subjectEntry, VOCABULARIES } from '../application/builders';
+import { newSchema } from '@/TestHelpers';
 
 const ID_1 = 's1demo1aaaaaaa1';
 const FEMALE = subjectEntry( { label: 'female' } );
@@ -67,6 +68,76 @@ describe( 'resultHeadline', () => {
 		const importPlan = await plan();
 
 		expect( resultHeadline( importPlan, { ...outcome( importPlan ), record: { saved: false, reason: 'Edit conflict' } } ) ).toBeNull();
+	} );
+
+} );
+
+describe( 'needsDecision', () => {
+
+	function itemWith( status: ImportItem[ 'status' ], action: ImportItem[ 'action' ], selectedByDefault: boolean ): ImportItem {
+		return { status, action, selectedByDefault } as ImportItem;
+	}
+
+	it.each( [
+		[ 'differs', 'replace', false ],
+		[ 'changed-both', 'replace', false ],
+		[ 'declined', 'create', false ],
+		[ 'deleted-here', 'create', false ],
+		[ 'removed-upstream', 'remove', false ],
+		[ 'removed-upstream', null, false ],
+		[ 'conflict', null, false ],
+	] as const )( 'takes %s, to %s, for a decision', ( status, action, selectedByDefault ) => {
+		expect( needsDecision( itemWith( status, action, selectedByDefault ) ) ).toBe( true );
+	} );
+
+	it.each( [
+		[ 'new', 'create', true ],
+		[ 'changed-upstream', 'replace', true ],
+		[ 'unchanged', null, false ],
+		[ 'changed-here', null, false ],
+		[ 'deleted-here', null, false ],
+	] as const )( 'leaves %s, to %s, to installing', ( status, action, selectedByDefault ) => {
+		expect( needsDecision( itemWith( status, action, selectedByDefault ) ) ).toBe( false );
+	} );
+
+} );
+
+describe( 'planSummary', () => {
+
+	const ID_2 = 's1demo1aaaaaaa2';
+	const ID_3 = 's1demo1aaaaaaa3';
+
+	beforeEach( () => {
+		setupMwMock( { messages: { 'comma-separator': ', ' } } );
+		wiki = new InMemoryDataModel();
+	} );
+
+	it( 'sums up a first install as its items by type, all new', async () => {
+		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, FEMALE ] ], [ newSchema( { title: 'Gender Types' } ) ] ) );
+
+		expect( planSummary( importPlan ) ).toBe( 'neowiki-bundle-summary-schemas1, neowiki-bundle-summary-subjects2, neowiki-bundle-summary-all-new' );
+	} );
+
+	it( 'counts what an update creates, updates, leaves to a decision and leaves as it is', async () => {
+		wiki.records = [ installed( [ [ ID_1, FEMALE ], [ ID_2, FEMALE ], [ ID_3, FEMALE ] ] ) ];
+		wiki.withSubject( ID_1, FEMALE ).withSubject( ID_2, subjectEntry( { label: 'female (edited)' } ) ).withSubject( ID_3, FEMALE );
+
+		const importPlan = await planOn( wiki, bundleOf( [
+			[ ID_1, subjectEntry( { label: 'woman' } ) ],
+			[ ID_2, subjectEntry( { label: 'woman' } ) ],
+			[ ID_3, FEMALE ],
+			[ 's1demo1aaaaaaa4', FEMALE ],
+		] ) );
+
+		expect( planSummary( importPlan ) ).toBe( 'neowiki-bundle-summary-subjects4, neowiki-bundle-summary-new1, ' +
+			'neowiki-bundle-summary-update1, neowiki-bundle-summary-decide1, neowiki-bundle-summary-unchanged1' );
+	} );
+
+	it( 'sums up a bundle the wiki has as it is as all unchanged', async () => {
+		wiki.withSubject( ID_1, FEMALE );
+
+		expect( planSummary( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) ) ) )
+			.toBe( 'neowiki-bundle-summary-subjects1, neowiki-bundle-summary-all-unchanged' );
 	} );
 
 } );

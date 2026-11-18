@@ -62,30 +62,61 @@ function byText( a: string, b: string ): number {
 	return a.localeCompare( b );
 }
 
-export interface PreviewGroup extends ItemGroup<ImportItem> {
-	/** What it leaves as it is, unchanged on either side, which needs no decision. */
-	readonly quietItems: readonly ImportItem[];
+/**
+ * What installing does not settle, which a preview shows without being expanded: what an item would change
+ * left unticked, what cannot be installed, and what the bundle no longer has.
+ */
+export function needsDecision( item: ImportItem ): boolean {
+	return item.status === 'conflict' || item.status === 'removed-upstream' || ( item.action !== null && !item.selectedByDefault );
 }
 
-/**
- * As itemSections(), with each group's items that need no decision set apart.
- */
-export function previewSections( items: readonly ImportItem[] ): ItemSection<PreviewGroup>[] {
-	return itemSections( items ).map( ( section ) => ( {
-		type: section.type,
-		groups: section.groups.map( ( group ) => ( {
-			schema: group.schema,
-			items: group.items.filter( ( item ) => !isQuiet( item ) ),
-			quietItems: group.items.filter( isQuiet ),
-		} ) ),
-	} ) );
-}
+const SUMMARY_TYPES = {
+	schema: 'neowiki-bundle-summary-schemas',
+	layout: 'neowiki-bundle-summary-layouts',
+	mapping: 'neowiki-bundle-summary-mappings',
+	subject: 'neowiki-bundle-summary-subjects',
+} as const;
 
 /**
- * What this wiki changed or deleted stays in view, as the reader should know the import leaves it so.
+ * The file's items by type, then what installing it does, as "8 schemas, 30 subjects, all new".
  */
-function isQuiet( item: ImportItem ): boolean {
-	return item.action === null && item.reason === null && item.status === 'unchanged';
+export function planSummary( plan: ImportPlan ): string {
+	const fileItems = plan.items.filter( ( item ) => item.upstreamHash !== null );
+	const counts = ITEM_TYPES
+		.map( ( type ) => [ type, fileItems.filter( ( item ) => item.type === type ).length ] as const )
+		.filter( ( [ , count ] ) => count > 0 )
+		.map( ( [ type, count ] ) => mw.msg( SUMMARY_TYPES[ type ], count ) );
+
+	return [ ...counts, ...actionSummary( plan.items ) ].join( mw.msg( 'comma-separator' ) );
+}
+
+function actionSummary( items: readonly ImportItem[] ): string[] {
+	const created = items.filter( ( item ) => item.status === 'new' ).length;
+	const updated = items.filter( ( item ) => item.status === 'changed-upstream' ).length;
+	const decided = items.filter( needsDecision ).length;
+	const left = items.length - created - updated - decided;
+
+	if ( created === items.length ) {
+		return [ mw.msg( 'neowiki-bundle-summary-all-new' ) ];
+	}
+
+	if ( left === items.length ) {
+		return [ mw.msg( 'neowiki-bundle-summary-all-unchanged' ) ];
+	}
+
+	const parts: [ string, number ][] = [
+		[ 'neowiki-bundle-summary-new', created ],
+		[ 'neowiki-bundle-summary-update', updated ],
+		[ 'neowiki-bundle-summary-decide', decided ],
+		[ 'neowiki-bundle-summary-unchanged', left ],
+	];
+
+	// Messages used here:
+	// * neowiki-bundle-summary-new
+	// * neowiki-bundle-summary-update
+	// * neowiki-bundle-summary-decide
+	// * neowiki-bundle-summary-unchanged
+	return parts.filter( ( [ , count ] ) => count > 0 ).map( ( [ key, count ] ) => mw.msg( key, count ) );
 }
 
 export function importStatusText( item: ImportItem ): string {
