@@ -46,7 +46,7 @@ const hunks = computed( () => diffHunks( lineDiff( props.here, props.upstream ),
 	}
 
 	&__lines {
-		max-height: 24rem;
+		max-height: @size-2400;
 		overflow: auto;
 		margin: 0 0 @spacing-50;
 		padding: @spacing-50;

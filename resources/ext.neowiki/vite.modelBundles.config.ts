@@ -1,34 +1,19 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import { mediawikiImportTransformer } from './mediawikiImportTransformer';
+import { defineConfig, mergeConfig } from 'vite';
+import viteConfig from './vite.config';
 
 // The ext.neowiki.modelBundles module of the NeoWikiModelBundles extension (extension-model-bundles.json). It reaches
 // NeoWiki through require( 'ext.neowiki' ), so a page holds one copy of NeoWiki's code and its singletons.
-export default defineConfig( {
-	plugins: [ vue(), mediawikiImportTransformer() ],
+export default mergeConfig( viteConfig, defineConfig( {
 	build: {
 		lib: {
 			entry: 'modelBundles/src/modelBundles.ts',
 			fileName: () => 'modelBundles.js',
-			formats: [ 'cjs' ],
 		},
-		// The NeoWiki build writes to the same directory.
-		emptyOutDir: false,
 		rollupOptions: {
-			external: [ 'ext.neowiki', 'vue', '@wikimedia/codex', '@wikimedia/codex-icons', 'pinia' ],
+			external: [ 'ext.neowiki' ],
 			output: {
-				format: 'cjs',
-				assetFileNames: ( assetInfo ) => {
-					if ( assetInfo.name && assetInfo.name.endsWith( '.css' ) ) {
-						return 'modelBundles.css';
-					}
-					return assetInfo.name || 'unknown';
-				},
-				sourcemapBaseUrl: 'http://localhost:8484/extensions/NeoWiki/resources/ext.neowiki/dist/',
+				assetFileNames: ( assetInfo ) => assetInfo.name?.endsWith( '.css' ) ? 'modelBundles.css' : assetInfo.name || 'unknown',
 			},
 		},
-		target: 'es2015',
-		sourcemap: true,
-		minify: true,
 	},
-} );
+} ) );

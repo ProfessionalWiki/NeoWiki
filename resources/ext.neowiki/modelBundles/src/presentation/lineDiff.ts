@@ -5,11 +5,34 @@ export interface DiffLine {
 
 /**
  * The lines of `before` and `after`, each marked as kept in both, removed from before, or added in after,
- * with as many kept as can be. Meant for the few hundred lines of one item.
+ * with as many kept as can be.
  */
 export function lineDiff( before: string, after: string ): DiffLine[] {
 	const a = before.split( '\n' );
 	const b = after.split( '\n' );
+	// What both start and end with is kept as it is, so that the table the rest is compared by grows with the change.
+	const prefix = commonLength( a, b );
+	const suffix = commonLength( a.slice( prefix ).reverse(), b.slice( prefix ).reverse() );
+	const kept = ( text: string ): DiffLine => ( { change: 'kept', text } );
+
+	return [
+		...a.slice( 0, prefix ).map( kept ),
+		...changedLines( a.slice( prefix, a.length - suffix ), b.slice( prefix, b.length - suffix ) ),
+		...a.slice( a.length - suffix ).map( kept ),
+	];
+}
+
+function commonLength( a: string[], b: string[] ): number {
+	let length = 0;
+
+	while ( length < a.length && length < b.length && a[ length ] === b[ length ] ) {
+		length++;
+	}
+
+	return length;
+}
+
+function changedLines( a: string[], b: string[] ): DiffLine[] {
 	const longest = longestCommonSuffixLengths( a, b );
 	const lines: DiffLine[] = [];
 	let i = 0;

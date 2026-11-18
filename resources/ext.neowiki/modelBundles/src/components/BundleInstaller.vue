@@ -345,7 +345,7 @@ onMounted( async () => {
 	&__url {
 		display: flex;
 		gap: @spacing-50;
-		max-width: 40rem;
+		max-width: @size-4000;
 
 		.cdx-text-input {
 			flex-grow: 1;

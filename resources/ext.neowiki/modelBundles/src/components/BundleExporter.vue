@@ -319,7 +319,7 @@ onMounted( async () => {
 		column-gap: @spacing-200;
 
 		.cdx-checkbox {
-			min-width: 16rem;
+			min-width: @size-1600;
 		}
 	}
 
