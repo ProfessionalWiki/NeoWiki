@@ -30,13 +30,16 @@
 				<CdxButton
 					v-if="canInstall"
 					action="progressive"
-					weight="primary"
+					:weight="offersSetup ? 'normal' : 'primary'"
 					@click="openImport( null, false )"
 				>
 					<CdxIcon :icon="cdxIconUpload" />
 					{{ $i18n( 'neowiki-bundle-install-title' ).text() }}
 				</CdxButton>
-				<CdxButton @click="show( 'export' )">
+				<CdxButton
+					v-if="!offersSetup"
+					@click="show( 'export' )"
+				>
 					<CdxIcon :icon="cdxIconDownload" />
 					{{ $i18n( 'neowiki-bundle-export-title' ).text() }}
 				</CdxButton>
@@ -55,7 +58,7 @@
 			>
 				<p>{{ $i18n( 'neowiki-bundle-setup-empty-state' ).text() }}</p>
 				<a
-					class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive"
+					class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-primary"
 					:href="setupUrl"
 				>
 					{{ $i18n( 'neowiki-bundle-setup-title' ).text() }}

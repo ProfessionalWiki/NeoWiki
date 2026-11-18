@@ -616,6 +616,21 @@ describe( 'DataModelPage', () => {
 			expect( wrapper.find( '.ext-neowiki-data-model__setup a' ).attributes( 'href' ) ).toBe( '/wiki/Special:DataModel/setup' );
 		} );
 
+		it( 'makes it the primary action on a wiki without a data model', async () => {
+			const wrapper = await mountPage();
+
+			expect( [
+				wrapper.find( '.ext-neowiki-data-model__setup a' ).classes( 'cdx-button--weight-primary' ),
+				button( wrapper, 'neowiki-bundle-install-title' ).classes( 'cdx-button--weight-primary' ),
+			] ).toEqual( [ true, false ] );
+		} );
+
+		it( 'offers no export on a wiki without a data model', async () => {
+			const wrapper = await mountPage();
+
+			expect( hasButton( wrapper, 'neowiki-bundle-export-title' ) ).toBe( false );
+		} );
+
 		it( 'opens it on its subpage', async () => {
 			const wrapper = await mountPage( true, 'setup' );
 
