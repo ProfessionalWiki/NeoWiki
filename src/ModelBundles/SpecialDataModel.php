@@ -32,7 +32,7 @@ class SpecialDataModel extends SpecialPage {
 			'wgNeoWikiModelBundleCatalogs' => $this->getConfig()->get( 'NeoWikiModelBundleCatalogs' ),
 			'wgNeoWikiModelBundlePreselection' => $this->getConfig()->get( 'NeoWikiModelBundlePreselection' ),
 			'wgNeoWikiModelBundlesSetup' => [
-				'wikiHasSchemas' => OverviewNoticeHook::wikiHasSchemas(),
+				'wikiHasSchemas' => ModelBundlesNoticeHook::wikiHasSchemas(),
 				'wikiHasSubjects' => $extension->getPageIdentifiersLookup()->wikiHasSubjects(),
 				'canEditSettings' => $this->canEditSettings( $extension ),
 				'settings' => $extension->newConfigEditorJsConfigBuilder( $this->getAuthority() )->build(

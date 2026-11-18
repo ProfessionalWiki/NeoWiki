@@ -36,6 +36,12 @@
 			</div>
 		</div>
 
+		<component
+			:is="notice"
+			v-for="( notice, index ) in notices"
+			:key="index"
+		/>
+
 		<CdxMessage
 			v-if="listState === 'failed'"
 			type="error"
@@ -126,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import { type Component, computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
 import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
@@ -149,6 +155,11 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 
 const SCHEMA_PREFIX = 'Schema:';
 const VIEW_STORAGE_KEY = 'neowiki-schemas-view';
+
+defineProps<{
+	/** What other extensions show above the Schemas. */
+	notices: Component[];
+}>();
 
 const {
 	canEditSchema,

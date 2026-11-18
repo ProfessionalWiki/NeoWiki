@@ -28,11 +28,11 @@
 		"DataModel": "ProfessionalWiki\\NeoWiki\\ModelBundles\\SpecialDataModel"
 	},
 	"Hooks": {
-		"NeoWikiGetFrontendModules": "ModelBundlesOverviewNoticeHook"
+		"NeoWikiGetFrontendModules": "ModelBundlesNoticeHook"
 	},
 	"HookHandlers": {
-		"ModelBundlesOverviewNoticeHook": {
-			"class": "ProfessionalWiki\\NeoWiki\\ModelBundles\\OverviewNoticeHook"
+		"ModelBundlesNoticeHook": {
+			"class": "ProfessionalWiki\\NeoWiki\\ModelBundles\\ModelBundlesNoticeHook"
 		}
 	},
 	"attributes": {

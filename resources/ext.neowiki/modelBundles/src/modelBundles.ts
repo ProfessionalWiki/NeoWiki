@@ -18,7 +18,9 @@ function withModelBundleServices( component: Component ): Component {
 }
 
 mw.hook( 'neowiki.registration' ).add( ( registrar: FrontendRegistrar ) => {
-	registrar.registerOverviewNotice( withModelBundleServices( ModelBundlesNotice ) );
+	const notice = withModelBundleServices( ModelBundlesNotice );
+	registrar.registerOverviewNotice( notice );
+	registrar.registerSchemasNotice( notice );
 } );
 
 onUiStart( () => {

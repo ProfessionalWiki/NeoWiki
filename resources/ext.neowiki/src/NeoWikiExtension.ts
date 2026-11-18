@@ -208,6 +208,12 @@ export class NeoWikiExtension {
 		return this.overviewNotices;
 	}
 
+	private readonly schemasNotices: Component[] = [];
+
+	public getSchemasNotices(): Component[] {
+		return this.schemasNotices;
+	}
+
 	private pinia: Pinia | undefined;
 
 	public getPinia(): Pinia {

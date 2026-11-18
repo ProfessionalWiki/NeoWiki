@@ -21,6 +21,7 @@ export class FrontendRegistrar {
 		private readonly propertyTypeRegistry: PropertyTypeRegistry,
 		private readonly viewTypeRegistry: ViewTypeRegistry,
 		private readonly overviewNotices: Component[],
+		private readonly schemasNotices: Component[],
 	) {
 	}
 
@@ -52,6 +53,13 @@ export class FrontendRegistrar {
 	 */
 	public registerOverviewNotice( component: Component ): void {
 		this.overviewNotices.push( markRaw( component ) );
+	}
+
+	/**
+	 * Shows the component above the Schemas of Special:Schemas.
+	 */
+	public registerSchemasNotice( component: Component ): void {
+		this.schemasNotices.push( markRaw( component ) );
 	}
 
 	public markUiStarted(): void {

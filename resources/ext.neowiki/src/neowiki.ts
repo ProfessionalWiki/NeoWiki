@@ -74,6 +74,7 @@ function newFrontendRegistrar(): FrontendRegistrar {
 		ext.getPropertyTypeRegistry(),
 		ext.getViewTypeRegistry(),
 		ext.getOverviewNotices(),
+		ext.getSchemasNotices(),
 	);
 }
 
@@ -140,7 +141,7 @@ function initializeSchemasPage(): void {
 	if ( schemasPage !== null ) {
 		const ext = NeoWikiExtension.getInstance();
 
-		const app = createMwApp( SchemasPage ).directive( 'tooltip', CdxTooltip );
+		const app = createMwApp( SchemasPage, { notices: ext.getSchemasNotices() } ).directive( 'tooltip', CdxTooltip );
 		app.use( ext.getPinia() );
 		NeoWikiServices.registerServices( app );
 		mountNeoWikiApp( app, schemasPage );

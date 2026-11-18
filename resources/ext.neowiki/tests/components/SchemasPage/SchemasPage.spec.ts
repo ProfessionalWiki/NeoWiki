@@ -1,6 +1,6 @@
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { ref } from 'vue';
+import { type Component, h, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SchemaCard from '@/components/SchemasPage/SchemaCard.vue';
@@ -125,6 +125,7 @@ interface PageOptions {
 	subjectSummaryLookup?: SubjectSummaryLookup;
 	/** The counts of a reader who sees them; a reader who sees none without it. */
 	subjectCountLookup?: SubjectCountLookup;
+	notices?: Component[];
 }
 
 function mountPage( options: PageOptions = {} ): VueWrapper {
@@ -138,6 +139,7 @@ function mountPage( options: PageOptions = {} ): VueWrapper {
 	} } );
 
 	return mount( SchemasPage, {
+		props: { notices: options.notices ?? [] },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -408,6 +410,14 @@ describe( 'SchemasPage', () => {
 		await flushPromises();
 
 		expect( wrapper.text() ).toContain( 'neowiki-schemas-empty' );
+	} );
+
+	it( 'shows the notices other extensions register above the Schemas', async () => {
+		listSchemas( [] );
+		const wrapper = mountPage( { notices: [ { render: () => h( 'p', { class: 'test-notice' }, 'Set up your data model' ) } ] } );
+		await flushPromises();
+
+		expect( wrapper.find( '.test-notice' ).exists() ).toBe( true );
 	} );
 
 	it( 'shows that the Schemas are loading, rather than that there are none', async () => {

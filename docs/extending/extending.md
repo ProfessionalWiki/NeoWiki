@@ -101,11 +101,13 @@ JavaScript with no build step; [TypeScript](javascript.md#authoring-in-typescrip
 NeoWiki's UI starts once the modules this hook names have loaded or failed to load, so what they register as they run
 is in place before it reads any data, and a slow module delays it. It does not wait for a module you load yourself.
 
-### Notices on Special:NeoWiki
+### Notices on Special:NeoWiki and Special:Schemas
 
-`registrar.registerOverviewNotice( component )` shows the component above the cards of Special:NeoWiki. While it emits
-`replacesFirstSteps` with `true`, the note that tells a new wiki how to start is left out. Load its module on
-Special:NeoWiki through the `NeoWikiGetFrontendModules` hook.
+In the `neowiki.registration` hook, `registrar.registerOverviewNotice( component )` shows the component above the
+cards of Special:NeoWiki, and `registrar.registerSchemasNotice( component )` above the Schemas of Special:Schemas.
+While an overview notice emits `replacesFirstSteps` with `true`, the note that tells a new wiki how to start is left
+out. Load the notice's module on those pages through the `NeoWikiGetFrontendModules` hook. Example:
+[`ModelBundlesNotice.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/modelBundles/src/components/ModelBundlesNotice.vue).
 
 ### Links on Special:NeoWiki
 
