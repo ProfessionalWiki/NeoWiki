@@ -17,8 +17,7 @@ type RecordOutcome = { readonly saved: true } | { readonly saved: false; readonl
 
 export interface ImportOutcome {
 	readonly items: readonly ItemOutcome[];
-	/** Null for a plain import, which leaves no install record. */
-	readonly record: RecordOutcome | null;
+	readonly record: RecordOutcome;
 }
 
 interface RunContext {
@@ -32,7 +31,7 @@ interface RunContext {
 
 /**
  * Writes the chosen items one at a time: Schemas, then Layouts, Mappings and Subjects, then the removals in the
- * opposite order. A failure does not stop the others. A bundle's install record is written last.
+ * opposite order. A failure does not stop the others. The install record is written last.
  */
 export async function runImport(
 	plan: ImportPlan,
@@ -54,7 +53,7 @@ export async function runImport(
 
 	return {
 		items: outcomes,
-		record: plan.bundleName === null ? null : await saveRecord( plan, outcomes, context ),
+		record: await saveRecord( plan, outcomes, context ),
 	};
 }
 
@@ -172,7 +171,7 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source:
 	const metadata = plan.bundle.metadata;
 
 	return {
-		name: plan.bundleName as string,
+		name: plan.bundleName,
 		version: metadata?.version ?? '',
 		description: metadata?.description ?? '',
 		source,

@@ -69,10 +69,4 @@ describe( 'resultHeadline', () => {
 		expect( resultHeadline( importPlan, { ...outcome( importPlan ), record: { saved: false, reason: 'Edit conflict' } } ) ).toBeNull();
 	} );
 
-	it( 'heads nothing for a plain import', async () => {
-		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), null );
-
-		expect( resultHeadline( importPlan, { ...outcome( importPlan ), record: null } ) ).toBeNull();
-	} );
-
 } );

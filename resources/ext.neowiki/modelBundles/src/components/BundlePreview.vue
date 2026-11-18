@@ -45,7 +45,7 @@
 						>
 							{{ itemName( item ) }}
 							<template #description>
-								{{ importStatusText( item, plan.bundleName !== null ) }}
+								{{ importStatusText( item ) }}
 								<span
 									v-for="note in importNotes( item )"
 									:key="note"
@@ -60,7 +60,7 @@
 							class="ext-neowiki-bundle-preview__static-item"
 						>
 							<span class="ext-neowiki-bundle-preview__name">{{ itemName( item ) }}</span>
-							<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item, plan.bundleName !== null ) }}</span>
+							<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item ) }}</span>
 							<span
 								v-for="note in importNotes( item )"
 								:key="note"
@@ -86,7 +86,7 @@
 						>
 							<p class="ext-neowiki-bundle-preview__static-item">
 								<span class="ext-neowiki-bundle-preview__name">{{ itemName( item ) }}</span>
-								<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item, plan.bundleName !== null ) }}</span>
+								<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item ) }}</span>
 								<span
 									v-for="note in importNotes( item )"
 									:key="note"

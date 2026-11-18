@@ -16,7 +16,7 @@ interface BundleImport {
 	outcome: ShallowRef<ImportOutcome | null>;
 	error: Ref<string | null>;
 	/** Compares the file with the wiki; again for another bundle name, without reading the wiki again. */
-	prepare: ( bundle: ModelBundle, bundleName: string | null, records: readonly InstallRecord[] ) => Promise<void>;
+	prepare: ( bundle: ModelBundle, bundleName: string, records: readonly InstallRecord[] ) => Promise<void>;
 	/** Writes the chosen items. Source is where the bundle was read from: its URL, or FILE_SOURCE. */
 	run: ( source: string ) => Promise<void>;
 }
@@ -36,7 +36,7 @@ export function useBundleImport(): BundleImport {
 	// Numbers the comparisons asked for, so one answered after a later one cannot replace its newer plan.
 	let preparation = 0;
 
-	async function prepare( bundle: ModelBundle, bundleName: string | null, records: readonly InstallRecord[] ): Promise<void> {
+	async function prepare( bundle: ModelBundle, bundleName: string, records: readonly InstallRecord[] ): Promise<void> {
 		const sequence = ++preparation;
 		planning.value = true;
 		error.value = null;
@@ -94,9 +94,5 @@ export function useBundleImport(): BundleImport {
 }
 
 function summaryOf( plan: ImportPlan ): string {
-	if ( plan.bundleName === null ) {
-		return mw.msg( 'neowiki-bundle-import-summary' );
-	}
-
 	return mw.msg( plan.record === null ? 'neowiki-bundle-install-summary' : 'neowiki-bundle-update-summary', plan.bundleName );
 }

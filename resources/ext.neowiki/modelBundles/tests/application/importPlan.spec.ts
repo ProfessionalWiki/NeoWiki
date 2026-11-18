@@ -166,12 +166,6 @@ describe( 'planImport', () => {
 			expect( reasonOf( importPlan, ID_1 ) ).toBe( 'neowiki-bundle-conflict-ownedGenders' );
 		} );
 
-		it( 'imports an item another bundle owns when the file is a plain export', async () => {
-			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [], { name: 'Genders' } ) ];
-
-			expect( row( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), null ), ID_1 ) ).toEqual( [ 'new', 'create', true ] );
-		} );
-
 		it( 'refuses an item whose version on the wiki cannot be read', async () => {
 			wiki.unreadable.add( `subject:${ ID_1 }` );
 

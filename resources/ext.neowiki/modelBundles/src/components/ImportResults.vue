@@ -45,11 +45,11 @@
 		</section>
 
 		<CdxMessage
-			v-if="outcome.record !== null && !outcome.record.saved"
+			v-if="!outcome.record.saved"
 			type="error"
 			class="ext-neowiki-import-results__record-failure"
 		>
-			{{ $i18n( 'neowiki-bundle-record-failed', plan.bundleName ?? '', outcome.record.reason ).text() }}
+			{{ $i18n( 'neowiki-bundle-record-failed', plan.bundleName, outcome.record.reason ).text() }}
 		</CdxMessage>
 	</div>
 </template>

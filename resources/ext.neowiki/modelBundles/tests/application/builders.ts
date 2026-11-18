@@ -74,7 +74,7 @@ export function installed(
 export function planOn(
 	wiki: InMemoryDataModel,
 	bundle: ModelBundle,
-	bundleName: string | null = VOCABULARIES.name,
+	bundleName: string = VOCABULARIES.name,
 	subjectFirst = false,
 ): Promise<ImportPlan> {
 	return planImport( bundle, bundleName, {

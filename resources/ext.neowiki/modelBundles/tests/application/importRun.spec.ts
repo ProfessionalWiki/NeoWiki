@@ -287,13 +287,6 @@ describe( 'runImport', () => {
 			expect( outcome.record ).toEqual( { saved: false, reason: 'You do not have permission' } );
 		} );
 
-		it( 'leaves none for a plain import', async () => {
-			const outcome = await run( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), null ) );
-
-			expect( outcome.record ).toBeNull();
-			expect( wiki.records ).toEqual( [] );
-		} );
-
 	} );
 
 } );

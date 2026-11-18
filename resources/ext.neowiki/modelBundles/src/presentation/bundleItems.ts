@@ -88,12 +88,9 @@ function isQuiet( item: ImportItem ): boolean {
 	return item.action === null && item.reason === null && item.status === 'unchanged';
 }
 
-/**
- * A bundle install says what installing does, a plain import what importing does.
- */
-export function importStatusText( item: ImportItem, installs: boolean ): string {
+export function importStatusText( item: ImportItem ): string {
 	if ( item.status === 'conflict' ) {
-		return mw.msg( installs ? 'neowiki-bundle-status-conflict-install' : 'neowiki-bundle-status-conflict', item.reason ?? '' );
+		return mw.msg( 'neowiki-bundle-status-conflict', item.reason ?? '' );
 	}
 
 	if ( item.status === 'removed-upstream' ) {
@@ -102,10 +99,6 @@ export function importStatusText( item: ImportItem, installs: boolean ): string 
 
 	if ( item.status === 'deleted-here' && item.action === 'create' ) {
 		return mw.msg( 'neowiki-bundle-status-deleted-here-changed-upstream' );
-	}
-
-	if ( item.status === 'differs' && installs ) {
-		return mw.msg( 'neowiki-bundle-status-differs-install' );
 	}
 
 	// Messages used here:
@@ -123,10 +116,7 @@ export function importStatusText( item: ImportItem, installs: boolean ): string 
  * What a row of the preview says besides its status, each on a line of its own.
  */
 export function importNotes( item: ImportItem ): string[] {
-	return [
-		...( item.pageTitleTaken ? [ mw.msg( 'neowiki-bundle-page-title-taken', item.pageTitle ?? '' ) ] : [] ),
-		...( item.owner !== null && item.status !== 'conflict' ? [ mw.msg( 'neowiki-bundle-belongs-to', item.owner ) ] : [] ),
-	];
+	return item.pageTitleTaken ? [ mw.msg( 'neowiki-bundle-page-title-taken', item.pageTitle ?? '' ) ] : [];
 }
 
 interface ResultGroup {
@@ -153,11 +143,11 @@ interface ResultHeadline {
 }
 
 /**
- * What an install or update came to, once the bundle is recorded as installed. Null for a plain import, which
- * records nothing, and when the record could not be saved, which is told after the items.
+ * What an install or update came to, once the bundle is recorded as installed. Null when the record could not
+ * be saved, which is told after the items.
  */
 export function resultHeadline( plan: ImportPlan, outcome: ImportOutcome ): ResultHeadline | null {
-	if ( plan.bundleName === null || outcome.record?.saved !== true ) {
+	if ( !outcome.record.saved ) {
 		return null;
 	}
 

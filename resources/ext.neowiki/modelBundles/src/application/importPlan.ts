@@ -66,15 +66,12 @@ export interface ImportItem {
 	readonly recorded: RecordedItem | null;
 	/** Of the page of a Schema, Layout or Mapping the wiki has, as the plan read it, for the write to save over. */
 	readonly revisionId: number | null;
-	/** The installed bundle the item belongs to, when that is not the bundle being installed. */
-	readonly owner: string | null;
 }
 
 export interface ImportPlan {
 	readonly bundle: ModelBundle;
-	/** Null for a plain import, which leaves no install record. */
-	readonly bundleName: string | null;
-	/** Null for a first install or a plain import. */
+	readonly bundleName: string;
+	/** Null for a first install. */
 	readonly record: InstallRecord | null;
 	readonly items: readonly ImportItem[];
 }
@@ -95,12 +92,10 @@ interface Upstream {
 }
 
 /**
- * A null bundleName is a plain import. The wiki is read through the context's reader, which keeps what it read.
+ * The wiki is read through the context's reader, which keeps what it read.
  */
-export async function planImport( bundle: ModelBundle, bundleName: string | null, context: PlanContext ): Promise<ImportPlan> {
-	const record = bundleName === null ?
-		null :
-		context.records.find( ( installed ) => sameBundleName( installed.name, bundleName ) ) ?? null;
+export async function planImport( bundle: ModelBundle, bundleName: string, context: PlanContext ): Promise<ImportPlan> {
+	const record = context.records.find( ( installed ) => sameBundleName( installed.name, bundleName ) ) ?? null;
 	const recorded = recordedItems( record );
 	const owners = ownersOtherThan( context.records, record );
 	const upstream = upstreamItems( bundle );
@@ -114,13 +109,12 @@ export async function planImport( bundle: ModelBundle, bundleName: string | null
 		...dependents.map( ( dependent ) => ( { type: 'schema' as const, key: dependent.schema } ) ),
 	] );
 
-	// Another bundle's item is a conflict to a bundle install; a plain import writes it, saying whose it is.
-	const fileItems = withDependentSchemasChecked( [ ...upstream.values() ].map( ( item ) => {
-		const owner = owners.get( itemId( item.type, item.key ) ) ?? null;
-		const recordedItem = recorded.get( itemId( item.type, item.key ) ) ?? null;
-
-		return { ...classifyUpstream( item, states, recordedItem, bundleName === null ? null : owner ), owner };
-	} ), states );
+	const fileItems = withDependentSchemasChecked( [ ...upstream.values() ].map( ( item ) => classifyUpstream(
+		item,
+		states,
+		recorded.get( itemId( item.type, item.key ) ) ?? null,
+		owners.get( itemId( item.type, item.key ) ) ?? null,
+	) ), states );
 
 	const removedItems = await classifyRemoved( removed, states, bundle, recorded, context.repository );
 
@@ -421,7 +415,6 @@ function baseItem( type: ItemType, key: string, name: string | null, schema: str
 		upstreamHash: null,
 		recorded: null,
 		revisionId: null,
-		owner: null,
 	};
 }
 
