@@ -27,6 +27,14 @@
 				role="group"
 				:aria-label="$i18n( 'neowiki-schema-editor-schema' ).text()"
 			>
+				<slot name="name" />
+				<LabelsInput
+					ref="schemaLabelsInput"
+					:labels="currentSchema.getLabels()"
+					:label="$i18n( 'neowiki-schema-editor-labels' ).text()"
+					:description="$i18n( 'neowiki-schema-editor-labels-description' ).text()"
+					@update:labels="onSchemaLabelsUpdated"
+				/>
 				<slot name="schema" />
 			</div>
 			<PropertyDefinitionEditor
@@ -57,6 +65,7 @@ import { ComponentPublicInstance, computed, nextTick, provide, ref, watch } from
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
+import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import EditorPanes, { type StartPaneOptions } from '@/components/common/EditorPanes.vue';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
@@ -84,11 +93,10 @@ const emit = defineEmits<{
 	change: [];
 }>();
 
+// The host's fields of the Schema as a whole, shown while the Schema's own row is selected: creating and editing a
+// Schema offer different ones. Its name field goes in `name`, ahead of the Schema's labels.
 defineSlots<{
-	/**
-	 * The fields of the Schema as a whole, shown while the Schema's own row is selected. The host's: creating and
-	 * editing a Schema offer different fields.
-	 */
+	name?(): unknown;
 	schema(): unknown;
 }>();
 
@@ -158,7 +166,7 @@ watch( () => props.initialSchema, ( schema ) => {
 
 const detail = ref<HTMLElement | null>( null );
 
-// The first of the host's fields takes the focus once the Schema's row is chosen, as a property's name does when its
+// The first of the Schema's fields takes the focus once the Schema's row is chosen, as a property's name does when its
 // editor mounts: a tick after the change renders, after the list has focused the row. Not on opening, which is no
 // change: the host decides where the focus goes then.
 watch( selection, async ( row ) => {
@@ -177,6 +185,7 @@ function focusSchemaFields(): void {
 }
 
 const propertyDefinitionEditor = ref<( ComponentPublicInstance & PropertyDefinitionEditorExposes ) | null>( null );
+const schemaLabelsInput = ref<LabelsInputExposes | null>( null );
 
 const selectedProperty = computed( () => {
 	if ( selectedPropertyName.value === undefined ) {
@@ -198,13 +207,13 @@ const otherPropertyNames = computed( (): string[] =>
 
 function moveSelectionTo( row: PropertyListRow ): void {
 	if ( !isSelected( row ) ) {
-		leaveSelectedProperty( () => select( row ) );
+		leaveSelectedRow( () => select( row ) );
 	}
 }
 
-// Leaving the selected property rebuilds the property editor, which would drop text its fields
-// cannot read while the user can still see it: the user is told to deal with that text first.
-function leaveSelectedProperty( leave: () => void ): void {
+// Leaving the selected row rebuilds the fields in its pane, which would drop text they cannot
+// read while the user can still see it: the user is told to deal with that text first.
+function leaveSelectedRow( leave: () => void ): void {
 	const blocker = unparseableInput();
 
 	if ( blocker !== null ) {
@@ -216,7 +225,7 @@ function leaveSelectedProperty( leave: () => void ): void {
 }
 
 function addProperty(): void {
-	leaveSelectedProperty( () => {
+	leaveSelectedRow( () => {
 		const newProperty = createNewProperty();
 		currentSchema.value = currentSchema.value.withAddedPropertyDefinition( newProperty );
 		createdPropertyName.value = newProperty.name.toString();
@@ -266,6 +275,11 @@ function onPropertyDeleted( name: PropertyName ): void {
 		select( defaultRow() );
 	}
 
+	emit( 'change' );
+}
+
+function onSchemaLabelsUpdated( labels: Record<string, string> | undefined ): void {
+	currentSchema.value = currentSchema.value.withLabels( labels );
 	emit( 'change' );
 }
 
@@ -329,17 +343,13 @@ export interface SchemaEditorExposes {
 const saveBlocker = (): SaveBlocker | null => unparseableInput() ?? invalidPropertyName() ?? incompleteProperty();
 
 /**
- * The property with a field showing text that getSchema() leaves out. Only the
- * selected property has an editor mounted.
+ * The field showing text that getSchema() leaves out, in the Schema's labels or the selected
+ * property. Only the selected row's fields are mounted.
  */
 const unparseableInput = (): SaveBlocker | null => {
-	const message = propertyDefinitionEditor.value?.unparseableInputMessage() ?? null;
+	const message = ( schemaLabelsInput.value ?? propertyDefinitionEditor.value )?.unparseableInputMessage() ?? null;
 
-	if ( message === null || selectedPropertyName.value === undefined ) {
-		return null;
-	}
-
-	return { propertyName: selectedPropertyName.value, message };
+	return message === null ? null : { propertyName: selectedPropertyName.value, message };
 };
 
 /**
@@ -375,14 +385,14 @@ const errorsRevealed = ref( false );
 
 provide( ErrorsRevealedKey, errorsRevealed );
 
-/** For the host to call when it refuses a save. Selects the property the save is refused over, so its errors show. */
+/** For the host to call when it refuses a save. Selects the row the save is refused over, so its errors show. */
 const revealErrors = (): void => {
 	errorsRevealed.value = true;
 
 	const blocker = saveBlocker();
 
 	if ( blocker !== null ) {
-		moveSelectionTo( propertyRow( blocker.propertyName ) );
+		moveSelectionTo( blocker.propertyName === undefined ? SCHEMA_ROW : propertyRow( blocker.propertyName ) );
 	}
 };
 

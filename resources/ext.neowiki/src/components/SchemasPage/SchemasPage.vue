@@ -136,7 +136,7 @@ import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
-import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { schemaSummaryOf, type SchemaSummary } from '@/application/SchemaLookup.ts';
 import { sortedByDisplayName } from '@/presentation/schemaDisplayName.ts';
 import { matchesSchemaSearch } from '@/presentation/schemaMenu.ts';
 import SchemaCard from './SchemaCard.vue';
@@ -280,7 +280,7 @@ const handleSaveSchema = async ( updatedSchema: Schema, comment: string ): Promi
 	await schemaStore.saveSchema( updatedSchema, comment );
 
 	schemas.value = schemas.value.map( ( summary ) => summary.name === updatedSchema.getName() ?
-		{ ...summary, description: updatedSchema.getDescription() } :
+		schemaSummaryOf( updatedSchema ) :
 		summary );
 };
 
