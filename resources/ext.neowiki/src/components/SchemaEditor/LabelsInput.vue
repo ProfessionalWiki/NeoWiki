@@ -1,7 +1,7 @@
 <template>
 	<MonolingualTextInput
 		:model-value="value"
-		:label="$i18n( 'neowiki-property-editor-labels' ).text()"
+		:label="props.label"
 		:property="labelsProperty"
 		:server-violations="violations"
 		@update:model-value="onInput"
@@ -13,10 +13,12 @@ import { computed, shallowRef } from 'vue';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import type { MonolingualTextValue, Value } from '@/domain/Value.ts';
 import { newMonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
-import { labelsAsValue, labelsOf, repeatedLanguageViolations } from '@/components/SchemaEditor/Property/labelEditing.ts';
+import { labelsAsValue, labelsOf, repeatedLanguageViolations } from '@/components/SchemaEditor/labelEditing.ts';
 
 const props = defineProps<{
 	labels?: Readonly<Record<string, string>>;
+	label: string;
+	description: string;
 }>();
 
 const emit = defineEmits<{
@@ -25,7 +27,7 @@ const emit = defineEmits<{
 
 const labelsProperty = newMonolingualTextProperty( {
 	name: 'labels',
-	description: mw.message( 'neowiki-property-editor-labels-description' ).text(),
+	description: props.description,
 	multiple: true
 } );
 
@@ -40,7 +42,7 @@ function onInput( newValue: Value | undefined ): void {
 	emit( 'update:labels', labelsOf( value.value ) );
 }
 
-export interface PropertyLabelsInputExposes {
+export interface LabelsInputExposes {
 	unparseableInputMessage(): string | null;
 }
 
@@ -48,5 +50,5 @@ function unparseableInputMessage(): string | null {
 	return violations.value.length === 0 ? null : mw.message( 'neowiki-field-single-value-per-language' ).text();
 }
 
-defineExpose<PropertyLabelsInputExposes>( { unparseableInputMessage } );
+defineExpose<LabelsInputExposes>( { unparseableInputMessage } );
 </script>

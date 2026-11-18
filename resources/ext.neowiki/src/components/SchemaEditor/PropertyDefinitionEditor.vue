@@ -26,9 +26,11 @@
 			/>
 		</CdxField>
 
-		<PropertyLabelsInput
+		<LabelsInput
 			ref="labelsInput"
 			v-model:labels="localProperty.labels"
+			:label="$i18n( 'neowiki-property-editor-labels' ).text()"
+			:description="$i18n( 'neowiki-property-editor-labels-description' ).text()"
 		/>
 
 		<CdxField>
@@ -80,7 +82,7 @@
 import { PropertyDefinition, PropertyName, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
-import PropertyLabelsInput, { type PropertyLabelsInputExposes } from '@/components/SchemaEditor/Property/PropertyLabelsInput.vue';
+import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
@@ -273,7 +275,7 @@ const takesInitialValue = computed( (): boolean => targetSchemaNames.value.lengt
 	targetsDependentSubjects( targetSchemaNames.value, subjectsAreDependentIn( schemaSummaries.value ) ) !== true
 ) );
 
-const labelsInput = ref<PropertyLabelsInputExposes | null>( null );
+const labelsInput = ref<LabelsInputExposes | null>( null );
 const attributesEditor = ref<AttributesEditorExposes | null>( null );
 const defaultValueInput = ref<ValueInputExposes | null>( null );
 

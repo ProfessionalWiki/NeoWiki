@@ -7,7 +7,7 @@
 		:opens-on-schema="true"
 		@change="onChange"
 	>
-		<template #schema>
+		<template #name>
 			<CdxField
 				:status="nameStatus"
 				:messages="nameError ? { error: nameError } : {}"
@@ -21,7 +21,9 @@
 					{{ $i18n( 'neowiki-schema-creator-name-field' ).text() }}
 				</template>
 			</CdxField>
+		</template>
 
+		<template #schema>
 			<CdxField :optional="true">
 				<CdxTextArea
 					v-model="schemaDescription"
@@ -91,7 +93,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
-	/** The Schema to duplicate: the new one starts with all of it but the name. */
+	/** The Schema to duplicate: the new one starts with all of it but its name and labels, which name the original. */
 	duplicateOf?: Schema;
 	/**
 	 * Set to decide for the user. Null leaves it to them, starting from what a duplicated Schema declares.
@@ -110,7 +112,8 @@ const schemaStore = useSchemaStore();
 
 const DEBOUNCE_DELAY = 300;
 
-const baseSchema = props.duplicateOf ?? new Schema( '', '', new PropertyDefinitionList( [] ), false, undefined );
+const baseSchema = props.duplicateOf?.withLabels( undefined ) ??
+	new Schema( '', '', new PropertyDefinitionList( [] ), false, undefined );
 
 const schemaName = defineModel<string>( 'name', { default: '' } );
 const schemaDescription = ref( baseSchema.getDescription() );
@@ -203,10 +206,8 @@ function getSchema(): Schema | null {
 		return null;
 	}
 
-	// Labels name a Schema as its name does, so a duplicate starts without those of the original.
 	return ( schemaEditorRef.value?.getSchema() ?? baseSchema )
 		.withName( name )
-		.withLabels( undefined )
 		.withDescription( schemaDescription.value.trim() )
 		.withSubjectsAreDependent( subjectsAreDependent.value );
 }

@@ -69,7 +69,7 @@ import { useSaveGuard } from '@/composables/useSaveGuard.ts';
 const props = withDefaults( defineProps<{
 	open: boolean;
 	initialName?: string;
-	/** The Schema to duplicate: the new one starts with all of it but the name. */
+	/** The Schema to duplicate: the new one starts with all of it but its name and labels, which name the original. */
 	duplicateOf?: Schema;
 	/** Set to decide for the user; null leaves it to them. */
 	subjectsAreDependent?: boolean | null;

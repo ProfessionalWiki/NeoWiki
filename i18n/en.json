@@ -196,6 +196,8 @@
 	"neowiki-schema-editor-subject-label": "Label",
 	"neowiki-schema-editor-subject-label-help": "Each subject has an optional label for its name or title, so you do not need a Name or Title property.",
 	"neowiki-schema-editor-optional-property-type": "$1 · Optional",
+	"neowiki-schema-editor-labels": "Labels",
+	"neowiki-schema-editor-labels-description": "Shown to readers in place of the name, in their language.",
 	"neowiki-schema-editor-description": "Description",
 	"neowiki-schema-editor-resize-property-list": "Resize property list",
 	"neowiki-schema-editor-description-placeholder": "Enter a description for the schema",

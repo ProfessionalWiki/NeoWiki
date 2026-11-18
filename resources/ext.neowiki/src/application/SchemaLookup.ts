@@ -24,6 +24,16 @@ export interface SchemaLookup {
 
 }
 
+export function schemaSummaryOf( schema: Schema ): SchemaSummary {
+	return {
+		name: schema.getName(),
+		description: schema.getDescription(),
+		propertyCount: [ ...schema.getPropertyDefinitions() ].length,
+		subjectsAreDependent: schema.subjectsAreDependent(),
+		labels: schema.getLabels(),
+	};
+}
+
 /**
  * Undefined for a Schema the summaries leave out.
  */
@@ -56,13 +66,7 @@ export class InMemorySchemaLookup implements SchemaLookup {
 	}
 
 	public async getSchemaSummaries( cursor: string | null, limit: number ): Promise<SchemaSummaryPage> {
-		const summaries = [ ...this.schemas.values() ].map( ( schema ) => ( {
-			name: schema.getName(),
-			description: schema.getDescription(),
-			propertyCount: [ ...schema.getPropertyDefinitions() ].length,
-			subjectsAreDependent: schema.subjectsAreDependent(),
-			labels: schema.getLabels(),
-		} ) );
+		const summaries = [ ...this.schemas.values() ].map( schemaSummaryOf );
 
 		// The cursor is opaque to callers; this fake encodes the next start index in it.
 		const start = cursor === null ? 0 : parseInt( cursor, 10 );

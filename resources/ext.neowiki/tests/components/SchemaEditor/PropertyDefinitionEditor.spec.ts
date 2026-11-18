@@ -19,12 +19,12 @@ import { newSelectProperty, SelectProperty } from '@/domain/propertyTypes/Select
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
 import { PropertyDefinition } from '@/domain/PropertyDefinition';
-import PropertyLabelsInput from '@/components/SchemaEditor/Property/PropertyLabelsInput.vue';
 import { newNumberValue, newStringValue } from '@/domain/Value';
 import {
 	createTestWrapper,
 	FieldProps,
 	findPropertyNameInput,
+	labelTextInputs,
 	reportPartlyClearedDate,
 	reportUnparseableNumber,
 	selectedText,
@@ -95,10 +95,6 @@ describe( 'PropertyDefinitionEditor', () => {
 	} );
 
 	describe( 'labels', () => {
-		function labelTextInputs( wrapper: VueWrapper ): ReturnType<VueWrapper['findAll']> {
-			return wrapper.findComponent( PropertyLabelsInput ).findAll( '.ext-neowiki-monolingual-text-input__text input' );
-		}
-
 		it( 'are taken from the labels field', async () => {
 			const wrapper = newWrapper( newDateProperty( { name: 'Birth date' } ) );
 

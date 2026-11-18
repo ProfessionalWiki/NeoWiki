@@ -13,7 +13,7 @@ import { newSchema } from '@/TestHelpers.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
-import { afterQueuedTasks, createI18nMock, findPropertyNameInput, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
+import { afterQueuedTasks, createI18nMock, findPropertyNameInput, labelTextInputs, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
@@ -37,8 +37,9 @@ const PropertyDefinitionEditorStub = defineComponent( {
 	},
 } );
 
-// What a host puts in the pane of the Schema's own row.
-const SCHEMA_FIELDS = '<div class="schema-fields"><p>The fields of the Schema</p><input class="schema-name"></div>';
+// What a host puts in the pane of the Schema's own row: its name field, and its other fields.
+const SCHEMA_NAME_FIELD = '<label>The name of the Schema <input class="schema-name"></label>';
+const SCHEMA_FIELDS = '<div class="schema-fields"><p>The fields of the Schema</p></div>';
 
 function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
 	return mount( SchemaEditor, {
@@ -47,9 +48,11 @@ function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): V
 			...props,
 		},
 		slots: {
+			name: SCHEMA_NAME_FIELD,
 			schema: SCHEMA_FIELDS,
 		},
 		global: {
+			directives: { tooltip: {} },
 			mocks: {
 				$i18n: createI18nMock(),
 			},
@@ -65,10 +68,11 @@ function createWrapper( schema: Schema, props: Record<string, unknown> = {} ): V
 function createWrapperWithPropertyList( schema: Schema, props: Record<string, unknown> = {} ): VueWrapper {
 	const wrapper = mount( SchemaEditor, {
 		props: { initialSchema: schema, ...props },
-		slots: { schema: SCHEMA_FIELDS },
+		slots: { name: SCHEMA_NAME_FIELD, schema: SCHEMA_FIELDS },
 		attachTo: document.body,
 		global: {
 			provide: NeoWikiTestServices.getServices(),
+			directives: { tooltip: {} },
 			mocks: { $i18n: createI18nMock() },
 			stubs: { PropertyDefinitionEditor: PropertyDefinitionEditorStub },
 		},
@@ -124,6 +128,10 @@ function saveBlocker( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['sav
 	return ( wrapper.vm as unknown as SchemaEditorExposes ).saveBlocker();
 }
 
+function editedSchema( wrapper: VueWrapper ): Schema {
+	return ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
+}
+
 describe( 'SchemaEditor', () => {
 
 	beforeEach( () => {
@@ -134,7 +142,11 @@ describe( 'SchemaEditor', () => {
 		};
 
 		vi.stubGlobal( 'mw', {
-			config: { get: vi.fn( ( key: string ) => ( { wgUserLanguage: 'en', wgContentLanguage: 'en' } as Record<string, string> )[ key ] ) },
+			config: { get: vi.fn( ( key: string ) => ( {
+				wgUserLanguage: 'en',
+				wgContentLanguage: 'en',
+				wgNeoWikiDataLanguages: [ 'en' ],
+			} as Record<string, unknown> )[ key ] ) },
 			language: { bcp47: ( code: string ) => code },
 			notify: vi.fn(),
 			msg: vi.fn( ( key: string ) => key ),
@@ -394,6 +406,101 @@ describe( 'SchemaEditor', () => {
 		await wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit( 'update:propertyDefinition', updatedProperty );
 
 		expect( ( ( wrapper.vm as any ).getSchema() as Schema ).getLabels() ).toEqual( { de: 'Unternehmen' } );
+	} );
+
+	describe( 'the Schema\'s labels', () => {
+		it( 'show in the Schema\'s pane', () => {
+			const wrapper = createWrapper( newSchema( { labels: { en: 'Firm' } } ), { opensOnSchema: true } );
+
+			expect( labelTextInputs( wrapper )[ 0 ].element.value ).toBe( 'Firm' );
+		} );
+
+		it( 'come after the host\'s name field and before its other fields', () => {
+			const wrapper = createWrapper( newSchema(), { opensOnSchema: true } );
+
+			expect( wrapper.text() ).toMatch( /The name of the Schema.*neowiki-schema-editor-labels.*The fields of the Schema/s );
+		} );
+
+		it( 'are taken from their field', async () => {
+			const wrapper = createWrapper( newSchema(), { opensOnSchema: true } );
+
+			await labelTextInputs( wrapper )[ 0 ].setValue( 'Firm' );
+
+			expect( editedSchema( wrapper ).getLabels() ).toEqual( { en: 'Firm' } );
+		} );
+
+		it( 'count as a change', async () => {
+			const wrapper = createWrapper( newSchema(), { opensOnSchema: true } );
+
+			await labelTextInputs( wrapper )[ 0 ].setValue( 'Firm' );
+
+			expect( wrapper.emitted( 'change' ) ).toHaveLength( 1 );
+		} );
+
+		it( 'are shown again when the Schema\'s row is chosen again', async () => {
+			const wrapper = createWrapper( newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+			} ), { opensOnSchema: true } );
+			await labelTextInputs( wrapper )[ 0 ].setValue( 'Firm' );
+			await selectProperty( wrapper, 'Alpha' );
+
+			await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'select', SCHEMA_ROW );
+
+			expect( labelTextInputs( wrapper )[ 0 ].element.value ).toBe( 'Firm' );
+		} );
+
+		// Leaving the Schema's row rebuilds its fields, which would drop the second label while it is on screen.
+		describe( 'with a second label in a language', () => {
+			async function editorHoldingTwoEnglishLabels(): Promise<VueWrapper> {
+				const wrapper = createWrapper( newSchema( {
+					properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Alpha' } ) ] ),
+					labels: { en: 'Firm' },
+				} ), { opensOnSchema: true } );
+				await labelTextInputs( wrapper )[ 1 ].setValue( 'Company' );
+
+				return wrapper;
+			}
+
+			it( 'stays on the Schema\'s row when a property is chosen', async () => {
+				const wrapper = await editorHoldingTwoEnglishLabels();
+
+				await selectProperty( wrapper, 'Alpha' );
+
+				expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+			} );
+
+			it( 'says why it stays on the Schema\'s row', async () => {
+				const wrapper = await editorHoldingTwoEnglishLabels();
+
+				await selectProperty( wrapper, 'Alpha' );
+
+				expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-field-single-value-per-language', expect.objectContaining( { type: 'error' } ) );
+			} );
+
+			it( 'adds no property', async () => {
+				const wrapper = await editorHoldingTwoEnglishLabels();
+
+				await wrapper.findComponent( { name: 'PropertyList' } ).vm.$emit( 'addProperty' );
+
+				expect( Object.keys( editedSchema( wrapper ).getPropertyDefinitions().asRecord() ) ).toEqual( [ 'Alpha' ] );
+			} );
+
+			it( 'holds the save, with the message its field shows', async () => {
+				const wrapper = await editorHoldingTwoEnglishLabels();
+
+				expect( saveBlocker( wrapper ) ).toEqual( { message: 'neowiki-field-single-value-per-language' } );
+			} );
+
+			it( 'stays on the Schema\'s row, without a further notice, when the host refuses a save', async () => {
+				const wrapper = await editorHoldingTwoEnglishLabels();
+
+				( wrapper.vm as unknown as SchemaEditorExposes ).revealErrors();
+				await flushPromises();
+
+				expect( selectedRow( wrapper ) ).toEqual( SCHEMA_ROW );
+				expect( mw.notify ).not.toHaveBeenCalled();
+			} );
+		} );
 	} );
 
 	describe( 'the Label row', () => {

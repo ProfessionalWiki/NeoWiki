@@ -1,12 +1,13 @@
 import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import PropertyLabelsInput, { type PropertyLabelsInputExposes } from '@/components/SchemaEditor/Property/PropertyLabelsInput.vue';
-import { announcedLanguage, createTestWrapper, setupMwMock } from '../../../VueTestHelpers.ts';
+import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
+import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
+import { announcedLanguage, createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
 
 // Every row's language picker listens to the document while it is open, so no mount is left standing.
 enableAutoUnmount( afterEach );
 
-describe( 'PropertyLabelsInput', () => {
+describe( 'LabelsInput', () => {
 
 	function useDataLanguages( ...languages: string[] ): void {
 		setupMwMock( { config: { wgNeoWikiDataLanguages: languages } } );
@@ -16,10 +17,12 @@ describe( 'PropertyLabelsInput', () => {
 		useDataLanguages( 'en', 'de' );
 	} );
 
-	// Passes the labels emitted back in, as the property editor does.
+	// Passes the labels emitted back in, as the Schema and property editors do.
 	function newWrapper( labels?: Record<string, string> ): VueWrapper {
-		const wrapper: VueWrapper = createTestWrapper( PropertyLabelsInput, {
+		const wrapper: VueWrapper = createTestWrapper( LabelsInput, {
 			labels,
+			label: 'Labels of the Schema',
+			description: 'Shown in place of the name',
 			'onUpdate:labels': ( emitted?: Record<string, string> ) => wrapper.setProps( { labels: emitted } ),
 		} );
 
@@ -52,8 +55,20 @@ describe( 'PropertyLabelsInput', () => {
 	}
 
 	function unparseableInputMessage( wrapper: VueWrapper ): string | null {
-		return ( wrapper.vm as unknown as PropertyLabelsInputExposes ).unparseableInputMessage();
+		return ( wrapper.vm as unknown as LabelsInputExposes ).unparseableInputMessage();
 	}
+
+	it( 'names the field as its host asks', () => {
+		const wrapper = newWrapper();
+
+		expect( wrapper.find( 'legend' ).text() ).toContain( 'Labels of the Schema' );
+	} );
+
+	it( 'describes the field as its host asks', () => {
+		const wrapper = newWrapper();
+
+		expect( wrapper.findComponent( MonolingualTextInput ).props( 'property' ).description ).toBe( 'Shown in place of the name' );
+	} );
 
 	it( 'shows each label in its language, with a row for the next one', () => {
 		const wrapper = newWrapper( { en: 'Date of birth' } );
