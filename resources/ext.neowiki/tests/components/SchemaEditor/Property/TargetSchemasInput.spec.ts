@@ -4,6 +4,7 @@ import { nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import TargetSchemasInput from '@/components/SchemaEditor/Property/TargetSchemasInput.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SchemaReference } from '@/domain/SchemaReference';
 import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 
@@ -19,6 +20,7 @@ const SUMMARIES = [
 // Codex, so a stubbed field would only assert this component's own wiring back to itself.
 describe( 'TargetSchemasInput', () => {
 	let pinia: ReturnType<typeof createPinia>;
+	let wikiSchemas: SchemaSummary[];
 	const wrappers: VueWrapper[] = [];
 
 	beforeEach( () => {
@@ -27,7 +29,8 @@ describe( 'TargetSchemasInput', () => {
 		pinia = createPinia();
 		setActivePinia( pinia );
 
-		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( SUMMARIES );
+		wikiSchemas = [ ...SUMMARIES ];
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn( async () => [ ...wikiSchemas ] );
 	} );
 
 	afterEach( () => {
@@ -213,16 +216,30 @@ describe( 'TargetSchemasInput', () => {
 		expect( chipTexts( wrapper ) ).toEqual( boundTargetSchemas( wrapper ) );
 	} );
 
+	function addSchemaToWiki( name: string ): void {
+		wikiSchemas.push( { name, description: '', propertyCount: 0, subjectsAreDependent: false } );
+	}
+
 	it( 'lists and checks a target schema created after the list was fetched', async () => {
 		const wrapper = await mountInput( [ 'Office' ] );
-		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue(
-			[ ...SUMMARIES, { name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: false } ],
-		);
+		addSchemaToWiki( 'Artwork' );
 
 		await wrapper.setProps( { modelValue: [ 'Office', 'Artwork' ] } );
 		await flushPromises();
 
 		expect( checkedSchemas( wrapper ) ).toEqual( [ 'Artwork', 'Office' ] );
+	} );
+
+	it( 'lists a schema created elsewhere after the list was fetched once the field is focused again', async () => {
+		const wrapper = await mountInput( [] );
+		field( wrapper ).element.blur();
+		addSchemaToWiki( 'Artwork' );
+
+		field( wrapper ).element.focus();
+		await field( wrapper ).setValue( 'Art' );
+		await flushPromises();
+
+		expect( listedSchemas( wrapper ) ).toEqual( [ 'Artwork' ] );
 	} );
 
 	describe( 'offering to create a schema', () => {
@@ -332,12 +349,12 @@ describe( 'TargetSchemasInput', () => {
 
 	describe( 'Schemas of dependent and of standalone Subjects', () => {
 		beforeEach( () => {
-			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			wikiSchemas = [
 				{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true },
 				{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
 				{ name: 'Name', description: '', propertyCount: 1, subjectsAreDependent: true },
 				{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: false },
-			] );
+			];
 		} );
 
 		it( 'offers both while no target is chosen', async () => {
