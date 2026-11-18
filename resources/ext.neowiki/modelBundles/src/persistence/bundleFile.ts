@@ -1,11 +1,7 @@
 import {
 	isValueEmpty,
-	LayoutDeserializer,
-	LayoutSerializer,
 	Neo,
 	normalizeSchemaName,
-	SchemaDeserializer,
-	SchemaSerializer,
 	StatementList,
 	statementsToJson,
 	SubjectId,
@@ -15,7 +11,7 @@ import {
 	canonicalJson,
 	isJsonObject,
 	normalizedLabel,
-	schemaItem,
+	pageItem,
 	subjectItem,
 } from '../application/canonical';
 import type {
@@ -25,6 +21,7 @@ import type {
 	ModelBundle,
 	SubjectEntry,
 } from '../application/ModelBundle';
+import { savedForm } from './savedForm';
 
 const SECTIONS = [ 'schemas', 'layouts', 'mappings', 'subjects' ] as const;
 
@@ -35,10 +32,10 @@ export function serializeBundleFile( bundle: ModelBundle ): string {
 			version: bundle.metadata.version || undefined,
 			description: bundle.metadata.description || undefined,
 		} ),
-		layouts: sortedSection( bundle.layouts, canonicalJson ),
-		mappings: sortedSection( bundle.mappings, canonicalJson ),
+		layouts: sortedSection( bundle.layouts, ( json ) => pageItem( 'layout', json ) ),
+		mappings: sortedSection( bundle.mappings, ( json ) => pageItem( 'mapping', json ) ),
 		// A Schemas-only export reads as it did before Model bundles: with its "schemas" object even when empty.
-		schemas: sortedSection( bundle.schemas, schemaItem ) ?? {},
+		schemas: sortedSection( bundle.schemas, ( json ) => pageItem( 'schema', json ) ) ?? {},
 		subjects: sortedSection( bundle.subjects, subjectFileItem ),
 	};
 
@@ -150,7 +147,7 @@ function readSchema( name: string, json: unknown ): JsonObject {
 	}
 
 	try {
-		return new SchemaSerializer().schemaToJson( new SchemaDeserializer().deserialize( name, json ) );
+		return savedForm( 'schema', name, json );
 	} catch ( error ) {
 		throw new Error( mw.msg(
 			'neowiki-bundle-file-invalid-schema',
@@ -166,7 +163,7 @@ function readLayout( name: string, json: unknown ): JsonObject {
 	}
 
 	try {
-		return new LayoutSerializer().layoutToJson( new LayoutDeserializer().deserialize( name, json ) );
+		return savedForm( 'layout', name, json );
 	} catch ( error ) {
 		throw new Error( mw.msg( 'neowiki-bundle-file-invalid-layout', name, error instanceof Error ? error.message : String( error ) ) );
 	}

@@ -2,8 +2,7 @@ import { PageTitleTakenError } from 'ext.neowiki';
 import { ITEM_TYPES, type ItemType, type SubjectEntry } from './ModelBundle';
 import type { DataModelRepository, InstallRecordRepository } from './DataModelRepository';
 import type { DeclinedItem, InstallRecord, RecordedItem } from './InstallRecord';
-import type { ImportItem, ImportPlan, ItemContent } from './importPlan';
-import { canonicalJson, schemaItem } from './canonical';
+import type { ImportItem, ImportPlan } from './importPlan';
 
 export type ItemResult = 'created' | 'replaced' | 'removed' | 'failed';
 
@@ -220,7 +219,7 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source:
 }
 
 function recordedAfter( item: ImportItem, result: ItemResult | undefined ): RecordedItem | null {
-	if ( item.content === null || item.upstreamHash === null ) {
+	if ( item.upstreamRecord === null ) {
 		return null;
 	}
 
@@ -228,17 +227,9 @@ function recordedAfter( item: ImportItem, result: ItemResult | undefined ): Reco
 		return item.recorded;
 	}
 
-	return isAbsent( item ) && result !== 'created' ? null : bundleVersion( item.key, item.content, item.upstreamHash );
+	return isAbsent( item ) && result !== 'created' ? null : item.upstreamRecord;
 }
 
 function isAbsent( item: ImportItem ): boolean {
 	return item.status === 'new' || item.status === 'declined';
-}
-
-function bundleVersion( key: string, content: ItemContent, hash: string ): RecordedItem {
-	if ( content.type === 'subject' ) {
-		return { type: 'subject', key, hash, label: content.entry.label, schema: content.entry.schema };
-	}
-
-	return { type: content.type, key, item: content.type === 'schema' ? schemaItem( content.json ) : canonicalJson( content.json ) };
 }

@@ -1,10 +1,10 @@
 import { type ActionApi, actionApiCall } from './ActionApi';
-import { LayoutDeserializer, LayoutSerializer, SchemaDeserializer, SchemaSerializer } from 'ext.neowiki';
 import { isJsonObject } from '../application/canonical';
 import { ITEM_TYPES, type JsonObject } from '../application/ModelBundle';
 import type { InstallRecordRepository } from '../application/DataModelRepository';
 import { type DeclinedItem, FILE_SOURCE, type InstallRecord, type RecordedItem } from '../application/InstallRecord';
 import { normalizeBundleName } from '../application/bundleName';
+import { savedForm } from './savedForm';
 
 const MEDIAWIKI_NAMESPACE = 8;
 const RECORD_TITLE_PREFIX = 'MediaWiki:NeoWiki/Model bundles/';
@@ -90,12 +90,12 @@ function pageText( record: InstallRecord ): string {
 		version: record.version,
 		description: record.description,
 		source: record.source,
-		items: [ ...record.items ].sort( compareItems ).map( pageItem ),
+		items: [ ...record.items ].sort( compareItems ).map( recordedItemJson ),
 		declined: [ ...record.declined ].sort( compareItems ).map( ( item ) => ( { type: item.type, key: item.key } ) ),
 	}, null, '\t' );
 }
 
-function pageItem( item: RecordedItem ): JsonObject {
+function recordedItemJson( item: RecordedItem ): JsonObject {
 	if ( item.type !== 'subject' ) {
 		return { type: item.type, key: item.key, item: item.item };
 	}
@@ -162,6 +162,8 @@ function recordedItemOf( json: unknown ): RecordedItem | null {
 	}
 
 	if ( ( json.type === 'schema' || json.type === 'layout' || json.type === 'mapping' ) && isJsonObject( json.item ) ) {
+		// As the wiki's own version is read, so that a change to how NeoWiki saves Schemas or Layouts does not make
+		// the recorded version differ from it.
 		try {
 			return { type: json.type, key: json.key, item: savedForm( json.type, json.key, json.item ) };
 		} catch ( _error ) {
@@ -170,19 +172,4 @@ function recordedItemOf( json: unknown ): RecordedItem | null {
 	}
 
 	return null;
-}
-
-/**
- * As NeoWiki saves the item now, as the wiki's own version is read, so that a change to how NeoWiki saves
- * Schemas or Layouts does not make the recorded version differ from it.
- */
-function savedForm( type: 'schema' | 'layout' | 'mapping', name: string, item: JsonObject ): JsonObject {
-	switch ( type ) {
-		case 'schema':
-			return new SchemaSerializer().schemaToJson( new SchemaDeserializer().deserialize( name, item ) );
-		case 'layout':
-			return new LayoutSerializer().layoutToJson( new LayoutDeserializer().deserialize( name, item ) );
-		case 'mapping':
-			return item;
-	}
 }

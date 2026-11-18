@@ -1,9 +1,8 @@
 import { normalizeSchemaName } from 'ext.neowiki';
 import {
-	canonicalJson,
 	itemHash,
 	itemText,
-	schemaItem,
+	pageItem,
 	subjectItem,
 	subjectsAreDependent,
 } from './canonical';
@@ -62,7 +61,8 @@ export interface ImportItem {
 	readonly versionHere: string | null;
 	readonly versionUpstream: string | null;
 	readonly content: ItemContent | null;
-	readonly upstreamHash: string | null;
+	/** What the record keeps of the file's version once it is written; null for an item the file no longer has. */
+	readonly upstreamRecord: RecordedItem | null;
 	/** The bundle's version of the item when it was last installed or updated. */
 	readonly recorded: RecordedItem | null;
 	/** Of the page of a Schema, Layout or Mapping the wiki has, as the plan read it, for the write to save over. */
@@ -164,9 +164,9 @@ function byKey( a: ImportItem, b: ImportItem ): number {
 
 function upstreamItems( bundle: ModelBundle ): Map<string, Upstream> {
 	const items = [
-		...[ ...bundle.schemas ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'schema', json }, schemaItem( json ) ) ),
-		...[ ...bundle.layouts ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'layout', json }, canonicalJson( json ) ) ),
-		...[ ...bundle.mappings ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'mapping', json }, canonicalJson( json ) ) ),
+		...[ ...bundle.schemas ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'schema', json }, pageItem( 'schema', json ) ) ),
+		...[ ...bundle.layouts ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'layout', json }, pageItem( 'layout', json ) ) ),
+		...[ ...bundle.mappings ].map( ( [ key, json ] ) => upstreamItem( key, { type: 'mapping', json }, pageItem( 'mapping', json ) ) ),
 		...[ ...bundle.subjects ].map( ( [ key, entry ] ) => upstreamItem( key, { type: 'subject', entry }, subjectItem( entry ) ) ),
 	];
 
@@ -175,6 +175,15 @@ function upstreamItems( bundle: ModelBundle ): Map<string, Upstream> {
 
 function upstreamItem( key: string, content: ItemContent, item: JsonObject ): Upstream {
 	return { type: content.type, key, content, item, hash: itemHash( item ) };
+}
+
+function recordOf( upstream: Upstream ): RecordedItem {
+	if ( upstream.content.type === 'subject' ) {
+		const { label, schema } = upstream.content.entry;
+		return { type: 'subject', key: upstream.key, hash: upstream.hash, label, schema };
+	}
+
+	return { type: upstream.content.type, key: upstream.key, item: upstream.item };
 }
 
 function ownersOtherThan( records: readonly InstallRecord[], own: InstallRecord | null ): Map<string, string> {
@@ -204,7 +213,7 @@ function classifyUpstream(
 	const item = {
 		...baseItem( upstream.type, upstream.key, upstreamName( upstream ), upstreamSchema( upstream ) ),
 		content: upstream.content,
-		upstreamHash: upstream.hash,
+		upstreamRecord: recordOf( upstream ),
 		recorded,
 		revisionId: state.revisionId,
 		...versions( state, upstream ),
@@ -433,7 +442,7 @@ function removedItem( recorded: RecordedItem, states: Map<string, CurrentState>,
 		action: reason === null ? 'remove' : null,
 		selectedByDefault: false,
 		reason,
-		upstreamHash: null,
+		upstreamRecord: null,
 		recorded,
 	};
 }
@@ -454,7 +463,7 @@ function baseItem( type: ItemType, key: string, name: string | null, schema: str
 		versionHere: null,
 		versionUpstream: null,
 		content: null,
-		upstreamHash: null,
+		upstreamRecord: null,
 		recorded: null,
 		revisionId: null,
 	};

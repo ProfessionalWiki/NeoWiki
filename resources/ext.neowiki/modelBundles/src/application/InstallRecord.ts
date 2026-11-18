@@ -1,5 +1,5 @@
 import { isHttpUrl } from 'ext.neowiki';
-import { canonicalJson, itemHash, schemaItem } from './canonical';
+import { itemHash, pageItem } from './canonical';
 import { itemId, type ItemType, type JsonObject } from './ModelBundle';
 
 export const FILE_SOURCE = 'file';
@@ -49,7 +49,7 @@ export function recordedHash( recorded: RecordedItem ): string {
 		return recorded.hash;
 	}
 
-	return itemHash( recorded.type === 'schema' ? schemaItem( recorded.item ) : canonicalJson( recorded.item ) );
+	return itemHash( pageItem( recorded.type, recorded.item ) );
 }
 
 export function isUrlSource( source: string ): boolean {

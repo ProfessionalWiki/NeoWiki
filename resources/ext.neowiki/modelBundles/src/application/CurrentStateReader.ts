@@ -1,7 +1,7 @@
 import { normalizeSchemaName } from 'ext.neowiki';
-import { canonicalJson, itemHash, schemaItem, subjectItem } from './canonical';
+import { itemHash, pageItem, subjectItem } from './canonical';
 import { itemId, type ItemType, type JsonObject } from './ModelBundle';
-import type { DataModelRepository } from './DataModelRepository';
+import type { DataModelRepository, ReadPage } from './DataModelRepository';
 import { mapConcurrently } from './mapConcurrently';
 
 export interface CurrentState {
@@ -61,13 +61,19 @@ export class CurrentStateReader {
 			return ABSENT;
 		}
 
-		if ( type === 'schema' ) {
-			const schema = await this.repository.getSchema( key );
-			return { ...present( schemaItem( schema.json ) ), revisionId: schema.revisionId };
-		}
+		const page = await this.readPage( type, key );
+		return { ...present( pageItem( type, page.json ) ), revisionId: page.revisionId };
+	}
 
-		const page = await ( type === 'layout' ? this.repository.getLayout( key ) : this.repository.getMapping( key ) );
-		return { ...present( canonicalJson( page.json ) ), revisionId: page.revisionId };
+	private readPage( type: Exclude<ItemType, 'subject'>, name: string ): Promise<ReadPage> {
+		switch ( type ) {
+			case 'schema':
+				return this.repository.getSchema( name );
+			case 'layout':
+				return this.repository.getLayout( name );
+			case 'mapping':
+				return this.repository.getMapping( name );
+		}
 	}
 
 	private async readSubject( id: string ): Promise<CurrentState> {

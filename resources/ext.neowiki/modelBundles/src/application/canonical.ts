@@ -2,7 +2,7 @@
 // a Schema's property order is the order its properties are shown in. Arrays keep their order throughout.
 
 import { cyrb53 } from './cyrb53';
-import type { DependentSubjectEntry, JsonObject, SubjectEntry } from './ModelBundle';
+import type { DependentSubjectEntry, ItemType, JsonObject, SubjectEntry } from './ModelBundle';
 
 export function isJsonObject( value: unknown ): value is JsonObject {
 	return typeof value === 'object' && value !== null && !Array.isArray( value );
@@ -32,6 +32,13 @@ export function canonicalJson( value: JsonObject ): JsonObject {
 
 export function schemaItem( schema: JsonObject ): JsonObject {
 	return sortedKeys( schema, [ 'propertyDefinitions' ], [] ) as JsonObject;
+}
+
+/**
+ * A Schema, Layout or Mapping in canonical form, the one rule every comparison and record of one goes by.
+ */
+export function pageItem( type: Exclude<ItemType, 'subject'>, json: JsonObject ): JsonObject {
+	return type === 'schema' ? schemaItem( json ) : canonicalJson( json );
 }
 
 export function subjectsAreDependent( schema: JsonObject ): boolean {

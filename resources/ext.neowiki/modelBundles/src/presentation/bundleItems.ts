@@ -81,7 +81,7 @@ const SUMMARY_TYPES = {
  * The file's items by type, then what installing it does, as "8 schemas, 30 subjects, all new".
  */
 export function planSummary( plan: ImportPlan ): string {
-	const fileItems = plan.items.filter( ( item ) => item.upstreamHash !== null );
+	const fileItems = plan.items.filter( ( item ) => item.upstreamRecord !== null );
 	const counts = ITEM_TYPES
 		.map( ( type ) => [ type, fileItems.filter( ( item ) => item.type === type ).length ] as const )
 		.filter( ( [ , count ] ) => count > 0 )

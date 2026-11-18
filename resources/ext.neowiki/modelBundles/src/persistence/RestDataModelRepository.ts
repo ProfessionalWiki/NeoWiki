@@ -14,6 +14,7 @@ import {
 	type SchemaSummary,
 } from 'ext.neowiki';
 import { type ActionApi, actionApiCall } from './ActionApi';
+import { savedForm } from './savedForm';
 import { isJsonObject } from '../application/canonical';
 import { mapConcurrently } from '../application/mapConcurrently';
 import type { CurrentSubject, DataModelRepository, LayoutSummary, ReadPage } from '../application/DataModelRepository';
@@ -98,12 +99,12 @@ export class RestDataModelRepository implements DataModelRepository {
 
 	public async getSchema( name: string ): Promise<ReadPage> {
 		const page = await this.getPage( 'Schema', name );
-		return { ...page, json: new SchemaSerializer().schemaToJson( new SchemaDeserializer().deserialize( name, page.json ) ) };
+		return { ...page, json: savedForm( 'schema', name, page.json ) };
 	}
 
 	public async getLayout( name: string ): Promise<ReadPage> {
 		const page = await this.getPage( 'Layout', name );
-		return { ...page, json: new LayoutSerializer().layoutToJson( new LayoutDeserializer().deserialize( name, page.json ) ) };
+		return { ...page, json: savedForm( 'layout', name, page.json ) };
 	}
 
 	public getMapping( name: string ): Promise<ReadPage> {
