@@ -17,7 +17,7 @@
 	"neowiki-bundle-file-invalid-mapping": "The $1 mapping in the file is not an object.",
 	"neowiki-bundle-file-invalid-subject": "The entry $1 under \"subjects\" is not a subject: it needs a subject ID as its key, a \"schema\" and a \"statements\" object.",
 	"neowiki-special-datamodel": "Data model",
-	"neowiki-overview-datamodel-description": "Browse schemas, layouts and mappings by the model bundle they came from.",
+	"neowiki-overview-datamodel-description": "Browse, install and export model bundles.",
 	"neowiki-data-model-intro": "This wiki's schemas, layouts and mappings, grouped by the model bundle that installed them, with the subjects each bundle brought.",
 	"neowiki-bundle-install-title": "Install model bundle",
 	"neowiki-bundle-update-title": "Update model bundle $1",
