@@ -7,7 +7,8 @@ import { normalizeBundleName } from '../application/bundleName';
 import { savedForm } from './savedForm';
 
 const MEDIAWIKI_NAMESPACE = 8;
-const RECORD_TITLE_PREFIX = 'MediaWiki:NeoWiki/Model bundles/';
+// In the MediaWiki namespace.
+const RECORD_PAGE_PREFIX = 'NeoWiki/Model bundles/';
 const RECORD_TITLE_SUFFIX = '.json';
 
 interface RecordPagesResponse {
@@ -34,7 +35,7 @@ export class MediaWikiInstallRecordRepository implements InstallRecordRepository
 				action: 'query',
 				generator: 'allpages',
 				gapnamespace: MEDIAWIKI_NAMESPACE,
-				gapprefix: RECORD_TITLE_PREFIX.slice( 'MediaWiki:'.length ),
+				gapprefix: RECORD_PAGE_PREFIX,
 				gaplimit: 'max',
 				prop: 'revisions',
 				rvprop: 'ids|content',
@@ -82,7 +83,7 @@ export class MediaWikiInstallRecordRepository implements InstallRecordRepository
 }
 
 export function installRecordTitle( bundleName: string ): string {
-	return RECORD_TITLE_PREFIX + normalizeBundleName( bundleName ) + RECORD_TITLE_SUFFIX;
+	return 'MediaWiki:' + RECORD_PAGE_PREFIX + normalizeBundleName( bundleName ) + RECORD_TITLE_SUFFIX;
 }
 
 function pageText( record: InstallRecord ): string {
@@ -113,9 +114,10 @@ function compareItems( a: DeclinedItem, b: DeclinedItem ): number {
  * held the items has, so that one broken page does not hide the others.
  */
 function recordOf( title: string, revisionId: number | null, text: string ): InstallRecord | null {
+	const name = bundleNameOf( title );
 	const json = parsedJson( text );
 
-	if ( !title.endsWith( RECORD_TITLE_SUFFIX ) || !isJsonObject( json ) || !Array.isArray( json.items ) ) {
+	if ( name === null || !isJsonObject( json ) || !Array.isArray( json.items ) ) {
 		return null;
 	}
 
@@ -126,7 +128,7 @@ function recordOf( title: string, revisionId: number | null, text: string ): Ins
 	}
 
 	return {
-		name: title.slice( RECORD_TITLE_PREFIX.length, -RECORD_TITLE_SUFFIX.length ),
+		name,
 		version: typeof json.version === 'string' ? json.version : '',
 		description: typeof json.description === 'string' ? json.description : '',
 		source: typeof json.source === 'string' ? json.source : FILE_SOURCE,
@@ -134,6 +136,18 @@ function recordOf( title: string, revisionId: number | null, text: string ): Ins
 		declined: Array.isArray( json.declined ) ? json.declined.flatMap( declinedItemOf ) : [],
 		revisionId,
 	};
+}
+
+/**
+ * The API gives a title with the wiki's own name of the MediaWiki namespace, which a translated wiki does not call
+ * MediaWiki. No namespace name holds a colon.
+ */
+function bundleNameOf( title: string ): string | null {
+	const pageName = title.slice( title.indexOf( ':' ) + 1 );
+
+	return pageName.startsWith( RECORD_PAGE_PREFIX ) && pageName.endsWith( RECORD_TITLE_SUFFIX ) ?
+		pageName.slice( RECORD_PAGE_PREFIX.length, -RECORD_TITLE_SUFFIX.length ) :
+		null;
 }
 
 function parsedJson( text: string ): unknown {

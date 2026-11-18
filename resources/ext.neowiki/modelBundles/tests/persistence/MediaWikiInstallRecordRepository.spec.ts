@@ -76,6 +76,15 @@ describe( 'MediaWikiInstallRecordRepository', () => {
 		expect( await new MediaWikiInstallRecordRepository( api ).getInstallRecords() ).toEqual( [ RECORD ] );
 	} );
 
+	it( 'names a record after its page on a wiki that names the MediaWiki namespace in its own language', async () => {
+		const api = stubActionApi( {
+			get: async () => ( { query: { pages: [ page( '미디어위키:NeoWiki/Model bundles/Vocabularies.json', RECORD_PAGE_JSON ) ] } } ),
+		} );
+
+		expect( ( await new MediaWikiInstallRecordRepository( api ).getInstallRecords() ).map( ( record ) => record.name ) )
+			.toEqual( [ 'Vocabularies' ] );
+	} );
+
 	it( 'skips a record that holds hashes alone, from before records held the items', async () => {
 		const oldRecord = JSON.stringify( { version: '1', items: [ { type: 'schema', key: 'Gender Types', hash: '1c2ba782c97901' } ] } );
 		const api = stubActionApi( {
