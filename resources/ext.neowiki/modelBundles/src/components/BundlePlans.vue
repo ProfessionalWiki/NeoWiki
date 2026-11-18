@@ -97,7 +97,7 @@ function setChosen( index: number, chosen: Set<string> ): void {
 
 .ext-neowiki-bundle-plans {
 	&__bundle + &__bundle {
-		margin-top: @spacing-150;
+		margin-top: @spacing-75;
 	}
 
 	&__header {
