@@ -124,7 +124,8 @@ Installing writes the page `MediaWiki:NeoWiki/Model bundles/<name>.json`:
             "type": "subject", "key": "sF1gXfWLuUzeLK6", "hash": "1c2ba782c97901",
             "label": "female", "schema": "Gender Types"
         }
-    ]
+    ],
+    "declined": [ { "type": "subject", "key": "sKP0f3dGqNoAcVJ" } ]
 }
 ```
 
@@ -133,7 +134,8 @@ Installing writes the page `MediaWiki:NeoWiki/Model bundles/<name>.json`:
 `item`, in canonical form. A Subject holds a `hash` of the bundle's version, and the `label`, if it has one, and
 `schema` that Special:DataModel shows it by once this wiki deleted it. The record lists each item of the file that the
 wiki has, written or left as it was, and each one the wiki deleted after an earlier version installed it. An item in
-conflict keeps the version recorded before, if it had one.
+conflict keeps the version recorded before, if it had one. `declined` lists the items of the file that the wiki does
+not have because an install or update left them unticked.
 
 Once you expand a bundle, Special:DataModel compares each item it owns with its recorded version, and shows it as
 unchanged, changed here or deleted here. For users who may install bundles, it also shows any other version at a
@@ -152,6 +154,7 @@ two version numbers.
 | Changed alike in both, or in neither | | Nothing to do |
 | Changed on the wiki only | | Nothing to do |
 | New in the bundle | as on install | As on install |
+| Left unticked before, and not on the wiki, shown as Not installed | creates it | No |
 | No longer in the bundle | removes it from the wiki | No |
 | Deleted on the wiki and changed in the bundle | creates it again | No |
 | Deleted on the wiki and not changed in the bundle | | Nothing to do |

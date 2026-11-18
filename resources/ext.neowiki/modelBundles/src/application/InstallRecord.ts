@@ -14,6 +14,14 @@ export type RecordedItem =
 	| { readonly type: 'subject'; readonly key: string; readonly hash: string; readonly label: string | null; readonly schema: string };
 
 /**
+ * An item of the bundle that an install or update left unticked, which later updates offer unticked.
+ */
+export interface DeclinedItem {
+	readonly type: ItemType;
+	readonly key: string;
+}
+
+/**
  * An item belongs to at most one bundle.
  */
 export interface InstallRecord {
@@ -23,6 +31,7 @@ export interface InstallRecord {
 	/** The URL the bundle was read from, or FILE_SOURCE. */
 	readonly source: string;
 	readonly items: readonly RecordedItem[];
+	readonly declined: readonly DeclinedItem[];
 	/** Of the record's page as it was read; null for a record not saved yet. */
 	readonly revisionId: number | null;
 }

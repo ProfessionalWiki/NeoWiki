@@ -182,6 +182,13 @@ describe( 'planImport', () => {
 			wiki.records = [ installed( [ [ ID_1, FEMALE ] ] ) ];
 		} );
 
+		it( 'offers what an earlier install left unticked as not installed, unticked', async () => {
+			wiki.records = [ installed( [ [ ID_1, FEMALE ] ], [], { declined: [ { type: 'subject', key: ID_2 } ] } ) ];
+			wiki.withSubject( ID_1, FEMALE );
+
+			expect( row( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) ), ID_2 ) ).toEqual( [ 'declined', 'create', false ] );
+		} );
+
 		it( 'replaces what the bundle changed and this wiki did not, ticked', async () => {
 			wiki.withSubject( ID_1, FEMALE );
 

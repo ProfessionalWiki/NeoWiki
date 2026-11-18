@@ -53,6 +53,7 @@
 	"neowiki-bundle-diff-here": "On this wiki",
 	"neowiki-bundle-diff-upstream": "In the file",
 	"neowiki-bundle-status-new": "New",
+	"neowiki-bundle-status-declined": "Not installed",
 	"neowiki-bundle-status-unchanged": "Unchanged",
 	"neowiki-bundle-status-differs": "Differs from the version on this wiki. Installing replaces that version.",
 	"neowiki-bundle-status-changed-upstream": "Changed in the model bundle",

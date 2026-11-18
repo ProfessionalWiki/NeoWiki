@@ -23,6 +23,7 @@ import { sameBundleName } from './bundleName';
 
 /**
  * - new: the wiki does not have it
+ * - declined: the wiki does not have it, and an earlier install or update left it unticked
  * - unchanged: the wiki has it as the file does
  * - differs: the wiki has it otherwise, and no record says where that version came from
  * - changed-upstream: the bundle changed it since the installed version, and this wiki did not
@@ -32,7 +33,7 @@ import { sameBundleName } from './bundleName';
  * - removed-upstream: the installed version had it, and the file does not
  * - conflict: it cannot be written; the reason says why
  */
-type ImportStatus = 'new' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
+type ImportStatus = 'new' | 'declined' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
 	'deleted-here' | 'removed-upstream' | 'conflict';
 
 type ImportAction = 'create' | 'replace' | 'remove';
@@ -97,6 +98,7 @@ interface Upstream {
 export async function planImport( bundle: ModelBundle, bundleName: string, context: PlanContext ): Promise<ImportPlan> {
 	const record = context.records.find( ( installed ) => sameBundleName( installed.name, bundleName ) ) ?? null;
 	const recorded = recordedItems( record );
+	const declined = new Set( ( record?.declined ?? [] ).map( ( item ) => itemId( item.type, item.key ) ) );
 	const owners = ownersOtherThan( context.records, record );
 	const upstream = upstreamItems( bundle );
 	const removed = [ ...recorded.values() ].filter( ( item ) => !upstream.has( itemId( item.type, item.key ) ) );
@@ -113,6 +115,7 @@ export async function planImport( bundle: ModelBundle, bundleName: string, conte
 		item,
 		states,
 		recorded.get( itemId( item.type, item.key ) ) ?? null,
+		declined.has( itemId( item.type, item.key ) ),
 		owners.get( itemId( item.type, item.key ) ) ?? null,
 	) ), states );
 
@@ -162,6 +165,7 @@ function classifyUpstream(
 	upstream: Upstream,
 	states: Map<string, CurrentState>,
 	recorded: RecordedItem | null,
+	declined: boolean,
 	owner: string | null,
 ): ImportItem {
 	const state = states.get( itemId( upstream.type, upstream.key ) ) as CurrentState;
@@ -179,15 +183,17 @@ function classifyUpstream(
 		return { ...item, status: 'conflict', reason };
 	}
 
-	return { ...item, ...comparison( state.hash, upstream.hash, recorded === null ? null : recordedHash( recorded ) ) };
+	return { ...item, ...comparison( state.hash, upstream.hash, recorded === null ? null : recordedHash( recorded ), declined ) };
 }
 
 type Comparison = Pick<ImportItem, 'status' | 'action' | 'selectedByDefault'>;
 
-function comparison( here: string | null, upstream: string, recorded: string | null ): Comparison {
+function comparison( here: string | null, upstream: string, recorded: string | null, declined: boolean ): Comparison {
 	if ( recorded === null ) {
 		if ( here === null ) {
-			return { status: 'new', action: 'create', selectedByDefault: true };
+			return declined ?
+				{ status: 'declined', action: 'create', selectedByDefault: false } :
+				{ status: 'new', action: 'create', selectedByDefault: true };
 		}
 
 		return here === upstream ?

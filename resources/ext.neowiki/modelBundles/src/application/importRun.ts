@@ -1,7 +1,7 @@
 import { PageTitleTakenError } from 'ext.neowiki';
 import { ITEM_TYPES, type ItemType, type SubjectEntry } from './ModelBundle';
 import type { DataModelRepository, InstallRecordRepository } from './DataModelRepository';
-import type { InstallRecord, RecordedItem } from './InstallRecord';
+import type { DeclinedItem, InstallRecord, RecordedItem } from './InstallRecord';
 import type { ImportItem, ImportPlan, ItemContent } from './importPlan';
 import { canonicalJson, schemaItem } from './canonical';
 
@@ -164,7 +164,8 @@ async function saveRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], c
 /**
  * The record keeps, for every item of the file on the wiki, the bundle's version of it: what was written,
  * and what was left as it was, which then shows as changed here. An item whose write failed keeps the
- * version recorded before. What the file no longer has leaves the record, removed or not.
+ * version recorded before. What the file no longer has leaves the record, removed or not. What the file
+ * would have created, had it been ticked, is declined.
  */
 function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source: string ): InstallRecord {
 	const results = new Map( outcomes.map( ( outcome ) => [ outcome.item.id, outcome.result ] ) );
@@ -179,6 +180,8 @@ function nextRecord( plan: ImportPlan, outcomes: readonly ItemOutcome[], source:
 			const recorded = recordedAfter( item, results.get( item.id ) );
 			return recorded === null ? [] : [ recorded ];
 		} ),
+		declined: plan.items.flatMap( ( item ): DeclinedItem[] =>
+			isAbsent( item ) && !results.has( item.id ) ? [ { type: item.type, key: item.key } ] : [] ),
 		revisionId: plan.record?.revisionId ?? null,
 	};
 }
@@ -192,7 +195,11 @@ function recordedAfter( item: ImportItem, result: ItemResult | undefined ): Reco
 		return item.recorded;
 	}
 
-	return item.status === 'new' && result !== 'created' ? null : bundleVersion( item.key, item.content, item.upstreamHash );
+	return isAbsent( item ) && result !== 'created' ? null : bundleVersion( item.key, item.content, item.upstreamHash );
+}
+
+function isAbsent( item: ImportItem ): boolean {
+	return item.status === 'new' || item.status === 'declined';
 }
 
 function bundleVersion( key: string, content: ItemContent, hash: string ): RecordedItem {

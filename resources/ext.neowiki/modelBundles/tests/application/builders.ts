@@ -66,6 +66,7 @@ export function installed(
 				schema: entry.schema,
 			} ) ),
 		],
+		declined: [],
 		revisionId: 1,
 		...overrides,
 	};

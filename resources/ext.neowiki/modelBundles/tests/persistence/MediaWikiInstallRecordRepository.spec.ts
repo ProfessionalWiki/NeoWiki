@@ -22,10 +22,11 @@ const RECORD: InstallRecord = {
 		{ type: 'schema', key: 'Gender Types', item: savedSchema( 'Gender Types', { propertyDefinitions: {} } ) },
 		{ type: 'subject', key: 's1demo1aaaaaaa1', hash: 'abc', label: 'female', schema: 'Gender Types' },
 	],
+	declined: [ { type: 'subject', key: 's1demo1aaaaaaa2' } ],
 	revisionId: 42,
 };
 
-const RECORD_PAGE_JSON = JSON.stringify( { version: '1', description: '', source: 'file', items: RECORD.items } );
+const RECORD_PAGE_JSON = JSON.stringify( { version: '1', description: '', source: 'file', items: RECORD.items, declined: RECORD.declined } );
 
 function page( title: string, content?: string, revid = 42 ): Record<string, unknown> {
 	return content === undefined ? { title } : { title, revisions: [ { revid, slots: { main: { content } } } ] };
@@ -82,6 +83,17 @@ describe( 'MediaWikiInstallRecordRepository', () => {
 		} );
 
 		expect( await new MediaWikiInstallRecordRepository( api ).getInstallRecords() ).toEqual( [] );
+	} );
+
+	it( 'reads a record from before records kept declined items as declining none', async () => {
+		const stored = JSON.stringify( { version: '1', items: [] } );
+		const api = stubActionApi( {
+			get: async () => ( { query: { pages: [ page( 'MediaWiki:NeoWiki/Model bundles/Vocabularies.json', stored ) ] } } ),
+		} );
+
+		const records = await new MediaWikiInstallRecordRepository( api ).getInstallRecords();
+
+		expect( records[ 0 ].declined ).toEqual( [] );
 	} );
 
 	it( 'reads a recorded Schema as NeoWiki saves Schemas now', async () => {

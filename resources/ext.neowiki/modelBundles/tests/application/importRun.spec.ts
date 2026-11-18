@@ -222,6 +222,47 @@ describe( 'runImport', () => {
 			expect( Object.keys( recordedHashes() ) ).toEqual( [ ID_2 ] );
 		} );
 
+		it( 'records what was left unticked as declined', async () => {
+			const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
+
+			await run( importPlan, [ itemId( 'subject', ID_1 ) ] );
+
+			expect( wiki.recordOf( 'Vocabularies' )?.declined ).toEqual( [ { type: 'subject', key: ID_2 } ] );
+		} );
+
+		it( 'keeps a declined item declined while it stays unticked', async () => {
+			wiki.records = [ installed( [], [], { declined: [ { type: 'subject', key: ID_2 } ] } ) ];
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) ), [] );
+
+			expect( wiki.recordOf( 'Vocabularies' ) ).toMatchObject( { items: [], declined: [ { type: 'subject', key: ID_2 } ] } );
+		} );
+
+		it( 'records a declined item that was ticked as installed', async () => {
+			wiki.records = [ installed( [], [], { declined: [ { type: 'subject', key: ID_2 } ] } ) ];
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_2, WOMAN ] ] ) ), [ itemId( 'subject', ID_2 ) ] );
+
+			expect( wiki.recordOf( 'Vocabularies' ) ).toMatchObject( { items: [ { key: ID_2 } ], declined: [] } );
+		} );
+
+		it( 'forgets a declined item the bundle no longer has', async () => {
+			wiki.records = [ installed( [], [], { declined: [ { type: 'subject', key: ID_2 } ] } ) ];
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ) ) );
+
+			expect( wiki.recordOf( 'Vocabularies' )?.declined ).toEqual( [] );
+		} );
+
+		it( 'declines neither an item whose write failed nor one in conflict', async () => {
+			wiki.failingWrites.set( `subject:${ ID_1 }`, 'The page is protected' );
+			wiki.withSubject( ID_2, subjectEntry( { schema: 'Person' } ) );
+
+			await run( await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) ) );
+
+			expect( wiki.recordOf( 'Vocabularies' )?.declined ).toEqual( [] );
+		} );
+
 		it( 'reports a refused Layout save as failed, and leaves the Layout out', async () => {
 			wiki.failingWrites.set( 'layout:Gender card', 'The page is protected' );
 

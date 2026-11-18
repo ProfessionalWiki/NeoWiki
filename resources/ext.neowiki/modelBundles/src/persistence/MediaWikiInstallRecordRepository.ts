@@ -3,7 +3,7 @@ import { LayoutDeserializer, LayoutSerializer, SchemaDeserializer, SchemaSeriali
 import { isJsonObject } from '../application/canonical';
 import { ITEM_TYPES, type JsonObject } from '../application/ModelBundle';
 import type { InstallRecordRepository } from '../application/DataModelRepository';
-import { FILE_SOURCE, type InstallRecord, type RecordedItem } from '../application/InstallRecord';
+import { type DeclinedItem, FILE_SOURCE, type InstallRecord, type RecordedItem } from '../application/InstallRecord';
 import { normalizeBundleName } from '../application/bundleName';
 
 const MEDIAWIKI_NAMESPACE = 8;
@@ -91,6 +91,7 @@ function pageText( record: InstallRecord ): string {
 		description: record.description,
 		source: record.source,
 		items: [ ...record.items ].sort( compareItems ).map( pageItem ),
+		declined: [ ...record.declined ].sort( compareItems ).map( ( item ) => ( { type: item.type, key: item.key } ) ),
 	}, null, '\t' );
 }
 
@@ -102,7 +103,7 @@ function pageItem( item: RecordedItem ): JsonObject {
 	return { type: item.type, key: item.key, hash: item.hash, ...( item.label === null ? {} : { label: item.label } ), schema: item.schema };
 }
 
-function compareItems( a: RecordedItem, b: RecordedItem ): number {
+function compareItems( a: DeclinedItem, b: DeclinedItem ): number {
 	const byType = ITEM_TYPES.indexOf( a.type ) - ITEM_TYPES.indexOf( b.type );
 	return byType !== 0 ? byType : ( a.key < b.key ? -1 : 1 );
 }
@@ -130,6 +131,7 @@ function recordOf( title: string, revisionId: number | null, text: string ): Ins
 		description: typeof json.description === 'string' ? json.description : '',
 		source: typeof json.source === 'string' ? json.source : FILE_SOURCE,
 		items: items as RecordedItem[],
+		declined: Array.isArray( json.declined ) ? json.declined.flatMap( declinedItemOf ) : [],
 		revisionId,
 	};
 }
@@ -140,6 +142,12 @@ function parsedJson( text: string ): unknown {
 	} catch ( _error ) {
 		return null;
 	}
+}
+
+function declinedItemOf( json: unknown ): DeclinedItem[] {
+	return isJsonObject( json ) && typeof json.key === 'string' && ITEM_TYPES.includes( json.type as DeclinedItem[ 'type' ] ) ?
+		[ { type: json.type as DeclinedItem[ 'type' ], key: json.key } ] :
+		[];
 }
 
 function recordedItemOf( json: unknown ): RecordedItem | null {

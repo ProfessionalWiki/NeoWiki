@@ -53,6 +53,7 @@
 	"neowiki-bundle-diff-here": "Legend of the removed lines when comparing two versions: they are the version on this wiki.",
 	"neowiki-bundle-diff-upstream": "Legend of the added lines when comparing two versions: they are the version in the file.",
 	"neowiki-bundle-status-new": "Status of what the file holds and this wiki does not.",
+	"neowiki-bundle-status-declined": "Status of an item of the model bundle that this wiki does not have because an earlier install or update left it unticked. Ticked, it is installed.",
 	"neowiki-bundle-status-unchanged": "Status of what this wiki has as the file or the installed model bundle has it.",
 	"neowiki-bundle-status-differs": "Status of what this wiki has with other content than the file, where no install record says where that version came from.",
 	"neowiki-bundle-status-changed-upstream": "Status of what the new version of a model bundle changed and this wiki did not.",

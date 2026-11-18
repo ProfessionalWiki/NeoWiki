@@ -103,6 +103,7 @@ export function importStatusText( item: ImportItem ): string {
 
 	// Messages used here:
 	// * neowiki-bundle-status-new
+	// * neowiki-bundle-status-declined
 	// * neowiki-bundle-status-unchanged
 	// * neowiki-bundle-status-differs
 	// * neowiki-bundle-status-changed-upstream
