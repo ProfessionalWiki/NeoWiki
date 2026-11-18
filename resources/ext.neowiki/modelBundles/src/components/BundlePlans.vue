@@ -14,6 +14,10 @@
 				<div class="ext-neowiki-bundle-plans__header">
 					<div class="ext-neowiki-bundle-plans__summary">
 						<strong>{{ plan.bundleName }}</strong>{{ afterName( plan ) }}
+						<span
+							v-if="requiredText( plan ) !== null"
+							class="ext-neowiki-bundle-plans__required"
+						>{{ requiredText( plan ) }}</span>
 					</div>
 					<CdxButton
 						class="ext-neowiki-bundle-plans__toggle"
@@ -54,6 +58,8 @@ const props = defineProps<{
 	outcomes: readonly ImportOutcome[] | null;
 	/** What is ticked, for each plan. */
 	modelValue: readonly Set<string>[];
+	/** The names of the bundles that pulled each bundle in, by its name; none for those chosen. */
+	requiredBy: ReadonlyMap<string, readonly string[]>;
 	disabled: boolean;
 }>();
 
@@ -86,6 +92,11 @@ function afterName( plan: ImportPlan ): string {
 	return versionText + mw.msg( 'colon-separator' ) + planSummary( plan );
 }
 
+function requiredText( plan: ImportPlan ): string | null {
+	const requirers = props.requiredBy.get( plan.bundleName ) ?? [];
+	return requirers.length === 0 ? null : mw.msg( 'neowiki-bundle-required-by', mw.language.listToText( [ ...requirers ] ) );
+}
+
 function setChosen( index: number, chosen: Set<string> ): void {
 	emit( 'update:modelValue', props.modelValue.map( ( set, at ) => at === index ? chosen : set ) );
 }
@@ -97,6 +108,11 @@ function setChosen( index: number, chosen: Set<string> ): void {
 .ext-neowiki-bundle-plans {
 	&__bundle + &__bundle {
 		margin-top: @spacing-75;
+	}
+
+	&__required {
+		margin-inline-start: @spacing-50;
+		color: @color-subtle;
 	}
 
 	&__header {

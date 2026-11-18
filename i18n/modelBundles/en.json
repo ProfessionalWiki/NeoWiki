@@ -69,6 +69,7 @@
 	"neowiki-bundle-name-help": "Wikis tell model bundles apart by name. Use the same name to update this one later.",
 	"neowiki-bundle-name-unusable": "A model bundle name cannot be empty or too long, nor contain # < > [ ] | { } /, ~~~, an HTML entity such as &amp;, or a % followed by two hexadecimal digits.",
 	"neowiki-bundle-version": "version $1",
+	"neowiki-bundle-required-by": "Required by $1",
 	"neowiki-bundle-updates": "This wiki has version $1 of this model bundle.",
 	"neowiki-bundle-updates-unversioned": "This wiki has this model bundle, without a version.",
 	"neowiki-bundle-comparing": "Comparing with this wiki…",

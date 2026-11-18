@@ -33,7 +33,7 @@ import { sameBundleName } from './bundleName';
  * - removed-upstream: the installed version had it, and the file does not
  * - conflict: it cannot be written; the reason says why
  */
-type ImportStatus = 'new' | 'declined' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
+export type ImportStatus = 'new' | 'declined' | 'unchanged' | 'differs' | 'changed-upstream' | 'changed-both' | 'changed-here' |
 	'deleted-here' | 'removed-upstream' | 'conflict';
 
 type ImportAction = 'create' | 'replace' | 'remove';

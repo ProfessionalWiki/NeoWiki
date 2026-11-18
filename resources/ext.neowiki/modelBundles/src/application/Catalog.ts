@@ -50,3 +50,16 @@ export function installOrder(
 	chosen.forEach( add );
 	return order;
 }
+
+/**
+ * The entries of an install order that were pulled in rather than chosen, each with the names of the entries in the
+ * order that require it.
+ */
+export function requirersIn( order: readonly CatalogEntry[], chosen: readonly CatalogEntry[] ): Map<string, string[]> {
+	const isChosen = ( entry: CatalogEntry ): boolean => chosen.some( ( candidate ) => sameBundleName( candidate.name, entry.name ) );
+	const requirersOf = ( entry: CatalogEntry ): string[] => order
+		.filter( ( requirer ) => requirer.requires.some( ( name ) => sameBundleName( name, entry.name ) ) )
+		.map( ( requirer ) => requirer.name );
+
+	return new Map( order.filter( ( entry ) => !isChosen( entry ) ).map( ( entry ) => [ entry.name, requirersOf( entry ) ] ) );
+}

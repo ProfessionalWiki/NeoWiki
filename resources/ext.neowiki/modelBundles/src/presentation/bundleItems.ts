@@ -1,5 +1,5 @@
 import { ITEM_TYPES, type ItemType } from '../application/ModelBundle';
-import type { ImportItem, ImportPlan } from '../application/importPlan';
+import type { ImportItem, ImportPlan, ImportStatus } from '../application/importPlan';
 import type { ImportOutcome, ItemOutcome } from '../application/importRun';
 import { generatedSubjectName } from 'ext.neowiki';
 
@@ -90,20 +90,47 @@ export function planSummary( plan: ImportPlan ): string {
 	return [ ...counts, ...actionSummary( plan.items ) ].join( mw.msg( 'comma-separator' ) );
 }
 
-function actionSummary( items: readonly ImportItem[] ): string[] {
+interface ActionCounts {
+	readonly created: number;
+	readonly updated: number;
+	readonly decided: number;
+	readonly left: number;
+}
+
+function actionCounts( items: readonly ImportItem[] ): ActionCounts {
 	const created = items.filter( ( item ) => item.status === 'new' ).length;
 	const updated = items.filter( ( item ) => item.status === 'changed-upstream' ).length;
 	const decided = items.filter( needsDecision ).length;
-	const left = items.length - created - updated - decided;
+
+	return { created, updated, decided, left: items.length - created - updated - decided };
+}
+
+/**
+ * The status the summary line gives every item, as "all new", which their rows then leave out: new when all are,
+ * unchanged when installing changes none. Null when the line counts the items apart.
+ */
+export function statusSaidBySummary( items: readonly ImportItem[] ): ImportStatus | null {
+	const { created, left } = actionCounts( items );
 
 	if ( created === items.length ) {
+		return 'new';
+	}
+
+	return left === items.length ? 'unchanged' : null;
+}
+
+function actionSummary( items: readonly ImportItem[] ): string[] {
+	const said = statusSaidBySummary( items );
+
+	if ( said === 'new' ) {
 		return [ mw.msg( 'neowiki-bundle-summary-all-new' ) ];
 	}
 
-	if ( left === items.length ) {
+	if ( said === 'unchanged' ) {
 		return [ mw.msg( 'neowiki-bundle-summary-all-unchanged' ) ];
 	}
 
+	const { created, updated, decided, left } = actionCounts( items );
 	const parts: [ string, number ][] = [
 		[ 'neowiki-bundle-summary-new', created ],
 		[ 'neowiki-bundle-summary-update', updated ],

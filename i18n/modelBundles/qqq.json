@@ -69,6 +69,7 @@
 	"neowiki-bundle-name-help": "Help text under {{msg-mw|neowiki-bundle-name}} in the install view.",
 	"neowiki-bundle-name-unusable": "Error shown when a model bundle name cannot be used, as it cannot title the bundle's install record page. What it lists is what a page title cannot hold, and the slash.",
 	"neowiki-bundle-version": "The version of a model bundle, shown after its name. Parameters:\n* $1 - the version, as its authors write it",
+	"neowiki-bundle-required-by": "Shown after the one-line summary of a model bundle in the preview of an install when it is installed because the chosen bundles require it. Parameters:\n* $1 - the names of the bundles that require it, as a list",
 	"neowiki-bundle-updates": "Shown above the preview when the chosen file holds a model bundle this wiki has already, which installing it updates. Parameters:\n* $1 - the installed version",
 	"neowiki-bundle-updates-unversioned": "Shown instead of {{msg-mw|neowiki-bundle-updates}} when the model bundle this wiki has was installed without a version.",
 	"neowiki-bundle-comparing": "Shown while the file is compared with what this wiki has.",

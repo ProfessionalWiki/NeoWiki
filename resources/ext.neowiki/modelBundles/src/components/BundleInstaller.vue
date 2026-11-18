@@ -169,6 +169,7 @@
 				v-model="importer.chosen.value"
 				:plans="importer.plans.value"
 				:outcomes="importer.outcomes.value"
+				:required-by="requiredBy"
 				:disabled="importer.running.value"
 			/>
 		</template>
@@ -203,7 +204,7 @@ import { CdxButton, CdxField, CdxIcon, CdxMessage, CdxProgressBar, CdxTextInput 
 import { cdxIconUpload } from '@wikimedia/codex-icons';
 import { parseBundleFile } from '../persistence/bundleFile.ts';
 import type { BundleToInstall, ModelBundle } from '../application/ModelBundle.ts';
-import { type CatalogEntry, installOrder } from '../application/Catalog.ts';
+import { type CatalogEntry, installOrder, requirersIn } from '../application/Catalog.ts';
 import { type Catalogs, readCatalogs, readEntryBundles } from '../persistence/catalogFile.ts';
 import { FILE_SOURCE, type InstallRecord } from '../application/InstallRecord.ts';
 import { isUsableBundleName, sameBundleName } from '../application/bundleName.ts';
@@ -238,6 +239,7 @@ const source = ref( FILE_SOURCE );
 const name = ref( '' );
 // What a bundle from a catalog requires that the wiki has not installed, installed before it.
 const required = shallowRef<BundleToInstall[]>( [] );
+const requiredBy = shallowRef<ReadonlyMap<string, string[]>>( new Map() );
 const catalogUrls = ( mw.config.get( 'wgNeoWikiModelBundleCatalogs' ) ?? [] ) as string[];
 const catalogs = shallowRef<Catalogs | null>( null );
 
@@ -288,6 +290,7 @@ async function read( text: () => Promise<string>, from: string, fileName: string
 		name.value = metadataName ?? props.updating?.name ?? fileName;
 		source.value = from;
 		required.value = [];
+		requiredBy.value = new Map();
 		bundle.value = parsed;
 		await replan();
 	} catch ( error ) {
@@ -302,12 +305,14 @@ async function readEntry( entry: CatalogEntry ): Promise<void> {
 	readError.value = null;
 
 	try {
-		const read = await readEntryBundles( installOrder( [ entry ], catalogs.value?.entries ?? [], props.records.map( ( record ) => record.name ) ) );
+		const order = installOrder( [ entry ], catalogs.value?.entries ?? [], props.records.map( ( record ) => record.name ) );
+		const read = await readEntryBundles( order );
 		const chosen = read[ read.length - 1 ];
 
 		name.value = chosen.name;
 		source.value = chosen.source;
 		required.value = read.slice( 0, -1 );
+		requiredBy.value = requirersIn( order, [ entry ] );
 		bundle.value = chosen.bundle;
 		await replan();
 	} catch ( error ) {

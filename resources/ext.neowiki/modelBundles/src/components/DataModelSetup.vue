@@ -111,6 +111,7 @@
 					v-model="importer.chosen.value"
 					:plans="plans"
 					:outcomes="importer.outcomes.value"
+					:required-by="requirers"
 					:disabled="importer.running.value"
 				/>
 			</template>
@@ -179,7 +180,7 @@
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { CdxButton, CdxCheckbox, CdxMessage, CdxProgressBar, CdxRadio } from '@wikimedia/codex';
 import type { InstallRecord } from '../application/InstallRecord.ts';
-import { type CatalogEntry, installOrder } from '../application/Catalog.ts';
+import { type CatalogEntry, installOrder, requirersIn } from '../application/Catalog.ts';
 import { sameBundleName } from '../application/bundleName.ts';
 import { type Catalogs, readCatalogs, readEntryBundles } from '../persistence/catalogFile.ts';
 import { asksHowTheWikiWorks } from '../presentation/setupConfig.ts';
@@ -233,6 +234,8 @@ const modelName = ref<string | undefined>( undefined );
 const destinationNames = ref<string[]>( [] );
 // The names of the model and destinations the plans were made for.
 const plannedFor = ref<string | null>( null );
+// The bundles of the plans that the chosen ones pulled in, with the names of those that require each.
+const requirers = shallowRef<ReadonlyMap<string, string[]>>( new Map() );
 const createSubjectUrl = mw.util.getUrl( 'Special:CreateSubject' );
 const schemasUrl = mw.util.getUrl( 'Special:Schemas' );
 const dataModelUrl = mw.util.getUrl( 'Special:DataModel' );
@@ -383,8 +386,9 @@ async function plan(): Promise<void> {
 	error.value = null;
 
 	try {
-		const bundles = await readEntryBundles( installOrder( chosen, entries.value, props.records.map( ( record ) => record.name ) ) );
-		await importer.prepare( bundles, props.records );
+		const order = installOrder( chosen, entries.value, props.records.map( ( record ) => record.name ) );
+		await importer.prepare( await readEntryBundles( order ), props.records );
+		requirers.value = requirersIn( order, chosen );
 		plannedFor.value = namesOf( chosen );
 	} catch ( readError ) {
 		error.value = readError instanceof Error ? readError.message : String( readError );

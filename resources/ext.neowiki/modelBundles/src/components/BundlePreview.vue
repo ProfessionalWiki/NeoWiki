@@ -44,8 +44,11 @@
 							@update:model-value="setSelected( [ item ], $event )"
 						>
 							{{ itemName( item ) }}
-							<template #description>
-								{{ importStatusText( item ) }}
+							<template
+								v-if="shownStatus( item ) !== null || importNotes( item ).length > 0"
+								#description
+							>
+								{{ shownStatus( item ) }}
 								<span
 									v-for="note in importNotes( item )"
 									:key="note"
@@ -60,7 +63,10 @@
 							class="ext-neowiki-bundle-preview__static-item"
 						>
 							<span class="ext-neowiki-bundle-preview__name">{{ itemName( item ) }}</span>
-							<span class="ext-neowiki-bundle-preview__status">{{ importStatusText( item ) }}</span>
+							<span
+								v-if="shownStatus( item ) !== null"
+								class="ext-neowiki-bundle-preview__status"
+							>{{ shownStatus( item ) }}</span>
 							<span
 								v-for="note in importNotes( item )"
 								:key="note"
@@ -89,6 +95,7 @@ import {
 	itemSections,
 	type ItemGroup,
 	needsDecision,
+	statusSaidBySummary,
 	TYPE_HEADINGS
 } from '../presentation/bundleItems.ts';
 import ItemChanges from './ItemChanges.vue';
@@ -106,6 +113,12 @@ const emit = defineEmits<{
 }>();
 
 const sections = computed( () => itemSections( props.expanded ? props.plan.items : props.plan.items.filter( needsDecision ) ) );
+const statusOfAll = computed( () => statusSaidBySummary( props.plan.items ) );
+
+// Left out where the bundle's summary line already says it of every item.
+function shownStatus( item: ImportItem ): string | null {
+	return item.status === statusOfAll.value ? null : importStatusText( item );
+}
 
 function groupTitle( type: ItemType, group: ItemGroup<ImportItem> ): string {
 	const count = group.items.length;

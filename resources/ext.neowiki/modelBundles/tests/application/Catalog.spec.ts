@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type CatalogEntry, installOrder } from '../../src/application/Catalog';
+import { type CatalogEntry, installOrder, requirersIn } from '../../src/application/Catalog';
 import { setupMwMock } from '../../../tests/VueTestHelpers';
 
 function entry( name: string, requires: string[] = [], kind: CatalogEntry[ 'kind' ] = 'model' ): CatalogEntry {
@@ -36,6 +36,18 @@ describe( 'installOrder', () => {
 	it( 'refuses an entry that requires one no catalog lists', () => {
 		expect( () => installOrder( [ entry( 'Library', [ 'Books' ] ) ], CATALOG, [] ) )
 			.toThrow( 'neowiki-bundle-catalog-missing-requirementLibraryBooks' );
+	} );
+
+} );
+
+describe( 'requirersIn', () => {
+
+	it( 'names, for an entry pulled into the order, the entries in it that require it', () => {
+		expect( requirersIn( [ CORE, MUSEUM, EDM ], [ MUSEUM, EDM ] ) ).toEqual( new Map( [ [ 'Core', [ 'Museum', 'EDM' ] ] ] ) );
+	} );
+
+	it( 'names none for an entry chosen, though another requires it', () => {
+		expect( requirersIn( [ CORE, MUSEUM ], [ CORE, MUSEUM ] ) ).toEqual( new Map() );
 	} );
 
 } );

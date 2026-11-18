@@ -118,6 +118,16 @@ function button( wrapper: VueWrapper, label: string ): DOMWrapper<HTMLButtonElem
 	return found!;
 }
 
+/**
+ * For each bundle of the preview, what marks it as required by others, or null.
+ */
+function requiredMarks( wrapper: VueWrapper ): ( string | null )[] {
+	return wrapper.findAll( '.ext-neowiki-bundle-plans__bundle' ).map( ( bundle ) => {
+		const mark = bundle.find( '.ext-neowiki-bundle-plans__required' );
+		return mark.exists() ? mark.text() : null;
+	} );
+}
+
 function hasButton( wrapper: VueWrapper, label: string ): boolean {
 	return wrapper.findAll( 'button' ).some( ( candidate ) => candidate.text() === label );
 }
@@ -465,6 +475,17 @@ describe( 'DataModelPage', () => {
 				.toEqual( [ 'https://example.org/agents.json', 'https://example.org/edm.json' ] );
 		} );
 
+		it( 'marks a bundle as required by the one chosen', async () => {
+			wiki.mappings.clear();
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+			await wrapper.find( 'button[aria-label="neowiki-bundle-catalog-loadEDM"]' ).trigger( 'click' );
+			await flushPromises();
+
+			expect( requiredMarks( wrapper ) ).toEqual( [ 'neowiki-bundle-required-byEDM', null ] );
+		} );
+
 	} );
 
 	describe( 'setting up the data model', () => {
@@ -747,6 +768,15 @@ describe( 'DataModelPage', () => {
 			await wrapper.find( '.ext-neowiki-bundle-plans__toggle' ).trigger( 'click' );
 
 			expect( [ shownStep( wrapper ), checkboxLabelled( wrapper, 'Agent' ).element.checked ] ).toEqual( [ 'neowiki-bundle-setup-review', false ] );
+		} );
+
+		it( 'marks the bundles that the chosen ones require', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( requiredMarks( wrapper ) ).toEqual( [ 'neowiki-bundle-required-byMuseum and EDM', null, null ] );
 		} );
 
 		it( 'plans the review anew for the choices changed since', async () => {

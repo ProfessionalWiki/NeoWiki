@@ -16,11 +16,16 @@ const MALE = subjectEntry( { label: 'male' } );
 
 let wiki: InMemoryDataModel;
 
-function mountPlans( plans: ImportPlan[], outcomes: ImportOutcome[] | null = null ): VueWrapper {
+function mountPlans(
+	plans: ImportPlan[],
+	outcomes: ImportOutcome[] | null = null,
+	requiredBy: ReadonlyMap<string, string[]> = new Map(),
+): VueWrapper {
 	return mount( BundlePlans, {
 		props: {
 			plans,
 			outcomes,
+			requiredBy,
 			modelValue: plans.map( ( plan ) => new Set( plan.items.filter( ( item ) => item.selectedByDefault ).map( ( item ) => item.id ) ) ),
 			disabled: false,
 		},
@@ -94,6 +99,36 @@ describe( 'BundlePlans', () => {
 		await toggle( wrapper );
 
 		expect( wrapper.find( '.ext-neowiki-bundle-plans__toggle' ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'marks a bundle that another pulled in as required by it', async () => {
+		const plans = [
+			await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ] ] ), 'Core' ),
+			await planOn( wiki, bundleOf( [ [ ID_2, MALE ] ] ), 'Museum' ),
+		];
+
+		const wrapper = mountPlans( plans, null, new Map( [ [ 'Core', [ 'Museum', 'EDM' ] ] ] ) );
+
+		expect( wrapper.findAll( '.ext-neowiki-bundle-plans__bundle' ).map( ( bundle ) => bundle.find( '.ext-neowiki-bundle-plans__required' ).exists() ?
+			bundle.find( '.ext-neowiki-bundle-plans__required' ).text() :
+			null ) ).toEqual( [ 'neowiki-bundle-required-byMuseum and EDM', null ] );
+	} );
+
+	it( 'leaves out of each row the status the summary line gives every item', async () => {
+		const wrapper = mountPlans( [ await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ] ] ) ) ] );
+
+		await toggle( wrapper );
+
+		expect( wrapper.find( '.ext-neowiki-bundle-preview' ).text() ).not.toContain( 'neowiki-bundle-status-new' );
+	} );
+
+	it( 'shows the status of each row where the summary line counts the items apart', async () => {
+		wiki.withSubject( ID_2, subjectEntry( { label: 'male (edited)' } ) );
+		const wrapper = mountPlans( [ await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, MALE ] ] ) ) ] );
+
+		await toggle( wrapper );
+
+		expect( wrapper.find( '.ext-neowiki-bundle-preview' ).text() ).toContain( 'neowiki-bundle-status-new' );
 	} );
 
 	it( 'tells, once installed, what each bundle came to on one line', async () => {
