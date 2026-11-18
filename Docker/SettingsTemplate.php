@@ -231,8 +231,11 @@ if ( getenv( 'MW_PASSWORD_SENDER' ) !== false ) {
 
 wfLoadExtension( 'NeoWiki' );
 
-if ( $mwIsDev ) {
+if ( $mwIsDev || filter_var( getenv( 'NEOWIKI_MODEL_BUNDLES' ), FILTER_VALIDATE_BOOLEAN ) ) {
 	wfLoadExtension( 'NeoWikiModelBundles', "$IP/extensions/NeoWiki/extension-model-bundles.json" );
+}
+
+if ( $mwIsDev ) {
 	wfLoadExtension( 'RedHerb', "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );
 }
 
