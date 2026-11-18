@@ -100,6 +100,27 @@ describe( 'runImport', () => {
 		expect( wiki.schemas.get( 'Person' ) ).toEqual( edited );
 	} );
 
+	it( 'saves over a Schema the wiki has, on the revision it was read from', async () => {
+		wiki.withSchemas( newSchema( { title: 'Person', description: 'Old' } ) );
+		const updated = newSchema( { title: 'Person', description: 'New' } );
+
+		await run( await planOn( wiki, bundleOf( [], [ updated ] ) ), [ itemId( 'schema', 'Person' ) ] );
+
+		expect( wiki.schemas.get( 'Person' ) ).toEqual( schemaJson( updated ) );
+	} );
+
+	it.each( [
+		[ 'layout', { layouts: new Map( [ [ 'Person card', { schema: 'Person', type: 'card' } ] ] ) } ],
+		[ 'mapping', { mappings: new Map( [ [ 'Person card', { version: 2, schemas: {} } ] ] ) } ],
+	] as const )( 'saves over a %s the wiki has, on the revision it was read from', async ( type, extra ) => {
+		wiki.layouts.set( 'Person card', { schema: 'Person', type: 'infobox' } );
+		wiki.mappings.set( 'Person card', { version: 1, schemas: {} } );
+
+		const outcome = await run( await planOn( wiki, bundleOf( [], [], extra ) ), [ itemId( type, 'Person card' ) ] );
+
+		expect( results( outcome ) ).toEqual( [ 'replaced Person card' ] );
+	} );
+
 	it( 'writes only the chosen items', async () => {
 		const importPlan = await planOn( wiki, bundleOf( [ [ ID_1, FEMALE ], [ ID_2, WOMAN ] ] ) );
 

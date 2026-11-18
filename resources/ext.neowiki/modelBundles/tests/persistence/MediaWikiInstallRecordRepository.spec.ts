@@ -123,6 +123,17 @@ describe( 'MediaWikiInstallRecordRepository', () => {
 		expect( JSON.parse( saved[ 0 ].text as string ) ).toEqual( JSON.parse( RECORD_PAGE_JSON ) );
 	} );
 
+	it( 'reads back a record it saved of a Subject without a label', async () => {
+		const record: InstallRecord = { ...RECORD, items: [ { type: 'subject', key: 's1demo1aaaaaaa1', hash: 'abc', label: null, schema: 'Gender Types' } ] };
+		const saved: Record<string, unknown>[] = [];
+		await new MediaWikiInstallRecordRepository( savingApi( saved ) ).saveInstallRecord( record, 'Install' );
+		const api = stubActionApi( {
+			get: async () => ( { query: { pages: [ page( 'MediaWiki:NeoWiki/Model bundles/Vocabularies.json', saved[ 0 ].text as string ) ] } } ),
+		} );
+
+		expect( ( await new MediaWikiInstallRecordRepository( api ).getInstallRecords() )[ 0 ]?.items ).toEqual( record.items );
+	} );
+
 	it( 'saves over the revision the record was read from', async () => {
 		const saved: Record<string, unknown>[] = [];
 

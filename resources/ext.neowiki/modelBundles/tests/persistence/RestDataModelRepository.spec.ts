@@ -373,6 +373,24 @@ describe( 'RestDataModelRepository', () => {
 
 		} );
 
+		it( 'replaces a Subject together with its Dependent Subjects', async () => {
+			const http = new RoutedHttpClient( { [ `PUT ${ REST }/neowiki/v0/subject/${ HOST }` ]: [ 200, {} ] } );
+			const dependentSubjects = [ { id: DEPENDENT, schema: 'Birth', statements: { Year: { propertyType: 'number', value: 1815 } } } ];
+
+			await repository( http ).replaceSubject( HOST, subjectEntry( { schema: 'Person', dependentSubjects } ), 'Update' );
+
+			expect( http.sent[ 0 ].body?.dependentSubjects ).toEqual( dependentSubjects );
+		} );
+
+		it( 'creates a Subject together with its Dependent Subjects', async () => {
+			const http = new RoutedHttpClient( { [ `POST ${ REST }/neowiki/v0/subjects` ]: [ 201, {} ] } );
+			const dependentSubjects = [ { id: DEPENDENT, schema: 'Birth', statements: {} } ];
+
+			await repository( http ).createSubject( HOST, subjectEntry( { schema: 'Person', dependentSubjects } ), null, 'Install' );
+
+			expect( http.sent[ 0 ].body?.dependentSubjects ).toEqual( dependentSubjects );
+		} );
+
 		it( 'replaces a Subject with only the fields a replace takes', async () => {
 			const http = new RoutedHttpClient( { [ `PUT ${ REST }/neowiki/v0/subject/${ HOST }` ]: [ 200, {} ] } );
 
