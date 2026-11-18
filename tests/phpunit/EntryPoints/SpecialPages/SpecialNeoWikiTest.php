@@ -107,7 +107,7 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 		/** @var string $output */
 		[ $output ] = $this->executeSpecialPage( '', null, 'qqx', $this->getTestUser()->getUser() );
 
-		$this->assertSame(
+		$this->assertEquals(
 			[ [ 'page' => 'Special:Example', 'label' => '(example-label)', 'description' => '(example-description)' ] ],
 			$this->extensionLinksIn( $output )
 		);

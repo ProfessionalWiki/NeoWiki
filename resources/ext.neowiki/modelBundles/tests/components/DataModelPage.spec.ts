@@ -432,9 +432,10 @@ describe( 'DataModelPage', () => {
 		 */
 		function catalogEntries( wrapper: VueWrapper ): string[][] {
 			return wrapper.findAll( '.ext-neowiki-catalog-entries__group' ).map( ( group ) => [
-				group.find( 'h3' ).text(),
-				...group.findAll( '.ext-neowiki-catalog-entries__text' ).map( ( text ) => text.findAll( 'strong, span, p' )
-					.map( ( part ) => part.text() ).join( ' / ' ) ),
+				group.find( '.ext-neowiki-catalog-entries__heading' ).text(),
+				...group.findAll( '.ext-neowiki-catalog-entries__text' ).map( ( text ) => text.findAll(
+					'.ext-neowiki-catalog-entries__name, .ext-neowiki-catalog-entries__installed, .ext-neowiki-catalog-entries__description',
+				).map( ( part ) => part.text() ).join( ' / ' ) ),
 			] );
 		}
 

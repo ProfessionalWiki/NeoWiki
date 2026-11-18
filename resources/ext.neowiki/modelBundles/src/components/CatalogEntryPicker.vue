@@ -15,7 +15,7 @@
 					class="ext-neowiki-catalog-entries__entry"
 				>
 					<div class="ext-neowiki-catalog-entries__text">
-						<strong>{{ entry.name }}</strong>
+						<strong class="ext-neowiki-catalog-entries__name">{{ entry.name }}</strong>
 						<span
 							v-if="installedText( entry ) !== null"
 							class="ext-neowiki-catalog-entries__installed"

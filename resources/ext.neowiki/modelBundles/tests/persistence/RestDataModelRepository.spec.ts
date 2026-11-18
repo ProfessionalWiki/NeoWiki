@@ -25,14 +25,31 @@ interface SentRequest {
 }
 
 /**
- * Answers each request by its method and URL, as the production client does: 2xx, 409 and 422 resolve,
+ * A request as the server reads it: its method, decoded path and query parameters, whatever order the query gives
+ * them in.
+ */
+function routeOf( method: string, url: string ): string {
+	const parsed = new URL( url, 'https://wiki.example.org' );
+	parsed.searchParams.sort();
+
+	return `${ method } ${ decodeURIComponent( parsed.pathname ) }?${ parsed.searchParams }`;
+}
+
+/**
+ * Answers each request by its method, path and query, as the production client does: 2xx, 409 and 422 resolve,
  * anything else rejects with the response attached.
  */
 class RoutedHttpClient implements HttpClient {
 
 	public readonly sent: SentRequest[] = [];
 
-	public constructor( private readonly routes: Record<string, [ number, unknown ]> ) {
+	private readonly routes: Map<string, [ number, unknown ]>;
+
+	public constructor( routes: Record<string, [ number, unknown ]> ) {
+		this.routes = new Map( Object.entries( routes ).map( ( [ request, answer ] ) => {
+			const [ method, url ] = request.split( ' ' );
+			return [ routeOf( method, url ), answer ];
+		} ) );
 	}
 
 	public get( url: string ): Promise<Response> {
@@ -57,7 +74,7 @@ class RoutedHttpClient implements HttpClient {
 
 	private async answer( method: string, url: string, body?: Record<string, unknown> ): Promise<Response> {
 		this.sent.push( { method, url, body } );
-		const route = this.routes[ `${ method } ${ url }` ];
+		const route = this.routes.get( routeOf( method, url ) );
 
 		if ( route === undefined ) {
 			throw new Error( `No route for ${ method } ${ url }` );
