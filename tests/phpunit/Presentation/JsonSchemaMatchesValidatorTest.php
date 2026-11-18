@@ -186,6 +186,8 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 		yield 'a colon with no port' => [ $url, self::value( 'url', [ 'http://example.com:/a' ] ) ];
 		yield 'a host label ending in a hyphen' => [ $url, self::value( 'url', [ 'http://exa-.com' ] ) ];
 		yield 'url with a non-ASCII path' => [ $url, self::value( 'url', [ 'https://bg.wikipedia.org/wiki/София' ] ) ];
+		yield 'url with a non-ASCII domain name' => [ $url, self::value( 'url', [ 'https://пример.рф/' ] ) ];
+		yield 'url with a one-letter non-ASCII top-level domain' => [ $url, self::value( 'url', [ 'https://example.ф/' ] ) ];
 		yield 'one bad url among good ones' => [
 			$url,
 			self::value( 'url', [ 'https://example.com', 'ftp://example.com' ] ),

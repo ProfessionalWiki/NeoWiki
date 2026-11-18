@@ -23,16 +23,38 @@ class UrlType implements PropertyType {
 	 * ECMA-262, so that the JSON Schema documents can use it as a `pattern`. A `pattern` takes no
 	 * flags, and the inline `(?i)` and `(?i:...)` are a syntax error in most ECMA-262 engines and
 	 * match beyond ASCII where they parse, so the case rules are spelled out rather than left to `/i`.
-	 * The class for path, query and fragment excludes only ASCII characters, so that the validator,
-	 * which matches bytes, and ECMA-262, which matches code units or code points, accept the same
-	 * non-ASCII text.
+	 * Non-ASCII text is matched only by classes that take every non-ASCII character, and never
+	 * counted, so that the validator, which matches bytes, and ECMA-262, which matches code units or
+	 * code points, accept the same non-ASCII text.
 	 */
 	public const string URL_PATTERN = '^(?:[Hh][Tt][Tt][Pp][Ss]?://)?'
-		. '(?:(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}'
+		. '(?:(?:' . self::DOMAIN_LABEL . '\.)+' . self::TOP_LEVEL_DOMAIN
 		. '|(?:[0-9]{1,3}\.){3}[0-9]{1,3}'
+		. '|\[[0-9A-Fa-f:.]+\]'
 		. '|[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])'
 		. '(?::[0-9]+)?'
-		. '(?:[/?#][^\x00-\x20\x7F<>"{}|\\\\^`]*)?$';
+		. '(?:[/?#][^\x00-\x20\x7F<>"\\\\]*)?$';
+
+	/**
+	 * Built from single negated classes rather than alternations, which exhaust PCRE's JIT stack on a
+	 * host of a few thousand characters.
+	 */
+	private const string DOMAIN_LABEL = self::LETTER_DIGIT_OR_NON_ASCII
+		. '(?:' . self::LETTER_DIGIT_HYPHEN_OR_NON_ASCII . '*' . self::LETTER_DIGIT_OR_NON_ASCII . ')?';
+
+	private const string LETTER_DIGIT_OR_NON_ASCII = '[^\x00-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]';
+
+	private const string LETTER_DIGIT_HYPHEN_OR_NON_ASCII = '[^\x00-\x2C\x2E\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]';
+
+	/**
+	 * A non-ASCII top-level domain holds no ASCII letters, so that a quotation mark pasted right after
+	 * `.com` does not pass as part of it.
+	 */
+	private const string TOP_LEVEL_DOMAIN = '(?:[A-Za-z]{2,}'
+		. '|[Xx][Nn]--[A-Za-z0-9-]*[A-Za-z0-9]'
+		. '|[^\x00-\x7F]+)';
+
+	private const string REGEX = '@' . self::URL_PATTERN . '@';
 
 	public function getTypeName(): string {
 		return self::NAME;
@@ -98,7 +120,7 @@ class UrlType implements PropertyType {
 	}
 
 	private static function isValidUrl( string $urlString ): bool {
-		return preg_match( '@' . self::URL_PATTERN . '@', $urlString ) === 1;
+		return preg_match( self::REGEX, $urlString ) === 1;
 	}
 
 	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {

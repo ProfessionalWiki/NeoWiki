@@ -96,8 +96,8 @@ violation reported for that property: per-type checks and `required` are suppres
 ### `invalid-url`
 
 On `url` properties. A part is not a web address, which consists of `http://`, `https://` or no scheme;
-a dotted ASCII domain name, IPv4 address or `localhost`; an optional port; and any path, query and
-fragment without spaces, ASCII control characters, `<`, `>`, `"`, `{`, `}`, `|`, `\`, `^` or backticks.
+a dotted domain name, IPv4 address, IPv6 address in square brackets or `localhost`; an optional port; and
+any path, query and fragment without spaces, ASCII control characters, `<`, `>`, `"` or `\`.
 
 `args`: `[]`. `valuePartIndex`: the offending part. `severity`: `error` (fixed).
 
