@@ -57,7 +57,7 @@ describe( 'neowiki.registration hook end-to-end', () => {
 	it( 'lets a subscriber register a type visible via the component registry', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [] );
 
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
 			r.registerPropertyType( fakeRegistration( 'fake' ) );
@@ -72,7 +72,7 @@ describe( 'neowiki.registration hook end-to-end', () => {
 	it( 'invokes handlers that subscribe AFTER fire via replay', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [] );
 
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).fire( registrar );
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
@@ -107,11 +107,14 @@ describe( 'ext.neowiki module load', () => {
 			typeName: 'boot-fake-view',
 			component: markRaw( { render: (): null => null } ),
 		} );
+		const notice = { render: (): null => null };
+		receivedRegistrar!.registerOverviewNotice( notice );
 
 		const ext = NeoWikiExtension.getInstance();
 		expect( ext.getPropertyTypeRegistry().getTypeNames() ).toContain( 'boot-fake' );
 		expect( ext.getTypeSpecificComponentRegistry().getPropertyTypes() ).toContain( 'boot-fake' );
 		expect( ext.getViewTypeRegistry().hasType( 'boot-fake-view' ) ).toBe( true );
+		expect( ext.getOverviewNotices() ).toContain( notice );
 	} );
 
 	async function loadNeoWikiAndLetItsUiStart(): Promise<void> {

@@ -34,8 +34,32 @@ function vocabularies( overrides: Partial<InstallRecord> = {} ): InstallRecord {
 	);
 }
 
-async function mountPage( mayInstall = true ): Promise<VueWrapper> {
+/**
+ * What Special:DataModel tells the setup: of a wiki that has a data model, whose settings this user may change.
+ */
+const SETUP = {
+	wikiHasSchemas: true,
+	wikiHasSubjects: true,
+	canEditSettings: true,
+	settings: {
+		revisionId: 7,
+		pageValues: { subjectFirst: null, dataLanguages: null, enforceValidation: true, autoRenderMainSubject: null },
+		localSettingsValues: { subjectFirst: false, dataLanguages: [], enforceValidation: false, autoRenderMainSubject: true },
+	},
+};
+
+const savedPages = vi.hoisted( () => [] as { page: string; source: string }[] );
+
+function mockMw( config: Record<string, unknown> = {} ): void {
+	setupMwMock( {
+		functions: [ 'msg', 'message', 'config', 'util', 'language' ],
+		config: { wgServerName: 'wiki.example.org', wgNeoWikiModelBundlesSetup: SETUP, ...config },
+	} );
+}
+
+async function mountPage( mayInstall = true, view: string | null = null ): Promise<VueWrapper> {
 	const wrapper = mount( DataModelPage, {
+		props: { view },
 		attachTo: document.body,
 		global: {
 			plugins: [ createPinia() ],
@@ -44,6 +68,12 @@ async function mountPage( mayInstall = true ): Promise<VueWrapper> {
 				[ ModelBundleService.DataModelRepository ]: wiki,
 				[ ModelBundleService.InstallRecordRepository ]: wiki,
 				[ ModelBundleService.ModelBundlePermissionHints ]: { canInstallModelBundles: async () => mayInstall },
+				[ ModelBundleService.PageSaver ]: {
+					saveRevision: async ( page: string, source: string ) => {
+						savedPages.push( { page, source } );
+						return { success: true, revisionId: 8, source };
+					},
+				},
 			},
 			stubs: { CdxIcon: true },
 		},
@@ -124,9 +154,10 @@ describe( 'DataModelPage', () => {
 	} );
 
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg', 'message', 'config', 'util', 'language' ], config: { wgServerName: 'wiki.example.org' } } );
+		mockMw();
 		setActivePinia( createPinia() );
 		downloads.length = 0;
+		savedPages.length = 0;
 		wiki = new InMemoryDataModel().withSchemas( GENDER_TYPES, newSchema( { title: 'Person' } ) );
 		wiki.withSubject( FEMALE_ID, FEMALE ).withSubject( MALE_ID, subjectEntry( { label: 'male (edited)' } ) );
 		wiki.layouts.set( 'Person card', { schema: 'Person', type: 'infobox' } );
@@ -387,10 +418,7 @@ describe( 'DataModelPage', () => {
 		}
 
 		beforeEach( () => {
-			setupMwMock( {
-				functions: [ 'msg', 'message', 'config', 'util', 'language' ],
-				config: { wgServerName: 'wiki.example.org', wgNeoWikiModelBundleCatalogs: [ CATALOG_URL ] },
-			} );
+			mockMw( { wgNeoWikiModelBundleCatalogs: [ CATALOG_URL ] } );
 			serve( {
 				[ CATALOG_URL ]: { bundles: [
 					{ url: 'https://example.org/edm.json', name: 'EDM', description: 'Exports as EDM', kind: 'destination', requires: [ 'Agents' ] },
@@ -425,6 +453,117 @@ describe( 'DataModelPage', () => {
 			expect( wiki.writes ).toEqual( [ 'save schema:Agent', 'save mapping:EDM' ] );
 			expect( [ wiki.recordOf( 'Agents' )?.source, wiki.recordOf( 'EDM' )?.source ] )
 				.toEqual( [ 'https://example.org/agents.json', 'https://example.org/edm.json' ] );
+		} );
+
+	} );
+
+	describe( 'setting up the data model', () => {
+
+		const CATALOG_URL = 'https://example.org/catalog.json';
+		const FILES: Record<string, unknown> = {
+			[ CATALOG_URL ]: { bundles: [
+				{ url: 'https://example.org/core.json', name: 'Core', description: 'Agents and places' },
+				{ url: 'https://example.org/museum.json', name: 'Museum', description: 'Objects in collections', requires: [ 'Core' ] },
+				{ url: 'https://example.org/edm.json', name: 'EDM', description: 'Exports as EDM', kind: 'destination', requires: [ 'Core' ] },
+				{ url: 'https://example.org/bibframe.json', name: 'BIBFRAME', kind: 'destination', requires: [ 'Library' ] },
+			] },
+			'https://example.org/core.json': { bundle: { name: 'Core', version: '1' }, schemas: { Agent: { propertyDefinitions: {} } } },
+			'https://example.org/museum.json': { bundle: { name: 'Museum', version: '1' }, schemas: { Artwork: { propertyDefinitions: {} } } },
+			'https://example.org/edm.json': { bundle: { name: 'EDM', version: '1' }, mappings: { EDM: { version: 1, schemas: {} } } },
+		};
+
+		function setUp( setup: Partial<typeof SETUP> = {} ): void {
+			mockMw( {
+				wgNeoWikiModelBundleCatalogs: [ CATALOG_URL ],
+				wgNeoWikiModelBundlePreselection: [ 'Museum', 'EDM' ],
+				wgNeoWikiModelBundlesSetup: { ...SETUP, wikiHasSchemas: false, ...setup },
+			} );
+		}
+
+		/**
+		 * Each option of the step: its label, and whether it is chosen.
+		 */
+		function options( wrapper: VueWrapper ): [ string, boolean ][] {
+			return wrapper.findAll( '.ext-neowiki-data-model-setup__option' ).map( ( option ) => [
+				option.find( '.cdx-label__label__text' ).text(),
+				option.find<HTMLInputElement>( 'input' ).element.checked,
+			] );
+		}
+
+		beforeEach( () => {
+			wiki.records = [];
+			wiki.mappings.clear();
+			setUp();
+			vi.stubGlobal( 'fetch', async ( url: string ) => url in FILES ?
+				new Response( JSON.stringify( FILES[ url ] ) ) :
+				new Response( 'Not found', { status: 404 } ) );
+		} );
+
+		it( 'offers it on a wiki without a data model', async () => {
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-setup-title' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).exists() ).toBe( true );
+		} );
+
+		it( 'opens it on its subpage', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).exists() ).toBe( true );
+		} );
+
+		it( 'offers the models of the catalogs and starting empty, the preselected model chosen', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( options( wrapper ) ).toEqual( [ [ 'Core', false ], [ 'Museum', true ], [ 'neowiki-bundle-setup-empty', false ] ] );
+		} );
+
+		it( 'offers the destinations the chosen model serves, the preselected ones ticked', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( options( wrapper ) ).toEqual( [ [ 'EDM', true ] ] );
+		} );
+
+		it( 'installs the chosen model and destinations, with what they require, each with its own record', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+			await click( wrapper, 'neowiki-bundle-install-button' );
+
+			expect( wiki.writes ).toEqual( [ 'save schema:Agent', 'save schema:Artwork', 'save mapping:EDM' ] );
+			expect( wiki.records.map( ( record ) => record.name ).sort() ).toEqual( [ 'Core', 'EDM', 'Museum' ] );
+			expect( wrapper.find( 'a[href="/wiki/Special:CreateSubject"]' ).exists() ).toBe( true );
+		} );
+
+		it( 'installs nothing when starting empty, and leads to creating a subject', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			await wrapper.findAll( 'input[type="radio"]' )[ 2 ].setValue( true );
+			await click( wrapper, 'neowiki-bundle-setup-continue' );
+
+			expect( wiki.records ).toEqual( [] );
+			expect( wrapper.find( 'a[href="/wiki/Special:CreateSubject"]' ).exists() ).toBe( true );
+		} );
+
+		it( 'asks how the wiki works first on a wiki without Subjects', async () => {
+			setUp( { wikiHasSubjects: false } );
+
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
+		} );
+
+		it( 'asks how the wiki works before the first install from a file or URL too', async () => {
+			setUp( { wikiHasSubjects: false } );
+			const wrapper = await mountPage();
+
+			await click( wrapper, 'neowiki-bundle-install-title' );
+
+			expect( wrapper.find( '.ext-neowiki-wiki-settings' ).exists() ).toBe( true );
 		} );
 
 	} );

@@ -16,6 +16,12 @@
 			@close="show( 'overview' )"
 		/>
 
+		<DataModelSetup
+			v-else-if="shown === 'setup' && records !== null"
+			:records="records"
+			@close="onImportClosed"
+		/>
+
 		<template v-else>
 			<p class="ext-neowiki-data-model__intro">
 				{{ $i18n( 'neowiki-data-model-intro' ).text() }}
@@ -44,6 +50,19 @@
 				{{ loadError }}
 			</CdxMessage>
 
+			<CdxMessage
+				v-else-if="offersSetup"
+				class="ext-neowiki-data-model__setup"
+			>
+				<p>{{ $i18n( 'neowiki-bundle-setup-empty-state' ).text() }}</p>
+				<CdxButton
+					action="progressive"
+					@click="show( 'setup' )"
+				>
+					{{ $i18n( 'neowiki-bundle-setup-title' ).text() }}
+				</CdxButton>
+			</CdxMessage>
+
 			<CdxProgressBar
 				v-else-if="records === null"
 				:inline="true"
@@ -69,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, shallowRef } from 'vue';
+import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
 import { CdxButton, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex';
 import { cdxIconDownload, cdxIconUpload } from '@wikimedia/codex-icons';
 import { ModelBundleServices } from '../ModelBundleServices.ts';
@@ -79,13 +98,20 @@ import { type DataModelItem, readOwnedItems, readUnownedItems } from '../applica
 import BundleGroup from './BundleGroup.vue';
 import BundleInstaller from './BundleInstaller.vue';
 import BundleExporter from './BundleExporter.vue';
+import DataModelSetup from './DataModelSetup.vue';
+import { setupConfig } from '../presentation/setupConfig.ts';
+
+const props = defineProps<{
+	/** The part of the page to open: "setup", or null for the overview. */
+	view: string | null;
+}>();
 
 const repository = ModelBundleServices.getDataModelRepository();
 const recordRepository = ModelBundleServices.getInstallRecordRepository();
 const permissionHints = ModelBundleServices.getModelBundlePermissionHints();
 
 const root = ref<HTMLElement | null>( null );
-const shown = ref<'overview' | 'import' | 'export'>( 'overview' );
+const shown = ref<'overview' | 'import' | 'export' | 'setup'>( 'overview' );
 const records = shallowRef<InstallRecord[] | null>( null );
 const loadError = ref<string | null>( null );
 const canInstall = ref( false );
@@ -124,7 +150,10 @@ function onImportClosed( imported: boolean ): void {
 	}
 }
 
-async function show( part: 'overview' | 'import' | 'export' ): Promise<void> {
+// A wiki without a data model, which the setup gives one.
+const offersSetup = computed( () => canInstall.value && records.value?.length === 0 && !setupConfig().wikiHasSchemas );
+
+async function show( part: 'overview' | 'import' | 'export' | 'setup' ): Promise<void> {
 	shown.value = part;
 	await nextTick();
 	root.value?.scrollIntoView?.( { block: 'start' } );
@@ -137,6 +166,10 @@ onMounted( async () => {
 		canInstall.value = await permissionHints.canInstallModelBundles();
 	} catch ( _error ) {
 		canInstall.value = false;
+	}
+
+	if ( props.view === 'setup' && canInstall.value ) {
+		show( 'setup' );
 	}
 } );
 </script>

@@ -502,6 +502,9 @@ export function setupMwMock(
 	const implementations: Record<string, any> = {
 		config: () => ( {
 			get: vi.fn( configValue ),
+			set: vi.fn( ( key: string, value: unknown ) => {
+				customConfig[ key ] = value;
+			} ),
 		} ),
 		message: () => vi.fn( ( key: string, ...params: any[] ) => ( {
 			text: () => resolveMessage( key, params ),

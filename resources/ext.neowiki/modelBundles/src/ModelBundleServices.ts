@@ -1,5 +1,5 @@
 import { inject, type App } from 'vue';
-import { MediaWikiPageSaver, NeoWikiExtension } from 'ext.neowiki';
+import { MediaWikiPageSaver, NeoWikiExtension, type PageRevisionSaver } from 'ext.neowiki';
 import type { ModelBundlePermissionHints } from './application/ModelBundlePermissionHints.ts';
 import type { DataModelRepository, InstallRecordRepository } from './application/DataModelRepository.ts';
 import { RightsBasedModelBundlePermissionHints } from './persistence/RightsBasedModelBundlePermissionHints.ts';
@@ -10,7 +10,8 @@ import type { ActionApi } from './persistence/ActionApi.ts';
 export enum ModelBundleService {
 	ModelBundlePermissionHints = 'ModelBundlePermissionHints',
 	DataModelRepository = 'DataModelRepository',
-	InstallRecordRepository = 'InstallRecordRepository'
+	InstallRecordRepository = 'InstallRecordRepository',
+	PageSaver = 'ModelBundlesPageSaver'
 }
 
 export class ModelBundleServices {
@@ -38,6 +39,7 @@ export class ModelBundleServices {
 				actionApi,
 			),
 			[ ModelBundleService.InstallRecordRepository ]: new MediaWikiInstallRecordRepository( actionApi ),
+			[ ModelBundleService.PageSaver ]: new MediaWikiPageSaver( mediaWiki ),
 		};
 	}
 
@@ -51,6 +53,11 @@ export class ModelBundleServices {
 
 	public static getInstallRecordRepository(): InstallRecordRepository {
 		return inject( ModelBundleService.InstallRecordRepository ) as InstallRecordRepository;
+	}
+
+	/** For the wiki's settings on MediaWiki:NeoWiki, which the setup asks for. */
+	public static getPageSaver(): PageRevisionSaver {
+		return inject( ModelBundleService.PageSaver ) as PageRevisionSaver;
 	}
 
 }

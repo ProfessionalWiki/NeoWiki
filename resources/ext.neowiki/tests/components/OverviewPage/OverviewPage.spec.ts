@@ -1,6 +1,6 @@
 import { enableAutoUnmount, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { type Component, h, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton, CdxCard, CdxMessage } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
@@ -40,11 +40,12 @@ interface OverviewProps {
 	canEditConfiguration: boolean;
 	wikiHasSubjects: boolean;
 	extensionLinks: { page: string; label: string; description: string }[];
+	notices: Component[];
 }
 
 function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 	return mount( OverviewPage, {
-		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, extensionLinks: [], ...offered },
+		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, extensionLinks: [], notices: [], ...offered },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -193,6 +194,26 @@ describe( 'OverviewPage', () => {
 
 		expect( precedes( createButton, map ) ).toBe( true );
 		expect( precedes( map, recentSubjects ) ).toBe( true );
+	} );
+
+	it( 'shows the notices other extensions register above the map', async () => {
+		const wrapper = mountPage( { notices: [ { render: () => h( 'p', { class: 'test-notice' }, 'Updates are available' ) } ] } );
+		await flushPromises();
+
+		expect( precedes( wrapper.find( '.test-notice' ).element, wrapper.findComponent( CdxCard ).element ) ).toBe( true );
+	} );
+
+	it( 'leaves out the first steps while a notice takes their place', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ {
+			emits: [ 'replacesFirstSteps' ],
+			setup: ( _props: unknown, { emit }: { emit: ( event: 'replacesFirstSteps', replaces: boolean ) => void } ) => {
+				emit( 'replacesFirstSteps', true );
+				return () => h( 'p', 'Set up your data model' );
+			},
+		} ] } );
+		await flushPromises();
+
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
 	} );
 
 	it( 'shows first steps on a wiki without Subjects to a user who may create one', async () => {

@@ -27,6 +27,14 @@
 	"SpecialPages": {
 		"DataModel": "ProfessionalWiki\\NeoWiki\\ModelBundles\\SpecialDataModel"
 	},
+	"Hooks": {
+		"NeoWikiGetFrontendModules": "ModelBundlesOverviewNoticeHook"
+	},
+	"HookHandlers": {
+		"ModelBundlesOverviewNoticeHook": {
+			"class": "ProfessionalWiki\\NeoWiki\\ModelBundles\\OverviewNoticeHook"
+		}
+	},
 	"attributes": {
 		"NeoWiki": {
 			"OverviewLinks": [
@@ -71,6 +79,7 @@
 						"cdxIconCollapse",
 						"cdxIconDownload",
 						"cdxIconExpand",
+						"cdxIconPuzzle",
 						"cdxIconUpload"
 					]
 				}
@@ -80,11 +89,13 @@
 			],
 			"codexComponents": [
 				"CdxButton",
+				"CdxCard",
 				"CdxCheckbox",
 				"CdxField",
 				"CdxIcon",
 				"CdxMessage",
 				"CdxProgressBar",
+				"CdxRadio",
 				"CdxTextArea",
 				"CdxTextInput",
 				"CdxToggleSwitch"
@@ -119,6 +130,23 @@
 				"neowiki-bundle-catalog-empty",
 				"neowiki-bundle-catalog-missing-requirement",
 				"neowiki-bundle-catalog-wrong-file",
+				"neowiki-bundle-setup-title",
+				"neowiki-bundle-setup-card-description",
+				"neowiki-bundle-setup-empty-state",
+				"neowiki-bundle-setup-settings",
+				"neowiki-bundle-setup-settings-intro",
+				"neowiki-bundle-setup-settings-read-only",
+				"neowiki-bundle-setup-settings-summary",
+				"neowiki-bundle-setup-model",
+				"neowiki-bundle-setup-empty",
+				"neowiki-bundle-setup-empty-description",
+				"neowiki-bundle-setup-destinations",
+				"neowiki-bundle-setup-review",
+				"neowiki-bundle-setup-done",
+				"neowiki-bundle-setup-create-subject",
+				"neowiki-bundle-setup-continue",
+				"neowiki-bundle-setup-back",
+				"neowiki-bundle-updates-available",
 				"neowiki-bundle-url-not-web",
 				"neowiki-bundle-url-unreachable",
 				"neowiki-bundle-url-failed",
@@ -205,6 +233,13 @@
 				"neowiki-bundle-version-available",
 				"neowiki-bundle-update-from-source",
 				"neowiki-bundle-update-from-file",
+				"neowiki-config-setting-subject-first",
+				"neowiki-config-setting-subject-first-page-first",
+				"neowiki-config-setting-subject-first-page-first-help",
+				"neowiki-config-setting-subject-first-subject-first",
+				"neowiki-config-setting-subject-first-subject-first-help",
+				"neowiki-config-setting-data-languages",
+				"neowiki-config-setting-data-languages-help",
 				"neowiki-schema-noun",
 				"neowiki-layout-noun",
 				"neowiki-mapping-noun",

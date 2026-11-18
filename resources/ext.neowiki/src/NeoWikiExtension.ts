@@ -1,3 +1,4 @@
+import type { Component } from 'vue';
 import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
 import { CurrentPageSubjectPermissionHints } from '@/persistence/CurrentPageSubjectPermissionHints.ts';
 import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
@@ -199,6 +200,12 @@ export class NeoWikiExtension {
 		const registry = new ViewTypeRegistry();
 		registry.registerType( 'infobox', Infobox );
 		return registry;
+	}
+
+	private readonly overviewNotices: Component[] = [];
+
+	public getOverviewNotices(): Component[] {
+		return this.overviewNotices;
 	}
 
 	private pinia: Pinia | undefined;

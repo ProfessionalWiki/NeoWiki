@@ -73,6 +73,7 @@ function newFrontendRegistrar(): FrontendRegistrar {
 		ext.getTypeSpecificComponentRegistry(),
 		ext.getPropertyTypeRegistry(),
 		ext.getViewTypeRegistry(),
+		ext.getOverviewNotices(),
 	);
 }
 
@@ -287,9 +288,10 @@ function initializeOverviewPage(): void {
 		const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
 		const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
 		const extensionLinks = JSON.parse( overviewPage.dataset.mwNeowikiExtensionLinks ?? '[]' );
+		const notices = ext.getOverviewNotices();
 
 		// The Subject creator this page opens reaches value inputs that use v-tooltip.
-		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects, extensionLinks } )
+		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects, extensionLinks, notices } )
 			.directive( 'tooltip', CdxTooltip );
 		app.use( ext.getPinia() );
 		NeoWikiServices.registerServices( app );

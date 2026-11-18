@@ -14,6 +14,13 @@
 			</CdxButton>
 		</div>
 
+		<component
+			:is="notice"
+			v-for="( notice, index ) in notices"
+			:key="index"
+			@replaces-first-steps="setReplacesFirstSteps( index, $event )"
+		/>
+
 		<CdxMessage
 			v-if="showsFirstSteps"
 			class="ext-neowiki-overview__first-steps"
@@ -49,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { type Component, computed, onMounted, reactive, ref } from 'vue';
 import { CdxButton, CdxCard, CdxIcon, CdxMessage } from '@wikimedia/codex';
 import {
 	cdxIconAdd,
@@ -122,6 +129,8 @@ const props = defineProps<{
 	wikiHasSubjects: boolean;
 	/** Pages other extensions add, with their label and description in the reader's language. */
 	extensionLinks: { page: string; label: string; description: string }[];
+	/** What other extensions show above the cards. */
+	notices: Component[];
 }>();
 
 const subjectStore = useSubjectStore();
@@ -129,8 +138,11 @@ const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPer
 
 const permissionKnown = ref( false );
 
+// The notices that take the place of the note, by their position.
+const firstStepsReplacements = reactive( new Set<number>() );
+
 // The note points at the create button, so only those offered the button get it.
-const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value );
+const showsFirstSteps = computed( () => !props.wikiHasSubjects && canCreateSubjectPage.value && firstStepsReplacements.size === 0 );
 
 // On a wiki without Subjects the table waits for the permission check, so it never loads for a user who gets the note.
 const showsRecentSubjects = computed(
@@ -147,6 +159,14 @@ const pageLinks = computed( () => [
 
 function inReaderLanguage( link: PageLink ): PageLink {
 	return { ...link, label: mw.msg( link.label ), description: mw.msg( link.description ) };
+}
+
+function setReplacesFirstSteps( index: number, replaces: boolean ): void {
+	if ( replaces ) {
+		firstStepsReplacements.add( index );
+	} else {
+		firstStepsReplacements.delete( index );
+	}
 }
 
 function pageUrl( page: string ): string {

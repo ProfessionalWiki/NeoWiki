@@ -1,5 +1,13 @@
 <template>
-	<div class="ext-neowiki-bundle-import">
+	<WikiSettingsEditor
+		v-if="!settingsDone"
+		@done="settingsDone = true"
+	/>
+
+	<div
+		v-else
+		class="ext-neowiki-bundle-import"
+	>
 		<h2 class="ext-neowiki-bundle-import__title">
 			{{ updated === null ?
 				$i18n( 'neowiki-bundle-install-title' ).text() :
@@ -192,6 +200,8 @@ import { fetchBundleFile } from '../persistence/fetchBundleFile.ts';
 import { useBundleImport } from '../composables/useBundleImport.ts';
 import BundlePlans from './BundlePlans.vue';
 import CatalogEntryPicker from './CatalogEntryPicker.vue';
+import WikiSettingsEditor from './WikiSettingsEditor.vue';
+import { asksHowTheWikiWorks } from '../presentation/setupConfig.ts';
 
 const props = defineProps<{
 	records: readonly InstallRecord[];
@@ -207,6 +217,7 @@ const emit = defineEmits<{
 }>();
 
 const importer = useBundleImport();
+const settingsDone = ref( props.updating !== null || !asksHowTheWikiWorks( props.records.length ) );
 const fileInput = ref<HTMLInputElement | null>( null );
 const url = ref( '' );
 const reading = ref( false );

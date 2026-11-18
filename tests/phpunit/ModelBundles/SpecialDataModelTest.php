@@ -49,6 +49,24 @@ class SpecialDataModelTest extends SpecialPageTestBase {
 		);
 	}
 
+	public function testOpensTheSetupOnItsSubpage(): void {
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( 'setup' );
+
+		$this->assertStringContainsString( 'data-mw-neowiki-view="setup"', $output );
+	}
+
+	public function testHandsTheSetupWhatTheWikiHolds(): void {
+		$setup = $this->outputOf( $this->newSpecialPage(), $this->getTestSysop()->getAuthority() )
+			->getJsConfigVars()['wgNeoWikiModelBundlesSetup'];
+
+		$this->assertSame(
+			[ 'wikiHasSchemas' => false, 'wikiHasSubjects' => false, 'canEditSettings' => true ],
+			array_diff_key( $setup, [ 'settings' => null ] )
+		);
+		$this->assertArrayHasKey( 'pageValues', $setup['settings'] );
+	}
+
 	public function testTheHelpLinkLeadsToTheDocs(): void {
 		$this->assertHelpLinkLeadsToTheDocs( $this->outputOf( $this->newSpecialPage() ) );
 	}

@@ -1,3 +1,4 @@
+import { type Component, markRaw } from 'vue';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
 import type { PropertyTypeRegistration } from '@/domain/PropertyTypeRegistration';
@@ -19,6 +20,7 @@ export class FrontendRegistrar {
 		private readonly componentRegistry: TypeSpecificComponentRegistry,
 		private readonly propertyTypeRegistry: PropertyTypeRegistry,
 		private readonly viewTypeRegistry: ViewTypeRegistry,
+		private readonly overviewNotices: Component[],
 	) {
 	}
 
@@ -42,6 +44,14 @@ export class FrontendRegistrar {
 
 	public registerViewType( registration: ViewTypeRegistration ): void {
 		this.viewTypeRegistry.registerType( registration.typeName, registration.component );
+	}
+
+	/**
+	 * Shows the component above the cards of Special:NeoWiki. While it emits `replacesFirstSteps` with true, the
+	 * note that tells a new wiki how to start is left out.
+	 */
+	public registerOverviewNotice( component: Component ): void {
+		this.overviewNotices.push( markRaw( component ) );
 	}
 
 	public markUiStarted(): void {

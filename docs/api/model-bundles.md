@@ -95,6 +95,21 @@ Versions come from the files. An entry without a URL or a usable name, or of ano
 them, so their servers have to let other websites read them, as with bundle URLs. `$wgNeoWikiModelBundlePreselection`
 names the entries that the data model setup ticks by default.
 
+## Setup
+
+Special:DataModel/setup gives a wiki its first data model, in steps:
+
+1. How the wiki works: page-first or subject-first, and the data languages. Every first install on a wiki without
+   Subjects starts here, as the pages of installed Subjects depend on it. Only what you change is saved, on
+   [MediaWiki:NeoWiki](../operations/installation.md#on-wiki-settings).
+2. A model from the catalogs, or none.
+3. The destinations whose requirements the model and the installed bundles meet.
+4. One preview of the chosen bundles and those they require, then the install.
+
+Special:NeoWiki offers the setup to users who may install bundles while the wiki has no Schemas, and Special:DataModel
+while the wiki has no data model. For those users, Special:NeoWiki also counts the installed bundles that have another
+version at their source.
+
 ## Exporting
 
 Special:DataModel exports the Schemas and Mappings you choose, all of them unless you untick some: each Schema with

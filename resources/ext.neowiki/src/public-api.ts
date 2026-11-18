@@ -28,6 +28,7 @@ export * from './components/SchemaEditor/Property/minExceedsMax';
 export * from './components/Value/ValueDisplayContract';
 export * from './components/Value/ValueInputContract';
 export * from './components/Views/ViewContract';
+export * from './components/ConfigEditor/configEditing';
 export * from './composables/useChangeDetection';
 export * from './composables/useCloseConfirmation';
 export * from './composables/useFieldServerViolation';
@@ -111,6 +112,7 @@ export * from './stores/SchemaStore';
 export * from './stores/SubjectStore';
 
 // Re-exported Vue components.
+export { default as LanguageListInput } from './components/ConfigEditor/LanguageListInput.vue';
 export { default as LayoutDisplay } from './components/LayoutDisplay/LayoutDisplay.vue';
 export { default as LayoutDisplayHeader } from './components/LayoutDisplay/LayoutDisplayHeader.vue';
 export { default as DisplayRuleList } from './components/LayoutEditor/DisplayRuleList.vue';

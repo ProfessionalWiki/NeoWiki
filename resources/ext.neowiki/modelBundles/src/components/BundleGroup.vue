@@ -109,9 +109,7 @@ import { CdxButton, CdxIcon, CdxMessage, CdxProgressBar } from '@wikimedia/codex
 import { cdxIconCollapse, cdxIconExpand } from '@wikimedia/codex-icons';
 import { isUrlSource, type InstallRecord } from '../application/InstallRecord.ts';
 import type { DataModelItem } from '../application/bundleStatus.ts';
-import { sameBundleName } from '../application/bundleName.ts';
-import { parseBundleFile } from '../persistence/bundleFile.ts';
-import { fetchBundleFile } from '../persistence/fetchBundleFile.ts';
+import { otherVersionAtSource } from '../persistence/sourceVersion.ts';
 import { installRecordTitle } from '../persistence/MediaWikiInstallRecordRepository.ts';
 import ItemList from './ItemList.vue';
 import { I18nSlot } from 'ext.neowiki';
@@ -163,23 +161,9 @@ async function load(): Promise<void> {
 	}
 }
 
-// A source that cannot be reached, that holds another bundle, or that gives no version, shows no other version.
 async function checkSource(): Promise<void> {
-	const record = props.record;
-
-	if ( record === null || !isUrlSource( record.source ) ) {
-		return;
-	}
-
-	try {
-		const metadata = parseBundleFile( await fetchBundleFile( record.source ) ).metadata;
-
-		if ( metadata !== null && sameBundleName( metadata.name, record.name ) && metadata.version !== '' &&
-			metadata.version !== record.version ) {
-			availableVersion.value = metadata.version;
-		}
-	} catch ( _error ) {
-		availableVersion.value = null;
+	if ( props.record !== null ) {
+		availableVersion.value = await otherVersionAtSource( props.record );
 	}
 }
 
