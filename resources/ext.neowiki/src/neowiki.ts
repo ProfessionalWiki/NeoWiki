@@ -17,7 +17,6 @@ import SchemasPage from '@/components/SchemasPage/SchemasPage.vue';
 import SubjectsPage from '@/components/SubjectsPage/SubjectsPage.vue';
 import LayoutsPage from '@/components/LayoutsPage/LayoutsPage.vue';
 import MappingsPage from '@/components/MappingsPage/MappingsPage.vue';
-import DataModelPage from '@/components/DataModelPage/DataModelPage.vue';
 import SubjectsManagerPage from '@/components/SubjectsManager/SubjectsManagerPage.vue';
 import CreateSubjectPage from '@/components/CreateSubjectPage/CreateSubjectPage.vue';
 import SubjectPage from '@/components/SubjectPage/SubjectPage.vue';
@@ -62,7 +61,7 @@ export function registerSubjectCreatorClickHandler( pinia: Pinia, signal?: Abort
  * extensions can render in dialogs of their own; `ext-neowiki-view` marks the on-page view placeholder.
  * Focusable Codex UI NeoWiki renders must sit inside one of these.
  */
-function mountNeoWikiApp( app: App, element: Element ): void {
+export function mountNeoWikiApp( app: App, element: Element ): void {
 	element.classList.add( 'ext-neowiki-ui' );
 	app.mount( element );
 }
@@ -216,19 +215,6 @@ function initializeMappingsPage(): void {
 	}
 }
 
-function initializeDataModelPage(): void {
-	const dataModelPage = document.getElementById( 'ext-neowiki-data-model' );
-
-	if ( dataModelPage !== null ) {
-		const ext = NeoWikiExtension.getInstance();
-
-		const app = createMwApp( DataModelPage );
-		app.use( ext.getPinia() );
-		NeoWikiServices.registerServices( app );
-		mountNeoWikiApp( app, dataModelPage );
-	}
-}
-
 function initializeSubjectsManagerPage(): void {
 	const subjectsManager = document.getElementById( 'ext-neowiki-manage-subjects' );
 
@@ -300,9 +286,10 @@ function initializeOverviewPage(): void {
 		const canManageGraphStores = overviewPage.dataset.mwNeowikiCanManageGraphStores === 'true';
 		const canEditConfiguration = overviewPage.dataset.mwNeowikiCanEditConfiguration === 'true';
 		const wikiHasSubjects = overviewPage.dataset.mwNeowikiWikiHasSubjects === 'true';
+		const extensionLinks = JSON.parse( overviewPage.dataset.mwNeowikiExtensionLinks ?? '[]' );
 
 		// The Subject creator this page opens reaches value inputs that use v-tooltip.
-		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects } )
+		const app = createMwApp( OverviewPage, { canManageGraphStores, canEditConfiguration, wikiHasSubjects, extensionLinks } )
 			.directive( 'tooltip', CdxTooltip );
 		app.use( ext.getPinia() );
 		NeoWikiServices.registerServices( app );
@@ -330,7 +317,24 @@ function initializeConfigEditor(): void {
 const isTestEnvironment = typeof window !== 'undefined' &&
 	( window as unknown as { neoWikiTestMode?: boolean } ).neoWikiTestMode === true;
 
+const extensionInitializers: ( () => void )[] = [];
+let uiStarted = false;
+
+/**
+ * Runs the initializer as NeoWiki's UI starts, or at once when it has started: once the modules named
+ * in the NeoWikiGetFrontendModules hook have registered their types, and the page's HTML has been parsed.
+ */
+export function onUiStart( initialize: () => void ): void {
+	if ( uiStarted ) {
+		queueMicrotask( initialize );
+	} else {
+		extensionInitializers.push( initialize );
+	}
+}
+
 function initializeUi(): void {
+	uiStarted = true;
+
 	// Each in its own microtask, so that one that throws leaves the others running.
 	[
 		initializeNeoWikiApp,
@@ -340,13 +344,13 @@ function initializeUi(): void {
 		initializeSubjectsPage,
 		initializeLayoutsPage,
 		initializeMappingsPage,
-		initializeDataModelPage,
 		initializeSubjectsManagerPage,
 		initializeCreateSubjectPage,
 		initializeSubjectPage,
 		initializeSubjectCreatorButtons,
 		initializeOverviewPage,
 		initializeConfigEditor,
+		...extensionInitializers,
 	].forEach( ( initialize ) => queueMicrotask( initialize ) );
 }
 

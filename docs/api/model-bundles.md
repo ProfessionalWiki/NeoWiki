@@ -7,9 +7,15 @@ order: 11
 A [Model Bundle](../glossary.md#model-bundle) carries Schemas, Layouts, Mappings and Subjects from one wiki to
 others in one JSON file, which each wiki installs and later updates. Special:DataModel installs, updates and exports
 bundles. It reads a file from your computer or from a URL, whose server has to let other websites read it (CORS), and
-installs any file as a Model Bundle, under the name you give it when the file has none. The Import button of
-Special:Schemas installs a file with `bundle` metadata the same way, and imports any other file's items without an
-install record.
+installs any file as a Model Bundle, under the name you give it when the file has none. Special:Schemas imports
+Schemas only, and refers a file that holds more to Special:DataModel.
+
+Model Bundles is an extension in NeoWiki's repository. To enable it, add this to `LocalSettings.php` after
+`wfLoadExtension( 'NeoWiki' );`:
+
+```php
+wfLoadExtension( 'NeoWikiModelBundles', "$IP/extensions/NeoWiki/extension-model-bundles.json" );
+```
 
 ## File format
 
@@ -71,8 +77,7 @@ their Host Subjects, and the Schema with them. Naming the export makes it a Mode
 
 ## Installing
 
-Installing a bundle takes the `editsitejson` and `editinterface` rights besides the rights each write takes. Importing a
-plain export takes only the latter.
+Installing a bundle takes the `editsitejson` and `editinterface` rights besides the rights each write takes.
 
 The preview compares each item of the file with the wiki:
 
@@ -90,10 +95,8 @@ An item is in conflict when it is:
 - a Subject with a Dependent Subject whose Schema the wiki does not have as a Schema of Dependent Subjects, unless the
   file creates it;
 - a Schema that would change whether its Subjects are dependent;
-- owned by another installed bundle, when installing a bundle;
+- owned by another installed bundle;
 - on the wiki in a version that cannot be read.
-
-A plain import also writes items an installed bundle owns; its preview names the bundle.
 
 The ticked items are written one at a time: Schemas, then Layouts, Mappings and Subjects. A write that fails is
 reported with its reason, and the others go on. A Schema, Layout or Mapping page edited since the preview is not

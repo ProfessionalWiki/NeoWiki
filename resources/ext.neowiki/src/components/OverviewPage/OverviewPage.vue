@@ -29,11 +29,11 @@
 				:icon="link.icon"
 			>
 				<template #title>
-					{{ $i18n( link.label ).text() }}
+					{{ link.label }}
 					<CdxIcon :icon="cdxIconNext" size="small" />
 				</template>
 				<template #description>
-					{{ $i18n( link.description ).text() }}
+					{{ link.description }}
 				</template>
 			</CdxCard>
 		</div>
@@ -62,12 +62,20 @@ import {
 	cdxIconSettings,
 	cdxIconTable
 } from '@wikimedia/codex-icons';
+import type { Icon } from '@wikimedia/codex-icons';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 
-const PAGE_LINKS = [
+interface PageLink {
+	page: string;
+	label: string;
+	description: string;
+	icon: Icon;
+}
+
+const PAGE_LINKS: PageLink[] = [
 	{
 		page: 'Special:Subjects',
 		label: 'neowiki-special-subjects',
@@ -91,23 +99,17 @@ const PAGE_LINKS = [
 		label: 'neowiki-special-layouts',
 		description: 'neowiki-overview-layouts-description',
 		icon: cdxIconLayout
-	},
-	{
-		page: 'Special:DataModel',
-		label: 'neowiki-special-datamodel',
-		description: 'neowiki-overview-datamodel-description',
-		icon: cdxIconPuzzle
 	}
 ];
 
-const GRAPH_STORES_LINK = {
+const GRAPH_STORES_LINK: PageLink = {
 	page: 'Special:GraphStores',
 	label: 'neowiki-special-graphstores',
 	description: 'neowiki-overview-graph-stores-description',
 	icon: cdxIconDatabase
 };
 
-const CONFIGURATION_LINK = {
+const CONFIGURATION_LINK: PageLink = {
 	page: 'MediaWiki:NeoWiki',
 	label: 'neowiki-overview-configuration',
 	description: 'neowiki-overview-configuration-description',
@@ -118,6 +120,8 @@ const props = defineProps<{
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
 	wikiHasSubjects: boolean;
+	/** Pages other extensions add, with their label and description in the reader's language. */
+	extensionLinks: { page: string; label: string; description: string }[];
 }>();
 
 const subjectStore = useSubjectStore();
@@ -133,11 +137,17 @@ const showsRecentSubjects = computed(
 	() => props.wikiHasSubjects || ( permissionKnown.value && !showsFirstSteps.value )
 );
 
+// The puzzle stands for an extension, whose pages are mapped after NeoWiki's own.
 const pageLinks = computed( () => [
-	...PAGE_LINKS,
-	...( props.canManageGraphStores ? [ GRAPH_STORES_LINK ] : [] ),
-	...( props.canEditConfiguration ? [ CONFIGURATION_LINK ] : [] )
+	...PAGE_LINKS.map( inReaderLanguage ),
+	...props.extensionLinks.map( ( link ) => ( { ...link, icon: cdxIconPuzzle } ) ),
+	...( props.canManageGraphStores ? [ inReaderLanguage( GRAPH_STORES_LINK ) ] : [] ),
+	...( props.canEditConfiguration ? [ inReaderLanguage( CONFIGURATION_LINK ) ] : [] )
 ] );
+
+function inReaderLanguage( link: PageLink ): PageLink {
+	return { ...link, label: mw.msg( link.label ), description: mw.msg( link.description ) };
+}
 
 function pageUrl( page: string ): string {
 	return mw.util.getUrl( page );

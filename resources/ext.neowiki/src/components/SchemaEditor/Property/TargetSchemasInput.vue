@@ -40,8 +40,7 @@
 import { computed, ref, watch } from 'vue';
 import { CdxInfoChip, CdxMultiselectLookup } from '@wikimedia/codex';
 import type { ChipInputItem } from '@wikimedia/codex';
-import { useSchemaStore } from '@/stores/SchemaStore.ts';
-import { normalizeSchemaName } from '@/domain/schemaName.ts';
+import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import { type SchemaSummary, subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
 import { isLocalSchemaReference, schemaReferenceText, type SchemaReference } from '@/domain/SchemaReference';
 import { CREATE_SCHEMA, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';

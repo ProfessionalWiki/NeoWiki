@@ -27,6 +27,10 @@ An update compares each item three ways: the recorded version, the wiki's versio
 changed is replaced by default; what the wiki changed too is shown in both versions and replaced only if the admin
 ticks it; what the bundle no longer has is offered for removal.
 
+For page weight, Model Bundles is an extension of its own in NeoWiki's repository, NeoWikiModelBundles, which a wiki
+enables besides NeoWiki. Its frontend is a ResourceLoader module that only Special:DataModel loads, and that reaches
+NeoWiki's frontend through `require( 'ext.neowiki' )`. NeoWiki's Special:Schemas imports and exports Schemas only.
+
 ## Consequences
 
 - Each item is written as its own edit, with the wiki's own permission checks, validation and page history. A write
@@ -49,8 +53,17 @@ ticks it; what the bundle no longer has is offered for removal.
   catalog of bundles will have to settle all three.
 - A command line would have to reproduce the canonical forms, the hashing and the comparison exactly, or run the same
   TypeScript.
+- Pages that load NeoWiki's frontend carry none of Model Bundles' code or messages. Without the extension,
+  Special:Schemas imports only the Schemas of a file that holds more; with it, Special:Schemas refers such a file to
+  Special:DataModel.
+- Model Bundles depends on NeoWiki's public JavaScript API, which is not yet stable. Both are released together.
 
 ## Alternatives Considered
+
+### Part of NeoWiki's frontend
+
+Built into NeoWiki, Model Bundles added 68 KB of script (16 KB gzipped, some 12%) and 97 messages to the module that
+every page with NeoWiki's interface loads.
 
 ### MediaWiki XML import
 

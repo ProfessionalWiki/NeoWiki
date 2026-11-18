@@ -1,66 +1,74 @@
 import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxDialog } from '@wikimedia/codex';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
-import type { ModelBundle } from '@/application/modelBundle/ModelBundle.ts';
+import type { SchemaImportItem, SchemaImportStatus } from '@/components/SchemasPage/schemaImport.ts';
 import type { Schema } from '@/domain/Schema.ts';
-import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
-import { checkboxLabelled, createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
-import { InMemoryDataModel } from '../../application/modelBundle/InMemoryDataModel.ts';
-import { bundleOf, installed, subjectEntry, VOCABULARIES } from '../../application/modelBundle/builders.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 
 enableAutoUnmount( afterEach );
 
-const SUBJECT_ID = 's1demo1aaaaaaa1';
-
 let pinia: ReturnType<typeof createPinia>;
-let wiki: InMemoryDataModel;
 
-function file( schemas: Schema[], extra: Partial<ModelBundle> = {} ): ModelBundle {
-	return bundleOf( [], schemas, { metadata: null, ...extra } );
+function item( name: string, status: SchemaImportStatus = 'new' ): SchemaImportItem {
+	return { schema: newSchema( { title: name } ), status };
 }
 
-async function mountDialog( bundle: ModelBundle ): Promise<VueWrapper> {
-	const wrapper = mount( SchemaImportDialog, {
-		props: { bundle },
+function mountDialog( items: SchemaImportItem[] ): VueWrapper {
+	return mount( SchemaImportDialog, {
+		props: { items, leavesOutOtherItems: false },
 		attachTo: document.body,
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			provide: {
-				[ Service.DataModelRepository ]: wiki,
-				[ Service.InstallRecordRepository ]: wiki,
-			},
 			stubs: { teleport: true },
 		},
 	} );
-	await flushPromises();
-
-	return wrapper;
 }
 
-/**
- * Each row of the preview: what it names, whether it is checked (null for a row without a checkbox), and
- * what it says of the item.
- */
-function rows( wrapper: VueWrapper ): [ string, boolean | null, string ][] {
-	return wrapper.findAll( '.ext-neowiki-bundle-preview__item' ).map( ( row ) => {
-		const checkbox = row.find<HTMLInputElement>( 'input[type="checkbox"]' );
-
-		return checkbox.exists() ?
-			[ row.find( '.cdx-label__label__text' ).text(), checkbox.element.checked, row.find( '.cdx-label__description' ).text() ] :
-			[ row.find( '.ext-neowiki-bundle-preview__name' ).text(), null, row.find( '.ext-neowiki-bundle-preview__status' ).text() ];
-	} );
+function headings( wrapper: VueWrapper ): string[] {
+	return wrapper.findAll( '.ext-neowiki-schema-import-dialog__section' ).map( headingOf );
 }
 
-function button( wrapper: VueWrapper, label: string ): DOMWrapper<HTMLButtonElement> {
-	const found = wrapper.findAll<HTMLButtonElement>( 'button' ).find( ( candidate ) => candidate.text() === label );
+function headingOf( section: DOMWrapper<Element> ): string {
+	const heading = section.find( '.ext-neowiki-schema-import-dialog__heading' );
+	const label = heading.find( '.cdx-label__label__text' );
+
+	return ( label.exists() ? label : heading ).text();
+}
+
+function section( wrapper: VueWrapper, heading: string ): DOMWrapper<Element> {
+	const found = wrapper.findAll( '.ext-neowiki-schema-import-dialog__section' )
+		.find( ( candidate ) => headingOf( candidate ) === heading );
 
 	expect( found ).toBeDefined();
 	return found!;
+}
+
+function rowsOf( wrapper: VueWrapper, heading: string ): [ string, boolean ][] {
+	return section( wrapper, heading ).findAll( '.ext-neowiki-schema-import-dialog__items .cdx-checkbox' ).map( ( row ) => [
+		row.find( '.cdx-label__label__text' ).text(),
+		( row.find( 'input' ).element as HTMLInputElement ).checked,
+	] );
+}
+
+function headingCheckbox( wrapper: VueWrapper, heading: string ): DOMWrapper<HTMLInputElement> {
+	return section( wrapper, heading ).find<HTMLInputElement>( '.ext-neowiki-schema-import-dialog__heading input' );
+}
+
+function checkboxOf( wrapper: VueWrapper, name: string ): DOMWrapper<HTMLInputElement> {
+	const checkbox = wrapper.findAll( '.cdx-checkbox' )
+		.find( ( candidate ) => candidate.find( '.cdx-label__label__text' ).text() === name );
+
+	expect( checkbox ).toBeDefined();
+	return checkbox!.find<HTMLInputElement>( 'input' );
+}
+
+async function setChecked( wrapper: VueWrapper, name: string, checked: boolean ): Promise<void> {
+	await checkboxOf( wrapper, name ).setValue( checked );
 }
 
 function primaryAction( wrapper: VueWrapper ): DOMWrapper<HTMLButtonElement> {
@@ -76,227 +84,160 @@ async function runImport( wrapper: VueWrapper ): Promise<void> {
 	await flushPromises();
 }
 
-function resultHeadings( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '.ext-neowiki-import-results__heading' ).map( ( heading ) => heading.text() );
+function messages( wrapper: VueWrapper, type: 'success' | 'error' ): string[] {
+	return wrapper.findAll( `.cdx-message--${ type }` ).map( ( message ) => message.text() );
 }
 
-async function importWithWriteHeld(): Promise<{ wrapper: VueWrapper; finishWrite: () => void }> {
-	let finishWrite!: () => void;
-	const save = wiki.saveSchema.bind( wiki );
-	wiki.saveSchema = ( name, json, comment, baseRevisionId ) => new Promise<void>( ( resolve ) => {
-		finishWrite = () => save( name, json, comment, baseRevisionId ).then( resolve );
-	} );
-	const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ] ) );
-	await primaryAction( wrapper ).trigger( 'click' );
-	await flushPromises();
+function savedNames(): string[] {
+	return vi.mocked( useSchemaStore().saveSchema ).mock.calls.map( ( [ schema ] ) => schema.getName() );
+}
 
-	return { wrapper, finishWrite };
+async function importWithSaveHeld(): Promise<{ wrapper: VueWrapper; finishSave: () => void }> {
+	let finishSave!: () => void;
+	useSchemaStore().saveSchema = () => new Promise<void>( ( resolve ) => {
+		finishSave = resolve;
+	} );
+	const wrapper = mountDialog( [ item( 'Museum' ) ] );
+	await runImport( wrapper );
+
+	return { wrapper, finishSave };
 }
 
 describe( 'SchemaImportDialog', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg', 'config' ] } );
+		// Not ", ", so names joined with an English comma instead of the wiki's own separator show.
+		setupMwMock( { messages: { 'comma-separator': '、' }, functions: [ 'msg' ] } );
+
 		pinia = createPinia();
 		setActivePinia( pinia );
-		wiki = new InMemoryDataModel().withSchemas( newSchema( { title: 'Person', description: 'Old' } ) );
+		useSchemaStore().saveSchema = vi.fn().mockResolvedValue( undefined );
 	} );
 
-	it( 'checks what the wiki lacks and leaves unchecked what it would replace, saying so', async () => {
-		const wrapper = await mountDialog( file( [
-			newSchema( { title: 'Person', description: 'New' } ),
-			newSchema( { title: 'Museum' } ),
-		] ) );
+	it( 'lists new Schemas checked and changed ones unchecked, each under its own heading', () => {
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
-		expect( rows( wrapper ) ).toEqual( [
-			[ 'Museum', true, 'neowiki-bundle-status-new' ],
-			[ 'Person', false, 'neowiki-bundle-status-differs' ],
+		expect( headings( wrapper ) ).toEqual( [ 'neowiki-schemas-import-new2', 'neowiki-schemas-import-changed1' ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new2' ) ).toEqual( [ [ 'Artist', true ], [ 'Museum', true ] ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed1' ) ).toEqual( [ [ 'Person', false ] ] );
+	} );
+
+	it( 'lists the Schemas of each section alphabetically', () => {
+		const wrapper = mountDialog( [
+			item( 'museum' ), item( 'Zoo', 'changed' ), item( 'Artist' ), item( 'Place', 'unchanged' ),
+			item( 'Person', 'changed' ), item( 'City' ), item( 'Office', 'unchanged' ),
 		] );
+
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new3' ).map( ( [ name ] ) => name ) ).toEqual( [ 'Artist', 'City', 'museum' ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ).map( ( [ name ] ) => name ) ).toEqual( [ 'Person', 'Zoo' ] );
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).text() )
+			.toContain( 'neowiki-schemas-import-unchanged-namesOffice、Place' );
 	} );
 
-	it( 'says, in a plain import, which installed bundle an item belongs to', async () => {
-		wiki.records = [ installed( [], [ newSchema( { title: 'Person', description: 'Old' } ) ] ) ];
+	it( 'says once, under its heading, that the changed Schemas replace the existing ones', () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
 
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Person', description: 'New' } ) ] ) );
-
-		expect( wrapper.find( '.ext-neowiki-bundle-preview__item .ext-neowiki-bundle-preview__note' ).text() )
-			.toBe( 'neowiki-bundle-belongs-toVocabularies' );
+		expect( wrapper.findAll( '.cdx-label__description' ).map( ( description ) => description.text() ) )
+			.toEqual( [ 'neowiki-schemas-import-replaces2' ] );
 	} );
 
-	it( 'says that installing a bundle replaces what differs', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Person', description: 'New' } ) ], { metadata: VOCABULARIES } ) );
+	it( 'names the unchanged Schemas without offering to import them', () => {
+		const wrapper = mountDialog( [ item( 'Person', 'unchanged' ), item( 'Artist' ), item( 'Place', 'unchanged' ) ] );
 
-		expect( rows( wrapper ) ).toEqual( [ [ 'Person', false, 'neowiki-bundle-status-differs-install' ] ] );
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).text() )
+			.toContain( 'neowiki-schemas-import-unchanged-namesPerson、Place' );
+		expect( section( wrapper, 'neowiki-schemas-import-unchanged2' ).find( 'input' ).exists() ).toBe( false );
 	} );
 
-	it( 'lists the Subjects under their Schema, with what it cannot import and why', async () => {
-		wiki.withSubject( SUBJECT_ID, subjectEntry( { schema: 'Person' } ) );
+	it( 'checks or unchecks every Schema of a section from its heading', async () => {
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
 
-		const wrapper = await mountDialog( file( [], { subjects: new Map( [ [ SUBJECT_ID, subjectEntry( { label: 'female' } ) ] ] ) } ) );
+		await headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).setValue( true );
 
-		expect( wrapper.find( '.ext-neowiki-bundle-preview__group-heading' ).text() ).toBe( 'neowiki-bundle-preview-schema-groupGender Types1' );
-		expect( rows( wrapper ) ).toEqual( [
-			[ 'female', null, 'neowiki-bundle-status-conflictneowiki-bundle-conflict-subject-schemaPerson' ],
-		] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ) ).toEqual( [ [ 'Person', true ], [ 'Place', true ] ] );
+
+		await headingCheckbox( wrapper, 'neowiki-schemas-import-new1' ).setValue( false );
+
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-new1' ) ).toEqual( [ [ 'Artist', false ] ] );
+		expect( rowsOf( wrapper, 'neowiki-schemas-import-changed2' ) ).toEqual( [ [ 'Person', true ], [ 'Place', true ] ] );
 	} );
 
-	it( 'says that a bundle install cannot install what is in conflict', async () => {
-		wiki.withSubject( SUBJECT_ID, subjectEntry( { schema: 'Person' } ) );
+	it( 'shows a section with only some Schemas checked as partly checked', async () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Place', 'changed' ) ] );
 
-		const wrapper = await mountDialog( file( [], {
-			metadata: VOCABULARIES,
-			subjects: new Map( [ [ SUBJECT_ID, subjectEntry( { label: 'female' } ) ] ] ),
-		} ) );
+		await setChecked( wrapper, 'Place', true );
 
-		expect( rows( wrapper ) ).toEqual( [
-			[ 'female', null, 'neowiki-bundle-status-conflict-installneowiki-bundle-conflict-subject-schemaPerson' ],
-		] );
+		expect( headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).element.indeterminate ).toBe( true );
+		expect( headingCheckbox( wrapper, 'neowiki-schemas-import-changed2' ).element.checked ).toBe( false );
 	} );
 
-	it( 'folds away only what is unchanged, keeping in view what this wiki changed and what cannot be imported', async () => {
-		wiki.records = [ installed( [], [ newSchema( { title: 'Person', description: 'Recorded' } ) ] ) ];
-		wiki.withSchemas( newSchema( { title: 'Museum' } ) );
-		wiki.unreadable.add( 'schema:Place' );
-		wiki.withSchemas( newSchema( { title: 'Place' } ) );
+	it( 'counts the checked Schemas on the import action', async () => {
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
-		const wrapper = await mountDialog( file( [
-			newSchema( { title: 'Person', description: 'Recorded' } ),
-			newSchema( { title: 'Museum' } ),
-			newSchema( { title: 'Place' } ),
-		], { metadata: VOCABULARIES } ) );
+		expect( primaryAction( wrapper ).text() ).toBe( 'neowiki-schemas-import-confirm2' );
 
-		expect( wrapper.findAll( '.ext-neowiki-bundle-preview__quiet .ext-neowiki-bundle-preview__name' ).map( ( name ) => name.text() ) )
-			.toEqual( [ 'Museum' ] );
+		await setChecked( wrapper, 'Person', true );
+
+		expect( primaryAction( wrapper ).text() ).toBe( 'neowiki-schemas-import-confirm3' );
 	} );
 
-	it( 'shows the changes of an item that differs from the wiki\'s', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Person', description: 'New' } ) ] ) );
+	it( 'disables the import action while no Schema is checked', async () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ) ] );
 
-		await button( wrapper, 'neowiki-bundle-preview-show-changes' ).trigger( 'click' );
-
-		expect( wrapper.find( '.ext-neowiki-version-diff__lines .ext-neowiki-version-diff__line--added' ).text() ).toContain( '"description": "New"' );
-	} );
-
-	it( 'offers no changes to show for a Subject in conflict', async () => {
-		wiki.withSubject( SUBJECT_ID, subjectEntry( { schema: 'Person' } ) );
-
-		const wrapper = await mountDialog( file( [], { subjects: new Map( [ [ SUBJECT_ID, subjectEntry( { label: 'female' } ) ] ] ) } ) );
-
-		expect( wrapper.findAll( 'button' ).map( ( button ) => button.text() ) ).not.toContain( 'neowiki-bundle-preview-show-changes' );
-	} );
-
-	it( 'says in a line of its own why it keeps what the bundle no longer has', async () => {
-		wiki.records = [ installed( [ [ SUBJECT_ID, subjectEntry() ] ] ) ];
-		wiki.withSubject( SUBJECT_ID, subjectEntry() );
-		wiki.referencingSubjects.set( SUBJECT_ID, [ 's1demo1aaaaaaa9' ] );
-
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ], { metadata: VOCABULARIES } ) );
-
-		expect( rows( wrapper ) ).toContainEqual( [ 'female', null, 'neowiki-bundle-remove-blocked-referenced' ] );
-	} );
-
-	it( 'lists a Subject it could not read by its recorded label, under its recorded Schema', async () => {
-		wiki.records = [ installed( [ [ SUBJECT_ID, subjectEntry() ] ] ) ];
-		wiki.withSubject( SUBJECT_ID, subjectEntry() );
-		wiki.unreadable.add( `subject:${ SUBJECT_ID }` );
-
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ], { metadata: VOCABULARIES } ) );
-
-		expect( wrapper.findAll( '.ext-neowiki-bundle-preview__group-heading' ).map( ( heading ) => heading.text() ) )
-			.toEqual( [ 'neowiki-bundle-preview-all1', 'neowiki-bundle-preview-schema-groupGender Types1' ] );
-		expect( rows( wrapper ).map( ( [ name ] ) => name ) ).toContain( 'female' );
-	} );
-
-	it( 'tells of a taken page title for a Subject it would create again, apart from its status', async () => {
-		wiki.records = [ installed( [ [ SUBJECT_ID, subjectEntry( { label: 'female' } ) ] ] ) ];
-		wiki.takenPageTitles.add( 'woman' );
-
-		const wrapper = await mountDialog( file( [], {
-			metadata: VOCABULARIES,
-			subjects: new Map( [ [ SUBJECT_ID, subjectEntry( { label: 'woman' } ) ] ] ),
-		} ) );
-
-		const description = wrapper.find( '.ext-neowiki-bundle-preview__item .cdx-label__description' );
-		expect( description.text() ).toContain( 'neowiki-bundle-status-deleted-here-changed-upstream' );
-		expect( description.find( '.ext-neowiki-bundle-preview__note' ).text() ).toBe( `neowiki-bundle-page-title-taken${ SUBJECT_ID }` );
-	} );
-
-	it( 'checks or unchecks every item of a group from its heading', async () => {
-		const wrapper = await mountDialog( file( [
-			newSchema( { title: 'Person', description: 'New' } ),
-			newSchema( { title: 'Museum' } ),
-		] ) );
-
-		await wrapper.find<HTMLInputElement>( '.ext-neowiki-bundle-preview__group-heading input' ).setValue( true );
-
-		expect( rows( wrapper ).map( ( [ , checked ] ) => checked ) ).toEqual( [ true, true ] );
-	} );
-
-	it( 'leaves removals unchecked when checking a whole group from its heading', async () => {
-		wiki.records = [ installed( [], [ newSchema( { title: 'Person' } ) ] ) ];
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ], { metadata: VOCABULARIES } ) );
-		await checkboxLabelled( wrapper, 'Museum' ).setValue( false );
-
-		await wrapper.find<HTMLInputElement>( '.ext-neowiki-bundle-preview__group-heading input' ).setValue( true );
-
-		expect( [ checkboxLabelled( wrapper, 'Museum' ).element.checked, checkboxLabelled( wrapper, 'Person' ).element.checked ] ).toEqual( [ true, false ] );
-	} );
-
-	it( 'disables the import action while nothing is checked', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ] ) );
-
-		await checkboxLabelled( wrapper, 'Museum' ).setValue( false );
+		await setChecked( wrapper, 'Museum', false );
 
 		expect( primaryAction( wrapper ).element.disabled ).toBe( true );
+
+		await setChecked( wrapper, 'Person', true );
+
+		expect( primaryAction( wrapper ).element.disabled ).toBe( false );
 	} );
 
-	it( 'writes the checked items and shows what it created, replaced and failed, and why', async () => {
-		wiki.failingWrites.set( 'schema:Place', 'The page is protected' );
-		const wrapper = await mountDialog( file( [
-			newSchema( { title: 'Person', description: 'New' } ),
-			newSchema( { title: 'Museum' } ),
-			newSchema( { title: 'Place' } ),
-		] ) );
-		await checkboxLabelled( wrapper, 'Person' ).setValue( true );
+	it( 'saves the checked Schemas in the order listed, with the import edit summary', async () => {
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ), item( 'Artist' ), item( 'Place', 'changed' ) ] );
+		await setChecked( wrapper, 'Person', true );
+		await setChecked( wrapper, 'Artist', false );
 
 		await runImport( wrapper );
 
-		expect( wiki.writes ).toEqual( [ 'save schema:Museum', 'save schema:Person' ] );
-		expect( resultHeadings( wrapper ) ).toEqual( [
-			'neowiki-bundle-result-failed1',
-			'neowiki-bundle-result-created1',
-			'neowiki-bundle-result-replaced1',
+		expect( savedNames() ).toEqual( [ 'Museum', 'Person' ] );
+		expect( useSchemaStore().saveSchema ).toHaveBeenCalledWith( expect.anything(), 'neowiki-schemas-import-summary' );
+	} );
+
+	it( 'shows which Schemas it created, which it replaced, and which failed and why', async () => {
+		useSchemaStore().saveSchema = vi.fn( async ( schema: Schema ): Promise<void> => {
+			if ( schema.getName() === 'Place' ) {
+				throw new Error( 'The page is protected' );
+			}
+		} );
+		const wrapper = mountDialog( [ item( 'Artist' ), item( 'Person', 'changed' ), item( 'Museum' ), item( 'Place' ) ] );
+		await setChecked( wrapper, 'Person', true );
+
+		await runImport( wrapper );
+
+		expect( messages( wrapper, 'success' ) ).toEqual( [
+			'neowiki-schemas-import-created2Artist、Museum',
+			'neowiki-schemas-import-replaced1Person',
 		] );
-		expect( wrapper.find( '.ext-neowiki-import-results .cdx-message--error' ).text() ).toBe( 'The page is protected' );
+		expect( messages( wrapper, 'error' ) ).toEqual( [ 'neowiki-schemas-import-failedPlaceThe page is protected' ] );
 	} );
 
-	it( 'installs a model bundle, recording it even when nothing is to be written', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Person', description: 'Old' } ) ], {
-			metadata: { name: 'Vocabularies', version: '1', description: '' },
-		} ) );
-
-		expect( primaryAction( wrapper ).text() ).toBe( 'neowiki-bundle-install-button' );
+	it( 'reports nothing as created or replaced when every save fails', async () => {
+		useSchemaStore().saveSchema = vi.fn().mockRejectedValue( new Error( 'The wiki is read-only' ) );
+		const wrapper = mountDialog( [ item( 'Person', 'changed' ), item( 'Museum' ) ] );
+		await setChecked( wrapper, 'Person', true );
 
 		await runImport( wrapper );
 
-		expect( wiki.recordOf( 'Vocabularies' )?.items.map( ( item ) => item.key ) ).toEqual( [ 'Person' ] );
-	} );
-
-	it( 'has the Schema store read anew the Schemas it replaced', async () => {
-		useSchemaStore().setSchema( 'Person', newSchema( { title: 'Person', description: 'Old' } ) );
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Person', description: 'New' } ) ] ) );
-		await checkboxLabelled( wrapper, 'Person' ).setValue( true );
-
-		await runImport( wrapper );
-
-		expect( useSchemaStore().getSchemas.has( 'Person' ) ).toBe( false );
+		expect( messages( wrapper, 'success' ) ).toEqual( [] );
+		expect( messages( wrapper, 'error' ) ).toHaveLength( 2 );
 	} );
 
 	it( 'tells its host once the import has run, not before', async () => {
-		const { wrapper, finishWrite } = await importWithWriteHeld();
+		const { wrapper, finishSave } = await importWithSaveHeld();
 
 		expect( wrapper.emitted( 'imported' ) ).toBeUndefined();
 
-		finishWrite();
+		finishSave();
 		await flushPromises();
 
 		expect( wrapper.emitted( 'imported' ) ).toHaveLength( 1 );
@@ -304,45 +245,53 @@ describe( 'SchemaImportDialog', () => {
 
 	// Shown on a phone, as Codex 2 shows it there too.
 	it( 'ignores its header\'s Close while the import runs', async () => {
-		const { wrapper } = await importWithWriteHeld();
+		const { wrapper } = await importWithSaveHeld();
 
 		await pressHeaderClose( wrapper );
 
 		expect( wrapper.emitted( 'close' ) ).toBeUndefined();
 	} );
 
-	it( 'stays open, its actions disabled, until the import has run', async () => {
-		const { wrapper, finishWrite } = await importWithWriteHeld();
-
-		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
-
-		expect( wrapper.emitted( 'close' ) ).toBeUndefined();
-		expect( primaryAction( wrapper ).element.disabled ).toBe( true );
-		expect( defaultAction( wrapper ).element.disabled ).toBe( true );
-
-		finishWrite();
-		await flushPromises();
-		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
-
-		expect( wrapper.emitted( 'close' ) ).toHaveLength( 1 );
-	} );
-
-	it( 'closes on cancel without writing', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ] ) );
+	it( 'closes on cancel without saving', async () => {
+		const wrapper = mountDialog( [ item( 'Museum' ) ] );
 
 		await defaultAction( wrapper ).trigger( 'click' );
 
 		expect( wrapper.emitted( 'close' ) ).toHaveLength( 1 );
-		expect( wiki.writes ).toEqual( [] );
+		expect( useSchemaStore().saveSchema ).not.toHaveBeenCalled();
+	} );
+
+	it( 'offers to close once the import has run', async () => {
+		const wrapper = mountDialog( [ item( 'Museum' ) ] );
+		await runImport( wrapper );
+
+		expect( primaryAction( wrapper ).exists() ).toBe( false );
+		expect( defaultAction( wrapper ).text() ).toBe( 'cdx-dialog-close-button-label' );
 	} );
 
 	it( 'lets the keyboard close it once the import has run', async () => {
-		const wrapper = await mountDialog( file( [ newSchema( { title: 'Museum' } ) ] ) );
+		const wrapper = mountDialog( [ item( 'Museum' ) ] );
 		await runImport( wrapper );
 
-		expect( defaultAction( wrapper ).text() ).toBe( 'cdx-dialog-close-button-label' );
-
 		document.activeElement!.dispatchEvent( new KeyboardEvent( 'keyup', { key: 'Escape', bubbles: true } ) );
+
+		expect( wrapper.emitted( 'close' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'stays open, its actions disabled, until the import has run', async () => {
+		const { wrapper, finishSave } = await importWithSaveHeld();
+
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
+
+		expect( wrapper.emitted( 'close' ) ).toBeUndefined();
+		expect( wrapper.get( '.ext-neowiki-dialog-header__close' ).classes() ).toContain( 'ext-neowiki-dialog-header__close--phones-only' );
+		expect( primaryAction( wrapper ).element.disabled ).toBe( true );
+		expect( defaultAction( wrapper ).element.disabled ).toBe( true );
+		expect( checkboxOf( wrapper, 'Museum' ).element.disabled ).toBe( true );
+
+		finishSave();
+		await flushPromises();
+		wrapper.findComponent( CdxDialog ).vm.$emit( 'update:open', false );
 
 		expect( wrapper.emitted( 'close' ) ).toHaveLength( 1 );
 	} );

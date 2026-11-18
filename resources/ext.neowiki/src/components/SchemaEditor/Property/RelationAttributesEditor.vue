@@ -51,7 +51,7 @@ import { SchemaCreationKey } from '@/components/common/SchemaCreation.ts';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
-import { normalizeSchemaName } from '@/domain/schemaName.ts';
+import { normalizeSchemaName } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<AttributesEditorProps<RelationProperty>>();
 const emit = defineEmits<AttributesEditorEmits<RelationProperty>>();

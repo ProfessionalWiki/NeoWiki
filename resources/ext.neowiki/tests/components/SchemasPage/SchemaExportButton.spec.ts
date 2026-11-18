@@ -2,12 +2,12 @@ import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import SchemaExportButton from '@/components/SchemasPage/SchemaExportButton.vue';
+import { InMemorySchemaRepository } from '@/application/SchemaRepository.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
-import { InMemoryDataModel } from '../../application/modelBundle/InMemoryDataModel.ts';
 
 interface CapturedDownload {
 	fileName: string;
@@ -73,12 +73,12 @@ function listSchemas( ...names: string[] ): void {
 	useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( names.map( summary ) );
 }
 
-function mountButton( wiki: InMemoryDataModel ): VueWrapper {
+function mountButton( repository: InMemorySchemaRepository ): VueWrapper {
 	return mount( SchemaExportButton, {
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.DataModelRepository ]: wiki },
+			provide: { [ Service.SchemaRepository ]: repository },
 			stubs: { CdxIcon: true },
 		},
 	} );
@@ -111,12 +111,12 @@ describe( 'SchemaExportButton', () => {
 
 	it( 'downloads every Schema the wiki lists, in a JSON file named after the wiki', async () => {
 		listSchemas( 'Person', 'Museum' );
-		const wrapper = mountButton( new InMemoryDataModel().withSchemas(
+		const wrapper = mountButton( new InMemorySchemaRepository( [
 			newSchema( { title: 'Museum' } ),
 			// Held but not listed, as a Schema the user may not read is.
 			newSchema( { title: 'Secret' } ),
 			newSchema( { title: 'Person' } ),
-		) );
+		] ) );
 
 		await clickExport( wrapper );
 
@@ -124,18 +124,18 @@ describe( 'SchemaExportButton', () => {
 		expect( downloads[ 0 ].fileName ).toBe( 'wiki.example.org-schemas.json' );
 		const file = await downloads[ 0 ].file();
 		expect( file?.type ).toBe( 'application/json' );
-		expect( Object.keys( JSON.parse( await file!.text() ).schemas ) ).toEqual( [ 'Museum', 'Person' ] );
+		expect( Object.keys( JSON.parse( await file!.text() ).schemas ) ).toEqual( [ 'Person', 'Museum' ] );
 	} );
 
 	it( 'reports a Schema that fails to load, downloads nothing, and can be used again', async () => {
 		listSchemas( 'Person', 'Museum' );
-		const wrapper = mountButton( new InMemoryDataModel().withSchemas( newSchema( { title: 'Person' } ) ) );
+		const wrapper = mountButton( new InMemorySchemaRepository( [ newSchema( { title: 'Person' } ) ] ) );
 
 		await clickExport( wrapper );
 
 		expect( downloads ).toHaveLength( 0 );
 		expect( mw.notify ).toHaveBeenCalledWith(
-			'neowiki-bundle-export-unreadable-pageSchema:Museum',
+			'neowiki-schemas-export-error-unreadable-schemaMuseum',
 			expect.objectContaining( { title: 'neowiki-schemas-export-error', type: 'error' } ),
 		);
 		expect( exportButton( wrapper ).disabled ).toBe( false );
@@ -143,7 +143,7 @@ describe( 'SchemaExportButton', () => {
 
 	it( 'reports a listing of the Schemas that fails, and can be used again', async () => {
 		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockRejectedValue( new Error( 'Error fetching schema summaries' ) );
-		const wrapper = mountButton( new InMemoryDataModel() );
+		const wrapper = mountButton( new InMemorySchemaRepository( [] ) );
 
 		await clickExport( wrapper );
 
@@ -159,7 +159,7 @@ describe( 'SchemaExportButton', () => {
 		useSchemaStore().fetchAllSchemaSummaries = () => new Promise<SchemaSummary[]>( ( resolve ) => {
 			finishListing = resolve;
 		} );
-		const wrapper = mountButton( new InMemoryDataModel() );
+		const wrapper = mountButton( new InMemorySchemaRepository( [] ) );
 
 		await wrapper.find( 'button' ).trigger( 'click' );
 

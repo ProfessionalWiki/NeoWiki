@@ -160,7 +160,8 @@ services:
       - node
     image: node:24
     restart: on-failure:3
-    mem_limit: 1536m
+    # Two watchers, NeoWiki's and Model Bundles', which together hold about 1.3 GB once built.
+    mem_limit: 2560m
     # Run as the host user so node_modules/ and dist/ written into the bind mount
     # are host-owned, matching the Makefile's EXEC_USER. The Makefile exports
     # NODE_USER (host uid:gid under rootful Docker, 0:0 under rootless Podman, which

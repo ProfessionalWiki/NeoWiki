@@ -117,6 +117,9 @@ Add the following to your `LocalSettings.php`:
 ```php
 wfLoadExtension( 'NeoWiki' );
 
+// Optional: Model Bundles, to install, update and export Data Models on Special:DataModel.
+wfLoadExtension( 'NeoWikiModelBundles', "$IP/extensions/NeoWiki/extension-model-bundles.json" );
+
 // Recommended soft dependencies, unless your wiki already loads them.
 wfLoadExtension( 'Scribunto' );
 wfLoadExtension( 'WikiEditor' );

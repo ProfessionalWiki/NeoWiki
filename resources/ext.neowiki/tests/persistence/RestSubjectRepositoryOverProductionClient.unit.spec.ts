@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository';
 import { SubjectId } from '@/domain/SubjectId';
 import { StatementList } from '@/domain/StatementList';
-import { PageTitleTakenError } from '@/domain/PageTitleTakenError';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import type { SubjectDeserializer } from '@/persistence/SubjectDeserializer';

@@ -132,6 +132,40 @@ describe( 'ext.neowiki module load', () => {
 		expect( ( globalThis as any ).mw.log.warn ).not.toHaveBeenCalled();
 	} );
 
+	it( 'runs an initializer given before the UI starts once it starts', async () => {
+		let loadModule!: () => void;
+		( globalThis as any ).mw.config.get = ( name: string, fallback: unknown = null ): unknown =>
+			name === 'wgNeoWikiFrontendModules' ? [ 'ext.slow' ] : fallback;
+		( globalThis as any ).mw.loader = {
+			using: (): Promise<void> => new Promise( ( resolve ) => {
+				loadModule = resolve;
+			} ),
+		};
+		const initialize = vi.fn();
+
+		await loadNeoWikiAndLetItsUiStart();
+		const { onUiStart } = await import( '@/neowiki' );
+		onUiStart( initialize );
+		await flushPromises();
+		const calledBeforeTheModuleLoaded = initialize.mock.calls.length;
+		loadModule();
+		await flushPromises();
+
+		expect( calledBeforeTheModuleLoaded ).toBe( 0 );
+		expect( initialize ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'runs an initializer given once the UI has started', async () => {
+		const initialize = vi.fn();
+
+		await loadNeoWikiAndLetItsUiStart();
+		const { onUiStart } = await import( '@/neowiki' );
+		onUiStart( initialize );
+		await flushPromises();
+
+		expect( initialize ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'warns about a Property Type registered once the UI has started', async () => {
 		await loadNeoWikiAndLetItsUiStart();
 

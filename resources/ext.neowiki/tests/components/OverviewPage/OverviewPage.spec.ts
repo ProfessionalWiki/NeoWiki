@@ -31,13 +31,7 @@ const SubjectCreatorDialogStub = {
 };
 
 // The pages the map holds whatever the reader may do. The permission-dependent ones are appended.
-const ALWAYS_MAPPED = [
-	'/wiki/Special:Subjects',
-	'/wiki/Special:Schemas',
-	'/wiki/Special:Mappings',
-	'/wiki/Special:Layouts',
-	'/wiki/Special:DataModel',
-];
+const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Schemas', '/wiki/Special:Mappings', '/wiki/Special:Layouts' ];
 
 let pinia: ReturnType<typeof createPinia>;
 
@@ -45,11 +39,12 @@ interface OverviewProps {
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
 	wikiHasSubjects: boolean;
+	extensionLinks: { page: string; label: string; description: string }[];
 }
 
 function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 	return mount( OverviewPage, {
-		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, ...offered },
+		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, extensionLinks: [], ...offered },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -90,7 +85,7 @@ function precedes( earlier: Element, later: Element ): boolean {
 
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'util' ] } );
+		setupMwMock( { functions: [ 'util', 'msg' ] } );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
@@ -159,6 +154,25 @@ describe( 'OverviewPage', () => {
 		await flushPromises();
 
 		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/MediaWiki:NeoWiki' ] );
+	} );
+
+	it( 'maps the pages other extensions add after NeoWiki\'s own', async () => {
+		const wrapper = mountPage( {
+			canManageGraphStores: true,
+			extensionLinks: [ { page: 'Special:DataModel', label: 'Data model', description: 'Install model bundles.' } ],
+		} );
+		await flushPromises();
+
+		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/Special:DataModel', '/wiki/Special:GraphStores' ] );
+	} );
+
+	it( 'offers a card for a page another extension adds, under the label and description it gives', async () => {
+		const wrapper = mountPage( {
+			extensionLinks: [ { page: 'Special:DataModel', label: 'Data model', description: 'Install model bundles.' } ],
+		} );
+		await flushPromises();
+
+		expect( findCard( wrapper, '/wiki/Special:DataModel' )!.text() ).toMatch( /Data model.*Install model bundles\./s );
 	} );
 
 	it( 'offers a card that leads to the schemas', async () => {

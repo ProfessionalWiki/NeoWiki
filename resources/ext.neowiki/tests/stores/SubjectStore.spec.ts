@@ -9,7 +9,7 @@ import { SubjectId } from '@/domain/SubjectId';
 import { Subject } from '@/domain/Subject';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { StatementList } from '@/domain/StatementList.ts';
-import { PageTitleTakenError } from '@/domain/PageTitleTakenError';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { setupMwMock } from '../VueTestHelpers.ts';
 import type { Schema } from '@/domain/Schema.ts';

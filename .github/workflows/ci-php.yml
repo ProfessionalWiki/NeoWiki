@@ -130,6 +130,9 @@ jobs:
         with:
           path: mediawiki/extensions/NeoWiki
 
+      - name: Load Model Bundles
+        run: echo 'wfLoadExtension( "NeoWikiModelBundles", "$IP/extensions/NeoWiki/extension-model-bundles.json" );' >> LocalSettings.php
+
       - name: Load RedHerb test extension
         run: echo 'wfLoadExtension( "RedHerb", "$IP/extensions/NeoWiki/tests/RedHerb/extension.json" );' >> LocalSettings.php
 

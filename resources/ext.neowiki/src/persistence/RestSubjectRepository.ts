@@ -23,7 +23,7 @@ import type { SubjectViolation } from '@/domain/SubjectViolation';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
-import { PageTitleTakenError } from '@/domain/PageTitleTakenError';
+import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
 import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { parseViolations } from '@/persistence/violationParsing';
 import { notFoundTargetIds } from '@/persistence/notFoundTargetIds';

@@ -18,7 +18,7 @@ import { exportSchemas } from '@/components/SchemasPage/schemaExport.ts';
 import { downloadFile } from '@/presentation/downloadFile.ts';
 
 const schemaStore = useSchemaStore();
-const repository = NeoWikiServices.getDataModelRepository();
+const schemaLookup = NeoWikiServices.getSchemaRepository();
 const exporting = ref( false );
 
 async function exportAllSchemas(): Promise<void> {
@@ -26,7 +26,7 @@ async function exportAllSchemas(): Promise<void> {
 
 	try {
 		const summaries = await schemaStore.fetchAllSchemaSummaries();
-		const file = await exportSchemas( summaries.map( ( summary ) => summary.name ), repository );
+		const file = await exportSchemas( summaries.map( ( summary ) => summary.name ), schemaLookup );
 		downloadFile( `${ mw.config.get( 'wgServerName' ) }-schemas.json`, file, 'application/json' );
 	} catch ( error ) {
 		mw.notify(
