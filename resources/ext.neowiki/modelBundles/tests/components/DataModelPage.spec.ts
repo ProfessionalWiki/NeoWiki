@@ -770,6 +770,29 @@ describe( 'DataModelPage', () => {
 			expect( [ shownStep( wrapper ), checkboxLabelled( wrapper, 'Agent' ).element.checked ] ).toEqual( [ 'neowiki-bundle-setup-review', false ] );
 		} );
 
+		it( 'says that there is no model to offer when no catalog could be read', async () => {
+			vi.stubGlobal( 'fetch', async () => new Response( 'Not found', { status: 404 } ) );
+
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).text() ).toContain( 'neowiki-bundle-setup-no-catalog-read' );
+		} );
+
+		it( 'offers models without a word of unread catalogs once one was read', async () => {
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).text() ).not.toContain( 'neowiki-bundle-setup-no-catalog-read' );
+		} );
+
+		it( 'says nothing of catalogs on a wiki that names none', async () => {
+			mockMw( { wgNeoWikiModelBundleCatalogs: [], wgNeoWikiModelBundlesSetup: { ...SETUP, wikiHasSchemas: false } } );
+			Object.assign( mw, { storage: { session: { getObject: () => null, setObject: () => true } } } );
+
+			const wrapper = await mountPage( true, 'setup' );
+
+			expect( wrapper.find( '.ext-neowiki-data-model-setup' ).text() ).not.toContain( 'neowiki-bundle-setup-no-catalog-read' );
+		} );
+
 		it( 'marks the bundles that the chosen ones require', async () => {
 			const wrapper = await mountPage( true, 'setup' );
 			await click( wrapper, 'neowiki-bundle-setup-continue' );

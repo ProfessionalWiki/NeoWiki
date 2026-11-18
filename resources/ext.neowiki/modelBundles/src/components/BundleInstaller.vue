@@ -54,11 +54,11 @@
 					<template v-else>
 						<CdxMessage
 							v-for="unreadable in catalogs.unreadable"
-							:key="unreadable"
+							:key="unreadable.url"
 							type="warning"
 							:inline="true"
 						>
-							{{ $i18n( 'neowiki-bundle-catalog-unreadable', unreadable ).text() }}
+							{{ unreadable.reason }}
 						</CdxMessage>
 						<p v-if="catalogs.entries.length === 0 && catalogs.unreadable.length === 0">
 							{{ $i18n( 'neowiki-bundle-catalog-empty' ).text() }}

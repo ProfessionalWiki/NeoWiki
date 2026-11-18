@@ -42,12 +42,15 @@
 			<template v-else-if="step === 'model'">
 				<CdxMessage
 					v-for="unreadable in catalogs.unreadable"
-					:key="unreadable"
+					:key="unreadable.url"
 					type="warning"
 					:inline="true"
 				>
-					{{ $i18n( 'neowiki-bundle-catalog-unreadable', unreadable ).text() }}
+					{{ unreadable.reason }}
 				</CdxMessage>
+				<p v-if="catalogs.unreadable.length === catalogUrls.length && catalogUrls.length > 0">
+					{{ $i18n( 'neowiki-bundle-setup-no-catalog-read' ).text() }}
+				</p>
 				<div
 					v-for="entry in models"
 					:key="entry.name"
@@ -228,6 +231,7 @@ const step = ref<Step>( initialStep() );
 const catalogs = shallowRef<Catalogs | null>( null );
 const reading = ref( false );
 const error = ref<string | null>( null );
+const catalogUrls = ( mw.config.get( 'wgNeoWikiModelBundleCatalogs' ) ?? [] ) as string[];
 const preselection = ( mw.config.get( 'wgNeoWikiModelBundlePreselection' ) ?? [] ) as string[];
 // Undefined until one is chosen, or preselected.
 const modelName = ref<string | undefined>( undefined );
@@ -413,7 +417,7 @@ watch( [ modelName, destinationNames ], () => {
 
 onMounted( async () => {
 	window.addEventListener( 'popstate', onPopState );
-	catalogs.value = await readCatalogs( ( mw.config.get( 'wgNeoWikiModelBundleCatalogs' ) ?? [] ) as string[] );
+	catalogs.value = await readCatalogs( catalogUrls );
 
 	// What was chosen before a reload, when the URL names a step.
 	const saved = stepInUrl() === null ? null : savedChoices();

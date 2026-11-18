@@ -68,15 +68,37 @@ describe( 'readCatalogs', () => {
 		expect( catalogs.entries.map( ( entry ) => entry.url ) ).toEqual( [ 'https://a.example/core.json', 'https://b.example/edm.json' ] );
 	} );
 
-	it( 'names a catalog it could not read, and lists the others', async () => {
+	it( 'tells of a catalog it could not read, with the status its server answered, and lists the others', async () => {
 		serve( { 'https://b.example/catalog.json': catalogOf( { url: 'https://b.example/edm.json', name: 'EDM' } ) } );
 
 		const catalogs = await readCatalogs( [ 'https://a.example/catalog.json', 'https://b.example/catalog.json' ] );
 
 		expect( catalogs ).toMatchObject( {
 			entries: [ { name: 'EDM' } ],
-			unreadable: [ 'https://a.example/catalog.json' ],
+			unreadable: [ { url: 'https://a.example/catalog.json', reason: 'neowiki-bundle-catalog-httphttps://a.example/catalog.json404' } ],
 		} );
+	} );
+
+	it( 'tells, of a catalog it could not reach, that its server may not let other websites read it', async () => {
+		vi.stubGlobal( 'fetch', async (): Promise<Response> => {
+			throw new TypeError( 'Failed to fetch' );
+		} );
+
+		const catalogs = await readCatalogs( [ 'https://a.example/catalog.json' ] );
+
+		expect( catalogs.unreadable ).toEqual( [
+			{ url: 'https://a.example/catalog.json', reason: 'neowiki-bundle-catalog-unreachablehttps://a.example/catalog.json' },
+		] );
+	} );
+
+	it( 'tells of a file that is not a catalog', async () => {
+		serve( { 'https://a.example/catalog.json': '{ "bundles": {} }' } );
+
+		const catalogs = await readCatalogs( [ 'https://a.example/catalog.json' ] );
+
+		expect( catalogs.unreadable ).toEqual( [
+			{ url: 'https://a.example/catalog.json', reason: 'neowiki-bundle-catalog-invalidhttps://a.example/catalog.json' },
+		] );
 	} );
 
 } );

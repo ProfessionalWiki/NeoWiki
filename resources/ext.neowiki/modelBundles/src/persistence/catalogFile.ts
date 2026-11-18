@@ -45,8 +45,8 @@ function entryOf( json: unknown ): CatalogEntry[] {
 
 export interface Catalogs {
 	readonly entries: CatalogEntry[];
-	/** The URLs of the catalogs that could not be read. */
-	readonly unreadable: string[];
+	/** The catalogs that could not be read, each with why. */
+	readonly unreadable: { readonly url: string; readonly reason: string }[];
 }
 
 /**
@@ -57,13 +57,16 @@ export async function readCatalogs( urls: readonly string[] ): Promise<Catalogs>
 	const read = await Promise.all( urls.map( readCatalog ) );
 	const entries: CatalogEntry[] = [];
 
-	for ( const entry of read.flatMap( ( catalog ) => catalog ?? [] ) ) {
+	for ( const entry of read.flatMap( ( catalog ) => 'entries' in catalog ? catalog.entries : [] ) ) {
 		if ( !entries.some( ( listed ) => sameBundleName( listed.name, entry.name ) ) ) {
 			entries.push( entry );
 		}
 	}
 
-	return { entries, unreadable: urls.filter( ( _url, index ) => read[ index ] === null ) };
+	return {
+		entries,
+		unreadable: read.flatMap( ( catalog, index ) => 'reason' in catalog ? [ { url: urls[ index ], reason: catalog.reason } ] : [] ),
+	};
 }
 
 /**
@@ -81,11 +84,23 @@ export function readEntryBundles( entries: readonly CatalogEntry[] ): Promise<Bu
 	} ) );
 }
 
-async function readCatalog( url: string ): Promise<CatalogEntry[] | null> {
+async function readCatalog( url: string ): Promise<{ entries: CatalogEntry[] } | { reason: string }> {
+	let response: Response;
+
 	try {
-		const response = await fetch( url, { cache: 'no-cache' } );
-		return response.ok ? parseCatalog( await response.text() ) : null;
+		response = await fetch( url, { cache: 'no-cache' } );
 	} catch ( _error ) {
-		return null;
+		// As a server that cannot be reached fails, so does one that does not let other websites read the file.
+		return { reason: mw.msg( 'neowiki-bundle-catalog-unreachable', url ) };
+	}
+
+	if ( !response.ok ) {
+		return { reason: mw.msg( 'neowiki-bundle-catalog-http', url, String( response.status ) ) };
+	}
+
+	try {
+		return { entries: parseCatalog( await response.text() ) };
+	} catch ( _error ) {
+		return { reason: mw.msg( 'neowiki-bundle-catalog-invalid', url ) };
 	}
 }
