@@ -64,7 +64,7 @@ server it destroys data rather than being inert.
 ## Model Bundles
 
 `NEOWIKI_MODEL_BUNDLES=1` loads [Model Bundles](../docs/api/model-bundles.md), which installs, updates and exports Data
-Models on Special:DataModel. The image leaves them off by default; a `MW_MODE=dev` stack always loads them.
+Models on Special:DataModel. The image leaves it off by default; a `MW_MODE=dev` stack always loads it.
 
 ## Optional services
 

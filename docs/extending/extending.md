@@ -109,8 +109,9 @@ Special:NeoWiki through the `NeoWikiGetFrontendModules` hook.
 
 ### Links on Special:NeoWiki
 
-Special:NeoWiki offers a card for each page your `extension.json` lists under `OverviewLinks`, after NeoWiki's own,
-with your messages as its label and description:
+Special:NeoWiki offers a card for each page your `extension.json` lists under `OverviewLinks`, with your messages as
+its label and description. The cards come after the Subjects, Schemas, Ontology mappings and Layouts cards, and before
+Graph stores and Settings:
 
 ```json
 "attributes": {

@@ -227,14 +227,18 @@ Built-in Page Properties include `name`, `namespaceId`, `dbKey`, `creationTime`,
 ### Data Model
 
 A wiki's Schemas, Layouts and Mappings, and the Subjects that belong to the model rather than to the data, such as the
-terms of a controlled vocabulary. Special:DataModel groups them by the Model Bundle that installed them, and also lists
-the Schemas, Layouts and Mappings no bundle installed.
+terms of a controlled vocabulary. Special:DataModel lists it, grouped by the Model Bundle each item came from.
 
 ### Model Bundle
 
 A named set of Schemas, Layouts, Mappings and Subjects in one file, with an optional version, which wikis install and
 later update ([ADR 41](adr/041-model-bundles.md)). An update keeps what a wiki changed in the bundle's items unless an
 admin chooses to replace it. See [Model Bundles](api/model-bundles.md).
+
+### Catalog
+
+A published list of Model Bundles a wiki can install, each entry a model or a destination
+([Catalogs](api/model-bundles.md#catalogs)).
 
 ## Extending
 

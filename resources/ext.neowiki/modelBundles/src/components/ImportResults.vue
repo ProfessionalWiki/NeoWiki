@@ -82,7 +82,7 @@ const TYPE_NOUNS = {
 	schema: 'neowiki-schema-noun',
 	layout: 'neowiki-layout-noun',
 	mapping: 'neowiki-mapping-noun',
-	subject: 'neowiki-subject-noun'
+	subject: 'neowiki-bundle-subject-noun'
 } as const;
 
 const headline = computed( () => resultHeadline( props.plan, props.outcome ) );

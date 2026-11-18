@@ -20,8 +20,8 @@ canonical form, so that two exports of the same Data Model are the same file and
 Special:DataModel installs, updates and exports bundles in the browser. Installing writes each item through the REST
 and Action API endpoints the editors use, Subjects keeping their IDs, and then writes an **install record**: a JSON
 page per bundle, `MediaWiki:NeoWiki/Model bundles/<name>.json`. It holds the bundle's version and source, the Schemas,
-Layouts and Mappings the bundle installed, in canonical form, and a hash of each of its Subjects, whole Subjects being
-too large for a page. An item belongs to one bundle at most.
+Layouts and Mappings the bundle installed, in canonical form, and a hash of each of its Subjects, as whole Subjects
+would take the record of a large vocabulary past the page size limit. An item belongs to one bundle at most.
 
 An update compares each item three ways: the recorded version, the wiki's version and the file's. What only the bundle
 changed is replaced by default; what the wiki changed too is shown in both versions and replaced only if the admin
@@ -31,8 +31,9 @@ Catalogs, JSON files at URLs that a wiki's settings name, list bundles by the UR
 destination with the bundles it requires; the browser reads them, and installs a bundle with those it requires.
 
 For page weight, Model Bundles is an extension of its own in NeoWiki's repository, NeoWikiModelBundles, which a wiki
-enables besides NeoWiki. Its frontend is a ResourceLoader module that only Special:DataModel loads, and that reaches
-NeoWiki's frontend through `require( 'ext.neowiki' )`. NeoWiki's Special:Schemas imports and exports Schemas only.
+enables besides NeoWiki. Its frontend is a ResourceLoader module that reaches NeoWiki's frontend through
+`require( 'ext.neowiki' )`. Special:DataModel loads it, and so do Special:NeoWiki and Special:Schemas for users who may
+install bundles, to offer the setup and tell of updates. NeoWiki's Special:Schemas imports and exports Schemas only.
 
 ## Consequences
 
@@ -52,11 +53,11 @@ NeoWiki's frontend through `require( 'ext.neowiki' )`. NeoWiki's Special:Schemas
   nor the record carries a format version.
 - Every install reads each item from the wiki, and so does Special:DataModel for each bundle it shows expanded, so a
   bundle of a few hundred Subjects costs a few hundred requests.
-- Bundles are told apart by name alone, versions are compared only for equality, and a bundle cannot require another. A
-  catalog of bundles will have to settle all three.
+- Names alone tell bundles apart, and versions are compared only for equality. Catalog entries, not bundle files,
+  carry requirements, so a file installed from your computer or a URL brings none of the bundles it needs.
 - A command line would have to reproduce the canonical forms, the hashing and the comparison exactly, or run the same
   TypeScript.
-- Pages that load NeoWiki's frontend carry none of Model Bundles' code or messages. Without the extension,
+- Other pages that load NeoWiki's frontend carry none of Model Bundles' code or messages. Without the extension,
   Special:Schemas imports only the Schemas of a file that holds more; with it, Special:Schemas refers such a file to
   Special:DataModel.
 - Model Bundles depends on NeoWiki's public JavaScript API, which is not yet stable. Both are released together.

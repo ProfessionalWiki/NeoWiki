@@ -52,7 +52,7 @@
 			"value": []
 		},
 		"NeoWikiModelBundlePreselection": {
-			"description": "The names of the catalog entries that the data model setup ticks by default.",
+			"description": "The names of the catalog entries that the data model setup selects by default.",
 			"value": []
 		}
 	},
@@ -216,7 +216,7 @@
 				"neowiki-bundle-result-created",
 				"neowiki-bundle-result-replaced",
 				"neowiki-bundle-result-removed",
-				"neowiki-subject-noun",
+				"neowiki-bundle-subject-noun",
 				"neowiki-bundle-installed",
 				"neowiki-bundle-updated",
 				"neowiki-bundle-updated-unversioned",

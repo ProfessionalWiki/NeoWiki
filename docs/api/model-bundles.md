@@ -6,16 +6,12 @@ order: 11
 
 A [Model Bundle](../glossary.md#model-bundle) carries Schemas, Layouts, Mappings and Subjects from one wiki to
 others in one JSON file, which each wiki installs and later updates. Special:DataModel installs, updates and exports
-bundles. It reads a file from your computer or from a URL, whose server has to let other websites read it (CORS), and
+bundles. It reads a file from your computer or from a URL, whose server has to let other websites read it (CORS). It
 installs any file as a Model Bundle, under the name you give it when the file has none. Special:Schemas imports
 Schemas only, and refers a file that holds more to Special:DataModel.
 
-Model Bundles is an extension in NeoWiki's repository. To enable it, add this to `LocalSettings.php` after
-`wfLoadExtension( 'NeoWiki' );`:
-
-```php
-wfLoadExtension( 'NeoWikiModelBundles', "$IP/extensions/NeoWiki/extension-model-bundles.json" );
-```
+Model Bundles is an extension in NeoWiki's repository. To enable it, load it after NeoWiki, as step 2 of
+[adding NeoWiki to an existing wiki](../operations/installation.md#add-neowiki-to-an-existing-wiki) shows.
 
 ## File format
 
@@ -65,8 +61,8 @@ Every object has its keys sorted, except a Schema's `propertyDefinitions`, whose
 are shown in. Arrays keep their order, except `dependentSubjects`, sorted by `id`. A Layout leaves out its empty
 fields, as the Layout editor saves it.
 
-Two versions of an item are equal when their canonical forms are, a Subject's `pageTitle` left out. A Subject is
-compared as the wiki stores it.
+Two versions of an item are equal when their canonical forms are, a Subject's `pageTitle` left out. A Subject from the
+file is compared in the form the wiki would store it in.
 
 ## Catalogs
 
@@ -93,29 +89,29 @@ Versions come from the files. An entry without a URL or a usable name, or of ano
 
 `$wgNeoWikiModelBundleCatalogs` lists the URLs of the catalogs that Special:DataModel installs from. The browser reads
 them, so their servers have to let other websites read them, as with bundle URLs. `$wgNeoWikiModelBundlePreselection`
-names the entries that the data model setup ticks by default.
+names the entries that the Data Model setup selects by default.
 
 ## Setup
 
-Special:DataModel/setup gives a wiki its first data model, in steps:
+Special:DataModel/setup gives a wiki its first Data Model, in steps:
 
 1. How the wiki works: page-first or subject-first, and the data languages. Every first install on a wiki without
-   Subjects starts here, as the pages of installed Subjects depend on it. Only what you change is saved, on
+   Subjects starts here. Only what you change is saved, on
    [MediaWiki:NeoWiki](../operations/installation.md#on-wiki-settings).
 2. A model from the catalogs, or none.
 3. The destinations whose requirements the model and the installed bundles meet.
 4. One preview of the chosen bundles and those they require, then the install.
 
-Special:NeoWiki offers the setup to users who may install bundles while the wiki has no Schemas, and Special:DataModel
-while the wiki has no data model. For those users, Special:NeoWiki also counts the installed bundles that have another
-version at their source.
+Special:NeoWiki, Special:Schemas and Special:DataModel offer the setup to users who may install bundles while the wiki
+has no Schemas and no installed bundle. For those users, Special:NeoWiki also counts the installed bundles that have
+another version at their source.
 
 ## Exporting
 
 Special:DataModel exports the Schemas and Mappings you choose, all of them unless you untick some: each Schema with
-its Subjects if you switch that on, and each Mapping as it is. The Layouts of the chosen Schemas come with them unless
-you switch that off. An export can hold Mappings alone. The Subjects of a Schema whose Subjects are dependent come with
-their Host Subjects, and the Schema with them. Naming the export makes it a Model Bundle.
+its Subjects if you switch that on, and each Mapping as it is. The Layouts of the chosen Schemas come too, unless you
+untick them. An export can hold Mappings alone. Dependent Subjects come with their Host Subjects, and their Schemas
+with them. Naming the export makes it a Model Bundle.
 
 ## Installing
 
@@ -127,7 +123,7 @@ The preview compares each item of the file with the wiki:
 |---|---|---|
 | New | The wiki does not have it. Ticked, it is created. | Yes |
 | Unchanged | The wiki has it as the file does. | Nothing to do |
-| Differs | The wiki has it with other content. Ticked, the file's replaces it. | No |
+| Differs | The wiki has it with other content. Ticked, the file's version replaces it. | No |
 | Conflict | It cannot be written; the preview says why. | Cannot be ticked |
 
 An item is in conflict when it is:
@@ -173,11 +169,11 @@ Installing writes the page `MediaWiki:NeoWiki/Model bundles/<name>.json`:
 
 `source` is the URL the bundle was read from, or `file`. Each item has a `type` (`schema`, `layout`, `mapping` or
 `subject`) and a `key` (a name or a Subject ID). A Schema, Layout or Mapping holds the bundle's version of it as
-`item`, in canonical form. A Subject holds a `hash` of the bundle's version, and the `label`, if it has one, and
-`schema` that Special:DataModel shows it by once this wiki deleted it. The record lists each item of the file that the
-wiki has, written or left as it was, and each one the wiki deleted after an earlier version installed it. An item in
-conflict keeps the version recorded before, if it had one. `declined` lists the items of the file that the wiki does
-not have because an install or update left them unticked.
+`item`, in canonical form. A Subject holds a `hash` of the bundle's version, plus the `schema` and any `label` that
+Special:DataModel shows it by once the wiki has deleted it. The record lists each item of the file that the wiki has,
+written or left as it was, and each one the wiki deleted after an earlier version installed it. An item in conflict
+keeps the version recorded before, if it had one. `declined` lists the items of the file that the wiki does not have
+because an install or update left them unticked.
 
 Once you expand a bundle, Special:DataModel compares each item it owns with its recorded version, and shows it as
 unchanged, changed here or deleted here. For users who may install bundles, it also shows any other version at a
@@ -196,7 +192,7 @@ two version numbers.
 | Changed alike in both, or in neither | | Nothing to do |
 | Changed on the wiki only | | Nothing to do |
 | New in the bundle | as on install | As on install |
-| Left unticked before, and not on the wiki, shown as Not installed | creates it | No |
+| Left unticked before, and not on the wiki, shown as Left out earlier | creates it | No |
 | No longer in the bundle | removes it from the wiki | No |
 | Deleted on the wiki and changed in the bundle | creates it again | No |
 | Deleted on the wiki and not changed in the bundle | | Nothing to do |
