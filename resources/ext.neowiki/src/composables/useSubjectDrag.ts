@@ -2,8 +2,10 @@ import { Ref } from 'vue';
 import { useSortable } from '@/composables/useSortable';
 import { SubjectId } from '@/domain/SubjectId';
 import { subjectIdFromRowDomId } from '@/presentation/subjectRowAnchor';
+import { REORDER_HANDLE_SELECTOR } from '@/components/common/reordering';
 
-const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subject-row__drag-handle';
+// The Main Subject's row has a handle that only drags; the other rows have reorder handles.
+const DRAG_HANDLE_SELECTOR = '.ext-neowiki-subject-row__drag-handle, ' + REORDER_HANDLE_SELECTOR;
 const GHOST_CLASS = 'ext-neowiki-subject-row--ghost';
 const SORTABLE_GROUP_NAME = 'neowiki-subjects';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { ref, Ref } from 'vue';
-import { enableAutoUnmount, mount, shallowMount } from '@vue/test-utils';
+import { enableAutoUnmount, mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { useSubjectDrag, SubjectDragHandlers } from '@/composables/useSubjectDrag';
 import { subjectRowDomId } from '@/presentation/subjectRowAnchor';
@@ -130,16 +130,17 @@ describe( 'useSubjectDrag', () => {
 
 	// The selectors are strings here and class names there, so nothing but a test relates them: a
 	// rename of the row's BEM block leaves dragging silently impossible.
-	it( 'drags by the handle and ghosts the block that SubjectRow renders', () => {
+	function subjectRowElement( props: Record<string, unknown> ): HTMLElement {
 		setupMwMock( { functions: [ 'config', 'msg', 'message', 'notify', 'util' ] } );
-		const row = shallowMount( SubjectRow, {
-			props: {
-				subject: newSubject( { id: VALID_ID } ),
-				expanded: false,
-				showDragHandle: true,
-			},
+
+		return mount( SubjectRow, {
+			props: { subject: newSubject( { id: VALID_ID } ), expanded: false, ...props },
 			global: { plugins: [ createPinia() ], mocks: { $i18n: createI18nMock() }, stubs: { CdxIcon: true } },
 		} ).element as HTMLElement;
+	}
+
+	it( 'drags by the handle and ghosts the block that SubjectRow renders', () => {
+		const row = subjectRowElement( { showDragHandle: true } );
 
 		mountComposable( document.createElement( 'ul' ), document.createElement( 'ul' ), newHandlers() );
 		const { handle, ghostClass } = useSortableCalls[ 0 ].options;
@@ -148,6 +149,18 @@ describe( 'useSubjectDrag', () => {
 		// SortableJS puts the ghost class on the dragged row itself, where it only styles anything as a
 		// modifier of the block that row carries.
 		expect( [ ...row.classList ] ).toContain( ghostClass.replace( /--[a-z]+$/, '' ) );
+	} );
+
+	it( 'drags a row that can be reordered by its reorder handle', () => {
+		const row = subjectRowElement( { reorderPlace: { position: 0, count: 2 } } );
+
+		mountComposable( document.createElement( 'ul' ), document.createElement( 'ul' ), newHandlers() );
+		const { handle } = useSortableCalls[ 0 ].options;
+
+		const reorderHandleButton = row.querySelector( '.ext-neowiki-reorder-handle button' );
+
+		expect( reorderHandleButton ).not.toBeNull();
+		expect( reorderHandleButton!.closest( handle ) ).not.toBeNull();
 	} );
 
 	it( 'does not call onPromote when the prefix matches but the body is not a valid subject id', () => {

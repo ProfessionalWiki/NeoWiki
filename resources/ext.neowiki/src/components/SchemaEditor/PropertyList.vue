@@ -76,12 +76,12 @@
 					>
 						<CdxIcon :icon="cdxIconTrash" />
 					</CdxButton>
-					<span class="ext-neowiki-property-list__item__actions__drag-handle">
-						<CdxIcon
-							:icon="cdxIconDraggable"
-							:aria-hidden="true"
-						/>
-					</span>
+					<ReorderHandle
+						:position="index"
+						:count="propertyArray.length"
+						:label="reorderHandleLabel( property.name.toString() )"
+						@move="moveProperty( index, $event )"
+					/>
 				</span>
 			</li>
 		</ul>
@@ -102,18 +102,22 @@
 				</span>
 			</span>
 		</button>
+		<LiveAnnouncement ref="announcementRef" />
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDraggable, cdxIconSettings, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconSettings, cdxIconTag, cdxIconTrash } from '@wikimedia/codex-icons';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSortable } from '@/composables/useSortable.ts';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
+import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
+import { movedAnnouncement, reorderHandleLabel, withItemMoved } from '@/components/common/reordering.ts';
 import type { Icon } from '@wikimedia/codex-icons';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 
@@ -133,6 +137,7 @@ const emit = defineEmits<{
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const listRef = ref<HTMLElement | null>( null );
+const announcementRef = ref<LiveAnnouncementExposes | null>( null );
 
 const propertyArray = computed( (): PropertyDefinition[] => [ ...props.properties ] );
 
@@ -212,14 +217,14 @@ function rowAt( position: number ): PropertyListRow {
 
 async function focusSelectedRow(): Promise<void> {
 	await nextTick();
-	listRef.value?.querySelectorAll<HTMLElement>( '[role="option"]' )[ selectedPosition.value ]?.focus();
+	listRef.value?.querySelectorAll<HTMLElement>( ':scope > [role="option"]' )[ selectedPosition.value ]?.focus();
 }
 
 function moveProperty( fromIndex: number, toIndex: number ): void {
-	const names = propertyArray.value.map( ( p ) => p.name );
-	const [ moved ] = names.splice( fromIndex, 1 );
-	names.splice( toIndex, 0, moved );
+	const names = withItemMoved( propertyArray.value.map( ( p ) => p.name ), fromIndex, toIndex );
+
 	emit( 'propertyReordered', names );
+	announcementRef.value?.announce( movedAnnouncement( names[ toIndex ].toString(), toIndex, names.length ) );
 }
 
 // Among the properties only: the rows above them stay where they are.
@@ -314,6 +319,11 @@ useSortable( listRef, {
 			background-color: @background-color-interactive-subtle;
 		}
 
+		/* A row's open menu reaches past it, over the rows below. */
+		&:has( [ aria-expanded='true' ] ) {
+			overflow: visible;
+		}
+
 		&__icon.cdx-icon {
 			background-position: @background-position-base;
 			background-repeat: no-repeat;
@@ -374,12 +384,15 @@ useSortable( listRef, {
 
 			.ext-neowiki-property-list__item:hover &,
 			.ext-neowiki-property-list__item--selected &,
+			.ext-neowiki-property-list__item:has( [ aria-expanded='true' ] ) &,
 			.ext-neowiki-property-list__item:has( :focus-visible ) & {
 				// :has( :focus-visible ) rather than :focus-within: keyboard tabbing must reveal the
 				// action controls, but a mouse click also focuses the button it hits and would keep the
 				// cluster pinned visible after the pointer leaves.
 				opacity: 1;
-				transform: translateX( 0 );
+				// None rather than translateX( 0 ): any transform makes a stacking context, which would keep an
+				// open menu in it under the rows below.
+				transform: none;
 			}
 
 			.ext-neowiki-property-list__item:hover & {
@@ -388,20 +401,6 @@ useSortable( listRef, {
 
 			.ext-neowiki-property-list__item--selected & {
 				background: linear-gradient( to right, transparent, @background-color-progressive-subtle 40% );
-			}
-
-			&__drag-handle {
-				min-width: @min-size-interactive-pointer;
-				min-height: @min-size-interactive-pointer;
-				padding-inline: @spacing-30; /* Replicate CdxButton padding */
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				box-sizing: border-box;
-
-				.cdx-icon {
-					color: @color-placeholder;
-				}
 			}
 		}
 	}

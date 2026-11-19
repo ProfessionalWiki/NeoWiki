@@ -15,6 +15,7 @@ import SummaryAction from '@/components/common/SummaryAction.vue';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import MoveSubjectDialog from '@/components/SubjectsManager/MoveSubjectDialog.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { Service } from '@/NeoWikiServices.ts';
@@ -29,6 +30,7 @@ enableAutoUnmount( afterEach );
 const ID_A = 's1aaaaaaaaaaaa1';
 const ID_B = 's1bbbbbbbbbbbb1';
 const ID_C = 's1cccccccccccc1';
+const ID_D = 's1dddddddddddd1';
 const PAGE_ID = 42;
 
 function subject( id: string ): Subject {
@@ -43,6 +45,7 @@ const loadPageSubjectsMock = vi.fn().mockResolvedValue( undefined );
 const getPageSubjectsRepoMock = vi.fn();
 const deleteSubjectMock = vi.fn().mockResolvedValue( undefined );
 const setPageMainSubjectMock = vi.fn().mockResolvedValue( undefined );
+const setPageSubjectsOrderingMock = vi.fn().mockResolvedValue( undefined );
 let storeSubjects: Subject[] = [];
 let mappings: { name: string; schemas: string[] }[] = [];
 let mainSubjectId: SubjectId | null = null;
@@ -68,6 +71,7 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 				loadPageSubjects: loadPageSubjectsMock,
 				deleteSubject: deleteSubjectMock,
 				setPageMainSubject: setPageMainSubjectMock,
+				setPageSubjectsOrdering: setPageSubjectsOrderingMock,
 				getSubject: ( id: SubjectId ) => storeSubjects.find( ( s ) => s.getId().text === id.text ),
 				openSubjectCreator: vi.fn(),
 				get subjectCreatorOpen() {
@@ -631,6 +635,65 @@ describe( 'SubjectsManagerPage main subject controls', () => {
 
 } );
 
+describe( 'SubjectsManagerPage reorder handles', () => {
+
+	beforeEach( () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ), subject( ID_C ), subject( ID_D ) ];
+		mainSubjectId = new SubjectId( ID_A );
+		canEditSubjectRef.value = true;
+		setPageSubjectsOrderingMock.mockReset();
+		setPageSubjectsOrderingMock.mockResolvedValue( undefined );
+	} );
+
+	it( 'places the handle of each other row among the other Subjects', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAllComponents( ReorderHandle ).map( ( handle ) => [ handle.props( 'position' ), handle.props( 'count' ) ] ) )
+			.toEqual( [ [ 0, 3 ], [ 1, 3 ], [ 2, 3 ] ] );
+	} );
+
+	it( 'names each handle after its Subject', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.findAllComponents( ReorderHandle )[ 1 ].props( 'label' ) ).toContain( 'Label ' + ID_C );
+	} );
+
+	it( 'saves the order a move with a handle makes, keeping the Main Subject', async () => {
+		const wrapper = await mountPage();
+
+		wrapper.findAllComponents( ReorderHandle )[ 2 ].vm.$emit( 'move', 0 );
+		await flushPromises();
+
+		expect( setPageSubjectsOrderingMock ).toHaveBeenCalledWith(
+			PAGE_ID,
+			expect.objectContaining( { text: ID_A } ),
+			[ ID_D, ID_B, ID_C ].map( ( id ) => expect.objectContaining( { text: id } ) ),
+		);
+	} );
+
+	it( 'gives the only other Subject a handle that only drags, to the Main Subject\'s place', async () => {
+		storeSubjects = [ subject( ID_A ), subject( ID_B ) ];
+		const wrapper = await mountPage();
+
+		expect( rowFor( wrapper, ID_B ).findComponent( ReorderHandle ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_B ).find( '.ext-neowiki-subject-row__drag-handle' ).exists() ).toBe( true );
+	} );
+
+	it( 'ignores a move made while the order before it is still being saved', async () => {
+		setPageSubjectsOrderingMock.mockReturnValue( new Promise( () => {
+			// Left in flight, so the second move comes while the first is saving.
+		} ) );
+		const wrapper = await mountPage();
+
+		wrapper.findAllComponents( ReorderHandle )[ 0 ].vm.$emit( 'move', 1 );
+		wrapper.findAllComponents( ReorderHandle )[ 0 ].vm.$emit( 'move', 1 );
+		await flushPromises();
+
+		expect( setPageSubjectsOrderingMock ).toHaveBeenCalledTimes( 1 );
+	} );
+
+} );
+
 describe( 'SubjectsManagerPage Other Subjects heading', () => {
 
 	const HEADING = 'neowiki-managesubjects-other-subjects-heading';
@@ -694,6 +757,7 @@ describe( 'SubjectsManagerPage rows of Dependent Subjects', () => {
 		const wrapper = await mountPage();
 
 		expect( rowFor( wrapper, ID_B ).find( '.ext-neowiki-subject-row__drag-handle' ).exists() ).toBe( false );
+		expect( rowFor( wrapper, ID_B ).findComponent( ReorderHandle ).exists() ).toBe( false );
 		expect( rowFor( wrapper, ID_A ).find( '.ext-neowiki-subject-row__drag-handle' ).exists() ).toBe( true );
 	} );
 

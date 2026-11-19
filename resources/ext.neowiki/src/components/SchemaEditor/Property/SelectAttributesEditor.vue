@@ -37,6 +37,12 @@
 					class="ext-neowiki-select-attributes__option"
 				>
 					<div class="ext-neowiki-select-attributes__option-controls">
+						<ReorderHandle
+							:position="index"
+							:count="rows.length"
+							:label="row.reorderLabel"
+							@move="move( index, $event )"
+						/>
 						<CdxTextInput
 							class="ext-neowiki-select-attributes__option-label"
 							:model-value="row.label"
@@ -46,26 +52,6 @@
 							@keydown.enter="addAfter( index, $event )"
 							@blur="touchedOptionIds.add( row.id )"
 						/>
-						<CdxButton
-							class="ext-neowiki-select-attributes__move-up"
-							weight="quiet"
-							:disabled="index === 0"
-							:aria-label="row.moveUpLabel"
-							:title="row.moveUpLabel"
-							@click="move( index, index - 1 )"
-						>
-							<CdxIcon :icon="cdxIconUpTriangle" />
-						</CdxButton>
-						<CdxButton
-							class="ext-neowiki-select-attributes__move-down"
-							weight="quiet"
-							:disabled="index === rows.length - 1"
-							:aria-label="row.moveDownLabel"
-							:title="row.moveDownLabel"
-							@click="move( index, index + 1 )"
-						>
-							<CdxIcon :icon="cdxIconDownTriangle" />
-						</CdxButton>
 						<CdxButton
 							class="ext-neowiki-select-attributes__remove"
 							weight="quiet"
@@ -100,10 +86,7 @@
 				:model-value="property.constraintSeverities?.options"
 				@update:model-value="updateSeverity( 'options', $event )"
 			/>
-			<span
-				class="ext-neowiki-select-attributes__announcement"
-				aria-live="polite"
-			>{{ announcement }}</span>
+			<LiveAnnouncement ref="announcementRef" />
 		</CdxField>
 	</div>
 </template>
@@ -111,8 +94,8 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref } from 'vue';
 import { CdxButton, CdxCheckbox, CdxField, CdxIcon, CdxMessage, CdxTextInput } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDownTriangle, cdxIconTrash, cdxIconUpTriangle } from '@wikimedia/codex-icons';
-import { newSelectOptionId, SelectProperty } from '@/domain/propertyTypes/Select.ts';
+import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
+import { newSelectOptionId, type SelectOption, SelectProperty } from '@/domain/propertyTypes/Select.ts';
 import { withConstraintSeverity } from '@/domain/PropertyDefinition.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import { newStringValue, type StringValue, type Value, ValueType } from '@/domain/Value.ts';
@@ -120,13 +103,16 @@ import { AttributesEditorEmits, AttributesEditorProps } from '@/components/Schem
 import { selectOptionProblems } from '@/components/SchemaEditor/Property/selectOptionProblems.ts';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
+import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
+import { movedAnnouncement, REORDER_HANDLE_SELECTOR, withItemMoved } from '@/components/common/reordering.ts';
+import { useSortable } from '@/composables/useSortable.ts';
 
 interface OptionRow {
 	id: string;
 	label: string;
 	labelInputName: string;
-	moveUpLabel: string;
-	moveDownLabel: string;
+	reorderLabel: string;
 	removeLabel: string;
 	/** What is wrong with the option, once the user has left its field or a save was refused. */
 	shownProblem: string | null;
@@ -141,7 +127,7 @@ const addButtonRef = ref<InstanceType<typeof CdxButton> | null>( null );
 const touchedOptionIds = ref( new Set<string>() );
 const errorsRevealed = inject( ErrorsRevealedKey, ref( false ) );
 
-const announcement = ref( '' );
+const announcementRef = ref<LiveAnnouncementExposes | null>( null );
 
 const rows = computed( (): OptionRow[] => {
 	const problems = selectOptionProblems( props.property.options );
@@ -155,8 +141,7 @@ const rows = computed( (): OptionRow[] => {
 			id: option.id,
 			label: option.label,
 			labelInputName: mw.message( 'neowiki-property-editor-option', position ).text(),
-			moveUpLabel: mw.message( 'neowiki-property-editor-move-option-up', position ).text(),
-			moveDownLabel: mw.message( 'neowiki-property-editor-move-option-down', position ).text(),
+			reorderLabel: mw.message( 'neowiki-property-editor-reorder-option', position ).text(),
 			removeLabel: mw.message( 'neowiki-property-editor-remove-option', position ).text(),
 			shownProblem: problem !== undefined && showsProblem ? mw.message( problem ).text() : null
 		};
@@ -188,25 +173,25 @@ function addAfter( index: number, event: KeyboardEvent ): void {
 	}
 }
 
-/**
- * The focus stays on the button that moved the option, unless that button cannot move it any
- * further, which hands it to the one that can.
- */
-async function move( from: number, to: number ): Promise<void> {
-	const options = [ ...props.property.options ];
-	const [ moved ] = options.splice( from, 1 );
-	options.splice( to, 0, moved );
+function move( from: number, to: number ): void {
+	const options = withItemMoved( props.property.options, from, to );
 
 	emit( 'update:property', { options } );
-	await announce( mw.message( 'neowiki-property-editor-option-moved', to + 1, options.length ).text() );
-
-	const movedUp = to < from;
-	const sameButton = movedUp ? 'move-up' : 'move-down';
-	const otherButton = movedUp ? 'move-down' : 'move-up';
-	const atTheEnd = movedUp ? to === 0 : to === options.length - 1;
-
-	focusButtonOf( to, atTheEnd ? otherButton : sameButton );
+	announcementRef.value?.announce( movedAnnouncement( optionName( options[ to ], to ), to, options.length ) );
 }
+
+// A label still to be typed leaves the option to be named by its place, as its field is.
+function optionName( option: SelectOption, index: number ): string {
+	const label = option.label.trim();
+
+	return label === '' ? mw.message( 'neowiki-property-editor-option', index + 1 ).text() : label;
+}
+
+useSortable( listRef, {
+	handle: REORDER_HANDLE_SELECTOR,
+	ghostClass: 'ext-neowiki-select-attributes__option--ghost',
+	onReorder: move
+} );
 
 /**
  * The focus goes to the option that took the removed one's place, or else the one before it, or else,
@@ -217,12 +202,13 @@ async function remove( index: number ): Promise<void> {
 	const options = props.property.options.filter( ( option ) => option !== removed );
 
 	emit( 'update:property', { options, default: defaultWithout( removed.id ) } );
-	await announce( mw.message( 'neowiki-property-editor-option-removed' ).text() );
+	announcementRef.value?.announce( mw.message( 'neowiki-property-editor-option-removed' ).text() );
+	await nextTick();
 
 	if ( options.length === 0 ) {
 		( addButtonRef.value?.$el as HTMLElement | undefined )?.focus();
 	} else {
-		focusButtonOf( Math.min( index, options.length - 1 ), 'remove' );
+		focusRemoveButtonOf( Math.min( index, options.length - 1 ) );
 	}
 }
 
@@ -239,16 +225,9 @@ function defaultWithout( optionId: string ): Value | undefined {
 	return optionIds.length > 0 ? newStringValue( optionIds ) : undefined;
 }
 
-// A live region speaks when its text changes, so it is emptied first: the next message may read as the last.
-async function announce( message: string ): Promise<void> {
-	announcement.value = '';
-	await nextTick();
-	announcement.value = message;
-}
-
-function focusButtonOf( index: number, button: 'move-up' | 'move-down' | 'remove' ): void {
+function focusRemoveButtonOf( index: number ): void {
 	listRef.value?.children[ index ]
-		?.querySelector<HTMLElement>( `.ext-neowiki-select-attributes__${ button }` )
+		?.querySelector<HTMLElement>( '.ext-neowiki-select-attributes__remove' )
 		?.focus();
 }
 
@@ -263,7 +242,6 @@ const updateSeverity = ( constraint: 'options' | 'multiple', severity: Severity 
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-select-attributes {
 	&__option-list {
@@ -278,6 +256,10 @@ const updateSeverity = ( constraint: 'options' | 'multiple', severity: Severity 
 		& + & {
 			margin-top: @spacing-50;
 		}
+
+		&--ghost {
+			opacity: @opacity-low;
+		}
 	}
 
 	&__option-controls {
@@ -289,10 +271,6 @@ const updateSeverity = ( constraint: 'options' | 'multiple', severity: Severity 
 	&__option-label {
 		flex-grow: 1;
 		min-width: 0;
-	}
-
-	&__announcement {
-		.ext-neowiki-visually-hidden();
 	}
 }
 </style>

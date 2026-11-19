@@ -116,7 +116,7 @@
 				:class="{ 'ext-neowiki-subjects-manager__list--empty': !hasOtherSubjects && canEdit }"
 			>
 				<SubjectRow
-					v-for="subject in otherSubjects"
+					v-for="( subject, index ) in otherSubjects"
 					:key="subject.getId().text"
 					:subject="subject"
 					:main-subject-control="isDependent( subject ) ? 'none' : 'promote'"
@@ -126,11 +126,13 @@
 					:can-edit="canEdit"
 					:can-delete="canDelete"
 					:can-move="canMove && !isDependent( subject )"
+					:reorder-place="reorderPlaces[ index ]"
 					:show-drag-handle="canEdit && !isDependent( subject )"
 					:subject-page-url="subjectPageUrl( subject.getId().text )"
 					@toggle="toggleExpanded"
 					@edit="editSubject"
 					@promote="promoteToMain"
+					@reorder="( _subject: Subject, to: number ) => reorderOthers( index, to )"
 					@move="openMoveDialog"
 					@delete="confirmDelete"
 					@copy-link="copySubjectLink"
@@ -197,6 +199,7 @@ import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.t
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
 import { useSubjectDrag } from '@/composables/useSubjectDrag.ts';
+import { withItemMoved } from '@/components/common/reordering.ts';
 import { subjectRowDomId, subjectIdFromHash } from '@/presentation/subjectRowAnchor.ts';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { subjectPageUrl } from '@/presentation/subjectPageUrl.ts';
@@ -318,6 +321,14 @@ const otherSubjects = computed<Subject[]>( () => {
 
 const hasMainSubject = computed( () => mainSubject.value !== null );
 const hasOtherSubjects = computed( () => otherSubjects.value.length > 0 );
+
+// Built once per change to the list, so that the page re-rendering hands each row the same object. The only
+// other Subject has no place to move to, so its row keeps the handle that drags it to the Main Subject's.
+const reorderPlaces = computed( () => otherSubjects.value.map(
+	( subject, index ) => canEdit.value && !isDependent( subject ) && otherSubjects.value.length > 1 ?
+		{ position: index, count: otherSubjects.value.length } :
+		null
+) );
 const isCompletelyEmpty = computed( () => !hasMainSubject.value && !hasOtherSubjects.value );
 
 const movingSubjectName = computed( () => movingSubject.value === null ? '' : subjectDisplayName( movingSubject.value ) );
@@ -381,7 +392,7 @@ useSubjectDrag( mainSlotRef, otherListRef, {
 		dragDemote( newOtherIndex );
 	},
 	onReorderOthers: ( oldIndex, newIndex ) => {
-		dragReorderOthers( oldIndex, newIndex );
+		reorderOthers( oldIndex, newIndex );
 	}
 } );
 
@@ -416,15 +427,14 @@ async function dragDemote( newOtherIndex: number | undefined ): Promise<void> {
 	await applyOrdering( null, otherIds, () => mw.msg( 'neowiki-managesubjects-main-subject-cleared' ), previousMain.getId().text );
 }
 
-async function dragReorderOthers( oldIndex: number, newIndex: number ): Promise<void> {
-	const otherIds = currentOtherIds();
-	const [ moved ] = otherIds.splice( oldIndex, 1 );
+async function reorderOthers( oldIndex: number, newIndex: number ): Promise<void> {
+	const currentIds = currentOtherIds();
+	const moved = currentIds[ oldIndex ];
 	if ( moved === undefined ) {
 		return;
 	}
-	otherIds.splice( newIndex, 0, moved );
 	const mainId = mainSubject.value?.getId() ?? null;
-	await applyOrdering( mainId, otherIds, () => mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
+	await applyOrdering( mainId, withItemMoved( currentIds, oldIndex, newIndex ), () => mw.msg( 'neowiki-managesubjects-reordered' ), moved.text );
 }
 
 // Read after the write: promotion moves a Subject to the page-name tier, so a name read before it
@@ -433,20 +443,30 @@ function mainSubjectSetMessage( id: SubjectId ): string {
 	return mw.msg( 'neowiki-managesubjects-main-subject-set', subjectDisplayName( subjectStore.getSubject( id ) ) );
 }
 
+let savingOrder = false;
+
+// The rows keep their places until a save lands, so an order asked for before then would start from a stale one.
 async function applyOrdering(
 	mainId: SubjectId | null,
 	otherIds: SubjectId[],
 	successMessage: () => string,
 	focusId: string | null
 ): Promise<void> {
+	if ( savingOrder ) {
+		return;
+	}
+
 	// Only the write is guarded: naming the Subject afterwards reads the store, and reporting a
 	// committed write as failed because that read threw would be worse than the read's own error.
+	savingOrder = true;
 	try {
 		await subjectStore.setPageSubjectsOrdering( pageId, mainId, otherIds );
 	} catch ( error ) {
 		console.error( 'Failed to update subjects ordering:', error );
 		mw.notify( mw.msg( 'neowiki-managesubjects-ordering-error' ), { type: 'error' } );
 		return;
+	} finally {
+		savingOrder = false;
 	}
 
 	mw.notify( successMessage(), { type: 'success' } );

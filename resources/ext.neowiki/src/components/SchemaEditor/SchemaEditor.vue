@@ -473,6 +473,11 @@ defineExpose<SchemaEditorExposes>( {
 					border-radius: 0;
 				}
 
+				/* The strip scrolls, and so would cut a handle's menu short; rows still drag, and Alt+arrows move them. */
+				.ext-neowiki-reorder-handle {
+					display: none;
+				}
+
 				.ext-neowiki-property-list__item--schema {
 					margin-block-end: 0;
 

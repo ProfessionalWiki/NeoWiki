@@ -22,6 +22,13 @@
 				:key="language.tag"
 				class="ext-neowiki-language-list-input__language"
 			>
+				<ReorderHandle
+					v-if="!props.disabled"
+					:position="index"
+					:count="languages.length"
+					:label="language.reorderLabel"
+					@move="move( index, $event )"
+				/>
 				<span class="ext-neowiki-language-list-input__name">{{ language.name }}</span>
 				<!-- Hidden from a screen reader beside a name, which says the same thing. -->
 				<span
@@ -29,39 +36,18 @@
 					class="ext-neowiki-language-list-input__tag"
 					aria-hidden="true"
 				>{{ shownLanguageTag( language.tag ) }}</span>
-				<template v-if="!props.disabled">
-					<CdxButton
-						class="ext-neowiki-language-list-input__move-up"
-						weight="quiet"
-						:disabled="index === 0"
-						:aria-label="language.moveUpLabel"
-						:title="language.moveUpLabel"
-						@click="move( index, index - 1 )"
-					>
-						<CdxIcon :icon="cdxIconUpTriangle" />
-					</CdxButton>
-					<CdxButton
-						class="ext-neowiki-language-list-input__move-down"
-						weight="quiet"
-						:disabled="index === languages.length - 1"
-						:aria-label="language.moveDownLabel"
-						:title="language.moveDownLabel"
-						@click="move( index, index + 1 )"
-					>
-						<CdxIcon :icon="cdxIconDownTriangle" />
-					</CdxButton>
-					<CdxButton
-						class="ext-neowiki-language-list-input__remove"
-						weight="quiet"
-						action="destructive"
-						:disabled="languages.length === 1"
-						:aria-label="language.removeLabel"
-						:title="language.removeLabel"
-						@click="remove( index )"
-					>
-						<CdxIcon :icon="cdxIconTrash" />
-					</CdxButton>
-				</template>
+				<CdxButton
+					v-if="!props.disabled"
+					class="ext-neowiki-language-list-input__remove"
+					weight="quiet"
+					action="destructive"
+					:disabled="languages.length === 1"
+					:aria-label="language.removeLabel"
+					:title="language.removeLabel"
+					@click="remove( index )"
+				>
+					<CdxIcon :icon="cdxIconTrash" />
+				</CdxButton>
 			</li>
 		</ol>
 
@@ -87,26 +73,26 @@
 			</template>
 		</LanguagePicker>
 
-		<span
-			class="ext-neowiki-language-list-input__announcement"
-			aria-live="polite"
-		>{{ announcement }}</span>
+		<LiveAnnouncement ref="announcementRef" />
 	</CdxField>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { CdxButton, CdxField, CdxIcon } from '@wikimedia/codex';
-import { cdxIconAdd, cdxIconDownTriangle, cdxIconTrash, cdxIconUpTriangle } from '@wikimedia/codex-icons';
+import { cdxIconAdd, cdxIconTrash } from '@wikimedia/codex-icons';
 import LanguagePicker from '@/components/common/LanguagePicker.vue';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
+import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
+import { movedAnnouncement, REORDER_HANDLE_SELECTOR, reorderHandleLabel, withItemMoved } from '@/components/common/reordering.ts';
+import { useSortable } from '@/composables/useSortable.ts';
 import { dataLanguageTagsOf, languageNameOrTag, shownLanguageTag } from '@/presentation/languages.ts';
 
 interface ListedLanguage {
 	tag: string;
 	/** The language's name, or its tag when MediaWiki has none. */
 	name: string;
-	moveUpLabel: string;
-	moveDownLabel: string;
+	reorderLabel: string;
 	removeLabel: string;
 }
 
@@ -131,7 +117,7 @@ const pickerRef = ref<InstanceType<typeof LanguagePicker> | null>( null );
 
 const addLanguageText = mw.message( 'neowiki-config-editor-add-language' ).text();
 
-const announcement = ref( '' );
+const announcementRef = ref<LiveAnnouncementExposes | null>( null );
 
 const tags = computed( (): string[] => dataLanguageTagsOf( props.modelValue ) );
 
@@ -141,38 +127,28 @@ const languages = computed( (): ListedLanguage[] => tags.value.map( ( tag ) => {
 	return {
 		tag: tag,
 		name: name,
-		moveUpLabel: mw.message( 'neowiki-config-editor-move-language-up', name ).text(),
-		moveDownLabel: mw.message( 'neowiki-config-editor-move-language-down', name ).text(),
+		reorderLabel: reorderHandleLabel( name ),
 		removeLabel: mw.message( 'neowiki-config-editor-remove-language', name ).text()
 	};
 } ) );
 
 function add( tag: string ): void {
 	emit( 'update:modelValue', [ ...tags.value, tag ] );
-	announcement.value = mw.message( 'neowiki-config-editor-language-added', languageNameOrTag( tag ) ).text();
+	announcementRef.value?.announce( mw.message( 'neowiki-config-editor-language-added', languageNameOrTag( tag ) ).text() );
 }
 
-/**
- * The focus stays on the button that moved the language, unless that button cannot move it any
- * further, which hands it to the one that can.
- */
-async function move( from: number, to: number ): Promise<void> {
-	const moved = [ ...tags.value ];
-	const [ tag ] = moved.splice( from, 1 );
-	moved.splice( to, 0, tag );
+function move( from: number, to: number ): void {
+	const moved = withItemMoved( tags.value, from, to );
 
 	emit( 'update:modelValue', moved );
-	announcement.value = mw.message( 'neowiki-config-editor-language-moved', languageNameOrTag( tag ), to + 1, moved.length ).text();
-
-	await nextTick();
-
-	const movedUp = to < from;
-	const sameButton = movedUp ? 'move-up' : 'move-down';
-	const otherButton = movedUp ? 'move-down' : 'move-up';
-	const atTheEnd = movedUp ? to === 0 : to === moved.length - 1;
-
-	focusButtonOf( to, atTheEnd ? otherButton : sameButton );
+	announcementRef.value?.announce( movedAnnouncement( languageNameOrTag( moved[ to ] ), to, moved.length ) );
 }
+
+useSortable( listRef, {
+	handle: REORDER_HANDLE_SELECTOR,
+	ghostClass: 'ext-neowiki-language-list-input__language--ghost',
+	onReorder: move
+} );
 
 /**
  * The focus goes to the language that took the removed one's place, or else the one before it, or
@@ -183,20 +159,20 @@ async function remove( index: number ): Promise<void> {
 	const left = tags.value.filter( ( _, otherIndex ) => otherIndex !== index );
 
 	emit( 'update:modelValue', left );
-	announcement.value = mw.message( 'neowiki-config-editor-language-removed', languageNameOrTag( tag ) ).text();
+	announcementRef.value?.announce( mw.message( 'neowiki-config-editor-language-removed', languageNameOrTag( tag ) ).text() );
 
 	await nextTick();
 
 	if ( left.length === 1 ) {
 		pickerRef.value?.focusTrigger();
 	} else {
-		focusButtonOf( Math.min( index, left.length - 1 ), 'remove' );
+		focusRemoveButtonOf( Math.min( index, left.length - 1 ) );
 	}
 }
 
-function focusButtonOf( index: number, button: 'move-up' | 'move-down' | 'remove' ): void {
+function focusRemoveButtonOf( index: number ): void {
 	listRef.value?.children[ index ]
-		?.querySelector<HTMLElement>( `.ext-neowiki-language-list-input__${ button }` )
+		?.querySelector<HTMLElement>( '.ext-neowiki-language-list-input__remove' )
 		?.focus();
 }
 
@@ -209,7 +185,6 @@ defineExpose( { focus } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
-@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-language-list-input {
 	&__languages {
@@ -232,6 +207,14 @@ defineExpose( { focus } );
 		& + & {
 			border-top: @border-width-base @border-style-base @border-color-muted;
 		}
+
+		&:has( .ext-neowiki-reorder-handle ) {
+			padding-inline-start: 0;
+		}
+
+		&--ghost {
+			opacity: @opacity-low;
+		}
 	}
 
 	&__name {
@@ -249,10 +232,6 @@ defineExpose( { focus } );
 	&.cdx-field--disabled &__name,
 	&.cdx-field--disabled &__tag {
 		color: @color-disabled;
-	}
-
-	&__announcement {
-		.ext-neowiki-visually-hidden();
 	}
 }
 </style>

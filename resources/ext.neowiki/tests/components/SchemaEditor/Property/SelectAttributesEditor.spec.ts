@@ -1,12 +1,16 @@
 import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import { ErrorsRevealedKey } from '@/components/SchemaEditor/ErrorsRevealed.ts';
 import { newSelectProperty, SelectOption, SelectProperty } from '@/domain/propertyTypes/Select';
 import { newStringValue } from '@/domain/Value.ts';
-import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
+import { chooseReorderMove, createI18nMock, lastSortableOptions, liveRegionText, REORDER_MESSAGES, setupMwMock } from '../../../VueTestHelpers.ts';
+
+vi.mock( '@/composables/useSortable.ts', () => ( {
+	useSortable: vi.fn(),
+} ) );
 
 // Ids of every format a Schema can hold: the editor keeps whatever it was given.
 const ACTIVE: SelectOption = { id: 'o1demo1aaaaaaa1', label: 'Active' };
@@ -25,11 +29,9 @@ describe( 'SelectAttributesEditor', () => {
 		setupMwMock( {
 			messages: {
 				'neowiki-property-editor-option': ( position: string ) => `Option ${ position }`,
-				'neowiki-property-editor-move-option-up': ( position: string ) => `Move option ${ position } up`,
-				'neowiki-property-editor-move-option-down': ( position: string ) => `Move option ${ position } down`,
+				'neowiki-property-editor-reorder-option': ( position: string ) => `Reorder option ${ position }`,
 				'neowiki-property-editor-remove-option': ( position: string ) => `Remove option ${ position }`,
-				'neowiki-property-editor-option-moved': ( position: string, count: string ) =>
-					`Option moved to position ${ position } of ${ count }.`,
+				...REORDER_MESSAGES,
 				'neowiki-property-editor-option-removed': 'Option removed.',
 				'neowiki-property-editor-option-label-required': 'Every option needs a label.',
 				'neowiki-property-editor-options-unique': 'Each option needs a different label.',
@@ -115,24 +117,6 @@ describe( 'SelectAttributesEditor', () => {
 		return editor.findAll( '.cdx-message--error' ).map( ( message ) => message.text() );
 	}
 
-	function announcement( editor: VueWrapper ): string {
-		return editor.find( '[aria-live="polite"], [role="status"]' ).text();
-	}
-
-	// What the live region holds after each change to it, which is when a screen reader speaks.
-	async function announcementsDuring( editor: VueWrapper, action: () => Promise<void> ): Promise<string[]> {
-		const region = editor.find( '[aria-live="polite"], [role="status"]' ).element;
-		const texts: string[] = [];
-		const observer = new MutationObserver( () => texts.push( region.textContent ?? '' ) );
-		observer.observe( region, { childList: true, characterData: true, subtree: true } );
-
-		await action();
-		await flushPromises();
-		observer.disconnect();
-
-		return texts;
-	}
-
 	it( 'shows the label of each option in a field of its own, in order', () => {
 		expect( shownLabels( newEditor() ) ).toEqual( [ 'Active', 'Inactive', 'Acquired' ] );
 	} );
@@ -159,24 +143,26 @@ describe( 'SelectAttributesEditor', () => {
 	it( 'keeps the ids of options that change places', async () => {
 		const editor = newEditor();
 
-		await press( button( editor, 'Move option 3 up' ) );
+		await chooseReorderMove( editor, 'Reorder option 3', 'Move up' );
 
 		expect( optionsOf( editor ) ).toEqual( [ ACTIVE, ACQUIRED, INACTIVE ] );
 	} );
 
-	it( 'moves an option down', async () => {
+	it( 'drags options by their handles alone', () => {
 		const editor = newEditor();
+		const handle = lastSortableOptions().handle!;
 
-		await press( button( editor, 'Move option 2 down' ) );
-
-		expect( shownLabels( editor ) ).toEqual( [ 'Active', 'Acquired', 'Inactive' ] );
+		expect( button( editor, 'Reorder option 2' ).element.closest( handle ) ).not.toBeNull();
+		expect( labelField( editor, 2 ).element.closest( handle ) ).toBeNull();
 	} );
 
-	it( 'cannot move its first option up or its last one down', () => {
+	it( 'moves a dragged option to where it was dropped', async () => {
 		const editor = newEditor();
 
-		expect( button( editor, 'Move option 1 up' ).element.disabled ).toBe( true );
-		expect( button( editor, 'Move option 3 down' ).element.disabled ).toBe( true );
+		lastSortableOptions().onReorder!( 0, 2 );
+		await flushPromises();
+
+		expect( shownLabels( editor ) ).toEqual( [ 'Inactive', 'Acquired', 'Active' ] );
 	} );
 
 	it( 'keeps the ids of the other options when one is removed', async () => {
@@ -268,23 +254,12 @@ describe( 'SelectAttributesEditor', () => {
 			expect( document.activeElement ).toBe( labelField( editor, 2 ).element );
 		} );
 
-		it( 'stays on the button that moved the option', async () => {
+		it( 'stays on the handle of the option it moved', async () => {
 			const editor = newEditor();
 
-			await press( button( editor, 'Move option 3 up' ) );
+			await chooseReorderMove( editor, 'Reorder option 3', 'Move up' );
 
-			expect( document.activeElement ).toBe( button( editor, 'Move option 2 up' ).element );
-		} );
-
-		it.each( [
-			[ 'Move option 2 up', 'Move option 1 down' ],
-			[ 'Move option 2 down', 'Move option 3 up' ],
-		] )( 'goes to the other move button once the option cannot move further: %s', async ( pressed, focused ) => {
-			const editor = newEditor();
-
-			await press( button( editor, pressed ) );
-
-			expect( document.activeElement ).toBe( button( editor, focused ).element );
+			expect( document.activeElement ).toBe( button( editor, 'Reorder option 2' ).element );
 		} );
 
 		it( 'goes to the option that takes the place of a removed one', async () => {
@@ -318,9 +293,17 @@ describe( 'SelectAttributesEditor', () => {
 		it( 'says where an option moved to', async () => {
 			const editor = newEditor();
 
-			await press( button( editor, 'Move option 3 up' ) );
+			await chooseReorderMove( editor, 'Reorder option 3', 'Move up' );
 
-			expect( announcement( editor ) ).toBe( 'Option moved to position 2 of 3.' );
+			expect( liveRegionText( editor ) ).toBe( 'Acquired moved to position 2 of 3.' );
+		} );
+
+		it( 'names an option without a label by its new position when it moves', async () => {
+			const editor = newEditor( newSelectProperty( { options: [ ACTIVE, { id: 'blank', label: ' ' }, ACQUIRED ] } ) );
+
+			await chooseReorderMove( editor, 'Reorder option 2', 'Move to top' );
+
+			expect( liveRegionText( editor ) ).toBe( 'Option 1 moved to position 1 of 3.' );
 		} );
 
 		it( 'says an option was removed', async () => {
@@ -328,16 +311,7 @@ describe( 'SelectAttributesEditor', () => {
 
 			await press( button( editor, 'Remove option 2' ) );
 
-			expect( announcement( editor ) ).toBe( 'Option removed.' );
-		} );
-
-		it( 'says so again for a removal right after another', async () => {
-			const editor = newEditor();
-			await press( button( editor, 'Remove option 1' ) );
-
-			const announcements = await announcementsDuring( editor, () => press( button( editor, 'Remove option 1' ) ) );
-
-			expect( announcements ).toContain( 'Option removed.' );
+			expect( liveRegionText( editor ) ).toBe( 'Option removed.' );
 		} );
 	} );
 

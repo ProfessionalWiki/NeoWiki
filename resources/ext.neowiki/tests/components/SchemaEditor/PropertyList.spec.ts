@@ -2,11 +2,10 @@ import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from 
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
-import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseReorderMove, createI18nMock, lastSortableOptions, liveRegionText, REORDER_MESSAGES, setupMwMock } from '../../VueTestHelpers.ts';
 
 vi.mock( '@/composables/useSortable.ts', () => ( {
 	useSortable: vi.fn(),
@@ -73,15 +72,15 @@ function rowDescription( row: DOMWrapper<Element> ): string {
 }
 
 function rowTitles( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '[role="option"]' ).map( rowTitle );
+	return wrapper.findAll( '[role="listbox"] > [role="option"]' ).map( rowTitle );
 }
 
 function selectedRowTitles( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '[role="option"][aria-selected="true"]' ).map( rowTitle );
+	return wrapper.findAll( '[role="listbox"] > [role="option"][aria-selected="true"]' ).map( rowTitle );
 }
 
 function focusableRowTitles( wrapper: VueWrapper ): string[] {
-	return wrapper.findAll( '[role="option"][tabindex="0"]' ).map( rowTitle );
+	return wrapper.findAll( '[role="listbox"] > [role="option"][tabindex="0"]' ).map( rowTitle );
 }
 
 function highlightedRowTitles( wrapper: VueWrapper ): string[] {
@@ -89,7 +88,7 @@ function highlightedRowTitles( wrapper: VueWrapper ): string[] {
 }
 
 function findRow( wrapper: VueWrapper, title: string ): DOMWrapper<Element> {
-	return wrapper.findAll( '[role="option"]' ).find( ( row ) => rowTitle( row ) === title )!;
+	return wrapper.findAll( '[role="listbox"] > [role="option"]' ).find( ( row ) => rowTitle( row ) === title )!;
 }
 
 function findAddButton( wrapper: VueWrapper ): DOMWrapper<Element> {
@@ -100,11 +99,6 @@ function reorderedNames( wrapper: VueWrapper ): string[] {
 	const emitted = wrapper.emitted( 'propertyReordered' ) as PropertyName[][][];
 	expect( emitted ).toHaveLength( 1 );
 	return emitted[ 0 ][ 0 ].map( ( name ) => name.toString() );
-}
-
-function sortableOptions(): UseSortableOptions {
-	const calls = vi.mocked( useSortable ).mock.calls;
-	return calls[ calls.length - 1 ][ 1 ];
 }
 
 function selections( wrapper: VueWrapper ): PropertyListRow[] {
@@ -118,7 +112,7 @@ async function pressOnList( wrapper: VueWrapper, key: string, altKey: boolean = 
 describe( 'PropertyList', () => {
 
 	beforeEach( () => {
-		setupMwMock();
+		setupMwMock( { messages: REORDER_MESSAGES } );
 	} );
 
 	const property1 = createPropertyDefinitionFromJson( 'Alpha', { type: TextType.typeName } );
@@ -367,6 +361,15 @@ describe( 'PropertyList', () => {
 			expect( selections( wrapper ) ).toEqual( [] );
 		} );
 
+		it( 'tells a screen reader where Alt+ArrowDown moved a property to', async () => {
+			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ), document.body );
+
+			await pressOnList( wrapper, 'ArrowDown', true );
+			await flushPromises();
+
+			expect( liveRegionText( wrapper ) ).toBe( 'Alpha moved to position 2 of 3.' );
+		} );
+
 		it( 'does not move the Label row on Alt+ArrowDown', async () => {
 			const wrapper = createWrapper( properties, LABEL_ROW );
 
@@ -378,12 +381,24 @@ describe( 'PropertyList', () => {
 
 	} );
 
+	describe( 'reorder handles', () => {
+
+		it( 'moves a property down with its handle', async () => {
+			const wrapper = createWrapper( properties, propertyRow( 'Gamma' ), document.body );
+
+			await chooseReorderMove( wrapper, 'Reorder Alpha', 'Move down' );
+
+			expect( reorderedNames( wrapper ) ).toEqual( [ 'Beta', 'Alpha', 'Gamma' ] );
+		} );
+
+	} );
+
 	// jsdom cannot drag, so these drive the options the list hands useSortable.
 	describe( 'drag and drop', () => {
 
 		it( 'lets SortableJS drag the property rows but neither the Schema\'s row nor the Label row', () => {
 			const wrapper = createWrapper( properties, SCHEMA_ROW );
-			const draggable = sortableOptions().draggable!;
+			const draggable = lastSortableOptions().draggable!;
 
 			expect( findRow( wrapper, SCHEMA_ROW_TITLE ).element.matches( draggable ) ).toBe( false );
 			expect( findRow( wrapper, LABEL_ROW_TITLE ).element.matches( draggable ) ).toBe( false );
@@ -394,7 +409,7 @@ describe( 'PropertyList', () => {
 			const wrapper = createWrapper( properties, propertyRow( 'Alpha' ) );
 
 			// SortableJS reports indexes that count every row of the list.
-			sortableOptions().onReorder!( 4, 2 );
+			lastSortableOptions().onReorder!( 4, 2 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );
@@ -476,7 +491,7 @@ describe( 'PropertyList', () => {
 		it( 'moves a dropped property to its place, with no Label row among the rows SortableJS counts', () => {
 			const wrapper = createWithoutLabelRow( propertyRow( 'Alpha' ) );
 
-			sortableOptions().onReorder!( 3, 1 );
+			lastSortableOptions().onReorder!( 3, 1 );
 
 			expect( reorderedNames( wrapper ) ).toEqual( [ 'Gamma', 'Alpha', 'Beta' ] );
 		} );

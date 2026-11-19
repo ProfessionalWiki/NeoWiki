@@ -1,4 +1,4 @@
-import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
+import { flushPromises, mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import { Component, DefineComponent, nextTick } from 'vue';
 import { expect, onTestFinished, vi } from 'vitest';
 import { ValidationMessages, ValidationStatusType } from '@wikimedia/codex';
@@ -6,6 +6,7 @@ import type { AttributesEditorExposes } from '@/components/SchemaEditor/Property
 import { NeoWikiTestServices } from './NeoWikiTestServices.ts';
 import { keepMenuEscapesFromDialogs } from '@/codex/menuEscape.ts';
 import LabelsInput from '@/components/SchemaEditor/LabelsInput.vue';
+import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 
 export interface FieldProps {
 	status: ValidationStatusType;
@@ -309,6 +310,54 @@ export function openDialogTitles(): string[] {
  */
 export async function pressHeaderClose( wrapper: VueWrapper ): Promise<void> {
 	await wrapper.findComponent( { name: 'DialogHeader' } ).get( '.ext-neowiki-dialog-header__close' ).trigger( 'click' );
+}
+
+/**
+ * For setupMwMock in a spec that reads what a ReorderHandle or its list shows or says.
+ */
+export const REORDER_MESSAGES: Record<string, string | ( ( ...params: string[] ) => string )> = {
+	'neowiki-reorder-move-to-top': 'Move to top',
+	'neowiki-reorder-move-up': 'Move up',
+	'neowiki-reorder-move-down': 'Move down',
+	'neowiki-reorder-move-to-bottom': 'Move to bottom',
+	'neowiki-reorder-handle': ( name ) => `Reorder ${ name }`,
+	'neowiki-reorder-handle-tooltip': 'Drag, or click to reorder',
+	'neowiki-reorder-moved': ( name, position, count ) => `${ name } moved to position ${ position } of ${ count }.`,
+};
+
+/**
+ * Opens the ReorderHandle whose button has the accessible name and picks the move from its menu.
+ */
+export async function chooseReorderMove( wrapper: VueWrapper, handleName: string, move: string ): Promise<void> {
+	const handle = wrapper.findAll( '.ext-neowiki-reorder-handle' )
+		.find( ( candidate ) => candidate.find( `button[aria-label="${ handleName }"]` ).exists() );
+	expect( handle, `a handle named "${ handleName }"` ).toBeDefined();
+
+	await chooseFromMenu( handle!, handleName, move );
+	await flushPromises();
+}
+
+/** The moves the open ReorderHandle menu offers, leaving out those it shows disabled. */
+export function enabledReorderMoves( wrapper: VueWrapper ): string[] {
+	const openHandle = wrapper.findAll( '.ext-neowiki-reorder-handle' )
+		.find( ( handle ) => handle.find( 'button' ).attributes( 'aria-expanded' ) === 'true' );
+	expect( openHandle, 'an open reorder menu' ).toBeDefined();
+
+	return openHandle!.findAll( '.cdx-menu-item' )
+		.filter( ( item ) => item.attributes( 'aria-disabled' ) !== 'true' )
+		.map( ( item ) => item.text() );
+}
+
+/** The options a component last handed useSortable, in a spec that mocks it: jsdom cannot drag. */
+export function lastSortableOptions(): UseSortableOptions {
+	return vi.mocked( useSortable ).mock.lastCall![ 1 ];
+}
+
+/**
+ * The text of the live region a component speaks through, however it marks the region polite.
+ */
+export function liveRegionText( wrapper: VueWrapper ): string {
+	return wrapper.find( '[aria-live="polite"], [role="status"]' ).text();
 }
 
 /**
