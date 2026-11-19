@@ -1,0 +1,25 @@
+{
+	"schema": "Company",
+	"type": "infobox",
+	"description": "Company overview with founding year, headquarters, departments, offices, status, and websites",
+	"displayRules": [
+		{
+			"property": "Founded at"
+		},
+		{
+			"property": "Headquarters"
+		},
+		{
+			"property": "Departments"
+		},
+		{
+			"property": "Offices"
+		},
+		{
+			"property": "Status"
+		},
+		{
+			"property": "Websites"
+		}
+	]
+}

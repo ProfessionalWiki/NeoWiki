@@ -1,0 +1,20 @@
+{
+    "mainSubject": null,
+    "subjects": {
+        "sF1pfhWEmZdqENN": {
+            "schema": "Product",
+            "statements": {
+                "Available since": {
+                    "propertyType": "number",
+                    "value": 2019
+                },
+                "Website": {
+                    "propertyType": "url",
+                    "value": [
+                        "https://example.com/product"
+                    ]
+                }
+            }
+        }
+    }
+}

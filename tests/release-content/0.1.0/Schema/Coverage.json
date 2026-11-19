@@ -1,0 +1,137 @@
+{
+	"description": "Every Property Type, with the Constraints, severities and defaults the demo Schemas lack",
+	"propertyDefinitions": {
+		"Names": {
+			"type": "monolingualText",
+			"description": "The name in each language",
+			"required": {
+				"severity": "error"
+			},
+			"multiple": true,
+			"uniqueLanguages": {
+				"severity": "error"
+			},
+			"minLength": 2,
+			"maxLength": {
+				"value": 200,
+				"severity": "error"
+			}
+		},
+		"Motto": {
+			"type": "monolingualText",
+			"default": [
+				{
+					"text": "Nihil",
+					"language": "la"
+				}
+			]
+		},
+		"Keywords": {
+			"type": "text",
+			"multiple": true,
+			"uniqueItems": {
+				"severity": "error"
+			},
+			"minLength": {
+				"value": 3,
+				"severity": "error"
+			},
+			"maxLength": {
+				"value": 40,
+				"severity": "warning"
+			},
+			"default": [
+				"general"
+			]
+		},
+		"Websites": {
+			"type": "url",
+			"multiple": true,
+			"uniqueItems": true,
+			"default": [
+				"https://example.org"
+			]
+		},
+		"Rating": {
+			"type": "number",
+			"precision": 1,
+			"minimum": 0,
+			"maximum": {
+				"value": 5,
+				"severity": "error"
+			},
+			"default": 2.5
+		},
+		"Verified": {
+			"type": "boolean",
+			"required": {
+				"severity": "error"
+			},
+			"default": false
+		},
+		"Founded": {
+			"type": "date",
+			"minimum": {
+				"value": "1800-01-01",
+				"severity": "error"
+			},
+			"maximum": "2100-12-31",
+			"default": [
+				"2000-01-01"
+			]
+		},
+		"Last audit": {
+			"type": "dateTime",
+			"minimum": "2000-01-01T00:00:00Z",
+			"maximum": {
+				"value": "2099-12-31T23:59:59+01:00",
+				"severity": "error"
+			},
+			"default": [
+				"2024-06-01T12:00:00Z"
+			]
+		},
+		"Stage": {
+			"type": "select",
+			"options": {
+				"value": [
+					{
+						"id": "o1cov1aaaaaaaa1",
+						"label": "Idea"
+					},
+					{
+						"id": "o1cov1aaaaaaaa2",
+						"label": "Running"
+					},
+					{
+						"id": "o1cov1aaaaaaaa3",
+						"label": "Done"
+					}
+				],
+				"severity": "error"
+			},
+			"multiple": {
+				"value": false,
+				"severity": "error"
+			},
+			"default": [
+				"o1cov1aaaaaaaa1"
+			]
+		},
+		"Partners": {
+			"type": "relation",
+			"targetSchemas": [
+				"Company",
+				"Institution",
+				{
+					"source": "otherwiki",
+					"name": "Organization"
+				}
+			],
+			"multiple": true,
+			"required": {
+				"severity": "error"
+			}
+		}
+	}
+}

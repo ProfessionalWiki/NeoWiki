@@ -1,0 +1,18 @@
+{
+	"description": "A museum's visitor count for one year, with its source. Each is edited, stored and removed with its museum.",
+	"subjectsAreDependent": true,
+	"propertyDefinitions": {
+		"Year": {
+			"type": "number",
+			"required": true
+		},
+		"Visitors": {
+			"type": "number",
+			"minimum": 0,
+			"precision": 0
+		},
+		"Source": {
+			"type": "url"
+		}
+	}
+}
