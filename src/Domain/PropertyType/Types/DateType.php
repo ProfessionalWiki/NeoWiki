@@ -4,9 +4,10 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType\Types;
 
-use DateTimeImmutable;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DatePrecision;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\DateProperty;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Property\PartialDate;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
@@ -51,35 +52,47 @@ class DateType implements PropertyType {
 				: [];
 		}
 
-		$parsed = DateProperty::parseStrictDate( $rawValue );
+		$date = PartialDate::tryParse( $rawValue );
 
-		if ( $parsed === null ) {
+		if ( $date === null ) {
 			return [ new Violation( propertyName: null, code: 'invalid-date', severity: Severity::Error ) ];
 		}
 
 		return array_values( array_filter( [
-			$this->checkMinimum( $parsed, $definition->getMinimum(), $definition->severityOf( 'minimum' ) ),
-			$this->checkMaximum( $parsed, $definition->getMaximum(), $definition->severityOf( 'maximum' ) ),
+			$this->checkMinPrecision( $date, $definition->getMinPrecision(), $definition->severityOf( 'minPrecision' ) ),
+			$this->checkMinimum( $date, $definition->getMinimum(), $definition->severityOf( 'minimum' ) ),
+			$this->checkMaximum( $date, $definition->getMaximum(), $definition->severityOf( 'maximum' ) ),
 		] ) );
 	}
 
-	private function checkMinimum( DateTimeImmutable $parsed, ?string $minString, Severity $severity ): ?Violation {
+	private function checkMinPrecision( PartialDate $date, ?DatePrecision $minPrecision, Severity $severity ): ?Violation {
+		if ( $minPrecision === null || $date->precision->isAtLeast( $minPrecision ) ) {
+			return null;
+		}
+		return new Violation( propertyName: null, code: 'min-precision-' . $minPrecision->value, severity: $severity );
+	}
+
+	/**
+	 * A date of year or month precision stands for a range of days, and so can a bound. Only a
+	 * date whose every day falls before the minimum violates it.
+	 */
+	private function checkMinimum( PartialDate $date, ?string $minString, Severity $severity ): ?Violation {
 		if ( $minString === null ) {
 			return null;
 		}
-		$min = DateProperty::parseStrictDate( $minString );
-		if ( $min === null || $parsed >= $min ) {
+		$min = PartialDate::tryParse( $minString );
+		if ( $min === null || $date->latest >= $min->earliest ) {
 			return null;
 		}
 		return new Violation( propertyName: null, code: 'min-value', args: [ $minString ], severity: $severity );
 	}
 
-	private function checkMaximum( DateTimeImmutable $parsed, ?string $maxString, Severity $severity ): ?Violation {
+	private function checkMaximum( PartialDate $date, ?string $maxString, Severity $severity ): ?Violation {
 		if ( $maxString === null ) {
 			return null;
 		}
-		$max = DateProperty::parseStrictDate( $maxString );
-		if ( $max === null || $parsed <= $max ) {
+		$max = PartialDate::tryParse( $maxString );
+		if ( $max === null || $date->earliest <= $max->latest ) {
 			return null;
 		}
 		return new Violation( propertyName: null, code: 'max-value', args: [ $maxString ], severity: $severity );

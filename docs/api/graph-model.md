@@ -89,10 +89,22 @@ The PropertyType determines the value's Neo4j type:
 | `text`, `url`, `select` | list of strings |
 | `number` | integer or float |
 | `boolean` | boolean |
-| `date` | list of dates |
+| `date` | list of dates: the earliest day of each value |
 | `dateTime` | list of datetimes |
 | `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
+
+A `date` Statement adds a second node property, keyed by its Property Name followed by `_latest`, holding the latest
+day of each value in the same order. `Born: 1984` becomes `Born: [1984-01-01]` and `Born_latest: [1984-12-31]`; for a
+full date both hold that day. Compare against `Born_latest` to match Subjects that may fall after a day, and against
+`Born` to match those that certainly do:
+
+```cypher
+MATCH (s:Person) WHERE s.Born_latest[0] >= date('1984-06-01') RETURN s
+```
+
+When the Schema, or the Subject's own Statements, have a Property whose name is that `_latest` key, the Property keeps
+the key and the latest days are not projected.
 
 A Property cannot be named after a fixed property: their names are [reserved](schema-format.md#property-names). Names
 are case-sensitive, so `s.name` is the Subject's label and `s.Name` a Property named "Name".

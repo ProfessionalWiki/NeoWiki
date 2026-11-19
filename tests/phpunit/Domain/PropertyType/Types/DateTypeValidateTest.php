@@ -67,22 +67,116 @@ class DateTypeValidateTest extends TestCase {
 		$this->assertSame( Severity::Error, $violations[0]->severity );
 	}
 
-	public function testYearOnlyReturnsInvalidDate(): void {
-		$violations = $this->type->validate(
+	public function testYearOnlyReturnsNoViolations(): void {
+		$this->assertSame( [], $this->type->validate(
 			new StringValue( '2025' ),
 			$this->newProperty( required: false ),
-		);
-
-		$this->assertSame( 'invalid-date', $violations[0]->code );
+		) );
 	}
 
-	public function testYearMonthReturnsInvalidDate(): void {
-		$violations = $this->type->validate(
+	public function testYearAndMonthReturnsNoViolations(): void {
+		$this->assertSame( [], $this->type->validate(
 			new StringValue( '2025-06' ),
 			$this->newProperty( required: false ),
+		) );
+	}
+
+	public function testYearBelowDayMinPrecisionReturnsMinPrecision(): void {
+		$violations = $this->type->validate(
+			new StringValue( '2025' ),
+			$this->newProperty( required: false, minPrecision: 'day' ),
 		);
 
-		$this->assertSame( 'invalid-date', $violations[0]->code );
+		$this->assertSame( 'min-precision-day', $violations[0]->code );
+		$this->assertSame( Severity::Warning, $violations[0]->severity );
+	}
+
+	public function testYearBelowMonthMinPrecisionReturnsMinPrecision(): void {
+		$violations = $this->type->validate(
+			new StringValue( '2025' ),
+			$this->newProperty( required: false, minPrecision: 'month' ),
+		);
+
+		$this->assertSame( 'min-precision-month', $violations[0]->code );
+	}
+
+	public function testFullDateSatisfiesMonthMinPrecision(): void {
+		$this->assertSame( [], $this->type->validate(
+			new StringValue( '2025-06-15' ),
+			$this->newProperty( required: false, minPrecision: 'month' ),
+		) );
+	}
+
+	public function testMinPrecisionViolationUsesErrorWhenAnnotated(): void {
+		$definition = PropertyDefinition::fromJson(
+			[
+				'type' => 'date',
+				'minimum' => '2025-01-01',
+				'minPrecision' => [ 'value' => 'day', 'severity' => 'error' ],
+			],
+			TestSources::newPropertyTypeRegistry(),
+		);
+
+		$violations = $this->type->validate( new StringValue( '2025-06' ), $definition );
+
+		$this->assertSame( 'min-precision-day', $violations[0]->code );
+		$this->assertSame( Severity::Error, $violations[0]->severity );
+	}
+
+	public function testYearOverlappingMinimumReturnsNoViolations(): void {
+		$this->assertSame( [], $this->type->validate(
+			new StringValue( '1984' ),
+			$this->newProperty( required: false, minimum: '1984-06-01' ),
+		) );
+	}
+
+	public function testYearEntirelyBeforeMinimumReturnsMinValue(): void {
+		$violations = $this->type->validate(
+			new StringValue( '1983' ),
+			$this->newProperty( required: false, minimum: '1984-06-01' ),
+		);
+
+		$this->assertSame( 'min-value', $violations[0]->code );
+	}
+
+	public function testMonthOverlappingMaximumReturnsNoViolations(): void {
+		$this->assertSame( [], $this->type->validate(
+			new StringValue( '1984-06' ),
+			$this->newProperty( required: false, maximum: '1984-06-01' ),
+		) );
+	}
+
+	public function testMonthEntirelyAfterMaximumReturnsMaxValue(): void {
+		$violations = $this->type->validate(
+			new StringValue( '1984-07' ),
+			$this->newProperty( required: false, maximum: '1984-06-30' ),
+		);
+
+		$this->assertSame( 'max-value', $violations[0]->code );
+	}
+
+	public function testYearMaximumAdmitsTheLastDayOfThatYear(): void {
+		$this->assertSame( [], $this->type->validate(
+			new StringValue( '1990-12-31' ),
+			$this->newProperty( required: false, maximum: '1990' ),
+		) );
+	}
+
+	public function testYearMinimumAdmitsADayInsideThatYear(): void {
+		$this->assertSame( [], $this->type->validate(
+			new StringValue( '1990-06-15' ),
+			$this->newProperty( required: false, minimum: '1990' ),
+		) );
+	}
+
+	public function testYearMinimumRejectsTheDayBeforeThatYear(): void {
+		$violations = $this->type->validate(
+			new StringValue( '1989-12-31' ),
+			$this->newProperty( required: false, minimum: '1990' ),
+		);
+
+		$this->assertSame( 'min-value', $violations[0]->code );
+		$this->assertSame( [ '1990' ], $violations[0]->args );
 	}
 
 	public function testValueWithTimeComponentReturnsInvalidDate(): void {
@@ -189,10 +283,11 @@ class DateTypeValidateTest extends TestCase {
 		bool $required,
 		?string $minimum = null,
 		?string $maximum = null,
+		?string $minPrecision = null,
 	): DateProperty {
 		return DateProperty::fromPartialJson(
 			new PropertyCore( description: '', required: $required, default: null ),
-			[ 'minimum' => $minimum, 'maximum' => $maximum ],
+			[ 'minimum' => $minimum, 'maximum' => $maximum, 'minPrecision' => $minPrecision ],
 		);
 	}
 
