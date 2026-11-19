@@ -403,6 +403,30 @@ describe( 'SchemasPage', () => {
 		expect( cardNames( wrapper ) ).toEqual( [ 'Department' ] );
 	} );
 
+	it( 'keeps the Schemas whose label in another language contains the find text', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			...summaries( [ 'Artist', 'City' ] ),
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { de: 'Abteilung' } },
+		] );
+		const wrapper = await visit();
+
+		await find( wrapper, 'abteil' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Department' ] );
+	} );
+
+	it( 'lists the Schemas found only by a label in another language after the others', async () => {
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			{ name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { de: 'Kunstwerk' } },
+			...summaries( [ 'Kunsthalle' ] ),
+		] );
+		const wrapper = await visit();
+
+		await find( wrapper, 'kunst' );
+
+		expect( cardNames( wrapper ) ).toEqual( [ 'Kunsthalle', 'Artwork' ] );
+	} );
+
 	it( 'lists the Schemas in the order of what the reader sees them called', async () => {
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
 			...summaries( [ 'Artist', 'City' ] ),

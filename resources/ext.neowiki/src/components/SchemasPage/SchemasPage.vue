@@ -137,8 +137,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { Schema } from '@/domain/Schema.ts';
 import { schemaSummaryOf, type SchemaSummary } from '@/application/SchemaLookup.ts';
-import { sortedByDisplayName } from '@/presentation/schemaDisplayName.ts';
-import { matchesSchemaSearch } from '@/presentation/schemaMenu.ts';
+import { schemasMatchingSearch } from '@/presentation/schemaMenu.ts';
 import SchemaCard from './SchemaCard.vue';
 import SchemasTable from './SchemasTable.vue';
 import { SubjectPreviews } from './SubjectPreviews.ts';
@@ -193,8 +192,7 @@ const pinnedSchema = ref<string | undefined>( undefined );
 // Numbers the Schema editors and creators asked for, so a Schema that loads after a later request opens none.
 let schemaDialogRequest = 0;
 
-const foundSchemas = computed( () =>
-	sortedByDisplayName( schemas.value.filter( ( summary ) => matchesSchemaSearch( summary, findText.value ) ) ) );
+const foundSchemas = computed( () => schemasMatchingSearch( schemas.value, findText.value ) );
 
 const emptyText = computed( () => schemas.value.length === 0 ?
 	mw.msg( 'neowiki-schemas-empty' ) :
