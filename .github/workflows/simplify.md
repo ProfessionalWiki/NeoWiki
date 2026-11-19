@@ -37,8 +37,8 @@ Propose a change only if all of these hold:
   same behaviour.
 - **Clearly simpler at a glance.** Fewer concepts, or fewer places to change next time. "Arguably cleaner" falls short.
 - **One theme.** One simplification per proposal; unrelated cleanups do not ride along.
-- **Smaller.** It removes more lines than it adds, adds at most 50, and its added and removed lines total at most
-  300, or the job rejects it; aim under 100.
+- **Shrinks the code.** It removes more lines than it adds, or the job rejects it. Make it no larger than the
+  simplification needs.
 - **Worth a review.** It removes something a reader has to understand, follow or keep in sync: a concept, a layer, an
   option, a copy. Saving a line or two is not enough.
 - **Verifiable by reading.** Grep found every caller and usage, and you can name the existing tests that cover the

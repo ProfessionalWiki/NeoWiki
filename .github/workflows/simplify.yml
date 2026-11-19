@@ -145,9 +145,7 @@ jobs:
               added=$((added + add))
               deleted=$((deleted + del))
             done < <(git apply --numstat "$1")
-            [ "$deleted" -gt "$added" ] || { echo "it adds $added lines and removes $deleted"; return; }
-            [ "$added" -le 50 ] || { echo "it adds $added lines"; return; }
-            [ $((added + deleted)) -le 300 ] || echo "it changes $((added + deleted)) lines"
+            [ "$deleted" -gt "$added" ] || echo "it adds $added lines and removes $deleted"
           }
 
           for message in "$RUNNER_TEMP"/proposals/*.txt; do
