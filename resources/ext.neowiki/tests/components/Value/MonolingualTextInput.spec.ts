@@ -343,7 +343,7 @@ describe( 'MonolingualTextInput', () => {
 		await leaveRow(
 			wrapper,
 			0,
-			rowElements( wrapper )[ 0 ].find( '.ext-neowiki-language-picker__search input' ).element,
+			rowElements( wrapper )[ 0 ].find( '.ext-neowiki-searchable-picker__search input' ).element,
 		);
 
 		expect( textValues( wrapper ) ).toEqual( [ '', 'Cine', '' ] );

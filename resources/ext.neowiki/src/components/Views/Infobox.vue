@@ -47,6 +47,7 @@
 				v-for="resolved in resolvedProperties"
 				:key="resolved.propertyDefinition.name.toString()"
 				class="ext-neowiki-infobox__item"
+				:data-mw-neowiki-property="resolved.propertyDefinition.name.toString()"
 			>
 				<div class="ext-neowiki-infobox__property">
 					{{ propertyDisplayName( resolved.propertyDefinition ) }}
@@ -128,6 +129,9 @@ function getComponent( propertyType: string ): Component {
 const schemaNameBadge = computed( (): string | null => schemaNameToShow( subject.value ) );
 
 const layout = computed( () => {
+	if ( props.layout !== undefined ) {
+		return props.layout;
+	}
 	if ( !props.layoutName ) {
 		return undefined;
 	}
@@ -157,10 +161,13 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 	background-color: @background-color-base;
 	line-height: @line-height-small;
 
-	@media ( min-width: @min-width-breakpoint-tablet ) {
-		clear: both;
-		float: right;
-		margin-inline: @spacing-100 @spacing-0;
+	/* On a page only: elsewhere, such as in the Layout editor's preview, the infobox is centred. */
+	.ext-neowiki-view & {
+		@media ( min-width: @min-width-breakpoint-tablet ) {
+			clear: both;
+			float: right;
+			margin-inline: @spacing-100 @spacing-0;
+		}
 	}
 
 	&__header {
@@ -182,22 +189,16 @@ const resolvedProperties = computed( (): ResolvedProperty[] => {
 		font-weight: @font-weight-bold;
 	}
 
-	&__content {
-		padding: @spacing-75;
-	}
-
+	/* Each row holds its own spacing, so that its box covers the row whole, as the Layout editor's preview marks it. */
 	&__item {
 		display: flex;
 		align-items: flex-start;
-		margin-bottom: @spacing-75;
-		padding-bottom: @spacing-75;
+		padding: @spacing-75;
 		border-bottom: @border-subtle;
 		column-gap: @spacing-150;
 
 		&:last-child {
 			border-bottom: none;
-			margin-bottom: @spacing-0;
-			padding-bottom: @spacing-0;
 		}
 	}
 

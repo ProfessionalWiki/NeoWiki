@@ -23,13 +23,11 @@
 				</DialogHeader>
 			</template>
 
-			<EditorPanes>
-				<LayoutEditor
-					ref="layoutEditor"
-					:initial-layout="initialLayout"
-					@change="markChanged"
-				/>
-			</EditorPanes>
+			<LayoutEditor
+				ref="layoutEditor"
+				:initial-layout="initialLayout"
+				@change="markChanged"
+			/>
 
 			<template #footer>
 				<SummaryAction
@@ -57,7 +55,6 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import { CdxDialog } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
-import EditorPanes from '@/components/common/EditorPanes.vue';
 import { Layout } from '@/domain/Layout.ts';
 import { computed, ref, shallowRef, watch } from 'vue';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
@@ -155,10 +152,12 @@ defineExpose( { hasChanged } );
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 @import ( reference ) '@/assets/mixins.less';
 
+/* A literal width, Codex's size scale stopping at 56rem: room for the settings and a View of any View Type beside them. */
 .ext-neowiki-layout-editor-dialog {
 	&.cdx-dialog {
 		.ext-neowiki-dialog-grid-body();
-		max-width: @size-5600;
+		.ext-neowiki-editor-dialog-height();
+		max-width: 75rem;
 	}
 }
 </style>

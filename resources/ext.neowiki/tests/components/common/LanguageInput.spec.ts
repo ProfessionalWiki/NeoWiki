@@ -55,11 +55,11 @@ describe( 'LanguageInput', () => {
 	}
 
 	function search( input: VueWrapper ): DOMWrapper<HTMLInputElement> {
-		return input.find( '.ext-neowiki-language-picker__search input' );
+		return input.find( '.ext-neowiki-searchable-picker__search input' );
 	}
 
 	function searchIsOpen( input: VueWrapper ): boolean {
-		return input.find( '.ext-neowiki-language-picker__panel' ).isVisible();
+		return input.find( '.ext-neowiki-searchable-picker__panel' ).isVisible();
 	}
 
 	afterEach( () => {

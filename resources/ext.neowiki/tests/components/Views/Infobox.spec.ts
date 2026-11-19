@@ -19,7 +19,8 @@ import type { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import SubjectEditorDialog from '@/components/SubjectEditor/SubjectEditorDialog.vue';
 import { CdxButton } from '@wikimedia/codex';
 import { createI18nMock, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
-import { newSubject, newSchema } from '@/TestHelpers.ts';
+import { newDisplayRules, newSubject, newSchema } from '@/TestHelpers.ts';
+import { Layout } from '@/domain/Layout.ts';
 
 const $i18n = createI18nMock();
 
@@ -68,10 +69,11 @@ describe( 'Infobox', () => {
 		] ),
 	} );
 
-	const mountComponent = ( subject: Subject, canEditSubject: boolean ): VueWrapper => mount( Infobox, {
+	const mountComponent = ( subject: Subject, canEditSubject: boolean, layout?: Layout ): VueWrapper => mount( Infobox, {
 		props: {
 			subjectId: subject.getId(),
 			canEditSubject: canEditSubject,
+			layout,
 		},
 		global: {
 			mocks: {
@@ -116,6 +118,19 @@ describe( 'Infobox', () => {
 	afterEach( () => {
 		vi.restoreAllMocks();
 	} );
+
+	// A reader of German, and a Schema labelling two of its three properties in German and one in English.
+	function readsGermanLabels(): void {
+		setupMwMock( { functions: [ 'message', 'msg', 'config', 'language', 'util' ], config: { wgUserLanguage: 'de' } } );
+		schemaStore.setSchema( 'TestSchema', newSchema( {
+			title: 'TestSchema',
+			properties: new PropertyDefinitionList( [
+				createPropertyDefinitionFromJson( 'name', { type: TextType.typeName, labels: { en: 'Name', de: 'Name (de)' } } ),
+				createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName, labels: { de: 'Alter' } } ),
+				createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
+			] ),
+		} ) );
+	}
 
 	it( 'renders the title correctly', () => {
 		const wrapper = mountComponent( mockSubject, false );
@@ -163,16 +178,26 @@ describe( 'Infobox', () => {
 		expect( linkElement.text() ).toBe( 'example.com' );
 	} );
 
+	it( 'shows the properties of a Layout it is handed, in that Layout\'s order', () => {
+		const layout = new Layout( 'Unsaved', 'TestSchema', 'infobox', '', newDisplayRules( 'website', 'name' ), {} );
+
+		const wrapper = mountComponent( mockSubject, false, layout );
+
+		expect( wrapper.findAll( '.ext-neowiki-infobox__property' ).map( ( property ) => property.text() ) )
+			.toEqual( [ 'website', 'name' ] );
+	} );
+
+	it( 'marks each property\'s row with the property\'s name, not its label', () => {
+		readsGermanLabels();
+
+		const wrapper = mountComponent( mockSubject, false );
+
+		expect( wrapper.findAll( '.ext-neowiki-infobox__item' ).map( ( item ) => item.attributes( 'data-mw-neowiki-property' ) ) )
+			.toEqual( [ 'name', 'age', 'website' ] );
+	} );
+
 	it( 'names each property by its label in the reader\'s language', () => {
-		setupMwMock( { functions: [ 'message', 'msg', 'config', 'language', 'util' ], config: { wgUserLanguage: 'de' } } );
-		schemaStore.setSchema( 'TestSchema', newSchema( {
-			title: 'TestSchema',
-			properties: new PropertyDefinitionList( [
-				createPropertyDefinitionFromJson( 'name', { type: TextType.typeName, labels: { en: 'Name', de: 'Name (de)' } } ),
-				createPropertyDefinitionFromJson( 'age', { type: NumberType.typeName, labels: { de: 'Alter' } } ),
-				createPropertyDefinitionFromJson( 'website', { type: UrlType.typeName } ),
-			] ),
-		} ) );
+		readsGermanLabels();
 
 		const wrapper = mountComponent( mockSubject, false );
 

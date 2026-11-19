@@ -132,9 +132,21 @@
 }
 
 /**
- * The size of the Schema editor and Create schema dialogs. Fixed rather than fitted to the selected
- * row's pane, so that selecting a row does not resize and re-centre the dialog: enough for a new
- * property of any Property Type, a literal because Codex's size scale stops at `@size-5600`.
+ * The height of an editor's dialog. Fixed rather than fitted to what the editor shows, so that a change
+ * there does not resize and re-centre the dialog: a literal because Codex's size scale has no height
+ * this large.
+ */
+.ext-neowiki-editor-dialog-height( @shrink: 0px ) {
+	max-height: calc( @ext-neowiki-dialog-height-limit - @shrink );
+
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		height: calc( 60rem - @shrink );
+	}
+}
+
+/**
+ * The size of the Schema editor and Create schema dialogs: wide enough for a new property of any
+ * Property Type.
  *
  * A dialog is a step smaller on every side for each Schema dialog behind it
  * (`--ext-neowiki-schema-dialog-stack-level`), which it would otherwise hide exactly.
@@ -142,10 +154,6 @@
 .ext-neowiki-schema-dialog-size() {
 	@stack-shrink: calc( 2 * var( --ext-neowiki-schema-dialog-stack-level, 0 ) * @spacing-100 );
 
+	.ext-neowiki-editor-dialog-height( @stack-shrink );
 	max-width: calc( @size-5600 - @stack-shrink );
-	max-height: calc( @ext-neowiki-dialog-height-limit - @stack-shrink );
-
-	@media ( min-width: @min-width-breakpoint-desktop ) {
-		height: calc( 60rem - @stack-shrink );
-	}
 }

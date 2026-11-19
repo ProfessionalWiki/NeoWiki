@@ -38,6 +38,7 @@
 				v-for="resolved in layoutSections.wide"
 				:key="resolved.propertyDefinition.name.toString()"
 				class="ext-redherb-card__wide-field"
+				:data-mw-neowiki-property="resolved.propertyDefinition.name.toString()"
 			>
 				<dt class="ext-redherb-card__term">
 					{{ propertyDisplayName( resolved.propertyDefinition ) }}
@@ -61,6 +62,7 @@
 					v-for="resolved in column"
 					:key="resolved.propertyDefinition.name.toString()"
 					class="ext-redherb-card__row"
+					:data-mw-neowiki-property="resolved.propertyDefinition.name.toString()"
 				>
 					<dt class="ext-redherb-card__term">
 						{{ propertyDisplayName( resolved.propertyDefinition ) }}
@@ -95,7 +97,7 @@ const nw = require( 'ext.neowiki' );
 // Example View Type: renders a Subject as a two-column card, loosely modelled on
 // the "document control" header BlueSpice shows on controlled documents. It
 // demonstrates assembling NeoWiki's building blocks from a separate extension:
-// the ViewProps contract ( subjectId, canEditSubject, layoutName ); the
+// the ViewProps contract ( subjectId, canEditSubject, layoutName or layout ); the
 // subject / schema / layout stores for display; the repositories for the editing
 // reads ( NeoWiki ADR 30 / ADR 16 ); resolveDisplayProperties + the value-display
 // component registry to render each value with its property type's component;
@@ -112,7 +114,8 @@ module.exports = exports = {
 	props: {
 		subjectId: { type: Object, required: true },
 		canEditSubject: { type: Boolean, required: true },
-		layoutName: { type: String, default: undefined }
+		layoutName: { type: String, default: undefined },
+		layout: { type: Object, default: undefined }
 	},
 	setup: function ( props ) {
 		const subjectStore = nw.useSubjectStore();
@@ -130,7 +133,8 @@ module.exports = exports = {
 
 		const schema = vue.computed( () => schemaStore.getSchema( subject.value.getSchemaName() ) );
 
-		const layout = vue.computed( () => props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined );
+		const layout = vue.computed( () => props.layout ||
+			( props.layoutName ? layoutStore.getLayout( props.layoutName ) : undefined ) );
 
 		const layoutUrl = vue.computed( () => props.layoutName ?
 			mw.util.getUrl( 'Layout:' + props.layoutName, { action: 'edit' } ) :

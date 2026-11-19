@@ -54,7 +54,7 @@ export function announcedLanguage( languageInput: Element ): string {
 	const announced = languageInput.cloneNode( true ) as Element;
 
 	announced.querySelectorAll(
-		'[aria-hidden="true"], .cdx-menu, .ext-neowiki-language-picker__panel',
+		'[aria-hidden="true"], .cdx-menu, .ext-neowiki-searchable-picker__panel',
 	).forEach( ( hidden ) => hidden.remove() );
 
 	return announced.textContent?.trim() ?? '';
@@ -149,8 +149,8 @@ export async function chooseFromMenu( element: VueWrapper | DOMWrapper<Element>,
 
 // Codex gives its "no results" element the menu-item class too, so it is excluded here.
 export async function pickInLanguageSearch( languagePicker: VueWrapper | DOMWrapper<Element>, text: string ): Promise<void> {
-	await languagePicker.find( '.ext-neowiki-language-picker__search input' ).setValue( text );
-	await languagePicker.find( '.ext-neowiki-language-picker__menu .cdx-menu-item:not( .cdx-menu__no-results )' )
+	await languagePicker.find( '.ext-neowiki-searchable-picker__search input' ).setValue( text );
+	await languagePicker.find( '.ext-neowiki-searchable-picker__menu .cdx-menu-item:not( .cdx-menu__no-results )' )
 		.trigger( 'click' );
 }
 
