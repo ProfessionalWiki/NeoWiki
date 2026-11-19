@@ -11,6 +11,9 @@ on:
       - '.github/workflows/ci-ts.yml'
       - 'resources/**'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: "Build"
