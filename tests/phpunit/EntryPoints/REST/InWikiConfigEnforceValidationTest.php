@@ -24,6 +24,8 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
  * @group Database
  */
 class InWikiConfigEnforceValidationTest extends NeoWikiIntegrationTestCase {
+
+	use WritesOnTheCurrentRevision;
 	use HandlerTestTrait;
 
 	private const string SCHEMA = 'InWikiConfigEnforcementSchema';
@@ -71,7 +73,7 @@ class InWikiConfigEnforceValidationTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => self::SUBJECT_ID ],
-				'bodyContents' => json_encode( [ 'label' => 'Without', 'statements' => [] ] ),
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( self::SUBJECT_ID, [ 'label' => 'Without', 'statements' => [] ] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);

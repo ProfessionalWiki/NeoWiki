@@ -48,7 +48,7 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 } );
 
 function writeResult( subject: Subject | null, schema: Schema | null = null ): Record<string, unknown> {
-	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema };
+	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema, revisionId: subject?.getRevisionId() ?? null };
 }
 
 function pageRead( pageId: number, ...subjects: Subject[] ): Record<string, unknown> {
@@ -70,7 +70,7 @@ const REPOSITORY_WRITE_PARAMETERS = {
 	createMainSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
 	createOtherSubject: [ 'pageId', 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'id' ],
 	createSubjectPage: [ 'label', 'schemaName', 'statements', 'dependentSubjects', 'comment', 'pageTitle', 'id' ],
-	updateSubject: [ 'id', 'label', 'statements', 'dependentSubjects', 'comment' ],
+	updateSubject: [ 'id', 'baseRevisionId', 'label', 'statements', 'dependentSubjects', 'comment' ],
 };
 
 function callsOf(
@@ -290,7 +290,7 @@ describe( 'SubjectStore ordering guards', () => {
 
 	it( 'discards a getOrFetchSubject miss-path fetch that a mutation overtook', async () => {
 		const stale = newSubject( { id: 's11111111111111', label: 'stale' } );
-		const updated = newSubject( { id: 's11111111111111', label: 'updated' } );
+		const updated = newSubject( { id: 's11111111111111', label: 'updated', revisionId: 1 } );
 		let resolveFetch!: ( subject: Subject ) => void;
 		const pending = new Promise<Subject>( ( resolve ) => {
 			resolveFetch = resolve;
@@ -326,7 +326,7 @@ describe( 'SubjectStore ordering guards', () => {
 	it( 'discards loadPageSubjects subject writes when a mutation lands mid-flight', async () => {
 		const onPage = new PageIdentifiers( 7, 'Page' );
 		const fromServer = newSubject( { id: 's11111111111111', label: 'from-server', pageIdentifiers: onPage } );
-		const updated = newSubject( { id: 's11111111111111', label: 'updated', pageIdentifiers: onPage } );
+		const updated = newSubject( { id: 's11111111111111', label: 'updated', pageIdentifiers: onPage, revisionId: 1 } );
 		let resolveLoad!: ( value: unknown ) => void;
 		const pending = new Promise( ( resolve ) => {
 			resolveLoad = resolve;
@@ -377,6 +377,102 @@ describe( 'SubjectStore ordering guards', () => {
 
 } );
 
+describe( 'SubjectStore base revision of an update', () => {
+
+	const id = new SubjectId( 's11111111111111' );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	function repositoryWritingRevisions( ...revisionIds: number[] ): { updateSubject: Mock; createOtherSubject: Mock } {
+		const written = ( revisionId: number ): Record<string, unknown> =>
+			writeResult( newSubject( { id: id.text, revisionId } ) );
+		const repository = {
+			updateSubject: vi.fn(),
+			createOtherSubject: vi.fn(),
+			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
+		};
+
+		for ( const revisionId of revisionIds ) {
+			repository.updateSubject.mockResolvedValueOnce( written( revisionId ) );
+			repository.createOtherSubject.mockResolvedValueOnce( written( revisionId ) );
+		}
+
+		withSubjectRepository( repository );
+
+		return repository;
+	}
+
+	function baseRevisionsSent( repository: { updateSubject: Mock } ): unknown[] {
+		return callsOf( repository, 'updateSubject' ).map( ( call ) => call.baseRevisionId );
+	}
+
+	it( 'bases the update on the revision the Subject was read from', async () => {
+		const repository = repositoryWritingRevisions( 42 );
+
+		await useSubjectStore().updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 41 ] );
+	} );
+
+	it( 'bases a later update on the revision the session\'s own write left the Subject at', async () => {
+		// An editor that saved part of its panes still holds what it wrote, read at the older revision.
+		const repository = repositoryWritingRevisions( 42, 43 );
+		const store = useSubjectStore();
+
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 42 ] );
+	} );
+
+	it( 'bases an update on a read newer than the session\'s own write', async () => {
+		const repository = repositoryWritingRevisions( 42, 46 );
+		const store = useSubjectStore();
+
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 45 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 45 ] );
+	} );
+
+	it( 'bases the update of a Subject the session created on the revision the create left it at', async () => {
+		setupMwMock( { config: { wgNeoWikiSubjectFirst: false } } );
+		const repository = repositoryWritingRevisions( 50 );
+		const store = useSubjectStore();
+
+		await store.createSubject( newSubject( { id: id.text } ), 7, [] );
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 1 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 50 ] );
+	} );
+
+	it( 'bases a later update on the revision of a write whose answer carried no page context', async () => {
+		const repository = repositoryWritingRevisions( 42 );
+		repository.updateSubject.mockReset().mockResolvedValue( { subjectId: id, subject: null, schema: null, revisionId: 42 } );
+		const store = useSubjectStore();
+
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 42 ] );
+	} );
+
+	it( 'refuses an update based on no revision, writing nothing', async () => {
+		const repository = repositoryWritingRevisions();
+
+		await expect( useSubjectStore().updateSubject( newSubject( { id: id.text } ), [] ) ).rejects.toThrow();
+		expect( repository.updateSubject ).not.toHaveBeenCalled();
+	} );
+
+} );
+
 describe( 'SubjectStore write results', () => {
 
 	const id = new SubjectId( 's11111111111111' );
@@ -397,7 +493,7 @@ describe( 'SubjectStore write results', () => {
 
 	it( 'records the Subject the update returned, not the one it was given', async () => {
 		// Only the server's copy carries whatever normalisation the write applied.
-		const sent = newSubject( { id: id.text, label: 'as typed' } );
+		const sent = newSubject( { id: id.text, label: 'as typed', revisionId: 1 } );
 		const canonical = newSubject( { id: id.text, label: 'as persisted' } );
 		withWritingRepository( {
 			updateSubject: vi.fn().mockResolvedValue( writeResult( canonical ) ),
@@ -416,7 +512,7 @@ describe( 'SubjectStore write results', () => {
 		} );
 		const subjectStore = useSubjectStore();
 
-		await subjectStore.updateSubject( newSubject( { id: id.text } ), [] );
+		await subjectStore.updateSubject( newSubject( { id: id.text, revisionId: 1 } ), [] );
 
 		expect( useSchemaStore().getSchema( 'Person' ) ).toStrictEqual( schema );
 	} );
@@ -438,7 +534,7 @@ describe( 'SubjectStore write results', () => {
 		const subjectStore = useSubjectStore();
 		const schemaStore = useSchemaStore();
 
-		const request = subjectStore.updateSubject( newSubject( { id: id.text } ), [] );
+		const request = subjectStore.updateSubject( newSubject( { id: id.text, revisionId: 1 } ), [] );
 		await schemaStore.saveSchema( savedElsewhere );
 		resolveUpdate( writeResult( newSubject( { id: id.text } ), bundled ) );
 		await request;
@@ -478,7 +574,7 @@ describe( 'SubjectStore write results', () => {
 		const store = useSubjectStore();
 		store.setSubject( seeded );
 
-		await store.updateSubject( newSubject( { id: id.text, label: 'as typed' } ), [] );
+		await store.updateSubject( newSubject( { id: id.text, label: 'as typed', revisionId: 1 } ), [] );
 
 		expect( store.getSubject( id ) ).toStrictEqual( seeded );
 	} );
@@ -709,7 +805,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 	const pageId = 7;
 	const otherPageId = 8;
 	const onPage = new PageIdentifiers( pageId, 'Pablo Picasso' );
-	const host = newSubject( { id: 's11111111111111', label: 'Pablo Picasso', pageIdentifiers: onPage } );
+	const host = newSubject( { id: 's11111111111111', label: 'Pablo Picasso', pageIdentifiers: onPage, revisionId: 1 } );
 	const birth = newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth', pageIdentifiers: onPage } );
 	const name = newSubject( { id: 's1nameAAAAAAAA1', label: null, schemaName: 'Name', pageIdentifiers: onPage } );
 

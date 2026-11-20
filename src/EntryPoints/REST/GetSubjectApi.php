@@ -121,6 +121,8 @@ class GetSubjectApi extends SimpleHandler {
 			return $this->getResponseFactory()->createJson( $presenter->getJsonArray() );
 		}
 
+		$presenter->setRevisionId( $revision->getId() );
+
 		return NeoWikiExtension::getInstance()->newGetSubjectQueryForRevision( $presenter, $revision, $this->getAuthority() );
 	}
 

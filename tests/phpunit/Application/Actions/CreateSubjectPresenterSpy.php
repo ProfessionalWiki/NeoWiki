@@ -22,7 +22,7 @@ class CreateSubjectPresenterSpy implements CreateSubjectPresenter {
 
 	public bool $validationFailed = false;
 
-	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
+	public function presentCreated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->result = $subject->id;
 		$this->subject = $subject;
 		$this->schema = $schema;

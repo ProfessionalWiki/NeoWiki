@@ -11,6 +11,7 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectAc
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\NewSubjectIdResolver;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
+use ProfessionalWiki\NeoWiki\Application\EditConflictCheck;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
@@ -59,6 +60,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 class ReplaceSubjectActionTest extends TestCase {
 
 	private const string SUBJECT_ID = TestHostingPages::SUBJECT_ID;
+	private const int PAGE_ID = 7;
+	private const string NEIGHBOUR_ID = 's11111111111129';
 	private const string SCHEMA_NAME = 'TestSchema';
 
 	private InMemorySubjectRepository $subjectRepository;
@@ -112,10 +115,146 @@ class ReplaceSubjectActionTest extends TestCase {
 				dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
 			),
 			dependentSubjectValidator: new DependentSubjectValidator( $proposedSubjectValidator ),
+			dependentSubjectRules: TestNaming::newDependentSubjectRules( $this->schemaLookup ),
+			editConflictCheck: new EditConflictCheck( $this->subjectRepository ),
 			responseItemFactory: TestNaming::newResponseItemFactory( $this->subjectRepository, $this->schemaLookup ),
 			presenter: $this->presenterSpy,
 			validationEnforced: $validationEnforced,
 		);
+	}
+
+	/**
+	 * Puts $subject on the page the Subject under test resolves to, beside what it holds already.
+	 */
+	private function storeSubject( Subject $subject ): void {
+		$pageSubjects = $this->subjectRepository->getSubjectsByPageId( new PageId( self::PAGE_ID ) );
+		$pageSubjects->putSubject( $subject );
+
+		$this->subjectRepository->savePageSubjects( $pageSubjects, new PageId( self::PAGE_ID ) );
+	}
+
+	private function currentRevision(): int {
+		return $this->subjectRepository->getLatestRevisionId( new PageId( self::PAGE_ID ) ) ?? 0;
+	}
+
+	private function storedLabel( string $subjectId = self::SUBJECT_ID ): ?string {
+		return $this->subjectRepository->getSubject( new SubjectId( $subjectId ) )?->getLabel()?->text;
+	}
+
+	public function testSubjectChangedSinceTheBaseRevisionIsLeftAsItIs(): void {
+		$base = $this->storeSubjectThenChangeIt();
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $base, 'Stale', [], null );
+
+		$this->assertSame( 'Changed elsewhere', $this->storedLabel() );
+	}
+
+	/**
+	 * @return int The revision before the change.
+	 */
+	private function storeSubjectThenChangeIt(): int {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+		$base = $this->currentRevision();
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Changed elsewhere' ) );
+
+		return $base;
+	}
+
+	public function testConflictPresentsTheSubjectAndTheRevisionItIsNowAt(): void {
+		$base = $this->storeSubjectThenChangeIt();
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $base, 'Stale', [], null );
+
+		$this->assertSame( 'Changed elsewhere', $this->presenterSpy->conflictingSubject?->label );
+		$this->assertSame( $this->currentRevision(), $this->presenterSpy->conflictRevisionId );
+	}
+
+	public function testAChangeToAnotherSubjectOfThePageSinceTheBaseRevisionIsKeptBesideTheWrite(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+		$base = $this->currentRevision();
+		$this->storeSubject( TestSubject::build( id: self::NEIGHBOUR_ID, label: 'Changed elsewhere' ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $base, 'Mine', [], null );
+
+		$this->assertSame( 'Mine', $this->storedLabel() );
+		$this->assertSame( 'Changed elsewhere', $this->storedLabel( self::NEIGHBOUR_ID ) );
+	}
+
+	public function testAChangeToADependentSubjectSinceTheBaseRevisionStopsTheWrite(): void {
+		$this->registerSchemaWithBirth();
+		$this->storeSubjectWithBirth( 'Base' );
+		$base = $this->currentRevision();
+		$this->storeSubject( $this->newBirth( 'Changed elsewhere' ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $base, 'Mine', [], null );
+
+		$this->assertSame( 'Pablo Picasso', $this->storedLabel() );
+	}
+
+	private function storeSubjectWithBirth( string $birthDate ): void {
+		$this->storeSubject( TestSubject::build(
+			id: self::SUBJECT_ID,
+			label: 'Pablo Picasso',
+			schemaName: new SchemaName( self::SCHEMA_NAME ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'Birth', [ TestRelation::build( targetId: self::BIRTH_ID ) ] ),
+			] )
+		) );
+		$this->storeSubject( $this->newBirth( $birthDate ) );
+	}
+
+	private function newBirth( string $date ): Subject {
+		return TestSubject::build(
+			id: self::BIRTH_ID,
+			label: null,
+			schemaName: new SchemaName( 'Birth' ),
+			statements: new StatementList( [ TestStatement::build( 'Date', $date ) ] )
+		);
+	}
+
+	public function testAnotherSubjectSavedDuringTheWriteIsKeptBesideIt(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+		$this->landASaveOfTheNeighbourBeforeTheNextUpdate( 'Saved meanwhile' );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Mine', [], null );
+
+		$this->assertSame( 'Mine', $this->storedLabel() );
+		$this->assertSame( 'Saved meanwhile', $this->storedLabel( self::NEIGHBOUR_ID ) );
+	}
+
+	public function testAPageThatKeepsChangingDuringTheWriteFailsIt(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+		$this->landASaveOfTheNeighbourBeforeTheNextUpdate( 'First' );
+		$this->landASaveOfTheNeighbourBeforeTheNextUpdate( 'Second' );
+		$this->landASaveOfTheNeighbourBeforeTheNextUpdate( 'Third' );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Mine', [], null );
+
+		$this->assertSame( 'Base', $this->storedLabel() );
+		$this->assertNotNull( $this->presenterSpy->saveFailure );
+	}
+
+	private function landASaveOfTheNeighbourBeforeTheNextUpdate( string $neighbourLabel ): void {
+		$this->subjectRepository->savesLandingBeforeUpdates[] = function () use ( $neighbourLabel ): void {
+			$this->storeSubject( TestSubject::build( id: self::NEIGHBOUR_ID, label: $neighbourLabel ) );
+		};
+	}
+
+	public function testPresentsTheRevisionTheWriteCreated(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Mine', [], null );
+
+		$this->assertSame( $this->currentRevision(), $this->presenterSpy->revisionId );
+	}
+
+	public function testAWriteThatChangesNothingPresentsTheRevisionThePageStaysAt(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Unchanged' ) );
+		$revision = $this->currentRevision();
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $revision, 'Unchanged', [], null );
+
+		$this->assertSame( $revision, $this->presenterSpy->revisionId );
 	}
 
 	/**
@@ -124,11 +263,12 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testAddingARelationTargetFromAnUnregisteredSourceIsSavedWithoutEnforcement(): void {
 		$this->registerSchemaWithRelation();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
 
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			$this->relationStatements( 'neverinstalled:Q42' ),
 			null
@@ -140,11 +280,12 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testAddingARelationTargetFromAnUnregisteredSourceIsRejectedUnderEnforcement(): void {
 		$this->registerSchemaWithRelation();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			$this->relationStatements( 'neverinstalled:Q42' ),
 			null
@@ -160,10 +301,11 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testAddingABareRelationTargetIsAcceptedUnderEnforcement(): void {
 		$this->registerSchemaWithRelation();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			$this->relationStatements( 's11111111111111' ),
 			null
@@ -178,7 +320,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testAPreExistingUnresolvableTargetDoesNotBlockAnUnrelatedEdit(): void {
 		$this->registerSchemaWithRelation();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
@@ -193,6 +335,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Renamed',
 			$this->relationStatements( 'neverinstalled:Q42' ),
 			null
@@ -268,9 +411,9 @@ class ReplaceSubjectActionTest extends TestCase {
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' )
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'New Label', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'New Label', [], null );
 
 		$this->assertSame(
 			'New Label',
@@ -280,10 +423,11 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testStatementsAreReplaced(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Founded at' => [ 'propertyType' => 'number', 'value' => 2019 ] ],
 			null
@@ -297,17 +441,18 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testOmittedStatementsAreDeleted(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$action = $this->newAction();
 		$action->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Keep' => [ 'propertyType' => 'text', 'value' => 'yes' ] ],
 			null
 		);
 
-		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$action->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$persisted = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
 
@@ -316,11 +461,12 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testEmptyStringValueDeletesTheStatement(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$action = $this->newAction();
 		$action->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Website' => [ 'propertyType' => 'url', 'value' => 'https://example.com' ] ],
 			null
@@ -328,6 +474,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$action->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Website' => [ 'propertyType' => 'url', 'value' => '' ] ],
 			null
@@ -345,7 +492,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testEchoingBackAnEmptyPartIsNotBlocked(): void {
 		$this->registerSchemaWithMultiValueWebsite();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 			statements: new StatementList( [
@@ -359,6 +506,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Website' => [ 'propertyType' => 'url', 'value' => [ '', 'not a url' ] ] ],
 			null
@@ -382,7 +530,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testClearingARequiredPropertyIsNotBlocked(): void {
 		$this->registerSchemaWithRequiredWebsite();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 			statements: new StatementList( [
@@ -392,6 +540,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Website' => [ 'propertyType' => 'url', 'value' => '' ] ],
 			null
@@ -435,55 +584,55 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testCommentIsForwarded(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], 'Edit summary' );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], 'Edit summary' );
 
 		$this->assertSame( 'Edit summary', $this->subjectRepository->comments[self::SUBJECT_ID] );
 	}
 
 	public function testAuthorizesAgainstTheSubjectsResolvedPage(): void {
 		$spy = new SpySubjectWriteAuthorizer( allowed: true );
-		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+		$this->storeSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
 
-		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$this->newAction( $spy )->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$this->assertEquals( new PageId( 7 ), $spy->authorizedPageId );
 	}
 
 	public function testUnauthorizedThrows(): void {
 		$subject = TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) );
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$action = $this->newAction( new SpySubjectWriteAuthorizer( allowed: false ) );
 
 		$this->expectException( SubjectEditNotAuthorizedException::class );
 
-		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$action->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 	}
 
 	public function testUnreadablePageAnswersNotFound(): void {
 		// The caller may edit the page but may not read it. Answering anything other than not-found
 		// would confirm the Subject exists, and hand out the page title and namespace with it.
-		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+		$this->storeSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
 
 		$action = $this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) );
 
 		$this->expectException( SubjectNotFoundException::class );
 		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
 
-		$action->replace( new SubjectId( self::SUBJECT_ID ), 'New Label', [], null );
+		$action->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'New Label', [], null );
 	}
 
 	public function testUnreadablePageIsRejectedBeforeTheWrite(): void {
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' ),
 		) );
 
 		try {
 			$this->newAction( readAuthorizer: new StubPageReadAuthorizer( allowed: false ) )
-				->replace( new SubjectId( self::SUBJECT_ID ), 'New Label', [], null );
+				->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'New Label', [], null );
 		} catch ( SubjectNotFoundException ) {
 		}
 
@@ -499,12 +648,12 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->expectException( SubjectNotFoundException::class );
 		$this->expectExceptionMessage( 'Subject not found: ' . self::SUBJECT_ID );
 
-		$action->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$action->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 	}
 
 	public function testAnOptionTheSchemaNoLongerHasDoesNotBlockSavingTheSubject(): void {
 		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 			statements: new StatementList( [
@@ -515,6 +664,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'New label',
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'opt_retired' ] ] ],
 			null
@@ -526,7 +676,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testANewValueThatIsNoOptionIdIsRefusedUnderEnforcementWhenOptionsAreAnError(): void {
 		$this->registerSchemaWithSelectWhoseOptionsAreAnError();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		) );
@@ -534,6 +684,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Label',
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => [ 'Approved' ] ] ],
 			null
@@ -554,10 +705,11 @@ class ReplaceSubjectActionTest extends TestCase {
 			label: new SubjectLabel( 'Before' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[],
 			null
@@ -571,7 +723,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testPresentsTheServerNormalizedSubject(): void {
 		$this->registerSchemaWithSelect();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
@@ -579,6 +731,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'New Label',
 			[ 'Status' => [ 'propertyType' => 'select', 'value' => 'opt_approved' ] ],
 			null
@@ -595,9 +748,9 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	public function testPresentsThePageIdentifiersOfTheHostingPage(): void {
-		$this->subjectRepository->updateSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
+		$this->storeSubject( TestSubject::build( id: new SubjectId( self::SUBJECT_ID ) ) );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$this->assertSame( 7, $this->presenterSpy->subject?->pageId );
 		$this->assertSame( 'Help:Test page', $this->presenterSpy->subject?->pageTitle );
@@ -606,24 +759,24 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testPresentsTheSchemaTheSubjectInstantiates(): void {
 		$this->registerSchemaWithSelect();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		) );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$this->assertSame( self::SCHEMA_NAME, $this->presenterSpy->schema?->getName()->getText() );
 	}
 
 	public function testPresentsNoSchemaWhenTheNamedSchemaDoesNotExist(): void {
 		$this->registerSchemaWithSelect();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( 'NonexistentSchema' ),
 		) );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$this->assertNull( $this->presenterSpy->schema );
 	}
@@ -634,10 +787,11 @@ class ReplaceSubjectActionTest extends TestCase {
 			label: new SubjectLabel( 'Orphan' ),
 			schemaName: new SchemaName( 'NonexistentSchema' ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction()->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Still Orphan',
 			[],
 			null
@@ -656,9 +810,9 @@ class ReplaceSubjectActionTest extends TestCase {
 			label: new SubjectLabel( 'Before' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'After', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'After', [], null );
 
 		$stored = $this->subjectRepository->getSubject( new SubjectId( self::SUBJECT_ID ) );
 		$this->assertSame( 'After', $stored->getLabel()->text );
@@ -703,13 +857,14 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testEnforcementOnPersistsStatementOfUnregisteredType(): void {
 		$this->registerSchemaWithNameAndUnregisteredSwatch();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		) );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[
 				'Name' => [ 'propertyType' => 'url', 'value' => 'https://pro.wiki' ],
@@ -731,13 +886,14 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testStatementOfUnregisteredTypeIsReportedAsANonBlockingViolation(): void {
 		$this->registerSchemaWithNameAndUnregisteredSwatch();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		) );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[ 'Swatch' => [ 'propertyType' => 'color', 'value' => [ '#ff5733' ] ] ],
 			null
@@ -759,10 +915,11 @@ class ReplaceSubjectActionTest extends TestCase {
 				TestStatement::build( property: 'Beta', value: new StringValue( 'opt_b' ), propertyType: 'select' ),
 			] ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction( validationEnforced: false )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[],
 			null
@@ -784,11 +941,12 @@ class ReplaceSubjectActionTest extends TestCase {
 				TestStatement::build( property: 'Beta', value: new StringValue( 'opt_b' ), propertyType: 'select' ),
 			] ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 		$updatesBeforeAction = $this->subjectRepository->updateSubjectCallCount;
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[],
 			null
@@ -805,10 +963,11 @@ class ReplaceSubjectActionTest extends TestCase {
 			label: new SubjectLabel( 'Old' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'New',
 			[],
 			null
@@ -827,10 +986,11 @@ class ReplaceSubjectActionTest extends TestCase {
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[ 'Alpha' => [ 'propertyType' => 'select', 'value' => 'opt_a' ] ],
 			null
@@ -846,10 +1006,11 @@ class ReplaceSubjectActionTest extends TestCase {
 			id: new SubjectId( self::SUBJECT_ID ),
 			schemaName: new SchemaName( 'NonexistentSchema' ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[],
 			null
@@ -883,10 +1044,11 @@ class ReplaceSubjectActionTest extends TestCase {
 				),
 			] ),
 		);
-		$this->subjectRepository->updateSubject( $subject );
+		$this->storeSubject( $subject );
 
 		$this->newAction( validationEnforced: true )->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'After',
 			[ 'Website' => [ 'propertyType' => 'url', 'value' => [ 'not-a-url', 'also-not-a-url' ] ] ],
 			null
@@ -900,13 +1062,13 @@ class ReplaceSubjectActionTest extends TestCase {
 	 */
 	public function testClearingTheLabelReportsTheNameAsGenerated(): void {
 		$this->registerSchemaWithSelect();
-		$this->subjectRepository->updateSubject( TestSubject::build(
+		$this->storeSubject( TestSubject::build(
 			id: new SubjectId( self::SUBJECT_ID ),
 			label: new SubjectLabel( 'Original Label' ),
 			schemaName: new SchemaName( self::SCHEMA_NAME ),
 		) );
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), null, [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), null, [], null );
 
 		$this->assertNull( $this->presenterSpy->subject?->label );
 		$this->assertTrue( $this->presenterSpy->subject?->displayNameIsGenerated );
@@ -934,6 +1096,7 @@ class ReplaceSubjectActionTest extends TestCase {
 	private function replaceWithBirth( ReplaceSubjectAction $action ): void {
 		$action->replace(
 			new SubjectId( self::SUBJECT_ID ),
+			$this->currentRevision(),
 			'Pablo Picasso',
 			[ 'Birth' => [ 'propertyType' => 'relation', 'value' => [ [ 'target' => self::BIRTH_ID ] ] ] ],
 			null,
@@ -943,7 +1106,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testWritesTheDependentSubjectsInTheSameWriteAsTheSubject(): void {
 		$this->registerSchemaWithBirth();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 
 		$this->replaceWithBirth( $this->newAction() );
 
@@ -952,7 +1115,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testARelationToADependentSubjectOfTheWriteIsNotReportedAsMissing(): void {
 		$this->registerSchemaWithBirth();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 
 		$this->replaceWithBirth( $this->newAction() );
 
@@ -961,7 +1124,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testABlockingViolationOfADependentSubjectBlocksTheWriteUnderEnforcement(): void {
 		$this->registerSchemaWithBirth( birthDateRequired: true );
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 
 		$this->replaceWithBirth( $this->newAction( validationEnforced: true ) );
 
@@ -971,7 +1134,7 @@ class ReplaceSubjectActionTest extends TestCase {
 
 	public function testPresentsAWriteTheRulesForDependentSubjectsRefuseAsAValidationFailure(): void {
 		$this->registerSchemaWithBirth();
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 		$refusal = new Violation( null, 'dependent-subject-has-label', severity: Severity::Error, subjectId: new SubjectId( self::BIRTH_ID ) );
 		$this->subjectRepository->refuseWritesWith = [ $refusal ];
 
@@ -982,10 +1145,10 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	public function testPresentsAWriteThatDidNotLand(): void {
-		$this->subjectRepository->updateSubject( $this->newSubjectWithRelationSchema() );
+		$this->storeSubject( $this->newSubjectWithRelationSchema() );
 		$this->subjectRepository->failNextSave = true;
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), 'Label', [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Label', [], null );
 
 		$this->assertSame( 'Page not found', $this->presenterSpy->saveFailure );
 	}
@@ -1006,7 +1169,7 @@ class ReplaceSubjectActionTest extends TestCase {
 			new PageId( 7 )
 		);
 
-		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), null, [], null );
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), null, [], null );
 
 		$this->assertSame( 'Pablo Picasso', $this->presenterSpy->subject?->hostSubject?->displayName );
 	}

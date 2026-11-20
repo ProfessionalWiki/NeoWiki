@@ -22,12 +22,15 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\ReplaceSubjectApi
  * @group Database
  */
 class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
+
+	use WritesOnTheCurrentRevision;
 
 	use HandlerTestTrait;
 	use NeoWikiMockAuthorityTrait;
@@ -51,6 +54,78 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'sTestSA11111111', $responseData['subjectId'] );
 		$this->assertArrayHasKey( 'violations', $responseData );
 		$this->assertSame( [], $responseData['violations'] );
+	}
+
+	public function testUpdatedResponseCarriesTheRevisionTheSubjectIsNowAt(): void {
+		$this->createPages();
+
+		$response = $this->executeHandler( $this->newReplaceSubjectApi(), $this->createValidRequestData() );
+
+		$this->assertSame(
+			$this->currentRevisionOf( 'sTestSA11111111' ),
+			json_decode( $response->getBody()->getContents(), true )['revisionId']
+		);
+	}
+
+	public function testABodyWithoutABaseRevisionIsRefused(): void {
+		$this->createPages();
+
+		$exception = $this->executeHandlerAndGetHttpException(
+			$this->newReplaceSubjectApi(),
+			new RequestData( [
+				'method' => 'PUT',
+				'pathParams' => [ 'subjectId' => 'sTestSA11111111' ],
+				'bodyContents' => json_encode( $this->validBody() ),
+				'headers' => [ 'Content-Type' => 'application/json' ],
+			] )
+		);
+
+		$this->assertSame( 400, $exception->getCode() );
+		$this->assertSame( 'Test subject sTestSA11111111', $this->getSubjectFromRepository( 'sTestSA11111111' )->getLabel()?->text );
+	}
+
+	public function testAStaleBaseRevisionAnswers409WithTheSubjectAsItIsNow(): void {
+		$this->createPages();
+		$base = $this->currentRevisionOf( 'sTestSA11111111' );
+		$this->changeSubjectsOfPage(
+			'ReplaceSubjectApiTest',
+			mainSubject: TestSubject::build( id: 'sTestSA11111111', label: new SubjectLabel( 'Changed elsewhere' ) )
+		);
+
+		$response = $this->executeHandler(
+			$this->newReplaceSubjectApi(),
+			$this->createRequestData( $this->validBody() + [ 'baseRevisionId' => $base ] )
+		);
+		$responseData = json_decode( $response->getBody()->getContents(), true );
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertSame( $this->currentRevisionOf( 'sTestSA11111111' ), $responseData['revisionId'] );
+		$this->assertSame( 'Changed elsewhere', $responseData['subject']['label'] );
+	}
+
+	/**
+	 * As on `GET ?latest=1`, a caller the wiki's revision policy keeps from the current revision does not see it.
+	 */
+	public function testAConflictLeavesOutTheSubjectTheRevisionPolicyHidesFromTheCaller(): void {
+		$this->createPages();
+		$base = $this->currentRevisionOf( 'sTestSA11111111' );
+		$this->changeSubjectsOfPage(
+			'ReplaceSubjectApiTest',
+			mainSubject: TestSubject::build( id: 'sTestSA11111111', label: new SubjectLabel( 'Changed in a draft' ) )
+		);
+		$this->registerRevisionPolicy( FixedRevisionPolicy::hidingEveryRevision() );
+
+		try {
+			$response = $this->executeHandler(
+				$this->newReplaceSubjectApi(),
+				$this->createRequestData( $this->validBody() + [ 'baseRevisionId' => $base ] )
+			);
+		} finally {
+			NeoWikiExtension::resetInstance();
+		}
+
+		$this->assertSame( 409, $response->getStatusCode() );
+		$this->assertArrayNotHasKey( 'subject', json_decode( $response->getBody()->getContents(), true ) );
 	}
 
 	/**
@@ -138,10 +213,10 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sTestSA11111166' ],
-				'bodyContents' => json_encode( [
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sTestSA11111166', [
 					'label' => 'Still orphaned',
 					'statements' => [],
-				] ),
+				] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -197,10 +272,10 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sTestSA11111122' ],
-				'bodyContents' => json_encode( [
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sTestSA11111122', [
 					'label' => 'Still missing Status',
 					'statements' => [],
-				] ),
+				] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -343,10 +418,10 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sTestSA11111133' ],
-				'bodyContents' => json_encode( [
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sTestSA11111133', [
 					'label' => 'Still missing both',
 					'statements' => [],
-				] ),
+				] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -390,10 +465,10 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sTestSA11111155' ],
-				'bodyContents' => json_encode( [
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sTestSA11111155', [
 					'label' => 'Still orphaned',
 					'statements' => [],
-				] ),
+				] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -416,7 +491,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sDoesNotExist99' ],
-				'bodyContents' => json_encode( $body ),
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sDoesNotExist99', $body ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -618,10 +693,10 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			new RequestData( [
 				'method' => 'PUT',
 				'pathParams' => [ 'subjectId' => 'sTestSA11111144' ],
-				'bodyContents' => json_encode( [
+				'bodyContents' => json_encode( $this->onTheCurrentRevision( 'sTestSA11111144', [
 					'label' => 'After',
 					'statements' => [],
-				] ),
+				] ) ),
 				'headers' => [ 'Content-Type' => 'application/json' ],
 			] )
 		);
@@ -763,7 +838,7 @@ class ReplaceSubjectApiTest extends NeoWikiIntegrationTestCase {
 			'pathParams' => [
 				'subjectId' => $subjectId,
 			],
-			'bodyContents' => json_encode( $body ),
+			'bodyContents' => json_encode( $this->onTheCurrentRevision( $subjectId, $body ) ),
 			'headers' => [
 				'Content-Type' => 'application/json',
 			],

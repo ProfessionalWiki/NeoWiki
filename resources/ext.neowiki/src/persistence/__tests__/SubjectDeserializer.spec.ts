@@ -38,6 +38,7 @@ describe( 'SubjectDeserializer', () => {
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 			null,
 			undefined,
+			null,
 		) );
 	} );
 
@@ -215,6 +216,7 @@ describe( 'SubjectDeserializer', () => {
 			new PageIdentifiers( 42, 'SDPageTitle' ),
 			null,
 			undefined,
+			null,
 		) );
 	} );
 

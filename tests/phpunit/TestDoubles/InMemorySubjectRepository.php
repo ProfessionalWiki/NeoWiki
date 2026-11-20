@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\TestDoubles;
 
+use Closure;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -99,25 +100,87 @@ class InMemorySubjectRepository implements SubjectRepository {
 		return $found;
 	}
 
+	/**
+	 * @var array<int, array{int, PageSubjects}> Revision id → the id of its page and the Subjects it holds.
+	 */
+	private array $revisions = [];
+
+	/**
+	 * @var array<int, int> Page id → the id of its latest revision.
+	 */
+	private array $latestRevisionIds = [];
+
+	private int $nextRevisionId = 1001;
+
+	/**
+	 * Each runs as one updateSubject starts, in order: a save landing between the caller's read and its write.
+	 *
+	 * @var Closure[]
+	 */
+	public array $savesLandingBeforeUpdates = [];
+
 	public function updateSubject(
 		Subject $subject,
-		?string $comment = null,
-		SubjectMap $dependentSubjects = new SubjectMap()
+		int $parentRevisionId,
+		?string $comment,
+		SubjectMap $dependentSubjects
 	): PageContentSavingStatus {
+		$this->landTheSaveAskedFor();
 		$this->refuseIfAsked();
 
 		if ( $this->failNextSave ) {
 			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Page not found' );
 		}
 
+		[ $pageId, $parentSubjects ] = $this->revisions[$parentRevisionId] ?? [ null, null ];
+
+		if ( $pageId === null || !$parentSubjects->getAllSubjects()->hasSubject( $subject->id ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::ERROR, 'Subject not found' );
+		}
+
+		if ( $this->latestRevisionIds[$pageId] !== $parentRevisionId ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::CONFLICT );
+		}
+
+		$pageSubjects = self::deepCopyOf( $parentSubjects );
+
 		foreach ( $dependentSubjects->prepend( $subject )->asArray() as $writtenSubject ) {
-			$this->subjects[$writtenSubject->id->text] = $writtenSubject;
+			$pageSubjects->putSubject( $writtenSubject );
+		}
+
+		if ( $pageSubjects->getAllSubjects()->hasSameContentAs( $parentSubjects->getAllSubjects() ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
 		$this->comments[$subject->id->text] = $comment;
 		$this->updateSubjectCallCount++;
 
-		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
+		return $this->store( $pageSubjects, new PageId( $pageId ), $comment );
+	}
+
+	private function landTheSaveAskedFor(): void {
+		$save = array_shift( $this->savesLandingBeforeUpdates );
+
+		if ( $save !== null ) {
+			$save();
+		}
+	}
+
+	public function getLatestRevisionId( PageId $pageId ): ?int {
+		return $this->latestRevisionIds[$pageId->id] ?? null;
+	}
+
+	public function getSubjectsAtRevision( PageId $pageId, int $revisionId ): ?PageSubjects {
+		[ $revisionPageId, $pageSubjects ] = $this->revisions[$revisionId] ?? [ null, null ];
+
+		return $revisionPageId === $pageId->id ? self::deepCopyOf( $pageSubjects ) : null;
+	}
+
+	/**
+	 * A revision keeps what it was saved with, whatever a caller does to the Subjects it read from it.
+	 */
+	private static function deepCopyOf( PageSubjects $pageSubjects ): PageSubjects {
+		return $pageSubjects->withEachSubject( static fn ( Subject $subject ): Subject => clone $subject );
 	}
 
 	/**
@@ -164,7 +227,7 @@ class InMemorySubjectRepository implements SubjectRepository {
 	/**
 	 * Decouples which Subjects a page holds, which is what a caller that adds or removes them
 	 * changes. The Subject objects themselves are shared, not copied: Subject is mutable, so a
-	 * caller that edits one in place - as ReplaceSubjectAction does - still edits the stored one.
+	 * caller that edits one in place still edits the stored one.
 	 */
 	private static function copyOf( PageSubjects $pageSubjects ): PageSubjects {
 		return new PageSubjects( $pageSubjects->getMainSubject(), clone $pageSubjects->getOtherSubjects() );
@@ -185,9 +248,9 @@ class InMemorySubjectRepository implements SubjectRepository {
 
 		$pageId = new PageId( $this->nextCreatedPageId++ );
 
-		$this->savePageSubjects( $pageSubjects, $pageId, $comment );
+		$saved = $this->savePageSubjects( $pageSubjects, $pageId, $comment );
 
-		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED, pageId: $pageId );
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED, pageId: $pageId, revisionId: $saved->revisionId );
 	}
 
 	public function savePageSubjects( PageSubjects $pageSubjects, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
@@ -220,7 +283,11 @@ class InMemorySubjectRepository implements SubjectRepository {
 			$this->subjects[$subject->getId()->text] = $subject;
 		}
 
-		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED );
+		$revisionId = $this->nextRevisionId++;
+		$this->revisions[$revisionId] = [ $pageId->id, self::deepCopyOf( $pageSubjects ) ];
+		$this->latestRevisionIds[$pageId->id] = $revisionId;
+
+		return new PageContentSavingStatus( PageContentSavingStatus::REVISION_CREATED, revisionId: $revisionId );
 	}
 
 }
