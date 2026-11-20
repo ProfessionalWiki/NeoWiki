@@ -59,6 +59,20 @@ describe( 'parseViolations', () => {
 		} ) ).toBeNull();
 	} );
 
+	it( 'carries whether the edit introduces a violation', () => {
+		const result = parseViolations( {
+			violations: [ { propertyName: 'Homepage', code: 'invalid-url', args: [], severity: 'error', introduced: false } ],
+		} );
+
+		expect( result?.[ 0 ].introduced ).toBe( false );
+	} );
+
+	it( 'returns null for a body saying whether a violation is introduced other than by a boolean', () => {
+		expect( parseViolations( {
+			violations: [ { propertyName: 'Homepage', code: 'invalid-url', args: [], introduced: 'yes' } ],
+		} ) ).toBeNull();
+	} );
+
 	it( 'returns null for a malformed body', () => {
 		expect( parseViolations( { violations: [ { code: 123 } ] } ) ).toBeNull();
 	} );

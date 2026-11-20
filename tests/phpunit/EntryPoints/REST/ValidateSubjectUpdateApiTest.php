@@ -8,11 +8,14 @@ use MediaWiki\Rest\RequestData;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectNotFoundException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
+use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
+use ProfessionalWiki\NeoWiki\Domain\Value\NumberValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ValidateSubjectUpdateApi;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
@@ -102,6 +105,53 @@ class ValidateSubjectUpdateApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 200, $response->getStatusCode() );
 		$this->assertCount( 1, $responseBody['violations'] );
 		$this->assertSame( 'max-value', $responseBody['violations'][0]['code'] );
+	}
+
+	public function testEachViolationSaysWhetherTheUpdateIntroducedIt(): void {
+		$this->createCompany( founded: 2025, employees: 50 );
+
+		$violations = $this->violationsOfUpdatingCompany( founded: 2030, employees: 200 );
+
+		$this->assertSame(
+			[ 'Founded at' => false, 'Employees' => true ],
+			array_column( $violations, 'introduced', 'propertyName' )
+		);
+	}
+
+	private function createCompany( int $founded, int $employees ): void {
+		$this->createSchema(
+			TestSubject::DEFAULT_SCHEMA_ID,
+			'{"title":"' . TestSubject::DEFAULT_SCHEMA_ID . '","propertyDefinitions":{'
+				. '"Founded at":{"type":"number","maximum":2000},"Employees":{"type":"number","maximum":100}}}'
+		);
+		$this->createPageWithSubjects(
+			'ValidateSubjectUpdateApiIntroducedTest',
+			mainSubject: TestSubject::build(
+				id: 'sTestSU11111111',
+				statements: new StatementList( [
+					TestStatement::build( property: 'Founded at', value: new NumberValue( $founded ), propertyType: 'number' ),
+					TestStatement::build( property: 'Employees', value: new NumberValue( $employees ), propertyType: 'number' ),
+				] ),
+			)
+		);
+	}
+
+	/**
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function violationsOfUpdatingCompany( int $founded, int $employees ): array {
+		$body = $this->validBody();
+		$body['statements'] = [
+			'Founded at' => [ 'propertyType' => 'number', 'value' => $founded ],
+			'Employees' => [ 'propertyType' => 'number', 'value' => $employees ],
+		];
+
+		$response = $this->executeHandler(
+			$this->newValidateSubjectUpdateApi(),
+			$this->createRequestData( 'sTestSU11111111', $body )
+		);
+
+		return json_decode( $response->getBody()->getContents(), true )['violations'];
 	}
 
 	public function testNonExistentSubjectReturns404(): void {

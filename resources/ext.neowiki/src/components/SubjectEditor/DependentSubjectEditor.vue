@@ -66,6 +66,8 @@ export interface DependentSubjectEditorExposes {
 	/** Those inside it, as their fields hold them, each followed by those inside it. */
 	dependentSubjects(): Subject[];
 	saveBlocker(): SaveBlocker | null;
+	/** Whether a violation it shows, or one a Dependent Subject inside it shows, would make the wiki refuse the save. */
+	violationsBlockSaving(): boolean;
 	focus(): void;
 }
 </script>
@@ -92,6 +94,7 @@ import {
 } from '@/domain/SubjectViolation.ts';
 import { DependentSubjectEditingKey, DependentSubjectViolationsKey } from '@/components/SubjectEditor/DependentSubjectEditing.ts';
 import { focusFirstValueControl } from '@/components/common/valueControlFocus.ts';
+import { anyBlocksSaving } from '@/components/SubjectEditor/anyBlocksSaving.ts';
 
 const props = defineProps<{
 	/** Undefined for a Dependent Subject that did not load, which can only be removed. */
@@ -217,13 +220,17 @@ function saveBlocker(): SaveBlocker | null {
 	return subjectEditorRef.value?.saveBlocker() ?? null;
 }
 
+function violationsBlockSaving(): boolean {
+	return anyBlocksSaving( violations.value ) || ( subjectEditorRef.value?.violationsBlockSaving() ?? false );
+}
+
 function focus(): void {
 	if ( root.value !== null ) {
 		focusFirstValueControl( root.value );
 	}
 }
 
-defineExpose<DependentSubjectEditorExposes>( { buildSubject, dependentSubjects, saveBlocker, focus } );
+defineExpose<DependentSubjectEditorExposes>( { buildSubject, dependentSubjects, saveBlocker, violationsBlockSaving, focus } );
 </script>
 
 <style lang="less">

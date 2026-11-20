@@ -10,7 +10,7 @@ use ProfessionalWiki\NeoWiki\Application\SubjectHostingPageResolver;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
-use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
+use ProfessionalWiki\NeoWiki\Domain\Validation\ViolationDiff;
 
 readonly class ValidateSubjectUpdateQuery {
 
@@ -26,13 +26,11 @@ readonly class ValidateSubjectUpdateQuery {
 	/**
 	 * @param array<string, mixed> $statements
 	 *
-	 * @return Violation[]
-	 *
 	 * @throws \InvalidArgumentException when the subject id format is invalid, or a value does not fit its
 	 *  property type.
 	 * @throws SubjectNotFoundException when the subject does not exist or the caller may not read its page.
 	 */
-	public function validate( string $subjectId, array $statements ): array {
+	public function validate( string $subjectId, array $statements ): SubjectUpdateViolations {
 		$id = $this->subjectIdParser->parseOrThrow( $subjectId );
 
 		if ( $this->hostingPageResolver->resolveReadableHostingPage( $id ) === null ) {
@@ -45,8 +43,16 @@ readonly class ValidateSubjectUpdateQuery {
 			throw SubjectNotFoundException::forId( $id );
 		}
 
-		return $this->proposedSubjectValidator->validate(
+		$violations = $this->proposedSubjectValidator->validate(
 			$subject->withStatements( $this->statementListBuilder->build( $statements ) )
+		);
+
+		return new SubjectUpdateViolations(
+			all: $violations,
+			// Spares a valid proposal, the common case, a second validation run on every dry-run.
+			introduced: $violations === [] ?
+				[] :
+				ViolationDiff::newViolations( $violations, $this->proposedSubjectValidator->validate( $subject ) ),
 		);
 	}
 
