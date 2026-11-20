@@ -7,8 +7,11 @@ namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki\Subject;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
+use ProfessionalWiki\NeoWiki\Application\RevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageIdentifiers;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectId;
@@ -30,12 +33,22 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 		RevisionRecord $primaryRevision,
 		InMemoryPageIdentifiersLookup $pageIdentifiersLookup = new InMemoryPageIdentifiersLookup(),
 	): PointInTimeSubjectLookup {
+		return $this->newLookupWithPolicy( $primaryRevision, $pageIdentifiersLookup, new NullRevisionPolicy() );
+	}
+
+	private function newLookupWithPolicy(
+		RevisionRecord $primaryRevision,
+		InMemoryPageIdentifiersLookup $pageIdentifiersLookup,
+		RevisionPolicy $revisionPolicy
+	): PointInTimeSubjectLookup {
 		$services = MediaWikiServices::getInstance();
 		return new PointInTimeSubjectLookup(
 			revisionLookup: $services->getRevisionLookup(),
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			connectionProvider: $services->getDBLoadBalancerFactory(),
 			primaryRevision: $primaryRevision,
+			revisionPolicy: $revisionPolicy,
+			viewer: $this->createStub( Authority::class ),
 		);
 	}
 
@@ -303,6 +316,34 @@ class PointInTimeSubjectLookupTest extends NeoWikiIntegrationTestCase {
 
 		$this->assertTrue( $subjects->isEmpty() );
 		$this->assertSame( 0, $pageIdentifiersLookup->getPageIdsOfSubjectsCallCount );
+	}
+
+	public function testAsksTheRevisionPolicyAboutAnotherPageOnceWithinOneRead(): void {
+		$target = TestSubject::build( id: 'sPitAsk11111111' );
+		$targetRevision = $this->createPageWithSubjects( 'PitTestAskTarget', mainSubject: $target );
+		$primaryRevision = $this->createPageWithSubjects(
+			'PitTestAskPrimary',
+			mainSubject: TestSubject::build( id: 'sPitAsk11111112' ),
+		);
+
+		$pageIdentifiersLookup = new InMemoryPageIdentifiersLookup();
+		$this->registerHostingPage( $pageIdentifiersLookup, $target->id, $targetRevision, 'PitTestAskTarget' );
+
+		$policy = new class extends NullRevisionPolicy {
+			/** @var int[] */
+			public array $pagesAskedAbout = [];
+
+			public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool {
+				$this->pagesAskedAbout[] = $revision->getPageId();
+				return true;
+			}
+		};
+
+		$lookup = $this->newLookupWithPolicy( $primaryRevision, $pageIdentifiersLookup, $policy );
+		$lookup->getSubjects( new SubjectIdList( [ $target->id ] ) );
+		$lookup->getPageSubjects( new PageId( $targetRevision->getPageId() ) );
+
+		$this->assertSame( [ $targetRevision->getPageId() ], $policy->pagesAskedAbout );
 	}
 
 }

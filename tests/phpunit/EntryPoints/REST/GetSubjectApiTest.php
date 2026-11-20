@@ -338,6 +338,18 @@ JSON,
 		);
 	}
 
+	private function newSubjectReferencing( string $id, string $targetId ): Subject {
+		return TestSubject::build(
+			id: $id,
+			schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
+			statements: new StatementList( [
+				TestStatement::buildRelation( 'MyRelation', [
+					TestRelation::build( targetId: $targetId ),
+				] ),
+			] )
+		);
+	}
+
 	public function testDefaultReadServesTheRevisionThePolicyPublishes(): void {
 		$published = $this->createPageWithSubjects(
 			'GetSubjectApiTest_Published',
@@ -404,15 +416,7 @@ JSON,
 
 		$this->createPageWithSubjects(
 			'GetSubjectApiTest_RelationSource',
-			mainSubject: TestSubject::build(
-				id: 'sTestGSA1111257',
-				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGSA1111rr8', targetId: 'sTestGSA1111256' ),
-					] ),
-				] )
-			)
+			mainSubject: $this->newSubjectReferencing( 'sTestGSA1111257', 'sTestGSA1111256' )
 		);
 
 		$response = $this->runWithRevisionPolicy(
@@ -421,6 +425,31 @@ JSON,
 		);
 
 		$this->assertSame( 'published target', $this->labelOf( $response, 'sTestGSA1111256' ) );
+	}
+
+	public function testRevisionReadOmitsAReferencedSubjectWhoseRevisionThePolicyHides(): void {
+		$hiddenDraft = $this->createPageWithSubjects(
+			'GetSubjectApiTest_HiddenDraftTarget',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111281' )
+		);
+
+		$sourceRevision = $this->createPageWithSubjects(
+			'GetSubjectApiTest_RevisionReadSource',
+			mainSubject: $this->newSubjectReferencing( 'sTestGSA1111282', 'sTestGSA1111281' )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::hidingRevision( $hiddenDraft ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111282', [
+				'revisionId' => (string)$sourceRevision->getId(),
+				'expand' => 'relations',
+			] )
+		);
+
+		$subjects = json_decode( $response->getBody()->getContents(), true )['subjects'];
+
+		$this->assertArrayHasKey( 'sTestGSA1111282', $subjects );
+		$this->assertArrayNotHasKey( 'sTestGSA1111281', $subjects );
 	}
 
 	/**
@@ -720,15 +749,7 @@ JSON,
 
 		$this->createPageWithSubjects(
 			'GetSubjectApiTest_VisibleSource',
-			mainSubject: TestSubject::build(
-				id: 'sTestGSA1111247',
-				schemaName: new SchemaName( 'GetSubjectApiTestSchema' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGSA1111rr9', targetId: 'sTestGSA1111246' ),
-					] ),
-				] )
-			)
+			mainSubject: $this->newSubjectReferencing( 'sTestGSA1111247', 'sTestGSA1111246' )
 		);
 
 		$denyTargetPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>

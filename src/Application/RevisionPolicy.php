@@ -29,8 +29,9 @@ interface RevisionPolicy {
 	public function publishedRevision( RevisionRecord $revision ): ?RevisionRecord;
 
 	/**
-	 * Whether the viewer may read a revision they asked for by id. publishedRevision() cannot answer
-	 * this: naming a revision bypasses it.
+	 * Whether the viewer may read a revision they asked for by id, or a revision of another page that
+	 * a read at such a revision takes Subjects from. publishedRevision() cannot answer this: these
+	 * reads bypass it.
 	 */
 	public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool;
 
