@@ -6,69 +6,65 @@
 			class="ext-neowiki-property-list"
 			@keydown="onKeydown"
 		>
-			<li
-				role="option"
+			<EditorListItem
 				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--schema"
 				v-bind="rowState( SCHEMA_POSITION )"
 				@click="selectAndFocus( SCHEMA_POSITION )"
 			>
-				<CdxIcon
-					class="ext-neowiki-property-list__item__icon"
-					:icon="cdxIconSettings"
-				/>
-				<span class="ext-neowiki-property-list__item__text">
-					<span class="ext-neowiki-property-list__item__text__label">
-						{{ $i18n( 'neowiki-schema-editor-schema' ).text() }}
-					</span>
-				</span>
-			</li>
-			<li
+				<template #icon>
+					<CdxIcon
+						class="ext-neowiki-property-list__item__icon"
+						:icon="cdxIconSettings"
+					/>
+				</template>
+				{{ $i18n( 'neowiki-schema-editor-schema' ).text() }}
+			</EditorListItem>
+			<EditorListItem
 				v-if="props.showsLabelRow"
-				role="option"
-				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--subject-label"
+				class="ext-neowiki-property-list__item"
 				v-bind="rowState( LABEL_POSITION )"
 				@click="selectAndFocus( LABEL_POSITION )"
 			>
-				<CdxIcon
-					class="ext-neowiki-property-list__item__icon"
-					:icon="cdxIconTag"
-				/>
-				<span class="ext-neowiki-property-list__item__text">
-					<span class="ext-neowiki-property-list__item__text__label">
-						{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
-					</span>
-					<span class="ext-neowiki-property-list__item__text__description">
+				<template #icon>
+					<CdxIcon
+						class="ext-neowiki-property-list__item__icon"
+						:icon="cdxIconTag"
+					/>
+				</template>
+				{{ $i18n( 'neowiki-schema-editor-subject-label' ).text() }}
+				<template #description>
+					<span class="ext-neowiki-property-list__item__description">
 						{{ describeType( TextType.typeName, false ) }}
 					</span>
-				</span>
-			</li>
-			<li
+				</template>
+			</EditorListItem>
+			<EditorListItem
 				v-for="( property, index ) in propertyArray"
 				:key="property.name.toString()"
-				role="option"
 				class="ext-neowiki-property-list__item ext-neowiki-property-list__item--property"
 				v-bind="rowState( propertyPosition( index ) )"
 				@click="selectAndFocus( propertyPosition( index ) )"
 			>
-				<CdxIcon
+				<template
 					v-if="getPropertyIcon( property )"
-					class="ext-neowiki-property-list__item__icon"
-					:icon="getPropertyIcon( property )!"
-				/>
-				<span class="ext-neowiki-property-list__item__text">
-					<span class="ext-neowiki-property-list__item__text__label">
-						{{ property.name.toString() }}
-					</span>
-					<span
-						v-if="describeType( property.type, property.required )"
-						class="ext-neowiki-property-list__item__text__description"
-					>
+					#icon
+				>
+					<CdxIcon
+						class="ext-neowiki-property-list__item__icon"
+						:icon="getPropertyIcon( property )!"
+					/>
+				</template>
+				{{ property.name.toString() }}
+				<template
+					v-if="describeType( property.type, property.required )"
+					#description
+				>
+					<span class="ext-neowiki-property-list__item__description">
 						{{ describeType( property.type, property.required ) }}
 					</span>
-				</span>
-				<span class="ext-neowiki-property-list__item__actions">
+				</template>
+				<template #actions>
 					<CdxButton
-						class="ext-neowiki-property-list__item__actions__delete"
 						:aria-label="$i18n( 'neowiki-schema-editor-delete-property' ).text()"
 						weight="quiet"
 						action="destructive"
@@ -82,8 +78,8 @@
 						:label="reorderHandleLabel( property.name.toString() )"
 						@move="moveProperty( index, $event )"
 					/>
-				</span>
-			</li>
+				</template>
+			</EditorListItem>
 		</ul>
 		<button
 			class="ext-neowiki-property-list__add-item"
@@ -96,10 +92,8 @@
 				class="ext-neowiki-property-list__item__icon"
 				:icon="cdxIconAdd"
 			/>
-			<span class="ext-neowiki-property-list__item__text">
-				<span class="ext-neowiki-property-list__item__text__label">
-					{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
-				</span>
+			<span class="ext-neowiki-property-list__add-item__label">
+				{{ $i18n( 'neowiki-schema-editor-new-property' ).text() }}
 			</span>
 		</button>
 		<LiveAnnouncement ref="announcementRef" />
@@ -118,14 +112,22 @@ import { useSortable } from '@/composables/useSortable.ts';
 import ReorderHandle from '@/components/common/ReorderHandle.vue';
 import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
 import { movedAnnouncement, reorderHandleLabel, withItemMoved } from '@/components/common/reordering.ts';
+import EditorListItem from '@/components/common/EditorListItem.vue';
+import type { ItemStatus } from '@/components/common/ItemStatus.ts';
 import type { Icon } from '@wikimedia/codex-icons';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 
-const props = defineProps<{
+type RowStatus = ( row: PropertyListRow ) => ItemStatus | null;
+
+const props = withDefaults( defineProps<{
 	properties: PropertyDefinitionList;
 	selection: PropertyListRow;
 	showsLabelRow: boolean;
-}>();
+	/** The mark on each row: a problem the row's pane shows, for one. */
+	statusOf?: RowStatus;
+}>(), {
+	statusOf: () => null
+} );
 
 const emit = defineEmits<{
 	select: [ row: PropertyListRow ];
@@ -178,12 +180,12 @@ const selectedPosition = computed( (): number => {
 } );
 
 // The selected row is the list's Tab stop, except alone: it has no other row to move to, so Tab passes the list.
-function rowState( position: number ): { class: Record<string, boolean>; 'aria-selected': boolean; tabindex: number } {
+function rowState( position: number ): { selected: boolean; status: ItemStatus | null; tabindex: number } {
 	const selected = position === selectedPosition.value;
 
 	return {
-		class: { 'ext-neowiki-property-list__item--selected': selected },
-		'aria-selected': selected,
+		selected,
+		status: props.statusOf( rowAt( position ) ),
 		tabindex: selected && lastPosition.value > SCHEMA_POSITION ? 0 : -1
 	};
 }
@@ -269,140 +271,76 @@ useSortable( listRef, {
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
+/* useSortable's default ghost class, so for every list that keeps it, extensions' lists among them. */
+.ext-neowiki-property-list__item--ghost {
+	opacity: 0.5;
+	background-color: @background-color-interactive-subtle;
+}
+
 .ext-neowiki-property-list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
 
-	&__item {
-		display: flex;
-		align-items: center;
-		gap: @spacing-50;
-		padding: @spacing-50 @spacing-75;
-		border-radius: @border-radius-base;
-		cursor: grab;
+	/* Compounded to outrank the shared row's own rules, whichever stylesheet loads first. */
+	& > &__item {
 		user-select: none;
-		position: relative;
-		overflow: hidden;
+	}
 
-		&:hover {
-			background-color: @background-color-interactive-subtle;
-		}
+	& > &__item--property {
+		cursor: grab;
+	}
 
-		&--selected {
-			background-color: @background-color-progressive-subtle;
-		}
+	/* Set apart from the rows of what the Schema's Subjects hold by a rule in the gap below it, inset as the rows'
+		content is, and in a grey lighter than lines that divide the dialog. Drawn outside the row, which has no
+		actions to clip. */
+	& > &__item--schema {
+		overflow: visible;
+		margin-block-end: @spacing-50;
 
-		&--schema,
-		&--subject-label {
-			cursor: pointer;
-		}
-
-		/* Set apart from the rows of what the Schema's Subjects hold by a rule in the gap below it, inset as the rows'
-			content is, and in a grey lighter than lines that divide the dialog. Drawn outside the row, which has no
-			actions to clip. */
-		&--schema {
-			overflow: visible;
-			margin-block-end: @spacing-50;
-
-			&::after {
-				content: '';
-				position: absolute;
-				inset-block-start: calc( 100% + @spacing-25 );
-				inset-inline: @spacing-75;
-				border-block-start: @border-width-base @border-style-base @border-color-muted;
-			}
-		}
-
-		&--ghost {
-			opacity: 0.5;
-			background-color: @background-color-interactive-subtle;
-		}
-
-		/* A row's open menu reaches past it, over the rows below. */
-		&:has( [ aria-expanded='true' ] ) {
-			overflow: visible;
-		}
-
-		&__icon.cdx-icon {
-			background-position: @background-position-base;
-			background-repeat: no-repeat;
-			background-size: @background-size-search-figure;
-			background-color: @background-color-interactive-subtle;
-			flex-shrink: 0;
-			box-sizing: @box-sizing-base;
-			min-width: @min-size-search-figure;
-			min-height: @min-size-search-figure;
-			width: @size-search-figure;
-			height: @size-search-figure;
-			border: @border-subtle;
-			border-radius: @border-radius-base;
-			color: @color-subtle;
-
-			svg {
-				min-width: @min-size-icon-medium;
-				min-height: @min-size-icon-medium;
-				width: @size-icon-medium;
-				height: @size-icon-medium;
-			}
-		}
-
-		&__text {
-			flex-grow: 1;
-			min-width: 0;
-
-			&__label {
-				display: block;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-
-			&__description {
-				display: block;
-				font-size: @font-size-small;
-				color: @color-subtle;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-		}
-
-		&__actions {
+		&::after {
+			content: '';
 			position: absolute;
-			inset-inline-end: 0;
-			top: 0;
-			bottom: 0;
-			display: flex;
-			align-items: center;
-			gap: @spacing-25;
-			padding-inline: @spacing-100 @spacing-50;
-			background: linear-gradient( to right, transparent, @background-color-base 40% );
-			opacity: 0;
-			transform: translateX( @spacing-75 );
-			transition: opacity @transition-duration-medium @transition-timing-function-system, transform @transition-duration-medium @transition-timing-function-system;
-
-			.ext-neowiki-property-list__item:hover &,
-			.ext-neowiki-property-list__item--selected &,
-			.ext-neowiki-property-list__item:has( [ aria-expanded='true' ] ) &,
-			.ext-neowiki-property-list__item:has( :focus-visible ) & {
-				// :has( :focus-visible ) rather than :focus-within: keyboard tabbing must reveal the
-				// action controls, but a mouse click also focuses the button it hits and would keep the
-				// cluster pinned visible after the pointer leaves.
-				opacity: 1;
-				// None rather than translateX( 0 ): any transform makes a stacking context, which would keep an
-				// open menu in it under the rows below.
-				transform: none;
-			}
-
-			.ext-neowiki-property-list__item:hover & {
-				background: linear-gradient( to right, transparent, @background-color-interactive-subtle 40% );
-			}
-
-			.ext-neowiki-property-list__item--selected & {
-				background: linear-gradient( to right, transparent, @background-color-progressive-subtle 40% );
-			}
+			inset-block-start: calc( 100% + @spacing-25 );
+			inset-inline: @spacing-75;
+			border-block-start: @border-width-base @border-style-base @border-color-muted;
 		}
+	}
+
+	& > &__item--ghost {
+		--ext-neowiki-editor-list-item-background: @background-color-interactive-subtle;
+	}
+
+	&__item__icon.cdx-icon {
+		background-position: @background-position-base;
+		background-repeat: no-repeat;
+		background-size: @background-size-search-figure;
+		background-color: @background-color-interactive-subtle;
+		flex-shrink: 0;
+		box-sizing: @box-sizing-base;
+		min-width: @min-size-search-figure;
+		min-height: @min-size-search-figure;
+		width: @size-search-figure;
+		height: @size-search-figure;
+		border: @border-subtle;
+		border-radius: @border-radius-base;
+		color: @color-subtle;
+
+		svg {
+			min-width: @min-size-icon-medium;
+			min-height: @min-size-icon-medium;
+			width: @size-icon-medium;
+			height: @size-icon-medium;
+		}
+	}
+
+	&__item__description {
+		max-width: 100%;
+		font-size: @font-size-small;
+		color: @color-subtle;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	&__add-item {
@@ -423,13 +361,18 @@ useSortable( listRef, {
 		&:hover {
 			background-color: @background-color-interactive-subtle;
 		}
-	}
 
-	/* Inside the row: the pane around the list clips at the dialog's edge. */
-	&__item:focus-visible,
-	&__add-item:focus-visible {
-		outline: @border-width-thick solid @outline-color-progressive--focus;
-		outline-offset: -@border-width-thick;
+		&__label {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		/* Inside the row: the pane around the list clips at the dialog's edge. */
+		&:focus-visible {
+			outline: @border-width-thick solid @outline-color-progressive--focus;
+			outline-offset: -@border-width-thick;
+		}
 	}
 }
 </style>

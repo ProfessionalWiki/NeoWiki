@@ -367,7 +367,7 @@ describe( 'SchemaCreatorDialog', () => {
 		}
 
 		function propertyNames( wrapper: VueWrapper ): string[] {
-			return wrapper.findAll( '.ext-neowiki-property-list__item--property .ext-neowiki-property-list__item__text__label' )
+			return wrapper.findAll( '.ext-neowiki-property-list__item--property .ext-neowiki-editor-list-item__label' )
 				.map( ( label ) => label.text() );
 		}
 

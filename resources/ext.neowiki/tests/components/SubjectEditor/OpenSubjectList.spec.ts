@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import OpenSubjectList from '@/components/SubjectEditor/OpenSubjectList.vue';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { newSubject } from '@/TestHelpers.ts';
-import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock, statusInWords } from '../../VueTestHelpers.ts';
 import type { Subject } from '@/domain/Subject.ts';
 
 // SubjectId's format (ADR 14) excludes '0', 'O', 'I' and 'l', hence the runs of '1's.
@@ -81,14 +81,6 @@ function selectedIds( wrapper: VueWrapper ): string[] {
 	) ?? [];
 }
 
-function hasUnsavedDot( option: DOMWrapper<Element> ): boolean {
-	return option.find( '.ext-neowiki-unsaved-dot' ).exists();
-}
-
-function saysSavingIsBlocked( option: DOMWrapper<Element> ): boolean {
-	return option.find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
-}
-
 describe( 'OpenSubjectList', () => {
 	beforeEach( () => {
 		setupMwMock();
@@ -155,29 +147,15 @@ describe( 'OpenSubjectList', () => {
 	it( 'marks the subjects with unsaved changes and no others', () => {
 		const wrapper = mountList( { unsavedIds: [ BIRTH_ID ] } );
 
-		expect( options( wrapper ).map( hasUnsavedDot ) ).toStrictEqual( [ false, true, false ] );
+		expect( options( wrapper ).map( statusInWords ) ).toStrictEqual( [ null, 'neowiki-subject-editor-unsaved', null ] );
 	} );
 
-	// A row takes its accessible name from its content, and the marker is an empty span: without a
-	// role and a label of its own an edited subject announces exactly like a clean one.
-	it( 'says in words that a marked subject has unsaved changes', () => {
-		const dot = mountList( { unsavedIds: [ BIRTH_ID ] } ).get( '.ext-neowiki-unsaved-dot' );
-
-		expect( dot.attributes( 'role' ) ).toBe( 'img' );
-		expect( dot.attributes( 'aria-label' ) ).toBe( 'neowiki-subject-editor-unsaved' );
-	} );
-
-	it( 'says of the subjects whose errors block saving, and no others, that they do', () => {
+	it( 'marks the subjects whose errors block saving, which outweighs their unsaved changes', () => {
 		const wrapper = mountList( { unsavedIds: [ PERSON_ID, BIRTH_ID, PLACE_ID ], blockingIds: [ BIRTH_ID ] } );
 
-		expect( options( wrapper ).map( saysSavingIsBlocked ) ).toStrictEqual( [ false, true, false ] );
-	} );
-
-	// Both hang in the same place before the name.
-	it( 'shows a subject whose errors block saving without its unsaved dot', () => {
-		const wrapper = mountList( { unsavedIds: [ PERSON_ID, BIRTH_ID, PLACE_ID ], blockingIds: [ BIRTH_ID ] } );
-
-		expect( options( wrapper ).map( hasUnsavedDot ) ).toStrictEqual( [ true, false, true ] );
+		expect( options( wrapper ).map( statusInWords ) ).toStrictEqual(
+			[ 'neowiki-subject-editor-unsaved', 'neowiki-subject-editor-save-blocked', 'neowiki-subject-editor-unsaved' ],
+		);
 	} );
 
 	it( 'moves down the list with the down arrow', async () => {
