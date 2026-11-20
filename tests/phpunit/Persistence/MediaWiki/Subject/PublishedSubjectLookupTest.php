@@ -20,6 +20,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemoryPageIdentifiersLookup;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup
@@ -36,6 +37,7 @@ class PublishedSubjectLookupTest extends NeoWikiIntegrationTestCase {
 			pageIdentifiersLookup: $pageIdentifiersLookup,
 			revisionLookup: $revisionLookup ?? MediaWikiServices::getInstance()->getRevisionLookup(),
 			revisionPolicy: $revisionPolicy,
+			revisionReadFlags: IDBAccessObject::READ_NORMAL,
 		);
 	}
 

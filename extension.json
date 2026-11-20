@@ -38,7 +38,8 @@
 
 	"AutoloadClasses": {
 		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildSubjectPageIndex": "maintenance/RebuildSubjectPageIndex.php",
-		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildPublishedSubjectIndex": "maintenance/RebuildPublishedSubjectIndex.php"
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildPublishedSubjectIndex": "maintenance/RebuildPublishedSubjectIndex.php",
+		"ProfessionalWiki\\NeoWiki\\Maintenance\\RebuildViolationIndex": "maintenance/RebuildViolationIndex.php"
 	},
 
 	"TestAutoloadNamespaces": {
@@ -104,6 +105,22 @@
 		},
 		"neowikiRebuildLastEditorPages": {
 			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\RebuildLastEditorPagesJob",
+			"needsPage": false
+		},
+		"neowikiCheckPageViolations": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\CheckPageViolationsJob",
+			"needsPage": false
+		},
+		"neowikiCheckSchemaViolations": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\CheckSchemaViolationsJob",
+			"needsPage": false
+		},
+		"neowikiCheckReferringPagesViolations": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\CheckReferringPagesViolationsJob",
+			"needsPage": false
+		},
+		"neowikiRebuildViolationIndex": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\RebuildViolationIndexJob",
 			"needsPage": false
 		}
 	},

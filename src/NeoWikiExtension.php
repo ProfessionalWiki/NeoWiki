@@ -42,7 +42,13 @@ use ProfessionalWiki\NeoWiki\Application\Actions\ReplaceSubject\ReplaceSubjectPr
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementAction;
 use ProfessionalWiki\NeoWiki\Application\Actions\UpdateStatement\UpdateStatementPresenter;
 use ProfessionalWiki\NeoWiki\Application\StatementListBuilder;
+use ProfessionalWiki\NeoWiki\Application\MemoizingSubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\Validation\PageViolationChecker;
 use ProfessionalWiki\NeoWiki\Application\Validation\ProposedSubjectValidator;
+use ProfessionalWiki\NeoWiki\Application\Validation\ReferringPagesViolationChecker;
+use ProfessionalWiki\NeoWiki\Application\Validation\SchemaViolationChecker;
+use ProfessionalWiki\NeoWiki\Application\Validation\ViolationCheckQueue;
+use ProfessionalWiki\NeoWiki\Application\Validation\ViolationCheckingPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Application\Validation\SubjectValidator;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigSchema;
 use ProfessionalWiki\NeoWiki\Application\WikiConfig\ConfigValidator;
@@ -194,6 +200,11 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseDeletedPageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePageIdsLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabasePublishedSubjectIndex;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseReferringPagesLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSchemaSubjectsLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectSchemaNamesLookup;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseViolationIndex;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseViolationTargetPagesLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseReferencingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectCountLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectLabelLookup;
@@ -242,6 +253,7 @@ use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildCoordinator;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphRebuildExecutor;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\GraphStoreStatusLookup;
 use ProfessionalWiki\NeoWiki\Application\GraphRebuild\MappingChangeRebuilder;
+use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiViolationCheckQueue;
 use ProfessionalWiki\NeoWiki\Infrastructure\MediaWikiRebuildJobQueue;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildRunRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseRebuildStartLock;
@@ -261,6 +273,7 @@ use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\LayoutPresentationSerializer;
 use ProfessionalWiki\NeoWiki\Presentation\SubjectSearchHitHtmlBuilder;
 use RuntimeException;
+use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\IDatabase;
 
 class NeoWikiExtension {
@@ -721,9 +734,63 @@ class NeoWikiExtension {
 	}
 
 	private function newPublishedSubjectIndex(): PublishedSubjectIndex {
-		return new DatabasePublishedSubjectIndex(
-			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase(),
-			$this->newUnrestrictedDependentSubjectRules()
+		$db = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+
+		return new ViolationCheckingPublishedSubjectIndex(
+			index: new DatabasePublishedSubjectIndex( $db, $this->newUnrestrictedDependentSubjectRules() ),
+			schemaNamesLookup: new DatabaseSubjectSchemaNamesLookup( $db ),
+			checkQueue: $this->newViolationCheckQueue(),
+		);
+	}
+
+	public function newViolationCheckQueue(): ViolationCheckQueue {
+		return new MediaWikiViolationCheckQueue( MediaWikiServices::getInstance()->getJobQueueGroup() );
+	}
+
+	/**
+	 * Validates with every page readable, so that a Schema or relation target only some readers may read
+	 * counts as found; a list of the Violations decides per reader what it shows. Schemas are read afresh,
+	 * so that a long-running job runner sees each Schema as it is published now.
+	 */
+	public function newReferringPagesViolationChecker(): ReferringPagesViolationChecker {
+		return new ReferringPagesViolationChecker(
+			referringPagesLookup: new DatabaseReferringPagesLookup( MediaWikiServices::getInstance()->getConnectionProvider() ),
+			pageChecker: $this->newPageViolationChecker(),
+		);
+	}
+
+	public function newNotFoundTargetViolationChecker(): ReferringPagesViolationChecker {
+		return new ReferringPagesViolationChecker(
+			referringPagesLookup: new DatabaseViolationTargetPagesLookup( MediaWikiServices::getInstance()->getConnectionProvider() ),
+			pageChecker: $this->newPageViolationChecker(),
+		);
+	}
+
+	public function newSchemaViolationChecker(): SchemaViolationChecker {
+		return new SchemaViolationChecker(
+			schemaSubjectsLookup: new DatabaseSchemaSubjectsLookup( MediaWikiServices::getInstance()->getConnectionProvider() ),
+			pageChecker: $this->newPageViolationChecker(),
+		);
+	}
+
+	public function newPageViolationChecker(): PageViolationChecker {
+		return new PageViolationChecker(
+			pageSubjectsLookup: $this->newPublishedSubjectLookup( IDBAccessObject::READ_LATEST ),
+			validator: new ProposedSubjectValidator(
+				schemaResolver: $this->newSchemaResolver( $this->newSchemaLookup( $this->newUnrestrictedAuthority() ) ),
+				subjectValidator: new SubjectValidator(
+					propertyTypeLookup: $this->getPropertyTypeLookup(),
+					// The Subjects on a page tend to relate to the same few Subjects, and so do neighbouring pages.
+					subjectLookup: new MemoizingSubjectLookup(
+						$this->getSourceRoutingSubjectLookup( $this->getSubjectRepository() ),
+						capacity: 1000
+					),
+					sourceRegistry: $this->getSourceRegistry(),
+				),
+			),
+			violationIndex: new DatabaseViolationIndex(
+				MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase()
+			),
 		);
 	}
 
@@ -2135,16 +2202,17 @@ class NeoWikiExtension {
 		);
 	}
 
-	private function newPublishedSubjectLookup(): PublishedSubjectLookup {
+	private function newPublishedSubjectLookup( int $revisionReadFlags ): PublishedSubjectLookup {
 		return new PublishedSubjectLookup(
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			revisionLookup: MediaWikiServices::getInstance()->getRevisionLookup(),
 			revisionPolicy: $this->getRevisionPolicy(),
+			revisionReadFlags: $revisionReadFlags,
 		);
 	}
 
 	public function newGetSubjectQuery( GetSubjectPresenter $presenter, Authority $authority ): GetSubjectQuery {
-		$publishedSubjectLookup = $this->newPublishedSubjectLookup();
+		$publishedSubjectLookup = $this->newPublishedSubjectLookup( IDBAccessObject::READ_NORMAL );
 
 		return new GetSubjectQuery(
 			presenter: $presenter,
@@ -2180,7 +2248,7 @@ class NeoWikiExtension {
 		GetReferencingSubjectsPresenter $presenter,
 		Authority $authority
 	): GetReferencingSubjectsQuery {
-		$publishedSubjectLookup = $this->newPublishedSubjectLookup();
+		$publishedSubjectLookup = $this->newPublishedSubjectLookup( IDBAccessObject::READ_NORMAL );
 
 		return new GetReferencingSubjectsQuery(
 			presenter: $presenter,
@@ -2208,7 +2276,7 @@ class NeoWikiExtension {
 		return new SubjectSummaryHostSubjects(
 			dependentSubjectRules: $this->newDependentSubjectRules(),
 			hostSubjectBuilder: $this->newHostSubjectBuilder(),
-			pageSubjectsLookup: $this->newPublishedSubjectLookup(),
+			pageSubjectsLookup: $this->newPublishedSubjectLookup( IDBAccessObject::READ_NORMAL ),
 		);
 	}
 
