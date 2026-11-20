@@ -69,6 +69,15 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	} ),
 } ) );
 
+const canEditControlledSubjects = ref( false );
+
+vi.mock( '@/composables/useControlledSubjectRight.ts', () => ( {
+	useControlledSubjectRight: () => ( {
+		canEditControlledSubjects,
+		whenAnswered: async (): Promise<boolean> => canEditControlledSubjects.value,
+	} ),
+} ) );
+
 interface Deferred<T> {
 	promise: Promise<T>;
 	resolve: ( value: T ) => void;
@@ -77,7 +86,7 @@ interface Deferred<T> {
 
 const SchemaPickerStub = {
 	template: '<div class="schema-lookup-stub"></div>',
-	props: { offersCreation: Boolean, schemaNames: { type: Array, default: undefined }, standaloneOnly: Boolean },
+	props: { offersCreation: Boolean, schemaNames: { type: Array, default: undefined }, standaloneOnly: Boolean, uncontrolledOnly: Boolean },
 	emits: [ 'select', 'create' ],
 	setup() {
 		return { focus: vi.fn() };
@@ -742,6 +751,54 @@ describe( 'SubjectCreatorDialog', () => {
 			await saveEditedSchema( wrapper );
 
 			expect( wrapper.findComponent( SubjectEditorDialog ).props( 'schema' ) ).toStrictEqual( EDITED_SCHEMA );
+		} );
+	} );
+
+	describe( 'Controlled Subjects', () => {
+		const genderSchema = newSchema( { title: 'Gender', subjectsAreControlled: true } );
+
+		beforeEach( () => {
+			getSchemaMock.mockImplementation( async ( name: string ) => name === 'Gender' ? genderSchema : newSchema( { title: name } ) );
+		} );
+
+		afterEach( () => {
+			canEditControlledSubjects.value = false;
+		} );
+
+		it( 'offers no Schema of Controlled Subjects to a user without the right to edit them', async () => {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).props( 'uncontrolledOnly' ) ).toBe( true );
+		} );
+
+		it( 'offers the Schemas of Controlled Subjects to a user with the right to edit them', async () => {
+			canEditControlledSubjects.value = true;
+
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaPicker ).props( 'uncontrolledOnly' ) ).toBe( false );
+		} );
+
+		it( 'stays at the Schema step for a Schema of Controlled Subjects given to a user without the right, saying why', async () => {
+			const wrapper = mountComponent( {}, { initialSchemaName: 'Gender' } );
+
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( false );
+			expect( mw.notify ).toHaveBeenCalledWith( 'neowiki-create-subject-error-controlled-subjectsGender', { type: 'error' } );
+		} );
+
+		it( 'opens on a Schema of Controlled Subjects given to a user with the right', async () => {
+			canEditControlledSubjects.value = true;
+			const wrapper = mountComponent( {}, { initialSchemaName: 'Gender' } );
+
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SubjectEditorDialog ).exists() ).toBe( true );
 		} );
 	} );
 

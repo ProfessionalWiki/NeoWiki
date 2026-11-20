@@ -1,20 +1,24 @@
-import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import SchemasTable from '@/components/SchemasPage/SchemasTable.vue';
 import { chooseFromMenu, createI18nMock, describedAs, offeredActions, setupMwMock } from '../../VueTestHelpers.ts';
+import { Service } from '@/NeoWikiServices.ts';
 
 const SUBJECT_COUNTS = new Map( [ [ 'Artist', 4 ], [ 'Artwork', 30 ] ] );
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 const CREATE_SUBJECT = 'neowiki-schemas-create-subject';
 
-function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']> = {} ): VueWrapper {
+function mountTable(
+	props: Partial<InstanceType<typeof SchemasTable>['$props']> = {},
+	canEditControlledSubjects = false,
+): VueWrapper {
 	setupMwMock( { functions: [ 'msg', 'message', 'util', 'language', 'config' ] } );
 
 	return mount( SchemasTable, {
 		props: {
 			schemas: [
-				{ name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false },
-				{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false },
+				{ name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false, subjectsAreControlled: false },
+				{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false, subjectsAreControlled: false },
 			],
 			canEdit: false,
 			canDuplicate: false,
@@ -27,6 +31,9 @@ function mountTable( props: Partial<InstanceType<typeof SchemasTable>['$props']>
 		global: {
 			mocks: { $i18n: createI18nMock() },
 			stubs: { CdxIcon: true },
+			provide: {
+				[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => canEditControlledSubjects },
+			},
 		},
 	} );
 }
@@ -54,8 +61,8 @@ describe( 'SchemasTable', () => {
 
 	it( 'links the label of a Schema in the reader\'s language to its page, with the name as its title', () => {
 		const artwork = row( mountTable( { schemas: [
-			{ name: 'Artist', description: '', propertyCount: 4, subjectsAreDependent: false },
-			{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false, labels: { en: 'Painting' } },
+			{ name: 'Artist', description: '', propertyCount: 4, subjectsAreDependent: false, subjectsAreControlled: false },
+			{ name: 'Artwork', description: '', propertyCount: 2, subjectsAreDependent: false, subjectsAreControlled: false, labels: { en: 'Painting' } },
 		] } ), 1 );
 
 		const link = artwork.get( 'a[href="/wiki/Schema:Artwork"]' );
@@ -128,13 +135,36 @@ describe( 'SchemasTable', () => {
 	it( 'offers no Subject creation for a Schema whose Subjects are dependent', () => {
 		const wrapper = mountTable( {
 			schemas: [
-				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
-				{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true },
+				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
+				{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true, subjectsAreControlled: false },
 			],
 			canCreateSubject: true,
 		} );
 
 		expect( wrapper.findAll( 'tbody tr' ).map( offeredActions ) ).toEqual( [ [ CREATE_SUBJECT ], [] ] );
+	} );
+
+	async function tableOfAControlledSchema( canEditControlledSubjects: boolean ): Promise<VueWrapper> {
+		const wrapper = mountTable( {
+			schemas: [
+				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
+				{ name: 'Gender', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: true },
+			],
+			canCreateSubject: true,
+		}, canEditControlledSubjects );
+		await flushPromises();
+
+		return wrapper;
+	}
+
+	it( 'offers no Subject creation for a Schema of Controlled Subjects to a user without the right to edit them', async () => {
+		expect( ( await tableOfAControlledSchema( false ) ).findAll( 'tbody tr' ).map( offeredActions ) )
+			.toEqual( [ [ CREATE_SUBJECT ], [] ] );
+	} );
+
+	it( 'offers Subject creation for a Schema of Controlled Subjects to a user with the right to edit them', async () => {
+		expect( ( await tableOfAControlledSchema( true ) ).findAll( 'tbody tr' ).map( offeredActions ) )
+			.toEqual( [ [ CREATE_SUBJECT ], [ CREATE_SUBJECT ] ] );
 	} );
 
 	it( 'offers a user without rights only the links to the Schema and to its Subjects', () => {
@@ -148,8 +178,8 @@ describe( 'SchemasTable', () => {
 	it( 'ties the buttons and the Subjects link of each row to its Schema', () => {
 		const wrapper = mountTable( {
 			schemas: [
-				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
-				{ name: 'Validation Demo', description: '', propertyCount: 1, subjectsAreDependent: false },
+				{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
+				{ name: 'Validation Demo', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
 			],
 			canEdit: true,
 			canDelete: true,

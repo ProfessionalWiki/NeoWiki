@@ -5,7 +5,7 @@ import { setupMwMock } from '../VueTestHelpers.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup';
 
 function summary( labels: Record<string, string> ): SchemaSummary {
-	return { name: 'Company', description: '', propertyCount: 0, subjectsAreDependent: false, labels: labels };
+	return { name: 'Company', description: '', propertyCount: 0, subjectsAreDependent: false, subjectsAreControlled: false, labels: labels };
 }
 
 function readingIn( userLanguage: string, contentLanguage: string ): void {

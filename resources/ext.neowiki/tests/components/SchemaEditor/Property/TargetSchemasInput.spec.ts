@@ -11,9 +11,9 @@ import { createI18nMock, setupMwMock } from '../../../VueTestHelpers.ts';
 type TargetSchemasInputWrapper = VueWrapper<InstanceType<typeof TargetSchemasInput>>;
 
 const SUMMARIES = [
-	{ name: 'Product', description: 'A product', propertyCount: 2, subjectsAreDependent: false },
-	{ name: 'Office', description: 'A physical location', propertyCount: 4, subjectsAreDependent: false },
-	{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
+	{ name: 'Product', description: 'A product', propertyCount: 2, subjectsAreDependent: false, subjectsAreControlled: false },
+	{ name: 'Office', description: 'A physical location', propertyCount: 4, subjectsAreDependent: false, subjectsAreControlled: false },
+	{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false, subjectsAreControlled: false },
 ];
 
 // Mounted with the real Codex component: which chips a pick or a removal leaves is decided by
@@ -217,7 +217,7 @@ describe( 'TargetSchemasInput', () => {
 	} );
 
 	function addSchemaToWiki( name: string ): void {
-		wikiSchemas.push( { name, description: '', propertyCount: 0, subjectsAreDependent: false } );
+		wikiSchemas.push( { name, description: '', propertyCount: 0, subjectsAreDependent: false, subjectsAreControlled: false } );
 	}
 
 	it( 'lists and checks a target schema created after the list was fetched', async () => {
@@ -350,10 +350,10 @@ describe( 'TargetSchemasInput', () => {
 	describe( 'Schemas of dependent and of standalone Subjects', () => {
 		beforeEach( () => {
 			wikiSchemas = [
-				{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true },
-				{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false },
-				{ name: 'Name', description: '', propertyCount: 1, subjectsAreDependent: true },
-				{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: false },
+				{ name: 'Birth', description: '', propertyCount: 2, subjectsAreDependent: true, subjectsAreControlled: false },
+				{ name: 'City', description: '', propertyCount: 3, subjectsAreDependent: false, subjectsAreControlled: false },
+				{ name: 'Name', description: '', propertyCount: 1, subjectsAreDependent: true, subjectsAreControlled: false },
+				{ name: 'Office', description: '', propertyCount: 4, subjectsAreDependent: false, subjectsAreControlled: false },
 			];
 		} );
 

@@ -5,6 +5,7 @@ export interface SchemaSummary {
 	description: string;
 	propertyCount: number;
 	subjectsAreDependent: boolean;
+	subjectsAreControlled: boolean;
 	/**
 	 * Keyed by lowercase language tag. Absent when the Schema has none.
 	 */
@@ -30,6 +31,7 @@ export function schemaSummaryOf( schema: Schema ): SchemaSummary {
 		description: schema.getDescription(),
 		propertyCount: [ ...schema.getPropertyDefinitions() ].length,
 		subjectsAreDependent: schema.subjectsAreDependent(),
+		subjectsAreControlled: schema.subjectsAreControlled(),
 		labels: schema.getLabels(),
 	};
 }

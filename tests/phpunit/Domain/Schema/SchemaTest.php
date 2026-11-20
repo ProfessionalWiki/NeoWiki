@@ -29,7 +29,8 @@ class SchemaTest extends TestCase {
 			name: new SchemaName( 'Company' ),
 			description: 'A company',
 			properties: new PropertyDefinitions( $propertyDefinitions ),
-			subjectsAreDependent: false
+			subjectsAreDependent: false,
+			subjectsAreControlled: false
 		);
 	}
 

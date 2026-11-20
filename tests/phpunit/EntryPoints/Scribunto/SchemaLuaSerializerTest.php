@@ -41,6 +41,7 @@ class SchemaLuaSerializerTest extends TestCase {
 			new SchemaName( 'Empty' ),
 			'',
 			new PropertyDefinitions( [] ),
+			false,
 			false
 		);
 
@@ -55,6 +56,7 @@ class SchemaLuaSerializerTest extends TestCase {
 			new SchemaName( 'Doc' ),
 			'Describes a document',
 			new PropertyDefinitions( [] ),
+			false,
 			false
 		);
 
@@ -249,6 +251,7 @@ class SchemaLuaSerializerTest extends TestCase {
 			new SchemaName( 'Test' ),
 			'',
 			new PropertyDefinitions( $props ),
+			false,
 			false
 		);
 	}

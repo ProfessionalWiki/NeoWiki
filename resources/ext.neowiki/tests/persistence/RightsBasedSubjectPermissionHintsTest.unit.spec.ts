@@ -86,4 +86,12 @@ describe( 'Rights Based Subject Permission Hints', async () => {
 		expect( await newHints( [ 'createpage' ] ).canCreateSubjectPage() ).toBe( false );
 	} );
 
+	it( 'can edit controlled subjects with the right to edit them', async () => {
+		expect( await newHints( [ 'edit', 'neowiki-controlled-subject-edit' ] ).canEditControlledSubjects() ).toBe( true );
+	} );
+
+	it( 'cannot edit controlled subjects with only the edit right', async () => {
+		expect( await withEditRight().canEditControlledSubjects() ).toBe( false );
+	} );
+
 } );

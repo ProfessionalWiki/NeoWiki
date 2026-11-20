@@ -40,6 +40,8 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	} ),
 } ) );
 
+let mayEditControlledSubjects = false;
+
 const getSchemaMock = vi.fn();
 
 let pinia: ReturnType<typeof createPinia>;
@@ -55,6 +57,7 @@ function mountComponent( schema: Schema ): VueWrapper {
 			provide: {
 				[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
+				[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
 			},
 			stubs: {
 				CdxIcon: true,
@@ -78,6 +81,7 @@ describe( 'SchemaDisplay', () => {
 		canCreateSubjectPageRef.value = false;
 		checkCreateSubjectPagePermissionMock.mockClear();
 		getSchemaMock.mockReset();
+		mayEditControlledSubjects = false;
 	} );
 
 	it( 'captions the table of properties with the label in the reader\'s language', () => {
@@ -121,6 +125,25 @@ describe( 'SchemaDisplay', () => {
 		await flushPromises();
 
 		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( false );
+	} );
+
+	it( 'tells the header to offer no Subject creation for a Schema of Controlled Subjects to a user without the right to edit them', async () => {
+		grantedRight = true;
+
+		const wrapper = mountComponent( newSchema( { subjectsAreControlled: true } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( false );
+	} );
+
+	it( 'tells the header to offer Subject creation for a Schema of Controlled Subjects to a user with the right to edit them', async () => {
+		grantedRight = true;
+		mayEditControlledSubjects = true;
+
+		const wrapper = mountComponent( newSchema( { subjectsAreControlled: true } ) );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaDisplayHeader ).props( 'canCreateSubject' ) ).toBe( true );
 	} );
 
 	it( 'opens the creator on this schema, page and all, when the header asks for it', async () => {

@@ -13,6 +13,7 @@ export class SchemaDeserializer {
 			schema.description ?? '',
 			this.deserializePropertyDefinitions( schema.propertyDefinitions ),
 			schema.subjectsAreDependent === true,
+			schema.subjectsAreControlled === true,
 			labelsFromJson( schema.labels ),
 		);
 	}

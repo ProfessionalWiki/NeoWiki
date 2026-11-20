@@ -155,6 +155,19 @@ class SaveSchemaApiTest extends NeoWikiIntegrationTestCase {
 		$this->assertJsonStringEqualsJsonString( self::SCHEMA_JSON, $this->getSchemaPageText( 'Person' ) );
 	}
 
+	public function testUserWithoutTheRightToEditControlledSubjectsCannotDeclareThemControlled(): void {
+		$this->createSchema( 'Person', self::SCHEMA_JSON );
+
+		$response = $this->saveAs(
+			$this->getTestUser()->getUser(),
+			'Person',
+			'{ "subjectsAreControlled": true, "propertyDefinitions": {} }'
+		);
+
+		$this->assertSame( 403, $response->getStatusCode() );
+		$this->assertJsonStringEqualsJsonString( self::SCHEMA_JSON, $this->getSchemaPageText( 'Person' ) );
+	}
+
 	public function testEditFilterRefusalBlocksTheSave(): void {
 		$this->setTemporaryHook(
 			'EditFilterMergedContent',

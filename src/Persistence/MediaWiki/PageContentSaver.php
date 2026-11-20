@@ -10,6 +10,7 @@ use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Storage\PageUpdater;
+use ProfessionalWiki\NeoWiki\Application\ControlledSubjectRules;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use WikiPage;
 
@@ -93,9 +94,15 @@ class PageContentSaver {
 			return new PageContentSavingStatus( PageContentSavingStatus::NO_CHANGES );
 		}
 
+		$status = $updater->getStatus();
+
+		if ( $status !== null && $status->hasMessage( ControlledSubjectRules::SUBJECT_EDIT_REFUSED ) ) {
+			return new PageContentSavingStatus( PageContentSavingStatus::CONTROLLED_SUBJECT_EDIT_REFUSED, $status->getWikiText() );
+		}
+
 		return new PageContentSavingStatus(
 			PageContentSavingStatus::ERROR,
-			$updater->getStatus()?->getWikiText() ?? 'Unknown error'
+			$status?->getWikiText() ?? 'Unknown error'
 		);
 	}
 

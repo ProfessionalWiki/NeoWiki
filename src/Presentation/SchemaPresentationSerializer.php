@@ -32,6 +32,7 @@ class SchemaPresentationSerializer {
 		return [ 'description' => $schema->getDescription() ]
 			+ ( $schema->getLabels() === [] ? [] : [ 'labels' => $schema->getLabels() ] )
 			+ ( $schema->subjectsAreDependent() ? [ 'subjectsAreDependent' => true ] : [] )
+			+ ( $schema->subjectsAreControlled() ? [ 'subjectsAreControlled' => true ] : [] )
 			+ [ 'propertyDefinitions' => $this->propertiesToJson( $schema->getAllProperties() ) ];
 	}
 

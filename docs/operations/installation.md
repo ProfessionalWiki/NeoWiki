@@ -252,6 +252,12 @@ terminal that ran it.
 [Special:GraphStores](maintenance.md#background-rebuilds) or the matching REST endpoints. Administrators have it by
 default.
 
+`neowiki-controlled-subject-edit` allows adding, changing and removing the
+[Controlled Subjects](../glossary.md#controlled-subject) of every Schema, and making a Schema's Subjects controlled or
+not. Administrators have it by default; grant it to whoever maintains your controlled vocabularies. Users with `import`,
+`importupload` or `mergehistory` can change Controlled Subjects without it, as can maintenance scripts that write as a
+system user.
+
 `neowiki-query` gates the query surfaces; see [Permissions](../api/query-api.md#permissions). The remaining rights —
 `neowiki-schema-edit`, `neowiki-layout-edit` and `neowiki-mapping-edit` — gate editing in NeoWiki's own namespaces and
 are granted to logged-in users.

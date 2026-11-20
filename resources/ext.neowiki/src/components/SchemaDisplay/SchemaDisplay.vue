@@ -12,7 +12,7 @@
 				<SchemaDisplayHeader
 					:schema="currentSchema"
 					:can-edit-schema="canEditSchema"
-					:can-create-subject="canCreateSubjectPage && !currentSchema.subjectsAreDependent()"
+					:can-create-subject="offersSubjectCreation"
 					@edit="openEditor"
 					@create-subject="subjectStore.openSubjectCreator()"
 				/>
@@ -108,6 +108,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 import { propertyDisplayName } from '@/presentation/propertyDisplayName.ts';
 import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 
@@ -123,6 +124,7 @@ const subjectStore = useSubjectStore();
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const { canEditSchema, checkEditPermission } = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { mayEditSubjects } = useControlledSubjectRight();
 
 onMounted( () => {
 	checkCreateSubjectPagePermission();
@@ -135,6 +137,10 @@ watch( () => props.schema, ( newSchema ) => {
 	currentSchema.value = newSchema;
 	checkEditPermission( newSchema.getName() );
 }, { immediate: true } );
+
+const offersSubjectCreation = computed( (): boolean => canCreateSubjectPage.value &&
+	!currentSchema.value.subjectsAreDependent() &&
+	mayEditSubjects( currentSchema.value.subjectsAreControlled() ) );
 
 const componentRegistry = NeoWikiServices.getComponentRegistry();
 

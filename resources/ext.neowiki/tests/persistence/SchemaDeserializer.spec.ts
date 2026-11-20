@@ -65,6 +65,23 @@ describe( 'SchemaDeserializer', () => {
 		expect( schema.subjectsAreDependent() ).toBe( false );
 	} );
 
+	it( 'reads the declaration that the subjects are controlled', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Gender', {
+			subjectsAreControlled: true,
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.subjectsAreControlled() ).toBe( true );
+	} );
+
+	it( 'reads the subjects of a schema without the declaration as not controlled', () => {
+		const schema = new SchemaDeserializer().deserialize( 'Place', {
+			propertyDefinitions: {},
+		} );
+
+		expect( schema.subjectsAreControlled() ).toBe( false );
+	} );
+
 	it( 'deserializes an omitted description as an empty one', () => {
 		const schema = new SchemaDeserializer().deserialize( 'Undescribed', {
 			propertyDefinitions: {},

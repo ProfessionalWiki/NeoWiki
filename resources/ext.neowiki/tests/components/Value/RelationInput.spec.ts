@@ -11,6 +11,8 @@ import { newTextProperty } from '@/domain/propertyTypes/Text';
 import { RelationTargetEditingKey, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import { useSubjectStore } from '@/stores/SubjectStore.ts';
+import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { Service } from '@/NeoWikiServices.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers';
 import { newSubject } from '@/TestHelpers';
@@ -436,6 +438,54 @@ describe( 'RelationInput', () => {
 		it( 'offers nothing when target editing was not enabled by the host', () => {
 			const wrapper = mountSingleWithTarget( false );
 			expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( false );
+		} );
+
+		describe( 'of a Controlled Subject', () => {
+			async function mountOnATerm( multiple: boolean, mayEditControlledSubjects: boolean ): Promise<VueWrapper> {
+				const pinia = createPinia();
+				setActivePinia( pinia );
+				setupMwMock();
+				useSubjectStore().setSubject( newSubject( { id: 's11111111111111', label: 'Woman', schemaName: 'Gender' } ) );
+				useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+					{ name: 'Gender', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: true },
+				] );
+
+				const wrapper = mount( RelationInput, {
+					props: {
+						modelValue: new RelationValue( [ newRelation( undefined, 's11111111111111' ) ] ),
+						property: newRelationProperty( { multiple, targetSchemas: [ 'Gender' ] } ),
+						label: 'Gender',
+					},
+					global: {
+						plugins: [ pinia ],
+						provide: {
+							...NeoWikiTestServices.getServices(),
+							[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
+							[ RelationTargetEditingKey as symbol ]: true,
+						},
+						directives: { tooltip: {} },
+						mocks: { $i18n: createI18nMock() },
+					},
+				} );
+				await flushPromises();
+
+				return wrapper;
+			}
+
+			it.each( [
+				[ 'a single', false ],
+				[ 'a multiple', true ],
+			] )( 'offers no opening of it in %s value field to a user without the right to edit it', async ( _, multiple ) => {
+				const wrapper = await mountOnATerm( multiple, false );
+
+				expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( false );
+			} );
+
+			it( 'offers opening it to a user with the right to edit it', async () => {
+				const wrapper = await mountOnATerm( false, true );
+
+				expect( wrapper.find( '.ext-neowiki-relation-input__open-target' ).exists() ).toBe( true );
+			} );
 		} );
 
 		describe( 'multiple mode', () => {

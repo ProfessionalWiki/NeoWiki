@@ -1161,7 +1161,8 @@ describe( 'SubjectPage', () => {
 
 			await confirmDelete( wrapper, wrapper.find( `${ REFERENCING_ROW } ${ DELETE_CONTROL }` ) );
 
-			expect( getReferencingSubjectsMock ).toHaveBeenCalledTimes( 1 );
+			// The confirmation reads those of the deleted Subject too.
+			expect( getReferencingSubjectsMock.mock.calls.filter( ( [ id ] ) => id.text === SUBJECT_ID ) ).toHaveLength( 1 );
 			expect( wrapper.find( REFERENCING_ROW ).exists() ).toBe( false );
 		} );
 

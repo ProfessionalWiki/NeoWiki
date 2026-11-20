@@ -93,6 +93,18 @@ JSON
 		);
 	}
 
+	public function testSummariesSayWhetherTheSubjectsAreControlled(): void {
+		$this->createSchema( 'Gender', '{"subjectsAreControlled":true,"propertyDefinitions":{}}' );
+		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );
+
+		$response = $this->executeHandler( new GetSchemaSummariesApi(), new RequestData( [ 'method' => 'GET' ] ) );
+
+		$this->assertSame(
+			[ 'Gender' => true, 'Place' => false ],
+			array_column( json_decode( $response->getBody()->getContents(), true )['schemas'], 'subjectsAreControlled', 'name' )
+		);
+	}
+
 	public function testSummariesCarryTheLabelsOfSchemasThatHaveThem(): void {
 		$this->createSchema( 'Company', '{"labels":{"de":"Unternehmen"},"propertyDefinitions":{}}' );
 		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );

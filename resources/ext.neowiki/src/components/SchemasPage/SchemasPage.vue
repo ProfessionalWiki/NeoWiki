@@ -74,7 +74,7 @@
 				:can-edit="canEditSchema"
 				:can-duplicate="canCreateSchemas"
 				:can-delete="canDeleteSchema"
-				:can-create-subject="canCreateSubjectPage && !summary.subjectsAreDependent"
+				:can-create-subject="canCreateSubjectPage && !summary.subjectsAreDependent && mayEditSubjects( summary.subjectsAreControlled )"
 				:subject-previews="subjectPreviews"
 				:subject-count="subjectCountOf( summary.name )"
 				:subject-count-pending="subjectCountsPending"
@@ -131,6 +131,7 @@ import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, C
 import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 import { useSubjectCounts } from '@/composables/useSubjectCounts.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -160,6 +161,7 @@ const {
 	checkCreatePermission
 } = useSchemaPermissions();
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { mayEditSubjects } = useControlledSubjectRight();
 const { subjectCountsPending, subjectCountOf, loadSubjectCounts } = useSubjectCounts();
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
