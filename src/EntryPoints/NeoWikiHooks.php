@@ -50,6 +50,7 @@ use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
+use ProfessionalWiki\NeoWiki\Application\SubjectLabelLookupResult;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
@@ -61,6 +62,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Content\MappingContent;
 use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\Infrastructure\CallStack;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
@@ -294,13 +296,13 @@ class NeoWikiHooks {
 	}
 
 	/**
-	 * In Recent changes and watchlists, a link to a page titled by a Subject id reads as the page's
-	 * heading does when its Main Subject has a label: that label and the id. Only rows the list read up
-	 * front change, and only links that would show the bare title, rendered where the list renders. The
-	 * parser renders with a link renderer of its own, and a list transcluded into a page reads nothing
-	 * up front, so page content never gets a label.
+	 * A link to a page titled by a Subject id reads as the page's heading does when its Main Subject has
+	 * a label: that label and the id. Only a link that would show the title, and only outside a parse:
+	 * the parser cache keeps what a parse renders after the label changes, and serves it to readers who
+	 * may not read the page linked to. The reader is the request's, as a link renderer does not say whom
+	 * it renders for.
 	 *
-	 * @param string|HtmlArmor|null &$text
+	 * @param string|HtmlArmor|Message|null &$text
 	 * @param string[] &$customAttribs
 	 * @param string[] &$query
 	 * @param string &$ret
@@ -314,32 +316,71 @@ class NeoWikiHooks {
 		&$ret
 	): bool {
 		// The cheap checks first: this runs for every link rendered.
-		if ( $text !== null
-			|| !self::isIdShaped( $target )
-			|| $linkRenderer !== MediaWikiServices::getInstance()->getLinkRenderer()
+		if ( !self::isIdShaped( $target )
+			|| self::isApiRequest()
+			|| !self::showsTitle( $text, $target )
+			|| CallStack::isInsideParse()
 		) {
 			return true;
 		}
 
 		$context = RequestContext::getMain();
-
-		$subject = NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->forListedPage(
-			Title::newFromLinkTarget( $target ),
-			$context->getAuthority(),
-			$context->getOutput()
-		);
+		$subject = self::subjectInPlaceOfTitle( Title::newFromLinkTarget( $target ), $context->getAuthority() );
 
 		if ( $subject === null ) {
 			return true;
 		}
 
-		$text = new HtmlArmor( SubjectLabelHtml::withId(
-			$context,
-			$subject->getLabel()?->text,
-			$subject->getId()->text
-		) );
+		$text = new HtmlArmor( SubjectLabelHtml::withId( $context, $subject->label, $subject->id ) );
+		$context->getOutput()->addModuleStyles( [ SubjectLabelHtml::STYLE_MODULE ] );
 
 		return true;
+	}
+
+	/**
+	 * API responses get no labels: a JSONP request renders for the session's user, whom the API itself
+	 * treats as anonymous, and modules such as CategoryTree's cache what they render for every reader.
+	 */
+	private static function isApiRequest(): bool {
+		return defined( 'MW_API' ) || defined( 'MW_REST_API' );
+	}
+
+	/**
+	 * Lists, page histories and edit summaries pass the title as the link's text, as it was written.
+	 *
+	 * @param string|HtmlArmor|Message|null $text
+	 */
+	private static function showsTitle( $text, LinkTarget $target ): bool {
+		if ( $text === null ) {
+			return true;
+		}
+
+		$shownText = $text instanceof HtmlArmor ? HtmlArmor::getHtml( $text ) : $text;
+
+		if ( !is_string( $shownText ) ) {
+			return false;
+		}
+
+		$shownTitle = Title::newFromText( $shownText, $target->getNamespace() );
+
+		// Text naming a section of the page shows more than its title.
+		return $shownTitle !== null
+			&& !$shownTitle->hasFragment()
+			&& $shownTitle->isSamePageAs( Title::newFromLinkTarget( $target ) );
+	}
+
+	private static function subjectInPlaceOfTitle( Title $title, Authority $reader ): ?SubjectLabelLookupResult {
+		// A link that cannot be labelled still links: it keeps the title.
+		try {
+			return NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->forPage( $title, $reader );
+		} catch ( Throwable $exception ) {
+			LoggerFactory::getInstance( 'NeoWiki' )->warning(
+				'NeoWiki: reading the Subject of a linked page failed: {exception}',
+				[ 'exception' => $exception ]
+			);
+
+			return null;
+		}
 	}
 
 	/**
@@ -380,10 +421,10 @@ class NeoWikiHooks {
 
 	/**
 	 * Reads the labels a Recent changes or watchlist page links by in one batch rather than one read per
-	 * row. Only pages that can be titled by a Subject id, as only they are headed by their label.
+	 * link. Only pages that can be titled by a Subject id, as only they are headed by their label.
 	 *
-	 * A list transcluded into a page renders in a context of its own, and gets no labels: the page
-	 * would keep them in its cache after they changed.
+	 * A list transcluded into a page renders in a context of its own, inside a parse, where its links get
+	 * no labels.
 	 *
 	 * @param IResultWrapper|stdClass[] $rows
 	 */
@@ -404,10 +445,7 @@ class NeoWikiHooks {
 
 		// A list that cannot be labelled is still a list: its links keep their titles.
 		try {
-			NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->prefetch(
-				$pageIds,
-				$changesList->getOutput()
-			);
+			NeoWikiExtension::getInstance()->getSubjectInPlaceOfPageTitleLookup()->prefetch( $pageIds );
 		} catch ( Throwable $exception ) {
 			LoggerFactory::getInstance( 'NeoWiki' )->warning(
 				'NeoWiki: reading the Subjects of listed pages failed: {exception}',
