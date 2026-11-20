@@ -589,7 +589,8 @@
 						"cdxIconDatabase",
 						"cdxIconSettings",
 						"cdxIconNext",
-						"cdxIconReload"
+						"cdxIconReload",
+						"cdxIconUndo"
 					]
 				}
 			],
@@ -943,8 +944,14 @@
 				"neowiki-layout-editor-description",
 				"neowiki-layout-editor-description-placeholder",
 				"neowiki-layout-editor-view-type",
-				"neowiki-layout-editor-show-all-properties",
-				"neowiki-layout-editor-shown-count",
+				"neowiki-layout-editor-show-all",
+				"neowiki-layout-editor-shown",
+				"neowiki-layout-editor-hidden",
+				"neowiki-layout-editor-back-to-properties",
+				"neowiki-display-attribute-precision-description",
+				"neowiki-display-attribute-precision-from-schema",
+				"neowiki-display-attribute-precision-as-entered",
+				"neowiki-display-attribute-reset",
 				"neowiki-layout-editor-show-property",
 				"neowiki-layout-editor-hide-property",
 				"neowiki-layout-editor-keep-one-shown",

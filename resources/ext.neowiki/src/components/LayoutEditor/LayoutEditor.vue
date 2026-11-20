@@ -6,48 +6,61 @@
 	>
 		<template #start>
 			<div class="ext-neowiki-layout-editor__settings">
-				<div class="ext-neowiki-layout-editor__metadata">
-					<span class="ext-neowiki-layout-editor__metadata-item">
-						<span class="ext-neowiki-layout-editor__metadata-label">
-							{{ $i18n( 'neowiki-layout-editor-view-type' ).text() }}
+				<DisplayRuleEditor
+					v-if="openedDefinition !== undefined"
+					ref="displayRuleEditor"
+					:property="openedDefinition"
+					:display-attributes="openedDisplayAttributes"
+					@update:display-attributes="onDisplayAttributesChanged"
+					@back="closeDisplayAttributes"
+				/>
+				<div v-show="openedDefinition === undefined">
+					<div class="ext-neowiki-layout-editor__metadata">
+						<span class="ext-neowiki-layout-editor__metadata-item">
+							<span class="ext-neowiki-layout-editor__metadata-label">
+								{{ $i18n( 'neowiki-layout-editor-view-type' ).text() }}
+							</span>
+							{{ initialLayout.getType() }}
 						</span>
-						{{ initialLayout.getType() }}
-					</span>
-				</div>
+					</div>
 
-				<div class="ext-neowiki-layout-editor__description">
-					<CdxField :optional="true">
-						<template #label>
-							{{ $i18n( 'neowiki-layout-editor-description' ).text() }}
-						</template>
-						<CdxTextArea
-							:model-value="description"
-							:placeholder="$i18n( 'neowiki-layout-editor-description-placeholder' ).text()"
-							@update:model-value="onDescriptionChanged"
+					<div class="ext-neowiki-layout-editor__description">
+						<CdxField :optional="true">
+							<template #label>
+								{{ $i18n( 'neowiki-layout-editor-description' ).text() }}
+							</template>
+							<CdxTextArea
+								:model-value="description"
+								:placeholder="$i18n( 'neowiki-layout-editor-description-placeholder' ).text()"
+								@update:model-value="onDescriptionChanged"
+							/>
+						</CdxField>
+					</div>
+
+					<div class="ext-neowiki-layout-editor__display-rules">
+						<CdxMessage
+							v-if="schemaFetchFailed"
+							type="error"
+							:inline="true"
+						>
+							{{ $i18n( 'neowiki-layout-editor-schema-fetch-error' ).text() }}
+						</CdxMessage>
+						<DisplayRuleList
+							v-else
+							ref="displayRuleList"
+							:schema-properties="schemaProperties"
+							:display-rules="currentDisplayRules"
+							:properties-targeting-dependent-subjects="targetingDependentSubjects"
+							:preview="previewMarks"
+							:properties-with-display-attributes="propertiesWithDisplayAttributes"
+							:unsaved-properties="unsavedProperties"
+							@update:display-rules="onDisplayRulesChanged"
+							@hover="hoveredProperty = $event"
+							@select="onSelectedInList"
+							@open="openDisplayAttributes"
+							@reordering="draggedOrder = $event"
 						/>
-					</CdxField>
-				</div>
-
-				<div class="ext-neowiki-layout-editor__display-rules">
-					<CdxMessage
-						v-if="schemaFetchFailed"
-						type="error"
-						:inline="true"
-					>
-						{{ $i18n( 'neowiki-layout-editor-schema-fetch-error' ).text() }}
-					</CdxMessage>
-					<DisplayRuleList
-						v-else
-						ref="displayRuleList"
-						:schema-properties="schemaProperties"
-						:display-rules="currentDisplayRules"
-						:properties-targeting-dependent-subjects="targetingDependentSubjects"
-						:preview="previewMarks"
-						@update:display-rules="onDisplayRulesChanged"
-						@hover="hoveredProperty = $event"
-						@select="onSelectedInList"
-						@reordering="draggedOrder = $event"
-					/>
+					</div>
 				</div>
 			</div>
 		</template>
@@ -63,13 +76,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 import { Layout, type DisplayRule } from '@/domain/Layout.ts';
 import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { CdxField, CdxMessage, CdxTextArea } from '@wikimedia/codex';
 import EditorPanes, { type StartPaneOptions } from '@/components/common/EditorPanes.vue';
 import DisplayRuleList, { type DisplayRuleListExposes, type DraggedOrder, type PreviewMarks } from './DisplayRuleList.vue';
 import LayoutPreview from './LayoutPreview.vue';
+import DisplayRuleEditor, { type DisplayRuleEditorExposes } from './DisplayRuleEditor.vue';
+import { attributesAfterPatch, rulesInEffect as rulesInEffectFor, rulesAfterSettingDisplayAttributes } from './displayRuleEditing.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { propertiesTargetingDependentSubjects } from '@/domain/propertyTypes/Relation.ts';
 import { subjectsAreDependentIn } from '@/application/SchemaLookup.ts';
@@ -92,6 +107,9 @@ const emit = defineEmits<{
 }>();
 
 const displayRuleList = ref<DisplayRuleListExposes | null>( null );
+const displayRuleEditor = ref<DisplayRuleEditorExposes | null>( null );
+
+const componentRegistry = NeoWikiServices.getComponentRegistry();
 
 const schemaRepo = NeoWikiServices.getSchemaRepository();
 const schemaStore = useSchemaStore();
@@ -101,6 +119,8 @@ const currentDisplayRules = shallowRef<DisplayRule[]>( [ ...props.initialLayout.
 const schemaProperties = shallowRef<PropertyDefinition[]>( [] );
 const targetingDependentSubjects = shallowRef<PropertyName[]>( [] );
 const schemaFetchFailed = ref( false );
+
+const openedProperty = ref<string | null>( null );
 
 async function fetchSchemaProperties( schemaName: string ): Promise<void> {
 	schemaFetchFailed.value = false;
@@ -119,6 +139,7 @@ async function fetchSchemaProperties( schemaName: string ): Promise<void> {
 }
 
 watch( () => props.initialLayout, ( layout ) => {
+	openedProperty.value = null;
 	description.value = layout.getDescription();
 	currentDisplayRules.value = [ ...layout.getDisplayRules() ];
 	fetchSchemaProperties( layout.getSchema() );
@@ -165,9 +186,75 @@ function onSelectedInList( name: string ): void {
 	selectedProperty.value = selectedProperty.value === name ? null : name;
 }
 
-function onSelectedInPreview( name: string ): void {
+async function onSelectedInPreview( name: string ): Promise<void> {
+	if ( propertiesWithDisplayAttributes.value.includes( name ) ) {
+		await openDisplayAttributes( name );
+		return;
+	}
+
+	openedProperty.value = null;
 	selectedProperty.value = name;
+	await nextTick();
 	displayRuleList.value?.focusProperty( name );
+}
+
+const rulesInEffect = computed( (): DisplayRule[] =>
+	rulesInEffectFor( schemaProperties.value, currentDisplayRules.value, targetingDependentSubjects.value ) );
+
+// The list opens them for shown properties alone, and the preview shows no other.
+const propertiesWithDisplayAttributes = computed( (): string[] => schemaProperties.value
+	.filter( ( property ) => componentRegistry.getDisplayAttributesEditor( property.type ) !== undefined )
+	.map( ( property ) => property.name.toString() ) );
+
+const savedRules = computed( (): DisplayRule[] =>
+	rulesInEffectFor( schemaProperties.value, props.initialLayout.getDisplayRules(), targetingDependentSubjects.value ) );
+
+function attributesIn( rules: DisplayRule[], name: string ): Record<string, unknown> {
+	return rules.find( ( rule ) => rule.property.toString() === name )?.displayAttributes ?? {};
+}
+
+const unsavedProperties = computed( (): string[] => rulesInEffect.value
+	.map( ( rule ) => rule.property.toString() )
+	.filter( ( name ) => !sameAttributes( attributesIn( rulesInEffect.value, name ), attributesIn( savedRules.value, name ) ) ) );
+
+const openedDefinition = computed( (): PropertyDefinition | undefined =>
+	schemaProperties.value.find( ( property ) => property.name.toString() === openedProperty.value ) );
+
+const openedDisplayAttributes = computed( (): Record<string, unknown> => attributesIn( rulesInEffect.value, openedProperty.value! ) );
+
+async function openDisplayAttributes( name: string ): Promise<void> {
+	openedProperty.value = name;
+	selectedProperty.value = name;
+	hoveredProperty.value = null;
+	await nextTick();
+	displayRuleEditor.value?.focusFirstField();
+}
+
+async function closeDisplayAttributes(): Promise<void> {
+	const name = openedProperty.value!;
+
+	openedProperty.value = null;
+	selectedProperty.value = null;
+	await nextTick();
+	displayRuleList.value?.focusProperty( name );
+}
+
+// An edit that sets nothing new changes nothing to save: written out, it would also turn a Layout without Display
+// Rules into rules, which show no property added to the Schema later.
+function onDisplayAttributesChanged( patch: Record<string, unknown> ): void {
+	const displayAttributes = attributesAfterPatch( openedDisplayAttributes.value, patch );
+
+	if ( sameAttributes( displayAttributes, openedDisplayAttributes.value ) ) {
+		return;
+	}
+
+	onDisplayRulesChanged( rulesAfterSettingDisplayAttributes( rulesInEffect.value, openedProperty.value!, displayAttributes ) );
+}
+
+function sameAttributes( some: Record<string, unknown>, others: Record<string, unknown> ): boolean {
+	const names = Object.keys( some );
+
+	return names.length === Object.keys( others ).length && names.every( ( name ) => some[ name ] === others[ name ] );
 }
 
 export interface LayoutEditorExposes {
@@ -181,6 +268,7 @@ defineExpose( {
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-layout-editor {
 	&__settings {
@@ -212,6 +300,10 @@ defineExpose( {
 	&__display-rules {
 		border-block-start: @border-subtle;
 		padding-block-start: @spacing-100;
+
+		.ext-neowiki-display-rule-list {
+			.ext-neowiki-edge-to-edge-in-dialog();
+		}
 	}
 }
 </style>

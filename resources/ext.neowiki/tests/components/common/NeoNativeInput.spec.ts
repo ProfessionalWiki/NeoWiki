@@ -223,4 +223,28 @@ describe( 'NeoNativeInput', () => {
 			expect( wrapper.emitted( 'update:modelValue' ) ).toEqual( [ [ '' ] ] );
 		} );
 	} );
+
+	it( 'lets go of the focus under the wheel in a number field, so the wheel scrolls rather than steps the value', async () => {
+		const wrapper = newWrapper();
+		document.body.appendChild( wrapper.element );
+		const input = wrapper.find( 'input' );
+		( input.element as HTMLInputElement ).focus();
+
+		await input.trigger( 'wheel' );
+
+		expect( document.activeElement ).not.toBe( input.element );
+		wrapper.unmount();
+	} );
+
+	it( 'keeps the focus under the wheel in a date field, which the wheel does not step', async () => {
+		const wrapper = newWrapper( { inputType: 'date' } );
+		document.body.appendChild( wrapper.element );
+		const input = wrapper.find( 'input' );
+		( input.element as HTMLInputElement ).focus();
+
+		await input.trigger( 'wheel' );
+
+		expect( document.activeElement ).toBe( input.element );
+		wrapper.unmount();
+	} );
 } );

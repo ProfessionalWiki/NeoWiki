@@ -72,6 +72,7 @@ import UnregisteredTypeAttributesEditor from '@/components/SchemaEditor/Property
 import TextAttributesEditor from '@/components/SchemaEditor/Property/TextAttributesEditor.vue';
 import MonolingualTextAttributesEditor from '@/components/SchemaEditor/Property/MonolingualTextAttributesEditor.vue';
 import NumberAttributesEditor from '@/components/SchemaEditor/Property/NumberAttributesEditor.vue';
+import NumberDisplayAttributesEditor from '@/components/LayoutEditor/DisplayAttributes/NumberDisplayAttributesEditor.vue';
 import SelectAttributesEditor from '@/components/SchemaEditor/Property/SelectAttributesEditor.vue';
 import UrlAttributesEditor from '@/components/SchemaEditor/Property/UrlAttributesEditor.vue';
 import RelationAttributesEditor from '@/components/SchemaEditor/Property/RelationAttributesEditor.vue';
@@ -123,6 +124,7 @@ export class NeoWikiExtension {
 			valueDisplayComponent: NumberDisplay,
 			valueEditor: NumberInput,
 			attributesEditor: NumberAttributesEditor,
+			displayAttributesEditor: NumberDisplayAttributesEditor,
 			label: 'neowiki-property-type-number',
 			icon: cdxIconMathematics,
 		} );

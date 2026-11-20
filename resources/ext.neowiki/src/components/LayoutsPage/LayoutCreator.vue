@@ -254,6 +254,7 @@ defineExpose( { validate, getLayout, reset } );
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 .ext-neowiki-layout-creator {
 	display: flex;
@@ -268,6 +269,10 @@ defineExpose( { validate, getLayout, reset } );
 	&__display-rules {
 		border-block-start: @border-subtle;
 		padding-block-start: @spacing-100;
+
+		.ext-neowiki-display-rule-list {
+			.ext-neowiki-edge-to-edge-in-dialog();
+		}
 	}
 }
 </style>
