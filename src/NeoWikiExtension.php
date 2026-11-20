@@ -100,6 +100,7 @@ use ProfessionalWiki\NeoWiki\Application\LayoutLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Application\PageReadAuthorizer;
 use ProfessionalWiki\NeoWiki\Application\ReadAuthorizedSubjectLookup;
+use ProfessionalWiki\NeoWiki\Application\ControlledSubjectRules;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectBuilder;
 use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Application\Validation\DependentSubjectValidator;
@@ -208,6 +209,7 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchHitLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Search\SubjectSearchTextLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectContentRepository;
+use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\SubjectContentDataSerializer;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PointInTimeSubjectLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\PublishedSubjectLookup;
@@ -737,6 +739,17 @@ class NeoWikiExtension {
 		return new DependentSubjectRules( $this->newSchemaResolver(
 			$this->newSchemaLookup( $this->newUnrestrictedAuthority() )
 		) );
+	}
+
+	/**
+	 * Resolves every Schema, whoever makes the request: a writer who may not read a Schema still may not edit its
+	 * Controlled Subjects.
+	 */
+	public function newControlledSubjectRules(): ControlledSubjectRules {
+		return new ControlledSubjectRules(
+			$this->newSchemaResolver( $this->newSchemaLookup( $this->newUnrestrictedAuthority() ) ),
+			new SubjectContentDataSerializer()
+		);
 	}
 
 	/**

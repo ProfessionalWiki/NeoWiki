@@ -48,7 +48,8 @@ class GetSubjectLabelsApi extends SimpleHandler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => '',
-				self::PARAM_DESCRIPTION => 'Case-insensitive search prefix matched against Subject labels.',
+				self::PARAM_DESCRIPTION => 'Case-insensitive search prefix matched against Subject labels. Empty, it lists '
+					. 'the Subjects of the Schemas in `schema` by label, and returns nothing without `schema`.',
 			],
 			'schema' => [
 				self::PARAM_SOURCE => 'query',

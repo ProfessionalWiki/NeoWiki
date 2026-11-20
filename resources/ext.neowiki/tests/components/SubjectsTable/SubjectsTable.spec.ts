@@ -23,6 +23,7 @@ const FULL_PAGE: SubjectSummaries = {
 
 let pinia: ReturnType<typeof createPinia>;
 let getSubjectSummaries: ReturnType<typeof vi.fn>;
+let mayEditControlledSubjects: boolean;
 
 function mountTable( props: Record<string, unknown> = {}, subjectFirst = false ): VueWrapper {
 	setupMwMock( {
@@ -35,7 +36,10 @@ function mountTable( props: Record<string, unknown> = {}, subjectFirst = false )
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
-			provide: { [ Service.SubjectSummaryLookup ]: { getSubjectSummaries } },
+			provide: {
+				[ Service.SubjectSummaryLookup ]: { getSubjectSummaries },
+				[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
+			},
 			stubs: { CdxIcon: true },
 		},
 	} );
@@ -93,6 +97,7 @@ describe( 'SubjectsTable', () => {
 			{ name: 'Computer', description: '', propertyCount: 4, subjectsAreDependent: false },
 		] );
 		getSubjectSummaries = vi.fn().mockResolvedValue( { subjects: [ summary( 's1demo1aaaaaaa1' ) ], nextCursor: null } );
+		mayEditControlledSubjects = false;
 	} );
 
 	afterEach( () => {
@@ -430,6 +435,29 @@ describe( 'SubjectsTable', () => {
 			await flushPromises();
 
 			findSchemaMenu( wrapper ).vm.$emit( 'update:selected', 'Person' );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( true );
+		} );
+	} );
+
+	describe( 'for a Schema whose Subjects are controlled', () => {
+		beforeEach( () => {
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Gender', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: true },
+			] );
+		} );
+
+		it( 'offers no Create button while it is the Schema chosen, to a user without the right to edit them', async () => {
+			const wrapper = mountTable( { initialSchema: 'Gender', canCreate: true } );
+			await flushPromises();
+
+			expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( false );
+		} );
+
+		it( 'offers the Create button while it is the Schema chosen, to a user with the right to edit them', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountTable( { initialSchema: 'Gender', canCreate: true } );
 			await flushPromises();
 
 			expect( wrapper.find( '.ext-neowiki-subjects-table__create' ).exists() ).toBe( true );

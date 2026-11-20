@@ -146,7 +146,7 @@ class CachingSchemaLookupTest extends TestCase {
 	}
 
 	private function expectedSchema(): Schema {
-		return new Schema( new SchemaName( 'Person' ), 'desc', new PropertyDefinitions( [] ), false );
+		return new Schema( new SchemaName( 'Person' ), 'desc', new PropertyDefinitions( [] ), false, false );
 	}
 
 	private function newTitleFactory( string $pageText, int $latestRevisionId ): TitleFactory {

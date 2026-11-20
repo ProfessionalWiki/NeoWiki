@@ -13,6 +13,8 @@ import { Subject } from '@/domain/Subject.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import type { SubjectLabelResult, SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import { SubjectCreationKey, type SubjectCreation } from '@/components/common/SubjectCreation.ts';
+import type { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 
 const $i18n = createI18nMock();
 
@@ -40,6 +42,11 @@ describe( 'SubjectPicker', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let subjectStore: any;
 	let mockSubjectLabelSearch: SubjectLabelSearch;
+	let mayEditControlledSubjects: boolean;
+
+	function permissionHints(): Partial<SubjectPermissionHints> {
+		return { canEditControlledSubjects: async () => mayEditControlledSubjects };
+	}
 
 	function createWrapper( props: Partial<InstanceType<typeof SubjectPicker>['$props']> = {} ): VueWrapper {
 		return mount( SubjectPicker, {
@@ -53,6 +60,7 @@ describe( 'SubjectPicker', () => {
 				plugins: [ pinia ],
 				provide: {
 					[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+					[ Service.SubjectPermissionHints ]: permissionHints(),
 				},
 				stubs: { CdxLookup: true },
 			},
@@ -76,6 +84,7 @@ describe( 'SubjectPicker', () => {
 				plugins: [ pinia ],
 				provide: {
 					[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+					[ Service.SubjectPermissionHints ]: permissionHints(),
 					...( subjectCreation === undefined ? {} : { [ SubjectCreationKey as symbol ]: subjectCreation } ),
 				},
 				stubs: { CdxLookup: CdxLookupWithVModel },
@@ -128,6 +137,8 @@ describe( 'SubjectPicker', () => {
 		mockSubjectLabelSearch = {
 			searchSubjectLabels: vi.fn().mockResolvedValue( [] ),
 		};
+		mayEditControlledSubjects = false;
+		useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [] );
 	} );
 
 	it( 'searches the Subjects of every target Schema', async () => {
@@ -762,6 +773,110 @@ describe( 'SubjectPicker', () => {
 
 			expect( menuItemsOf( wrapper ) ).toEqual( [] );
 		} );
+	} );
+
+	describe( 'a relation to Controlled Subjects', () => {
+
+		const MAN = { id: 's1man1aaaaaaaa1', label: 'Man' };
+		const WOMAN = { id: 's1woman1aaaaaa1', label: 'Woman' };
+
+		function summary( name: string, subjectsAreControlled: boolean ): SchemaSummary {
+			return { name, description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled };
+		}
+
+		function hostCreatingNothing(): SubjectCreation {
+			return { create: async () => null, drafts: () => [] };
+		}
+
+		beforeEach( () => {
+			setupMwMock( {
+				messages: {
+					'neowiki-subject-picker-create': ( schema: string ) => `Create a new ${ schema }`,
+					'neowiki-subject-picker-loading': 'Loading…',
+				},
+			} );
+			useSchemaStore().fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				summary( 'Gender', true ),
+				summary( 'Person', false ),
+			] );
+		} );
+
+		async function mountedPicker(
+			targetSchemas: string[],
+			subjectCreation: SubjectCreation | undefined = undefined,
+		): Promise<VueWrapper> {
+			const wrapper = createWrapperWithVModel( { targetSchemas }, subjectCreation );
+			await flushPromises();
+			return wrapper;
+		}
+
+		it( 'offers no create option for a target Schema with Controlled Subjects to a user without the right to edit them', async () => {
+			const wrapper = await mountedPicker( [ 'Gender', 'Person' ], hostCreatingNothing() );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Person' ] );
+		} );
+
+		it( 'offers the create option for a target Schema with Controlled Subjects to a user with the right to edit them', async () => {
+			mayEditControlledSubjects = true;
+
+			const wrapper = await mountedPicker( [ 'Gender', 'Person' ], hostCreatingNothing() );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Create a new Gender', 'Create a new Person' ] );
+		} );
+
+		it( 'narrows the listed Subjects as the user types', async () => {
+			const wrapper = await mountedPicker( [ 'Gender' ] );
+			searchReturns( [ WOMAN ] );
+
+			await type( wrapper, 'Wo' );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [ 'Woman' ] );
+			expect( mockSubjectLabelSearch.searchSubjectLabels ).toHaveBeenLastCalledWith( 'Wo', [ 'Gender' ], 50 );
+		} );
+
+		it( 'lists nothing before anything is typed when a target Schema has Subjects that are not controlled', async () => {
+			searchReturns( [ WOMAN ] );
+
+			const wrapper = await mountedPicker( [ 'Gender', 'Person' ] );
+
+			expect( menuLabelsOf( wrapper ) ).toEqual( [] );
+		} );
+
+		it( 'shows an unpickable loading entry until the Subjects are listed', async () => {
+			( mockSubjectLabelSearch.searchSubjectLabels as ReturnType<typeof vi.fn> )
+				.mockReturnValue( new Promise( silence ) );
+
+			const wrapper = await mountedPicker( [ 'Gender' ] );
+
+			expect( menuItemsOf( wrapper ) ).toMatchObject( [ { label: 'Loading…', disabled: true } ] );
+		} );
+
+		// Codex opens an empty field's menu on focus only when the Lookup was built with items, which the
+		// list arrives too late to be.
+		it( 'opens the menu on focus with the Subjects listed when every target Schema has Controlled Subjects', async () => {
+			searchReturns( [ MAN, WOMAN ] );
+			const wrapper = mount( SubjectPicker, {
+				props: { selected: null, targetSchemas: [ 'Gender' ] },
+				attachTo: document.body,
+				global: {
+					mocks: { $i18n },
+					plugins: [ pinia ],
+					provide: {
+						[ Service.SubjectLabelSearch ]: mockSubjectLabelSearch,
+						[ Service.SubjectPermissionHints ]: permissionHints(),
+					},
+				},
+			} );
+			await flushPromises();
+
+			await wrapper.find( 'input' ).trigger( 'focus' );
+			await nextTick();
+
+			expect( wrapper.find( 'input' ).attributes( 'aria-expanded' ) ).toBe( 'true' );
+			expect( wrapper.findAll( '[role="option"]' ).map( ( option ) => option.text() ) ).toEqual( [ 'Man', 'Woman' ] );
+			wrapper.unmount();
+		} );
+
 	} );
 
 	describe( 'creating the target on the spot', () => {

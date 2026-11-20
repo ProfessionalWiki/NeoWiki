@@ -52,6 +52,8 @@ const props = defineProps<{
 	ariaLabel?: string;
 	/** Leaves out the Schemas whose Subjects are dependent. */
 	standaloneOnly?: boolean;
+	/** Leaves out the Schemas whose Subjects are controlled. */
+	uncontrolledOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -94,7 +96,8 @@ const creationOffered = computed( (): boolean =>
 
 const offeredSummaries = computed( (): SchemaSummary[] => summaries.value.filter( ( summary ) =>
 	( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) &&
-	!( props.standaloneOnly && summary.subjectsAreDependent ) ) );
+	!( props.standaloneOnly && summary.subjectsAreDependent ) &&
+	!( props.uncontrolledOnly && summary.subjectsAreControlled ) ) );
 
 const menu = computed( (): SchemaMenu =>
 	schemaMenu(

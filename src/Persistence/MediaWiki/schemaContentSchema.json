@@ -64,6 +64,9 @@
 		"subjectsAreDependent": {
 			"type": "boolean"
 		},
+		"subjectsAreControlled": {
+			"type": "boolean"
+		},
 		"propertyDefinitions": {
 			"type": "object",
 			"patternProperties": {

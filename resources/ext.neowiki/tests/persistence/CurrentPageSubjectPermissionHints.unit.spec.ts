@@ -23,6 +23,7 @@ describe( 'Current Page Subject Permission Hints', () => {
 			canEditSubject: async () => answer,
 			canDeleteSubject: async () => answer,
 			canCreateSubjectPage: async () => answer,
+			canEditControlledSubjects: async () => answer,
 		};
 	}
 
@@ -52,6 +53,12 @@ describe( 'Current Page Subject Permission Hints', () => {
 		const hints = new CurrentPageSubjectPermissionHints( CURRENT_PAGE, false, hintsAnswering( true ) );
 
 		expect( await hints.canCreateSubjectPage() ).toBe( true );
+	} );
+
+	it( 'asks the fallback whether Controlled Subjects can be edited, which no page decides', async () => {
+		const hints = new CurrentPageSubjectPermissionHints( CURRENT_PAGE, false, hintsAnswering( true ) );
+
+		expect( await hints.canEditControlledSubjects() ).toBe( true );
 	} );
 
 } );

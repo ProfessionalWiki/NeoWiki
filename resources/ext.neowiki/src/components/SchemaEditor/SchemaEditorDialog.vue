@@ -39,6 +39,11 @@
 					>
 						{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
 					</p>
+					<SubjectsAreControlledInput
+						v-else
+						v-model="subjectsAreControlled"
+						@update:model-value="markChanged"
+					/>
 				</template>
 			</SchemaEditor>
 
@@ -75,6 +80,7 @@ import SchemaEditor, { SchemaEditorExposes } from '@/components/SchemaEditor/Sch
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog.vue';
 import SchemaCreatorDialog from '@/components/SchemaCreator/SchemaCreatorDialog.vue';
+import SubjectsAreControlledInput from '@/components/SchemaEditor/SubjectsAreControlledInput.vue';
 import { CdxDialog, CdxField, CdxTextArea } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import { Schema } from '@/domain/Schema.ts';
@@ -100,12 +106,14 @@ const emit = defineEmits<{
 
 const schemaEditor = ref<SchemaEditorExposes | null>( null );
 const description = ref( props.initialSchema.getDescription() );
+const subjectsAreControlled = ref( props.initialSchema.subjectsAreControlled() );
 const { hasChanged, markChanged, resetChanged } = useChangeDetection();
 
 const dialogTitle = computed( () => mw.msg( 'neowiki-editing-schema', props.initialSchema.getName() ) );
 
 watch( () => props.initialSchema, ( schema ) => {
 	description.value = schema.getDescription();
+	subjectsAreControlled.value = schema.subjectsAreControlled();
 } );
 
 function close(): void {
@@ -129,8 +137,9 @@ function onDialogUpdateOpen( value: boolean ): void {
 
 watch( () => props.open, ( isOpen ) => {
 	if ( isOpen ) {
-		// Reopening after a discard must not keep the abandoned description.
+		// Reopening after a discard must not keep the abandoned fields.
 		description.value = props.initialSchema.getDescription();
+		subjectsAreControlled.value = props.initialSchema.subjectsAreControlled();
 		resetChanged();
 	}
 } );
@@ -154,7 +163,9 @@ async function writeSchema( summary: string ): Promise<void> {
 		return;
 	}
 
-	const schema = schemaEditor.value.getSchema().withDescription( description.value );
+	const schema = schemaEditor.value.getSchema()
+		.withDescription( description.value )
+		.withSubjectsAreControlled( subjectsAreControlled.value );
 	const schemaName = schema.getName();
 	const editSummary = summary || mw.msg( 'neowiki-schema-editor-summary-default' );
 

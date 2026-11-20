@@ -39,6 +39,16 @@ describe( 'RestSubjectLabelSearch', () => {
 		] );
 	} );
 
+	it( 'asks for as many Subjects as the limit it is given', async () => {
+		const search = newSearch( {
+			[ `${ SEARCH_URL }&limit=50&schema=Gender` ]: jsonResponse( [ { id: 's1woman1aaaaaa1', label: 'Woman' } ] ),
+		} );
+
+		expect( await search.searchSubjectLabels( 'acme', [ 'Gender' ], 50 ) ).toEqual( [
+			{ id: 's1woman1aaaaaa1', label: 'Woman' },
+		] );
+	} );
+
 	it( 'throws when the search fails', async () => {
 		const search = newSearch( {
 			[ SEARCH_URL ]: { ok: false, json: async () => ( {} ) } as Response,

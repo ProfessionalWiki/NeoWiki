@@ -32,9 +32,9 @@
 					@blur="onBlur"
 					@focusin="onFocus"
 				>
-					<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName }">
+					<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName, targetIsControlled }">
 						<RelationTargetOpenButton
-							v-if="shownTarget"
+							v-if="shownTarget && mayEditSubjects( targetIsControlled )"
 							:target="shownTarget"
 							:name="targetName"
 							@open="emit( 'edit-relation-target', $event )"
@@ -52,9 +52,9 @@
 			@update:selected="onSingleSelectionChanged"
 			@blur="onSingleBlur"
 		>
-			<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName }">
+			<template v-if="targetEditingEnabled" #suffix="{ shownTarget, targetName, targetIsControlled }">
 				<RelationTargetOpenButton
-					v-if="shownTarget"
+					v-if="shownTarget && mayEditSubjects( targetIsControlled )"
 					:target="shownTarget"
 					:name="targetName"
 					@open="emit( 'edit-relation-target', $event )"
@@ -76,6 +76,7 @@ import { localTargetSchemaNames, RelationProperty, RelationType } from '@/domain
 import { Value, ValueType, RelationValue, relationValueWithTargets } from '@/domain/Value';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 
 const props = withDefaults(
 	defineProps<ValueInputProps<RelationProperty>>(),
@@ -92,6 +93,7 @@ const startIcon = NeoWikiServices.getComponentRegistry().getIcon( RelationType.t
 const emit = defineEmits<ValueInputEmits>();
 
 const targetEditingEnabled = inject( RelationTargetEditingKey, false );
+const { mayEditSubjects } = useControlledSubjectRight();
 
 const internalValue = ref<RelationValue | undefined>( undefined );
 const singleHasUnmatchedText = ref( false );

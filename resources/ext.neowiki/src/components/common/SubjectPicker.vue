@@ -23,12 +23,14 @@
 				<!-- The target as the field is displaying it, not the one the relation holds: a field
 					showing a search of the user's names no Subject, so a suffix acting on that
 					target has nothing to act on that they can see. selectedName is set only where
-					a name is written into the field.
+					a name is written into the field. Whether that target is a Controlled Subject is
+					known only for a Subject of the field's target Schemas.
 					`name` is reserved on a slot — Vue reads it as the slot's own name. -->
 				<slot
 					name="suffix"
 					:shown-target="selectedName === '' ? null : props.selected"
 					:target-name="targetName"
+					:target-is-controlled="shownTargetIsControlled"
 				/>
 			</span>
 		</div>
@@ -57,6 +59,8 @@ import type { Subject } from '@/domain/Subject.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { disambiguateSubjectLabels, subjectMenuItem } from '@/presentation/disambiguateSubjectLabels.ts';
 import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
+import type { SchemaSummary } from '@/application/SchemaLookup.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 
 interface SubjectPickerProps {
 	selected: string | null;
@@ -80,11 +84,16 @@ const props = withDefaults(
 	}
 );
 
-// Codex has no value of its own for either of these, so each is an ordinary menu item carrying a
-// value no Subject id can take: an id is 's' followed by 14 base58 characters. A create option
-// carries its Schema's name after the prefix.
+// Codex has no value of its own for these, so each is an ordinary menu item carrying a value no
+// Subject id can take: an id is 's' followed by 14 base58 characters. A create option carries its
+// Schema's name after the prefix.
 const CREATE_SUBJECT = '__create__';
 const NO_RESULTS = '__no_results__';
+const LOADING = '__loading__';
+
+// How many Subjects a field targeting only Schemas with Controlled Subjects lists, the most the
+// label search returns.
+const LISTED_SUBJECTS_LIMIT = 50;
 
 const emit = defineEmits<{
 	'update:selected': [ value: string | null ];
@@ -97,26 +106,68 @@ const subjectLabelSearch = NeoWikiServices.getSubjectLabelSearch();
 // Absent unless the host can carry a Subject the wiki does not hold yet, which is what leaves the
 // picker offering only Subjects that already exist.
 const subjectCreation = inject( SubjectCreationKey, undefined );
+const { mayEditSubjects } = useControlledSubjectRight();
 
-// Creation needs a Schema to create under, which a picker offering every Schema does not name.
+const targetSchemaNames = computed( (): readonly string[] => props.targetSchemas ?? [] );
+
+// The wiki's Schemas, which say which target Schemas have Controlled Subjects. Null until listed; a
+// picker without target Schemas needs none.
+const schemaSummaries = shallowRef<readonly SchemaSummary[] | null>( targetSchemaNames.value.length === 0 ? [] : null );
+
+const controlledTargetSchemas = computed( (): readonly string[] => targetSchemaNames.value.filter(
+	( schemaName ) => schemaSummaries.value?.find( ( summary ) => summary.name === schemaName )?.subjectsAreControlled === true
+) );
+
+// Creation needs a Schema to create under, which a picker offering every Schema does not name. None is
+// offered before the Schemas are listed, so that no create option shows for a Schema whose Subjects turn
+// out to be controlled.
 const creatableSchemas = computed( (): readonly string[] =>
-	subjectCreation === undefined ? [] : props.targetSchemas ?? []
+	subjectCreation === undefined || schemaSummaries.value === null ? [] : targetSchemaNames.value.filter(
+		( schemaName ) => mayEditSubjects( controlledTargetSchemas.value.includes( schemaName ) )
+	)
 );
 
 const creationOffered = computed( (): boolean => creatableSchemas.value.length > 0 );
 
-// Names the Schemas of the create options: by their names until the wiki's Schemas are listed, by their labels once
-// they are. A picker that offers none lists no Schemas.
-const schemaNamer = shallowRef<SchemaNamer>( ( schemaName ) => schemaName );
+// A field whose target Schemas all have Controlled Subjects picks from a closed list, so it lists the
+// Subjects before anything is typed, as a dropdown would.
+const listsSubjects = computed( (): boolean => targetSchemaNames.value.length > 0 &&
+	controlledTargetSchemas.value.length === targetSchemaNames.value.length );
 
-if ( creationOffered.value ) {
+const shownTargetIsControlled = computed( (): boolean => {
+	const target = props.selected !== null && SubjectId.isValid( props.selected ) ?
+		subjectStore.findSubject( new SubjectId( props.selected ) ) :
+		undefined;
+
+	return target !== undefined && controlledTargetSchemas.value.includes( target.getSchemaName() );
+} );
+
+// The Subjects such a field lists while nothing is typed. Null until they are read.
+const listedSubjects = shallowRef<SubjectLabelResult[] | null>( null );
+
+// Names the Schemas of the create options: by their names until the wiki's Schemas are listed, by their labels once
+// they are.
+const schemaNamer = computed( (): SchemaNamer => schemaNamerFor( schemaSummaries.value ?? [] ) );
+
+if ( schemaSummaries.value === null ) {
 	useSchemaStore().fetchAllSchemaSummaries().then(
 		( summaries ) => {
-			schemaNamer.value = schemaNamerFor( summaries );
+			schemaSummaries.value = summaries;
 		},
-		() => undefined
+		() => {
+			schemaSummaries.value = [];
+		}
 	);
 }
+
+watch( listsSubjects, async ( lists ) => {
+	if ( lists ) {
+		listedSubjects.value = await searchLabels( '', targetSchemaNames.value );
+	}
+} );
+
+const loading = computed( (): boolean => schemaSummaries.value === null ||
+	( listsSubjects.value && listedSubjects.value === null ) );
 
 const selectedSubject = ref<string | null>( props.selected );
 // The selected target's own name, for a suffix to say what it acts on. Dropped as soon as the
@@ -196,15 +247,21 @@ const matchingDraftRows = computed( (): SubjectLabelResult[] => {
 	);
 } );
 
-// The create options are present from the first render and never leave, which is what opens the
-// menu on focus before anything is typed: Codex expands an empty input's menu only when the
-// Lookup was built with items, and collapses it again the moment the list runs empty.
+// The menu is built with an item, a loading entry until the Schemas and any listed Subjects are in,
+// and the create options never leave once offered. That is what opens the menu on focus before
+// anything is typed: Codex expands an empty input's menu only when the Lookup was built with items,
+// and collapses it again the moment the list runs empty.
 const menuItems = computed( (): MenuItemData[] => {
+	if ( loading.value && typedText.value === '' ) {
+		return [ { value: LOADING, label: mw.msg( 'neowiki-subject-picker-loading' ), disabled: true } ];
+	}
+
+	const results = typedText.value === '' && listedSubjects.value !== null ?
+		listedSubjects.value :
+		searchResults.value;
 	// Every row offered is compared, drafts included: two unsaved Subjects of one Schema are named
 	// alike by default.
-	const rows = creationOffered.value ?
-		[ ...matchingDraftRows.value, ...searchResults.value ] :
-		searchResults.value;
+	const rows = creationOffered.value ? [ ...matchingDraftRows.value, ...results ] : results;
 	const items = disambiguateSubjectLabels( rows ).map( subjectMenuItem );
 
 	if ( !creationOffered.value ) {
@@ -365,7 +422,9 @@ async function candidatesFor( value: string ): Promise<SubjectLabelResult[]> {
 
 async function searchLabels( value: string, targetSchemas: readonly string[] | undefined ): Promise<SubjectLabelResult[]> {
 	try {
-		return await subjectLabelSearch.searchSubjectLabels( value, targetSchemas );
+		return await ( listsSubjects.value ?
+			subjectLabelSearch.searchSubjectLabels( value, targetSchemas, LISTED_SUBJECTS_LIMIT ) :
+			subjectLabelSearch.searchSubjectLabels( value, targetSchemas ) );
 	} catch {
 		return [];
 	}

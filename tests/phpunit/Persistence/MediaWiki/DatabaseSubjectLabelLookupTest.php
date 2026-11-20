@@ -203,6 +203,17 @@ class DatabaseSubjectLabelLookupTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $this->labelsMatching( ' ' ) );
 	}
 
+	public function testListsTheSubjectsOfTheListedSchemasInNameOrderForAnEmptySearch(): void {
+		$this->createPageWithoutMainSubject(
+			'Genders',
+			self::subject( 'sTestDSL1111111', 'Woman', 'Gender' ),
+			self::subject( 'sTestDSL1111112', 'Ada', 'Person' ),
+			self::subject( 'sTestDSL1111113', 'Man', 'Gender' ),
+		);
+
+		$this->assertSame( [ 'Man', 'Woman' ], array_column( $this->labelsMatching( '', schemaNames: [ 'Gender' ] ), 'label' ) );
+	}
+
 	private function createIngredientSchema(): void {
 		$this->assertNotNull( $this->createSchema( 'Ingredient', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' ) );
 	}

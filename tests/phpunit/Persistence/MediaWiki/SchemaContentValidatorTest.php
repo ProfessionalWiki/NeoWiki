@@ -59,6 +59,12 @@ class SchemaContentValidatorTest extends TestCase {
 		);
 	}
 
+	public function testANonBooleanDeclarationOfControlledSubjectsFailsValidation(): void {
+		$this->assertFalse(
+			SchemaContentValidator::newInstance()->validate( '{ "subjectsAreControlled": "yes", "propertyDefinitions": {} }' )
+		);
+	}
+
 	public function testMissingPropertyDefinitionsFailsValidation(): void {
 		$validator = SchemaContentValidator::newInstance();
 

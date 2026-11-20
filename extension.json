@@ -94,7 +94,11 @@
 		"HtmlPageLinkRendererBegin": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onHtmlPageLinkRendererBegin",
 		"ChangesListInitRows": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListInitRows",
 		"getUserPermissionsErrors": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onGetUserPermissionsErrors",
-		"ChangesListSpecialPageStructuredFilters": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListSpecialPageStructuredFilters"
+		"getUserPermissionsErrorsExpensive": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onGetUserPermissionsErrorsExpensive",
+		"ChangesListSpecialPageStructuredFilters": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onChangesListSpecialPageStructuredFilters",
+		"MultiContentSave": "ProfessionalWiki\\NeoWiki\\EntryPoints\\ControlledSubjectHooks::onMultiContentSave",
+		"PageDelete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\ControlledSubjectHooks::onPageDelete",
+		"PageUndelete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\ControlledSubjectHooks::onPageUndelete"
 	},
 
 	"JobClasses": {
@@ -187,7 +191,8 @@
 		"neowiki-layout-edit",
 		"neowiki-mapping-edit",
 		"neowiki-query",
-		"neowiki-admin"
+		"neowiki-admin",
+		"neowiki-controlled-subject-edit"
 	],
 
 	"GroupPermissions": {
@@ -200,7 +205,8 @@
 			"neowiki-mapping-edit": true
 		},
 		"sysop": {
-			"neowiki-admin": true
+			"neowiki-admin": true,
+			"neowiki-controlled-subject-edit": true
 		}
 	},
 
@@ -212,6 +218,9 @@
 			"neowiki-schema-edit": true,
 			"neowiki-layout-edit": true,
 			"neowiki-mapping-edit": true
+		},
+		"editprotected": {
+			"neowiki-controlled-subject-edit": true
 		}
 	},
 
@@ -849,14 +858,22 @@
 				"neowiki-dependent-subject-load-error",
 				"neowiki-dependent-subject-add-error",
 				"neowiki-schema-subjects-are-dependent",
+				"neowiki-schema-subjects-are-controlled",
 				"neowiki-schema-creator-dependent",
 				"neowiki-schema-creator-dependent-help",
 				"neowiki-schema-creator-dependent-info",
 				"neowiki-schema-creator-dependent-info-label",
+				"neowiki-schema-editor-controlled",
+				"neowiki-schema-editor-controlled-help",
+				"neowiki-schema-editor-controlled-denied",
+				"neowiki-schema-editor-controlled-info",
+				"neowiki-schema-editor-controlled-info-label",
 				"neowiki-create-subject-error-dependent-subjects",
+				"neowiki-create-subject-error-controlled-subjects",
 				"neowiki-schema-editor-resize-property-list",
 				"neowiki-subject-picker-placeholder",
 				"neowiki-subject-picker-no-results",
+				"neowiki-subject-picker-loading",
 				"neowiki-subject-picker-no-match",
 				"neowiki-subject-picker-create",
 				"neowiki-subject-picker-create-named",
@@ -1027,6 +1044,8 @@
 				"neowiki-managesubjects-delete-confirm-message",
 				"neowiki-managesubjects-delete-confirm-removed-from-host",
 				"neowiki-managesubjects-delete-confirm-removed-from-host-with-dependents",
+				"neowiki-managesubjects-delete-confirm-used-by",
+				"neowiki-managesubjects-delete-confirm-used-by-many",
 				"neowiki-managesubjects-delete-confirm-button",
 				"neowiki-managesubjects-delete-success",
 				"neowiki-managesubjects-delete-error",

@@ -38,7 +38,7 @@ const SchemaEditorStub = defineComponent( {
 	emits: [ 'change' ],
 	methods: {
 		getSchema(): Schema {
-			return newSchema( { title: 'TestSchema', properties: new PropertyDefinitionList( [] ) } );
+			return this.initialSchema as Schema;
 		},
 		saveBlocker(): SaveBlocker | null {
 			return editorSaveBlocker;
@@ -79,12 +79,14 @@ describe( 'SchemaEditorDialog', () => {
 
 		return { subjects, nextCursor: null };
 	}
+	let mayEditControlledSubjects: boolean;
 
 	beforeEach( () => {
 		editorSaveBlocker = null;
 		editorErrorsRevealed = false;
 		onSave = vi.fn<SchemaSaveHandler>();
 		schemasWithSubjects = [];
+		mayEditControlledSubjects = false;
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
 
@@ -99,7 +101,14 @@ describe( 'SchemaEditorDialog', () => {
 	function mountOn( initialSchema: Schema ): VueWrapper {
 		return mount( SchemaEditorDialog, {
 			props: { initialSchema, open: true, onSave },
-			global: { mocks: { $i18n }, stubs, provide: { [ Service.SubjectSummaryLookup ]: subjectSummaryLookup } },
+			global: {
+				mocks: { $i18n },
+				stubs,
+				provide: {
+					[ Service.SubjectSummaryLookup ]: subjectSummaryLookup,
+					[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
+				},
+			},
 		} );
 	}
 
@@ -305,6 +314,56 @@ describe( 'SchemaEditorDialog', () => {
 			await flushPromises();
 
 			expect( editorIsToldSubjectsMayUseSchema( wrapper ) ).toBe( false );
+		} );
+	} );
+
+	describe( 'Whether the Subjects are controlled', () => {
+		const CONTROLLED_CHECKBOX = '.ext-neowiki-subjects-are-controlled-input input[type="checkbox"]';
+
+		async function savedSchema( wrapper: VueWrapper ): Promise<Schema> {
+			wrapper.findComponent( SummaryAction ).vm.$emit( 'save', '' );
+			await flushPromises();
+
+			return onSave.mock.calls[ 0 ][ 0 ];
+		}
+
+		it( 'saves the declaration a user with the right to edit Controlled Subjects makes', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountOn( mockSchema );
+			await flushPromises();
+
+			await wrapper.findComponent( SchemaEditor ).get( CONTROLLED_CHECKBOX ).setValue( true );
+
+			expect( ( await savedSchema( wrapper ) ).subjectsAreControlled() ).toBe( true );
+		} );
+
+		it( 'keeps the declaration when a user without the right saves another change', async () => {
+			const wrapper = mountOn( newSchema( { subjectsAreControlled: true } ) );
+			await flushPromises();
+
+			await wrapper.findComponent( SchemaEditor ).vm.$emit( 'change' );
+
+			expect( ( await savedSchema( wrapper ) ).subjectsAreControlled() ).toBe( true );
+		} );
+
+		it( 'drops an abandoned declaration when the dialog reopens', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountOn( mockSchema );
+			await flushPromises();
+
+			await wrapper.findComponent( SchemaEditor ).get( CONTROLLED_CHECKBOX ).setValue( true );
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaEditor ).get<HTMLInputElement>( CONTROLLED_CHECKBOX ).element.checked ).toBe( false );
+		} );
+
+		it( 'offers no declaration for a Schema whose Subjects are dependent', async () => {
+			const wrapper = mountOn( newSchema( { subjectsAreDependent: true } ) );
+			await flushPromises();
+
+			expect( wrapper.findComponent( SchemaEditor ).find( CONTROLLED_CHECKBOX ).exists() ).toBe( false );
 		} );
 	} );
 

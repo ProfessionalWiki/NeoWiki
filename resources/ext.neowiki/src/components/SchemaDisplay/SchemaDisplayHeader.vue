@@ -16,6 +16,12 @@
 			>
 				{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
 			</p>
+			<p
+				v-if="schema.subjectsAreControlled()"
+				class="ext-neowiki-schema-display-header__controlled"
+			>
+				{{ $i18n( 'neowiki-schema-subjects-are-controlled' ).text() }}
+			</p>
 			<CdxButton
 				v-if="canCreateSubject"
 				class="ext-neowiki-schema-display-header__create-subject"
@@ -91,7 +97,8 @@ const displayName = computed( (): string => schemaDisplayName( props.schema ) );
 		color: @color-subtle;
 	}
 
-	&__dependence {
+	&__dependence,
+	&__controlled {
 		margin: @spacing-25 0 0;
 		color: @color-subtle;
 		font-size: @font-size-small;

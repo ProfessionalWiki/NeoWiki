@@ -39,6 +39,16 @@ describe( 'SchemaSerializer', () => {
 			} );
 		} );
 
+		it( 'declares the subjects of a schema with controlled subjects controlled', () => {
+			const schema = newSchema( { title: 'Gender', description: '', subjectsAreControlled: true } );
+
+			expect( JSON.parse( serializer.serializeSchema( schema ) ) ).toEqual( {
+				description: '',
+				subjectsAreControlled: true,
+				propertyDefinitions: {},
+			} );
+		} );
+
 		it( 'serializes a schema with all property types', () => {
 			const schema = newSchema( {
 				title: 'TestSchema',

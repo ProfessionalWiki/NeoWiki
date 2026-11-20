@@ -126,6 +126,25 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'not a boolean' => [ '{"subjectsAreDependent": "yes", "propertyDefinitions": {}}' ];
 	}
 
+	public function testReadsTheDeclarationThatTheSubjectsAreControlled(): void {
+		$json = '{"subjectsAreControlled": true, "propertyDefinitions": {}}';
+
+		$this->assertTrue( $this->deserialize( $json )->subjectsAreControlled() );
+	}
+
+	/**
+	 * @dataProvider uncontrolledDeclarationProvider
+	 */
+	public function testSubjectsAreNotControlledUnlessTheSchemaDeclaresThemControlled( string $json ): void {
+		$this->assertFalse( $this->deserialize( $json )->subjectsAreControlled() );
+	}
+
+	public function uncontrolledDeclarationProvider(): iterable {
+		yield 'absent' => [ '{"propertyDefinitions": {}}' ];
+		yield 'false' => [ '{"subjectsAreControlled": false, "propertyDefinitions": {}}' ];
+		yield 'not a boolean' => [ '{"subjectsAreControlled": "yes", "propertyDefinitions": {}}' ];
+	}
+
 	public function testReadsLabelsTrimmedUnderLowercaseTagsWithoutEmptyOnes(): void {
 		$json = '{"labels": {"zh-Hant": " 公司 ", "de": "  ", "nl": 42}, "propertyDefinitions": {}}';
 

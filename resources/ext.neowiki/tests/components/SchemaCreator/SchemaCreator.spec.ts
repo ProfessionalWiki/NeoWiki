@@ -52,6 +52,7 @@ const SchemaEditorStub = defineComponent( {
 describe( 'SchemaCreator', () => {
 	let pinia: ReturnType<typeof createPinia>;
 	let schemaStore: ReturnType<typeof useSchemaStore>;
+	let mayEditControlledSubjects = false;
 
 	interface CreatorProps {
 		name?: string;
@@ -85,6 +86,7 @@ describe( 'SchemaCreator', () => {
 				provide: {
 					[ Service.ComponentRegistry ]: NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry(),
 					[ Service.PropertyTypeRegistry ]: NeoWikiExtension.getInstance().getPropertyTypeRegistry(),
+					[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
 				},
 				mocks: {
 					$i18n: createI18nMock(),
@@ -493,6 +495,62 @@ describe( 'SchemaCreator', () => {
 
 			expect( wrapper.find( DEPENDENT_CHECKBOX ).exists() ).toBe( false );
 			expect( wrapper.text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
+		} );
+	} );
+
+	describe( 'whether its Subjects are controlled', () => {
+		const CONTROLLED_CHECKBOX = '.ext-neowiki-subjects-are-controlled-input input[type="checkbox"]';
+		const DEPENDENT_CHECKBOX = '.ext-neowiki-schema-creator__dependence input[type="checkbox"]';
+
+		afterEach( () => {
+			mayEditControlledSubjects = false;
+		} );
+
+		async function createdSchema( wrapper: VueWrapper ): Promise<Schema> {
+			await wrapper.find( '.cdx-text-input-stub' ).setValue( NEW_SCHEMA_NAME );
+
+			return ( wrapper.vm as any ).getSchema() as Schema;
+		}
+
+		function controlledDuplicate(): Schema {
+			return newSchema( { title: 'Gender', description: '', properties: new PropertyDefinitionList( [] ), subjectsAreControlled: true } );
+		}
+
+		it( 'creates a Schema whose Subjects are controlled once a user with the right declares them so', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.find( CONTROLLED_CHECKBOX ).setValue( true );
+
+			expect( ( await createdSchema( wrapper ) ).subjectsAreControlled() ).toBe( true );
+		} );
+
+		it( 'creates a Schema whose Subjects are not controlled once they are declared dependent', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			await wrapper.find( CONTROLLED_CHECKBOX ).setValue( true );
+			await wrapper.find( DEPENDENT_CHECKBOX ).setValue( true );
+
+			expect( wrapper.find( CONTROLLED_CHECKBOX ).exists() ).toBe( false );
+			expect( ( await createdSchema( wrapper ) ).subjectsAreControlled() ).toBe( false );
+		} );
+
+		it( 'starts a duplicate with the declaration for a user with the right', async () => {
+			mayEditControlledSubjects = true;
+			const wrapper = mountComponent( { duplicateOf: controlledDuplicate() } );
+			await flushPromises();
+
+			expect( ( await createdSchema( wrapper ) ).subjectsAreControlled() ).toBe( true );
+		} );
+
+		it( 'starts a duplicate without the declaration for a user without the right', async () => {
+			const wrapper = mountComponent( { duplicateOf: controlledDuplicate() } );
+			await flushPromises();
+
+			expect( ( await createdSchema( wrapper ) ).subjectsAreControlled() ).toBe( false );
 		} );
 	} );
 

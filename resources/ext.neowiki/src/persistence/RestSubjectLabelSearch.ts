@@ -9,8 +9,16 @@ export class RestSubjectLabelSearch implements SubjectLabelSearch {
 	) {
 	}
 
-	public async searchSubjectLabels( search: string, schemas: readonly string[] | undefined ): Promise<SubjectLabelResult[]> {
+	public async searchSubjectLabels(
+		search: string,
+		schemas: readonly string[] | undefined,
+		limit?: number,
+	): Promise<SubjectLabelResult[]> {
 		const params = new URLSearchParams( { search } );
+
+		if ( limit !== undefined ) {
+			params.set( 'limit', String( limit ) );
+		}
 
 		// The endpoint reads an absent parameter as every Schema. No Schema name holds the separator,
 		// as no page title does.

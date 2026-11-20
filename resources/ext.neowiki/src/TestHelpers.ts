@@ -75,6 +75,7 @@ interface NewTestSchemaOptions {
 	description?: string;
 	properties?: PropertyDefinitionList;
 	subjectsAreDependent?: boolean;
+	subjectsAreControlled?: boolean;
 	labels?: Readonly<Record<string, string>>;
 }
 
@@ -83,6 +84,7 @@ export function newSchema( {
 	description = 'TestSchema description',
 	properties,
 	subjectsAreDependent = false,
+	subjectsAreControlled = false,
 	labels,
 }: NewTestSchemaOptions = {} ): Schema {
 	return new Schema(
@@ -90,6 +92,7 @@ export function newSchema( {
 		description,
 		properties ?? new PropertyDefinitionList( [] ),
 		subjectsAreDependent,
+		subjectsAreControlled,
 		labels,
 	);
 }
