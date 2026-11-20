@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Infrastructure\Rdf;
 
+use Closure;
 use pietercolpaert\hardf\TriGWriter;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\Literal;
@@ -29,62 +30,73 @@ use Psr\Log\LoggerInterface;
  */
 class HardfRdfStreamWriter implements RdfStreamWriter {
 
+	private const string NAME_PATTERN = '[A-Za-z][A-Za-z0-9_-]*';
+
+	/**
+	 * hardf matches every IRI against one regex built from all declared prefixes, which PCRE refuses to compile
+	 * once their labels and namespaces add up to about 30,000 characters.
+	 */
+	private const int MAX_PREFIX_TABLE_LENGTH = 16_000;
+
 	private TriGWriter $writer;
 	private bool $includeGraph;
 
 	/**
 	 * @var array<string, string> Prefix label to namespace IRI, as declared to hardf.
 	 */
-	private readonly array $prefixes;
+	private array $prefixes = [];
+
+	private int $prefixTableLength = 0;
 
 	/**
-	 * @var array<string, bool> Whether each IRI of the current write reads as itself. A page repeats its IRIs
-	 *   while a dump keeps meeting new ones, so the answers last one write.
+	 * @var string[]
+	 */
+	private readonly array $schemes;
+
+	/**
+	 * @var array<string, bool> Whether each IRI of the current write reads as itself. The answers last one
+	 *   write: a later write can declare a prefix that changes how an IRI is written.
 	 */
 	private array $checkedIris = [];
 
 	/**
 	 * @param array<string, string> $prefixes Prefix label to namespace IRI.
+	 * @param Closure(QuadList): array<array-key, string> $prefixesForQuads
 	 */
 	public function __construct(
 		array $prefixes,
+		private readonly Closure $prefixesForQuads,
 		RdfFormat $format,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->prefixes = self::withoutSchemeLabels( $prefixes );
+		$this->schemes = self::schemesOf( $prefixes );
 		$this->includeGraph = $format === RdfFormat::TriG;
 		$this->writer = new TriGWriter( [
-			'prefixes' => $this->prefixes,
+			'prefixes' => $this->declarable( $prefixes ),
 			'format' => $this->includeGraph ? 'trig' : 'turtle',
 		] );
 	}
 
 	/**
-	 * Leaves out a prefix labelled with a scheme the document's IRIs have: that of a declared namespace, or
-	 * http and https, which `url` values have too. hardf would write every IRI of that scheme raw, while
-	 * undeclared they come out in full.
+	 * The schemes the document's IRIs can have: those of the namespaces the writer starts with, and http and
+	 * https, which `url` values have too.
 	 *
 	 * @param array<string, string> $prefixes
-	 * @return array<string, string>
+	 * @return string[]
 	 */
-	private static function withoutSchemeLabels( array $prefixes ): array {
-		$schemes = array_merge(
+	private static function schemesOf( array $prefixes ): array {
+		return array_merge(
 			[ 'http', 'https' ],
 			array_map(
 				static fn ( string $namespace ): string => strtolower( (string)strstr( $namespace, ':', true ) ),
 				array_values( $prefixes )
 			)
 		);
-
-		return array_filter(
-			$prefixes,
-			static fn ( int|string $label ): bool => !in_array( strtolower( (string)$label ), $schemes, true ),
-			ARRAY_FILTER_USE_KEY
-		);
 	}
 
 	public function write( QuadList $quads ): string {
 		$this->checkedIris = [];
+		$this->writer->addPrefixes( $this->declarable( ( $this->prefixesForQuads )( $quads ) ) );
 
 		foreach ( $this->groupedByResource( $this->writableQuads( $quads ) ) as $quad ) {
 			$this->writer->addTriple(
@@ -96,6 +108,35 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 		}
 
 		return $this->writer->read();
+	}
+
+	/**
+	 * @param array<array-key, string> $prefixes
+	 * @return array<string, string> The prefixes to declare, now recorded as declared.
+	 */
+	private function declarable( array $prefixes ): array {
+		$declarable = [];
+
+		foreach ( $prefixes as $label => $namespace ) {
+			if ( $this->canDeclare( (string)$label, $namespace ) ) {
+				$declarable[(string)$label] = $namespace;
+				$this->prefixes[(string)$label] = $namespace;
+				$this->prefixTableLength += strlen( (string)$label ) + strlen( $namespace );
+			}
+		}
+
+		return $declarable;
+	}
+
+	/**
+	 * A prefix left undeclared has its IRIs written in full. hardf would write every IRI whose scheme is the
+	 * label raw.
+	 */
+	private function canDeclare( string $label, string $namespace ): bool {
+		return !array_key_exists( $label, $this->prefixes )
+			&& preg_match( '/^' . self::NAME_PATTERN . '$/', $label ) === 1
+			&& !in_array( strtolower( $label ), $this->schemes, true )
+			&& $this->prefixTableLength + strlen( $label ) + strlen( $namespace ) <= self::MAX_PREFIX_TABLE_LENGTH;
 	}
 
 	/**
@@ -169,7 +210,7 @@ class HardfRdfStreamWriter implements RdfStreamWriter {
 	}
 
 	private function expandPrefixedName( string $term ): ?string {
-		if ( preg_match( '/^([A-Za-z][A-Za-z0-9_-]*):([A-Za-z][A-Za-z0-9_-]*)$/', $term, $parts ) !== 1 ) {
+		if ( preg_match( '/^(' . self::NAME_PATTERN . '):(' . self::NAME_PATTERN . ')$/', $term, $parts ) !== 1 ) {
 			return null;
 		}
 

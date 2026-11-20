@@ -6,6 +6,9 @@ namespace ProfessionalWiki\NeoWiki\Tests\Domain\Rdf;
 
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Iri;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\Quad;
+use ProfessionalWiki\NeoWiki\Domain\Rdf\QuadList;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Relation\RelationId;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
@@ -41,31 +44,95 @@ class RdfNamespacesTest extends TestCase {
 		);
 	}
 
+	public function testPropertyIriIsScopedToItsSchema(): void {
+		$this->assertSame(
+			'https://wiki.example/prop/Person/Name',
+			$this->propertyIri( 'Person', 'Name' )
+		);
+	}
+
 	public function testPropertyIriSubstitutesSpacesWithUnderscores(): void {
 		$this->assertSame(
-			'https://wiki.example/prop/Has_author',
-			$this->namespaces()->property( 'Has author' )->value
+			'https://wiki.example/prop/Annual_attendance/Has_author',
+			$this->propertyIri( 'Annual attendance', 'Has author' )
 		);
 	}
 
 	public function testPropertyIriPercentEncodesIriIllegalCharacters(): void {
 		$this->assertSame(
-			'https://wiki.example/prop/Rev%3E2020',
-			$this->namespaces()->property( 'Rev>2020' )->value
+			'https://wiki.example/prop/Book/Rev%3E2020',
+			$this->propertyIri( 'Book', 'Rev>2020' )
 		);
 	}
 
 	public function testPropertyIriPercentEncodesThePercentSignItself(): void {
 		$this->assertSame(
-			'https://wiki.example/prop/100%25_growth',
-			$this->namespaces()->property( '100% growth' )->value
+			'https://wiki.example/prop/Book/100%25_growth',
+			$this->propertyIri( 'Book', '100% growth' )
 		);
 	}
 
 	public function testPropertyIriKeepsUnicodeRawAndOnlySubstitutesSpaces(): void {
 		$this->assertSame(
-			'https://wiki.example/prop/Naïve_日本語',
-			$this->namespaces()->property( 'Naïve 日本語' )->value
+			'https://wiki.example/prop/Book/Naïve_日本語',
+			$this->propertyIri( 'Book', 'Naïve 日本語' )
+		);
+	}
+
+	/**
+	 * @dataProvider iriDelimiterProvider
+	 */
+	public function testPropertyIriPercentEncodesIriDelimitersInsideAName( string $propertyName, string $expectedIri ): void {
+		$this->assertSame( $expectedIri, $this->propertyIri( 'Product', $propertyName ) );
+	}
+
+	public static function iriDelimiterProvider(): iterable {
+		yield 'slash' => [ 'Width/height', 'https://wiki.example/prop/Product/Width%2Fheight' ];
+		yield 'question mark' => [ 'In stock?', 'https://wiki.example/prop/Product/In_stock%3F' ];
+		yield 'hash' => [ 'Rank #', 'https://wiki.example/prop/Product/Rank_%23' ];
+	}
+
+	public function testPropertyIriPercentEncodesASlashInTheSchemaName(): void {
+		$this->assertSame(
+			'https://wiki.example/prop/Exhibitions%2F2024/Venue',
+			$this->propertyIri( 'Exhibitions/2024', 'Venue' )
+		);
+	}
+
+	private function propertyIri( string $schemaName, string $propertyName ): string {
+		return $this->namespaces()->property( new SchemaName( $schemaName ), $propertyName )->value;
+	}
+
+	public function testPropertyPrefixesNameOnePrefixPerSchemaOfThePropertyPredicates(): void {
+		$this->assertEquals(
+			[
+				'Person' => 'https://wiki.example/prop/Person/',
+				'Annual_attendance' => 'https://wiki.example/prop/Annual_attendance/',
+			],
+			$this->namespaces()->propertyPrefixes( QuadList::fromArray( [
+				$this->quadWithPredicate( $this->namespaces()->property( new SchemaName( 'Person' ), 'Name' ) ),
+				$this->quadWithPredicate( $this->namespaces()->property( new SchemaName( 'Annual attendance' ), 'Year' ) ),
+				$this->quadWithPredicate( $this->namespaces()->property( new SchemaName( 'Person' ), 'Birth date' ) ),
+			] ) )
+		);
+	}
+
+	public function testPropertyPrefixesIgnoreOtherPredicates(): void {
+		$this->assertSame(
+			[],
+			$this->namespaces()->propertyPrefixes( QuadList::fromArray( [
+				$this->quadWithPredicate( $this->namespaces()->rdfType() ),
+				$this->quadWithPredicate( $this->namespaces()->term( RdfNamespaces::TERM_HAS_SUBJECT ) ),
+			] ) )
+		);
+	}
+
+	private function quadWithPredicate( Iri $predicate ): Quad {
+		return new Quad(
+			$this->namespaces()->subject( new SubjectId( 's1demo8aaaaaab5' ) ),
+			$predicate,
+			new Iri( 'https://example.org/object' ),
+			$this->namespaces()->graph( 'native', new PageId( 1 ) )
 		);
 	}
 
@@ -191,7 +258,6 @@ class RdfNamespacesTest extends TestCase {
 			[
 				'neo' => 'https://wiki.example/ontology/',
 				'neo-subj' => 'https://wiki.example/entity/',
-				'neo-prop' => 'https://wiki.example/prop/',
 				'neo-schema' => 'https://wiki.example/schema/',
 				'neo-rel' => 'https://wiki.example/relation/',
 				'neo-page' => 'https://wiki.example/page/',
