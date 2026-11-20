@@ -55,8 +55,7 @@ import { SubjectCreationKey } from '@/components/common/SubjectCreation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
 import type { Subject } from '@/domain/Subject.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
-import { disambiguateSubjectLabels } from '@/presentation/disambiguateSubjectLabels.ts';
-import type { DisambiguatedSubjectLabel } from '@/presentation/disambiguateSubjectLabels.ts';
+import { disambiguateSubjectLabels, subjectMenuItem } from '@/presentation/disambiguateSubjectLabels.ts';
 import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
 
 interface SubjectPickerProps {
@@ -206,7 +205,7 @@ const menuItems = computed( (): MenuItemData[] => {
 	const rows = creationOffered.value ?
 		[ ...matchingDraftRows.value, ...searchResults.value ] :
 		searchResults.value;
-	const items = disambiguateSubjectLabels( rows ).map( menuItemFor );
+	const items = disambiguateSubjectLabels( rows ).map( subjectMenuItem );
 
 	if ( !creationOffered.value ) {
 		return items;
@@ -370,19 +369,6 @@ async function searchLabels( value: string, targetSchemas: readonly string[] | u
 	} catch {
 		return [];
 	}
-}
-
-// The id sits beside the label and the page on its own line: an id belongs to the Subject and
-// survives a move, while the page is only where it is stored today. Two fields rather than one
-// composed label, because picking a row writes its label into this field for the user to edit.
-// The id is never shortened: ids sort by mint time (ADR 14), so a prefix discriminates nothing.
-function menuItemFor( result: DisambiguatedSubjectLabel ): MenuItemData {
-	return {
-		value: result.id,
-		label: result.label,
-		description: result.showPageTitle ? result.pageTitle : undefined,
-		supportingText: result.showId ? mw.msg( 'parentheses', result.id ) : undefined
-	};
 }
 
 // Codex's selection is bound one way so that neither sentinel ever becomes it. Codex writes the

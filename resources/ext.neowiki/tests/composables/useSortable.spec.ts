@@ -206,6 +206,29 @@ describe( 'useSortable', () => {
 		expect( Array.from( destination.children ) ).toEqual( [] );
 	} );
 
+	it( 'reports each place a dragged item passes through, counted from where the drag started', () => {
+		const container = document.createElement( 'ul' );
+		const onMove = vi.fn();
+
+		mountComposable( ref<HTMLElement | null>( container ), { onMove } );
+		lastOptions().onChange( { from: container, to: container, oldIndex: 0, newIndex: 1 } );
+		lastOptions().onChange( { from: container, to: container, oldIndex: 0, newIndex: 2 } );
+
+		expect( onMove.mock.calls ).toEqual( [ [ 0, 1 ], [ 0, 2 ] ] );
+	} );
+
+	it( 'reports the end of a drag, whether or not it moved the item', () => {
+		const container = document.createElement( 'ul' );
+		const item = document.createElement( 'li' );
+		container.appendChild( item );
+		const onDragEnd = vi.fn();
+
+		mountComposable( ref<HTMLElement | null>( container ), { onDragEnd } );
+		lastOptions().onEnd( { item, from: container, to: container, oldIndex: 0, newIndex: 0 } );
+
+		expect( onDragEnd ).toHaveBeenCalledOnce();
+	} );
+
 	it( 'does not require onReorder or onDropIn to be present', () => {
 		const container = document.createElement( 'ul' );
 		const item = document.createElement( 'li' );

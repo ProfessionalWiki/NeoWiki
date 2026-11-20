@@ -92,7 +92,7 @@ const menuItems = computed( (): MenuItemData[] => {
 
 const highlightedId = computed( () => menuRef.value?.getHighlightedMenuItem()?.id );
 
-// Wrapped the way LanguagePicker wraps its trigger, for the reason it gives.
+// Wrapped the way SearchablePicker wraps its trigger, for the reason it gives.
 const anchor = computed( () => handleRef.value === null ? undefined : { $el: handleRef.value } );
 
 // CdxSelect centres its list under the handle, so a list wider than the tag would run past the end

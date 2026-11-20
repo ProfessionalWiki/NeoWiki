@@ -66,11 +66,11 @@ describe( 'LanguageListInput', () => {
 
 	async function searchFor( list: VueWrapper, text: string ): Promise<void> {
 		await addButton( list ).trigger( 'click' );
-		await list.find( '.ext-neowiki-language-picker__search input' ).setValue( text );
+		await list.find( '.ext-neowiki-searchable-picker__search input' ).setValue( text );
 	}
 
 	function offeredLanguage( list: VueWrapper, name: string ): DOMWrapper<Element> {
-		return list.findAll( '.ext-neowiki-language-picker__menu .cdx-menu-item' )
+		return list.findAll( '.ext-neowiki-searchable-picker__menu .cdx-menu-item' )
 			.find( ( item ) => item.find( '.cdx-menu-item__text__label' ).text() === name )!;
 	}
 

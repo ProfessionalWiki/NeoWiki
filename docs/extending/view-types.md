@@ -22,12 +22,14 @@ mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 
 The registration object's shape is defined by [`ViewTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/ViewTypeRegistration.ts).
 The component conforms to the `ViewProps` prop shape ([`ViewContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Views/ViewContract.ts)):
-the `subjectId` to render, a `canEditSubject` flag saying whether to offer editing, and an optional `layoutName`.
-The Subject, its Schema and the Layout are read from the stores (`nw.useSubjectStore()`, `useSchemaStore()`,
+the `subjectId` to render, a `canEditSubject` flag saying whether to offer editing, and an optional `layoutName`,
+or a `layout` to render with in its place, as the Layout editor's preview passes the unsaved one.
+The Subject, its Schema and a named Layout are read from the stores (`nw.useSubjectStore()`, `useSchemaStore()`,
 `useLayoutStore()`); a Layout's Settings are free-form JSON your component reads through `layout.getSettings()`,
-as the card reads `fullWidthProperties`. Once registered, the `typeName` is selectable as a Layout's View Type, and
-a `{{#view}}` or Main Subject placeholder that references it renders through your component instead of the
-built-in infobox.
+as the card reads `fullWidthProperties`. Give the element that shows each property a `data-mw-neowiki-property`
+attribute holding the property's name: the preview selects and marks properties through it. Once registered, the
+`typeName` is selectable as a Layout's View Type, and a `{{#view}}` or Main Subject placeholder that references it
+renders through your component instead of the built-in infobox.
 
 The `redherb-card` example renders each value through the [value display components](javascript.md#displaying-values).
 

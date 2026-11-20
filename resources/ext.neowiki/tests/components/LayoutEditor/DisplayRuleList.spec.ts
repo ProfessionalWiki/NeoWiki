@@ -1,6 +1,7 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { DOMWrapper, enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
+import type { DisplayRuleListExposes, PreviewMarks } from '@/components/LayoutEditor/DisplayRuleList.vue';
 import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
@@ -12,10 +13,39 @@ vi.mock( '@/composables/useSortable.ts', () => ( {
 	useSortable: vi.fn(),
 } ) );
 
+enableAutoUnmount( afterEach );
+
 const HIDDEN_CLASS = 'ext-neowiki-display-rule-list__item--hidden';
 
 function property( name: string ): PropertyDefinition {
 	return newTextProperty( { name } );
+}
+
+interface ListProps {
+	schemaProperties: PropertyDefinition[];
+	displayRules: DisplayRule[];
+	propertiesTargetingDependentSubjects: PropertyName[];
+	preview: PreviewMarks;
+}
+
+const NOTHING_MARKED: PreviewMarks = { hoveredProperty: null, selectedProperty: null };
+
+// Attached to the document only where a test asserts where the focus goes.
+function mountList( props: Partial<ListProps>, attachTo?: HTMLElement ): VueWrapper {
+	return mount( DisplayRuleList, {
+		props: {
+			schemaProperties: [],
+			displayRules: [],
+			propertiesTargetingDependentSubjects: [],
+			...props,
+		},
+		attachTo,
+		global: {
+			mocks: {
+				$i18n: createI18nMock(),
+			},
+		},
+	} );
 }
 
 function createWrapper(
@@ -23,18 +53,14 @@ function createWrapper(
 	displayRules: DisplayRule[],
 	propertiesTargetingDependentSubjects: PropertyName[],
 ): VueWrapper {
-	return mount( DisplayRuleList, {
-		props: {
-			schemaProperties,
-			displayRules,
-			propertiesTargetingDependentSubjects,
-		},
-		global: {
-			mocks: {
-				$i18n: createI18nMock(),
-			},
-		},
-	} );
+	return mountList( { schemaProperties, displayRules, propertiesTargetingDependentSubjects } );
+}
+
+function rowOf( wrapper: VueWrapper, name: string ): DOMWrapper<Element> {
+	const row = wrapper.findAll( '.ext-neowiki-display-rule-list__item' )
+		.find( ( item ) => item.find( '.ext-neowiki-display-rule-list__item__name' ).text() === name );
+	expect( row ).toBeDefined();
+	return row!;
 }
 
 // jsdom cannot drag, so a drag is the options the list hands useSortable.
@@ -257,4 +283,70 @@ describe( 'DisplayRuleList', () => {
 		expect( emittedRuleNames( wrapper ) ).toEqual( [ 'Alpha', 'Beta', 'Attendance' ] );
 	} );
 
+	it( 'offers nothing to select where there is no preview beside it', () => {
+		const wrapper = createWrapper( schemaProperties, [], [] );
+
+		expect( wrapper.find( 'button.ext-neowiki-display-rule-list__item__name' ).exists() ).toBe( false );
+	} );
+
+	it( 'reports the order a dragged row would give while it is dragged, and none once the drag is over', () => {
+		const wrapper = createWrapper( schemaProperties, [], [] );
+
+		sortableOptions().onMove!( 0, 2 );
+		sortableOptions().onDragEnd!();
+
+		const reported = wrapper.emitted( 'reordering' ) as [ { rules: DisplayRule[]; property: string } | null ][];
+		expect( reported[ 0 ][ 0 ]!.rules.map( ( rule ) => rule.property.toString() ) ).toEqual( [ 'Beta', 'Gamma', 'Alpha', 'Delta' ] );
+		expect( reported[ 0 ][ 0 ]!.property ).toBe( 'Alpha' );
+		expect( reported[ 1 ] ).toEqual( [ null ] );
+	} );
+
+	describe( 'linked to the preview', () => {
+
+		it( 'selects the property whose name is clicked', async () => {
+			const wrapper = mountList( { schemaProperties, preview: NOTHING_MARKED } );
+
+			await rowOf( wrapper, 'Beta' ).find( '.ext-neowiki-display-rule-list__item__name' ).trigger( 'click' );
+
+			expect( wrapper.emitted( 'select' ) ).toEqual( [ [ 'Beta' ] ] );
+		} );
+
+		it( 'marks the selected property\'s row as selected', () => {
+			const wrapper = mountList( { schemaProperties, preview: { ...NOTHING_MARKED, selectedProperty: 'Gamma' } } );
+
+			expect( rowsWithClass( wrapper, 'ext-neowiki-display-rule-list__item--selected' ) ).toEqual( [ 'Gamma' ] );
+			expect( rowOf( wrapper, 'Gamma' ).find( '.ext-neowiki-display-rule-list__item__name' ).attributes( 'aria-pressed' ) )
+				.toBe( 'true' );
+		} );
+
+		it( 'reports the property pointed at, and none once the pointer leaves its row', async () => {
+			const wrapper = mountList( { schemaProperties, preview: NOTHING_MARKED } );
+
+			await rowOf( wrapper, 'Gamma' ).trigger( 'mouseenter' );
+			await rowOf( wrapper, 'Gamma' ).trigger( 'mouseleave' );
+
+			expect( wrapper.emitted( 'hover' ) ).toEqual( [ [ 'Gamma' ], [ null ] ] );
+		} );
+
+		it( 'marks the row of the property pointed at in the preview', () => {
+			const wrapper = mountList( { schemaProperties, preview: { ...NOTHING_MARKED, hoveredProperty: 'Beta' } } );
+
+			expect( rowsWithClass( wrapper, 'ext-neowiki-display-rule-list__item--hovered' ) ).toEqual( [ 'Beta' ] );
+		} );
+
+		it( 'focuses the name of the property it is asked to', () => {
+			const wrapper = mountList( { schemaProperties, preview: NOTHING_MARKED }, document.body );
+
+			( wrapper.vm as unknown as DisplayRuleListExposes ).focusProperty( 'Gamma' );
+
+			expect( document.activeElement ).toBe( rowOf( wrapper, 'Gamma' ).find( '.ext-neowiki-display-rule-list__item__name' ).element );
+		} );
+
+	} );
+
 } );
+
+function rowsWithClass( wrapper: VueWrapper, className: string ): string[] {
+	return wrapper.findAll( `.${ className }` )
+		.map( ( row ) => row.find( '.ext-neowiki-display-rule-list__item__name' ).text() );
+}

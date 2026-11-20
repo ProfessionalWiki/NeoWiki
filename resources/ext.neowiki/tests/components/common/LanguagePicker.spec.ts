@@ -38,11 +38,11 @@ describe( 'LanguagePicker', () => {
 	}
 
 	function search( picker: VueWrapper ): DOMWrapper<HTMLInputElement> {
-		return picker.find( '.ext-neowiki-language-picker__search input' );
+		return picker.find( '.ext-neowiki-searchable-picker__search input' );
 	}
 
 	function panel( picker: VueWrapper ): DOMWrapper<Element> {
-		return picker.find( '.ext-neowiki-language-picker__panel' );
+		return picker.find( '.ext-neowiki-searchable-picker__panel' );
 	}
 
 	function isOpen( picker: VueWrapper ): boolean {

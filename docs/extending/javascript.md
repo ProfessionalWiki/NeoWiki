@@ -35,8 +35,9 @@ const resolvedProperties = nw.resolveDisplayProperties( schema, subject, layout,
 ></component>
 ```
 
-Inside a View the stores hold the Subject, Schema and Layout (`nw.useSubjectStore()`, `useSchemaStore()`,
-`useLayoutStore()`); elsewhere, fetch them through the repositories. The props are typed in
+Inside a View the stores hold the Subject, its Schema and a Layout the View names (`nw.useSubjectStore()`,
+`useSchemaStore()`, `useLayoutStore()`; a View can be handed its Layout instead, see [View Types](view-types.md));
+elsewhere, fetch them through the repositories. The props are typed in
 [`ValueDisplayContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Value/ValueDisplayContract.ts);
 `subjectDisplayName( subject )`, `schemaDisplayName( schema )` and `propertyDisplayName( property )` name a Subject,
 a Schema and a property the way NeoWiki does. Example: [`RedHerbCard.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/tests/RedHerb/resources/RedHerbCard.vue).

@@ -322,12 +322,16 @@ export class NeoWikiExtension {
 	}
 
 	public getSubjectRepository(): SubjectRepository {
+		return this.newSubjectRepository( this.getRevisionId() );
+	}
+
+	private newSubjectRepository( revisionId: number | undefined ): SubjectRepository {
 		return new RestSubjectRepository(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 			this.getSubjectDeserializer(),
 			new SchemaDeserializer(),
-			this.getRevisionId(),
+			revisionId,
 		);
 	}
 
@@ -366,6 +370,18 @@ export class NeoWikiExtension {
 	public getStoreStateLoader(): StoreStateLoader {
 		return new StoreStateLoader(
 			this.getSubjectRepository(),
+			this.getSchemaRepository(),
+			this.getLayoutRepository(),
+		);
+	}
+
+	/**
+	 * As getStoreStateLoader(), but reading the Subjects as they are now whatever revision the page shows: for an
+	 * editor, which edits the current revision.
+	 */
+	public getLatestStoreStateLoader(): StoreStateLoader {
+		return new StoreStateLoader(
+			this.newSubjectRepository( undefined ),
 			this.getSchemaRepository(),
 			this.getLayoutRepository(),
 		);

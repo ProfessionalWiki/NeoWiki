@@ -1,3 +1,4 @@
+import type { MenuItemData } from '@wikimedia/codex';
 import type { SubjectLabelResult } from '@/domain/SubjectLabelSearch.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 
@@ -56,4 +57,19 @@ export function disambiguateSubjectLabels( results: SubjectLabelResult[] ): Disa
 // because the value comes from a REST body; such a row then names no page.
 function asRendered( text: string | undefined ): string {
 	return ( text ?? '' ).normalize( 'NFC' ).replace( /\s+/g, ' ' ).trim();
+}
+
+/**
+ * A menu entry for a result. The id sits beside the label and the page on its own line: an id belongs to the Subject
+ * and survives a move, while the page is only where it is stored today. Two fields rather than one composed label, so
+ * that the label stays the name a lookup writes into its field on a pick. The id is never shortened: ids sort by mint
+ * time (ADR 14), so a prefix discriminates nothing.
+ */
+export function subjectMenuItem( result: DisambiguatedSubjectLabel ): MenuItemData {
+	return {
+		value: result.id,
+		label: result.label,
+		description: result.showPageTitle ? result.pageTitle : undefined,
+		supportingText: result.showId ? mw.msg( 'parentheses', result.id ) : undefined,
+	};
 }

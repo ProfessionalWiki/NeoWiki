@@ -36,7 +36,13 @@
 				v-for="row in rows"
 				:key="row.property.name.toString()"
 				class="ext-neowiki-display-rule-list__item"
-				:class="{ 'ext-neowiki-display-rule-list__item--hidden': !row.shown }"
+				:class="{
+					'ext-neowiki-display-rule-list__item--hidden': !row.shown,
+					'ext-neowiki-display-rule-list__item--hovered': isHovered( row ),
+					'ext-neowiki-display-rule-list__item--selected': isSelected( row )
+				}"
+				@mouseenter="emit( 'hover', row.property.name.toString() )"
+				@mouseleave="emit( 'hover', null )"
 			>
 				<span
 					v-if="row.shown"
@@ -68,7 +74,20 @@
 						<CdxIcon :icon="row.shown ? cdxIconEye : cdxIconEyeClosed" />
 					</CdxButton>
 				</span>
-				<span class="ext-neowiki-display-rule-list__item__name">
+				<button
+					v-if="props.preview"
+					:ref="( element ) => keepNameButton( row.property.name.toString(), element )"
+					type="button"
+					class="ext-neowiki-display-rule-list__item__name ext-neowiki-display-rule-list__item__name--selectable"
+					:aria-pressed="isSelected( row )"
+					@click="emit( 'select', row.property.name.toString() )"
+				>
+					{{ row.property.name.toString() }}
+				</button>
+				<span
+					v-else
+					class="ext-neowiki-display-rule-list__item__name"
+				>
 					{{ row.property.name.toString() }}
 				</span>
 			</li>
@@ -77,22 +96,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, type ComponentPublicInstance } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconDraggable, cdxIconEye, cdxIconEyeClosed } from '@wikimedia/codex-icons';
 import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { useSortable } from '@/composables/useSortable.ts';
-import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder } from './displayRuleEditing.ts';
+import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder, type UnifiedRow } from './displayRuleEditing.ts';
+
+/** The order a row being dragged would give, and the property of that row. */
+export interface DraggedOrder {
+	rules: DisplayRule[];
+	property: string;
+}
+
+/** The properties a preview beside the list marks, which the list marks too. */
+export interface PreviewMarks {
+	hoveredProperty: string | null;
+	selectedProperty: string | null;
+}
 
 const props = defineProps<{
 	schemaProperties: PropertyDefinition[];
 	displayRules: DisplayRule[];
 	propertiesTargetingDependentSubjects: PropertyName[];
+	/** Absent where the list has no preview beside it, as in the Layout creator. */
+	preview?: PreviewMarks;
 }>();
 
 const emit = defineEmits<{
 	'update:display-rules': [ rules: DisplayRule[] ];
+	'hover': [ name: string | null ];
+	'select': [ name: string ];
+	/** Null once the drag is over. */
+	'reordering': [ order: DraggedOrder | null ];
 }>();
 
 const listRef = ref<HTMLElement | null>( null );
@@ -137,6 +174,34 @@ function lastShown( shown: boolean ): boolean {
 	return shown && shownCount.value === 1;
 }
 
+function isHovered( row: UnifiedRow ): boolean {
+	return row.property.name.toString() === props.preview?.hoveredProperty;
+}
+
+function isSelected( row: UnifiedRow ): boolean {
+	return row.property.name.toString() === props.preview?.selectedProperty;
+}
+
+const nameButtons = new Map<string, HTMLElement>();
+
+function keepNameButton( name: string, element: Element | ComponentPublicInstance | null ): void {
+	if ( element instanceof HTMLElement ) {
+		nameButtons.set( name, element );
+	} else {
+		nameButtons.delete( name );
+	}
+}
+
+export interface DisplayRuleListExposes {
+	focusProperty: ( name: string ) => void;
+}
+
+defineExpose( {
+	focusProperty( name: string ): void {
+		nameButtons.get( name )?.focus();
+	}
+} );
+
 useSortable( listRef, {
 	handle: '.ext-neowiki-display-rule-list__item__drag-handle',
 	// Only shown rows take part in sorting. Hidden rows have no handle (can't be
@@ -146,6 +211,15 @@ useSortable( listRef, {
 	ghostClass: 'ext-neowiki-display-rule-list__item--ghost',
 	onReorder( oldIndex: number, newIndex: number ): void {
 		emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, rulesInEffect.value, oldIndex, newIndex ) );
+	},
+	onMove( oldIndex: number, newIndex: number ): void {
+		emit( 'reordering', {
+			rules: rulesAfterReorder( props.schemaProperties, rulesInEffect.value, oldIndex, newIndex ),
+			property: rows.value[ oldIndex ].property.name.toString()
+		} );
+	},
+	onDragEnd(): void {
+		emit( 'reordering', null );
 	}
 } );
 </script>
@@ -195,8 +269,14 @@ useSortable( listRef, {
 			background-color: @background-color-interactive-subtle;
 		}
 
-		&:hover {
+		&:hover,
+		&--hovered {
 			background-color: @background-color-interactive-subtle;
+		}
+
+		&--selected,
+		&--selected:hover {
+			background-color: @background-color-progressive-subtle;
 		}
 
 		&--hidden &__name {
@@ -205,6 +285,25 @@ useSortable( listRef, {
 
 		&__name {
 			flex-grow: 1;
+		}
+
+		&__name--selectable {
+			padding: 0;
+			border: 0;
+			border-radius: @border-radius-base;
+			background: none;
+			color: inherit;
+			font: inherit;
+			text-align: start;
+			cursor: @cursor-base--hover;
+
+			&:focus-visible {
+				outline: @border-width-thick @border-style-base @border-color-progressive--focus;
+			}
+		}
+
+		&--selected &__name {
+			color: @color-progressive;
 		}
 
 		&__drag-handle,

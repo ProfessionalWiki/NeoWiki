@@ -8,6 +8,10 @@ export interface UseSortableOptions {
 	group?: Sortable.Options[ 'group' ];
 	sort?: boolean;
 	onReorder?: ( oldIndex: number, newIndex: number ) => void;
+	/** Each time a drag within the container moves its item to another place, before the drop. */
+	onMove?: ( oldIndex: number, newIndex: number ) => void;
+	/** At the end of every drag, moved, cancelled or dropped where it started. */
+	onDragEnd?: () => void;
 	onDropIn?: ( item: HTMLElement, oldIndex: number | undefined, newIndex: number | undefined ) => void;
 }
 
@@ -39,6 +43,13 @@ export function useSortable( containerRef: Ref<HTMLElement | null>, options: Use
 
 				if ( from === to && oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex ) {
 					options.onReorder?.( oldIndex, newIndex );
+				}
+
+				options.onDragEnd?.();
+			},
+			onChange: ( { from, to, oldIndex, newIndex } ) => {
+				if ( from === to && oldIndex !== undefined && newIndex !== undefined ) {
+					options.onMove?.( oldIndex, newIndex );
 				}
 			},
 			onAdd: ( event ) => {
