@@ -34,8 +34,8 @@ list it under "considered, omitted" with the reader it is for.
 An ADR records one decision that is costly to reverse, such as a stored format, an identifier scheme, an API contract,
 a structure or a dependency. Its parts are context, decision and consequences. The decision holds only what is costly
 to reverse, and the consequences say what it makes easier or harder. Behaviour that one PR can change back, such as
-how the UI or an API behaves, stays out of both: place it by its reader. Give the reasons for the decision, so that a
-later change does not reopen it by accident.
+how the UI or an API behaves, stays out of both; [Genres](#genres) says where it goes. Give the reasons for the
+decision, so that a later change does not reopen it by accident.
 
 A Draft ADR is edited in place and carries no revision history or amendment sections.
 
@@ -44,10 +44,10 @@ names the ADR it replaces or amends, and the earlier ADR's Status line links to 
 `Status: Accepted. Amended by [ADR 39](039-schema-and-property-labels.md)`. Apart from that link, an accepted ADR is
 edited in place only to fix a typo or a dead link, or to cut text that has no place in an ADR, such as behaviour.
 
-When your change replaces behaviour that an accepted ADR describes, cut that sentence rather than rewrite it, and
-place the new behaviour by its reader. When your change goes against what the ADR decides, it makes a new decision,
-which goes in a later ADR. If you cannot tell which of the two a sentence is, leave it and name it in the PR
-description.
+Some accepted ADRs also describe behaviour. When your change alters behaviour that one of them describes, delete the
+sentence that describes it instead of updating it; [Genres](#genres) says where the new behaviour goes. When your
+change goes against what an ADR decides, it makes a new decision, which goes in a later ADR. If you cannot tell
+whether a sentence describes behaviour or states the decision, leave it and name it in the PR description.
 
 A Related entry names the ADR it links: `ADR 28: Relations Model`.
 
