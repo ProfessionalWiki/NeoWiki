@@ -46,9 +46,6 @@ like [Text with language](034-monolingual-text-value-type.md) values are:
 }
 ```
 
-The UI shows a Schema or Property using its label in the reader's interface language, falling back along MediaWiki's
-language fallback chain, then to the label in the content language, and then to the name.
-
 Labels are for display only. Subjects, Statements, Layouts, Mappings, wikitext, Lua, queries and API requests refer to
 a Schema or Property by its name, and Neo4j labels and keys and RDF classes and predicates continue to be based on the
 name.
