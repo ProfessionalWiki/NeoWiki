@@ -2007,6 +2007,7 @@ class NeoWikiExtension {
 	public function getPersistenceSchemaDeserializer(): SchemaPersistenceDeserializer {
 		return new SchemaPersistenceDeserializer(
 			propertyTypeLookup: $this->getPropertyTypeLookup(),
+			logger: LoggerFactory::getInstance( 'NeoWiki' ),
 		);
 	}
 

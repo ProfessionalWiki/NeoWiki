@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Persistence\MediaWiki;
 
+use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSources;
 use PHPUnit\Framework\TestCase;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\TextProperty;
@@ -12,6 +13,10 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Presentation\SchemaPresentationSerializer;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use Psr\Log\Test\TestLogger;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer
@@ -107,6 +112,13 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		yield 'empty type' => [ '{"type": ""}' ];
 	}
 
+	public function testSkipsPropertyWhoseNameIsAnInteger(): void {
+		$schema = $this->deserialize( '{"propertyDefinitions": {"2024": {"type": "text"}, "Name": {"type": "text"}}}' );
+
+		$this->assertFalse( $schema->hasProperty( '2024' ) );
+		$this->assertTrue( $schema->hasProperty( 'Name' ) );
+	}
+
 	public function testReadsTheDeclarationThatTheSubjectsAreDependent(): void {
 		$json = '{"subjectsAreDependent": true, "propertyDefinitions": {}}';
 
@@ -132,8 +144,48 @@ class SchemaPersistenceDeserializerTest extends TestCase {
 		$this->assertSame( [ 'zh-hant' => '公司' ], $this->deserialize( $json )->getLabels() );
 	}
 
-	private function deserialize( string $json = self::SCHEMA_JSON ): Schema {
-		return ( new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry() ) )
+	public function testLogsAPropertyDefinitionItCannotRead(): void {
+		$logger = new TestLogger();
+
+		$this->deserialize( '{"propertyDefinitions": {"Owner": {"type": "relation"}}}', $logger );
+
+		$context = $this->contextOfTheOnlyWarning( $logger );
+		$this->assertSame( 'Owner', $context['property'] );
+		$this->assertSame( 'TestSchema', $context['schema'] );
+		$this->assertStringContainsString( 'target Schemas of a relation property', $context['message'] );
+		$this->assertInstanceOf( InvalidArgumentException::class, $context['exception'] );
+	}
+
+	public function testLogsAPropertyWhoseNameIsAnInteger(): void {
+		$logger = new TestLogger();
+
+		$this->deserialize( '{"propertyDefinitions": {"2024": {"type": "text"}}}', $logger );
+
+		$context = $this->contextOfTheOnlyWarning( $logger );
+		$this->assertSame( '2024', $context['property'] );
+		$this->assertSame( 'TestSchema', $context['schema'] );
+	}
+
+	public function testLogsNothingForPropertiesItCanRead(): void {
+		$logger = new TestLogger();
+
+		$this->deserialize( logger: $logger );
+
+		$this->assertSame( [], $logger->records );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function contextOfTheOnlyWarning( TestLogger $logger ): array {
+		$this->assertCount( 1, $logger->records );
+		$this->assertSame( LogLevel::WARNING, $logger->records[0]['level'] );
+
+		return $logger->records[0]['context'];
+	}
+
+	private function deserialize( string $json = self::SCHEMA_JSON, LoggerInterface $logger = new NullLogger() ): Schema {
+		return ( new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry(), $logger ) )
 			->deserialize( new SchemaName( 'TestSchema' ), $json );
 	}
 

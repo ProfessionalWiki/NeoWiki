@@ -661,7 +661,7 @@ class DependentSubjectRulesTest extends TestCase {
 	 * @return Schema[]
 	 */
 	private static function demoSchemas(): array {
-		$deserializer = new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry() );
+		$deserializer = new SchemaPersistenceDeserializer( TestSources::newPropertyTypeRegistry(), new NullLogger() );
 
 		return array_map(
 			fn ( string $fileName ): Schema => $deserializer->deserialize(

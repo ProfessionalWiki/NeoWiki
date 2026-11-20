@@ -152,7 +152,7 @@ abstract class PropertyDefinition {
 		try {
 			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $values );
 		} catch ( Throwable $e ) {
-			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
+			throw new InvalidArgumentException( 'Invalid property definition: ' . $e->getMessage(), 0, $e );
 		}
 	}
 

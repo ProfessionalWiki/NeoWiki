@@ -14,7 +14,6 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\EntryPoints\Content\SchemaContent;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\CachingSchemaLookup;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PublishedPageJsonLookup;
-use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\SchemaPersistenceDeserializer;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestPage;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -102,9 +101,7 @@ class SchemaLookupSharingTest extends NeoWikiIntegrationTestCase {
 				// Stores nothing, so every read past the process-local tier reaches the counting fetcher.
 				new WANObjectCache( [ 'cache' => new EmptyBagOStuff() ] )
 			),
-			schemaDeserializer: new SchemaPersistenceDeserializer(
-				NeoWikiExtension::getInstance()->getPropertyTypeLookup()
-			),
+			schemaDeserializer: NeoWikiExtension::getInstance()->getPersistenceSchemaDeserializer(),
 			titleFactory: MediaWikiServices::getInstance()->getTitleFactory(),
 			readAuthorizer: new StubPageReadAuthorizer( allowed: true ),
 		);

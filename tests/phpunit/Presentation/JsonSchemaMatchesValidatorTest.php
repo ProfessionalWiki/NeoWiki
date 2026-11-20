@@ -22,6 +22,7 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestSubjectIds;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySchemaLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySubjectLookup;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\StubIdGenerator;
+use Psr\Log\NullLogger;
 
 /**
  * The JSON Schema document promises that a Subject validating against it draws no Violations. This
@@ -476,7 +477,7 @@ class JsonSchemaMatchesValidatorTest extends TestCase {
 	 * @param array<string, mixed> $definition
 	 */
 	private function schemaWith( array $definition ): Schema {
-		return ( new SchemaPersistenceDeserializer( $this->propertyTypeLookup() ) )->deserialize(
+		return ( new SchemaPersistenceDeserializer( $this->propertyTypeLookup(), new NullLogger() ) )->deserialize(
 			new SchemaName( self::SCHEMA_NAME ),
 			(string)json_encode( [ 'propertyDefinitions' => [ self::PROPERTY => $definition ] ] )
 		);
