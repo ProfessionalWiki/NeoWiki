@@ -12,6 +12,7 @@
 			@update:selected="onSelect"
 			@update:input-chips="keepTargetsOfChips"
 			@input="onInput"
+			@focus="loadSchemas"
 		>
 			<template
 				v-if="leftOutKindReason !== null"
@@ -123,7 +124,8 @@ const leftOutKindReason = computed( (): string | null => {
 } );
 
 // CdxMultiselectLookup opens its menu on focus only when it has items by then, so the field is
-// rendered once the Schemas have arrived, or a failure to load them has been reported.
+// rendered once the Schemas have arrived, or a failure to load them has been reported. Each focus
+// loads them again, as a Schema may have been created elsewhere since.
 async function loadSchemas(): Promise<void> {
 	try {
 		summaries.value = await schemaStore.fetchAllSchemaSummaries();
