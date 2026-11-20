@@ -13,16 +13,43 @@ length budget. A sentence earns its place only if it changes what that reader pr
 
 Every page sits in one genre. Write to that genre's reader and register.
 
+Place each fact by its reader, not its topic: name the reader who needs it for their decision, and put it on a page
+for that reader. If no reader needs the fact, leave it out. If its reader has no page for it, leave it out too, and
+list it under "considered, omitted" with the reader it is for.
+
 | Where | Reader, and the decision they make | Register, and what to keep out |
 | --- | --- | --- |
-| `guide/` | Wiki users and admins with a task to accomplish, deciding what to do next in the UI | Task steps in UI vocabulary (Special pages, buttons, tabs), linking to reference pages for contracts; no wire formats, no PHP, no restated contracts |
-| `glossary.md`, `subject-first-wikis.md`, `qualifiers-and-references.md`, `architecture.md` | New users and evaluators forming the mental model | Intended design; no dev-state caveats, no mechanism |
-| `api/` | API consumers deciding what a request or response means and what to do next | Wire-format vocabulary; no PHP class names |
-| `authoring/` | Wiki authors and modellers looking up exact behavior | Contracts, signatures, examples; no narration |
-| `operations/` | Sysadmins keeping an instance healthy | Tasks and remedies; system model only where needed to act |
-| `extending/` | Extension developers, whose interface is our internal identifiers | Point at working RedHerb code over prose |
-| `adr/` | Maintainers recording a decision | A dated record: context, decision, consequences. A Draft is edited in place and carries no revision history or amendment sections; an accepted ADR changes through a later ADR that names what it replaces, plus a status link back, or in place, without a note: git holds the history. A Related entry names the ADR it links: `ADR 28: Relations Model` |
-| `planning/` | Collaborators exploring an open question | A work-in-progress register, marked as such; not published to the site |
+| `guide/` | Wiki users and admins, deciding the next step of a task | Task steps in UI vocabulary (Special pages, buttons, tabs), linking to reference pages for contracts; no wire formats, no PHP, no restated contracts |
+| `glossary.md`, `subject-first-wikis.md`, `qualifiers-and-references.md`, `architecture.md` | Anyone new to NeoWiki, deciding whether it fits their data and how to model it | Intended design; no dev-state caveats, no mechanism |
+| `naming.md` | Contributors, choosing a name in code | Rules with examples; terms users see belong in the Glossary |
+| `api/` | API consumers, deciding what a request or response means and what to do next | Wire-format vocabulary; no UI behaviour, no PHP class names |
+| `authoring/` | Wiki authors and modellers, deciding what to write in wikitext, Lua or a Mapping | Contracts, signatures, examples; no narration |
+| `operations/` | Sysadmins, deciding how to install, size, configure, upgrade or repair an instance | Tasks and remedies; system model only where needed to act |
+| `extending/` | Extension developers, choosing an extension point and how to build on it | Internal identifiers; point at working RedHerb code over prose |
+| `adr/` | Anyone about to change the system, deciding whether the change fits an earlier decision or needs a new one | [ADRs](#adrs) below |
+| `planning/` | Collaborators, deciding how to answer an open question | Work in progress, marked as such; not published to the site |
+
+## ADRs
+
+An ADR records one decision that is costly to reverse, such as a stored format, an identifier scheme, an API contract,
+a structure or a dependency. Its parts are context, decision and consequences. The decision holds only what is costly
+to reverse, and the consequences say what it makes easier or harder. Behaviour that one PR can change back, such as
+how the UI or an API behaves, stays out of both; [Genres](#genres) says where it goes. Give the reasons for the
+decision, so that a later change does not reopen it by accident.
+
+A Draft ADR is edited in place and carries no revision history or amendment sections.
+
+An accepted ADR is a dated record whose meaning does not change. A new or changed decision goes in a later ADR that
+names the ADR it replaces or amends, and the earlier ADR's Status line links to the later one, as in
+`Status: Accepted. Amended by [ADR 39](039-schema-and-property-labels.md)`. Apart from that link, an accepted ADR is
+edited in place only to fix a typo or a dead link, or to cut text that has no place in an ADR, such as behaviour.
+
+Some accepted ADRs also describe behaviour. When your change alters behaviour that one of them describes, delete the
+sentence that describes it instead of updating it; [Genres](#genres) says where the new behaviour goes. When your
+change goes against what an ADR decides, it makes a new decision, which goes in a later ADR. If you cannot tell
+whether a sentence describes behaviour or states the decision, leave it and name it in the PR description.
+
+A Related entry names the ADR it links: `ADR 28: Relations Model`.
 
 ## Where a new page goes
 
