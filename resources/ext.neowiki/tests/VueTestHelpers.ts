@@ -235,6 +235,10 @@ export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInp
 	return wrapper.find<HTMLInputElement>( '.ext-neowiki-property-editor__name input' );
 }
 
+export function propertyNameIsLocked( wrapper: VueWrapper ): boolean {
+	return findPropertyNameInput( wrapper ).element.readOnly;
+}
+
 export function selectedText( input: HTMLInputElement ): string {
 	return input.value.slice( input.selectionStart ?? 0, input.selectionEnd ?? 0 );
 }

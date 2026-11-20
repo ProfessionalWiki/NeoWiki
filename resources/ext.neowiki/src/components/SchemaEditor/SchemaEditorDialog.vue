@@ -17,6 +17,7 @@
 			<SchemaEditor
 				ref="schemaEditor"
 				:initial-schema="initialSchema"
+				:subjects-may-use-schema="subjectsMayUseSchema"
 				@change="markChanged"
 			>
 				<template #schema>
@@ -82,6 +83,7 @@ import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { useSchemaCreation } from '@/composables/useSchemaCreation.ts';
 import { useSaveGuard } from '@/composables/useSaveGuard.ts';
+import { useSubjectsMayUseSchema } from '@/composables/useSubjectsMayUseSchema.ts';
 
 export type SchemaSaveHandler = ( schema: Schema, comment: string ) => Promise<void>;
 
@@ -132,6 +134,8 @@ watch( () => props.open, ( isOpen ) => {
 		resetChanged();
 	}
 } );
+
+const subjectsMayUseSchema = useSubjectsMayUseSchema( () => props.initialSchema.getName(), () => props.open );
 
 const { saving, save: handleSave } = useSaveGuard( writeSchema );
 

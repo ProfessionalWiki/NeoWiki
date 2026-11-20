@@ -19,6 +19,7 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { newSchema } from '@/TestHelpers.ts';
 import { createI18nMock, pressHeaderClose, setupMwMock } from '../../VueTestHelpers.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
+import type { SubjectSummaries, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
 const $i18n = createI18nMock();
 
@@ -32,6 +33,7 @@ const SchemaEditorStub = defineComponent( {
 	template: '<div class="schema-editor-stub"><slot name="schema" /></div>',
 	props: {
 		initialSchema: { type: Object, required: true },
+		subjectsMayUseSchema: { type: Boolean, required: true },
 	},
 	emits: [ 'change' ],
 	methods: {
@@ -61,11 +63,28 @@ const CloseConfirmationDialogStub = {
 
 describe( 'SchemaEditorDialog', () => {
 	let onSave: ReturnType<typeof vi.fn<SchemaSaveHandler>>;
+	// The Schemas the reader sees Subjects of.
+	let schemasWithSubjects: string[];
+
+	const subjectSummaryLookup: SubjectSummaryLookup = {
+		getSubjectSummaries: async ( query ) => subjectsOf( query.schema ?? '' ),
+		getRecentlyEditedSubjects: async () => [],
+	};
+
+	function subjectsOf( schema: string ): SubjectSummaries {
+		const subjects = schemasWithSubjects.includes( schema ) ? [ {
+			id: 's1ab2cd3ef4gh5i', displayName: 'A Subject', displayNameIsGenerated: false, hostSubject: null,
+			schema, pageId: 1, pageTitle: 'A Subject', lastEdited: '2026-11-17T00:00:00Z',
+		} ] : [];
+
+		return { subjects, nextCursor: null };
+	}
 
 	beforeEach( () => {
 		editorSaveBlocker = null;
 		editorErrorsRevealed = false;
 		onSave = vi.fn<SchemaSaveHandler>();
+		schemasWithSubjects = [];
 		setupMwMock( { functions: [ 'message', 'msg', 'notify' ] } );
 	} );
 
@@ -80,7 +99,7 @@ describe( 'SchemaEditorDialog', () => {
 	function mountOn( initialSchema: Schema ): VueWrapper {
 		return mount( SchemaEditorDialog, {
 			props: { initialSchema, open: true, onSave },
-			global: { mocks: { $i18n }, stubs },
+			global: { mocks: { $i18n }, stubs, provide: { [ Service.SubjectSummaryLookup ]: subjectSummaryLookup } },
 		} );
 	}
 
@@ -188,6 +207,104 @@ describe( 'SchemaEditorDialog', () => {
 			const wrapper = mountOn( mockSchema );
 
 			expect( wrapper.findComponent( SchemaEditor ).text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
+		} );
+	} );
+
+	describe( 'Subjects that may use the Schema', () => {
+		afterEach( () => {
+			vi.restoreAllMocks();
+		} );
+
+		function editorIsToldSubjectsMayUseSchema( wrapper: VueWrapper ): boolean | undefined {
+			return wrapper.findComponent( SchemaEditor ).props( 'subjectsMayUseSchema' );
+		}
+
+		async function openedEditor(): Promise<VueWrapper> {
+			const wrapper = mountComponent();
+			await flushPromises();
+
+			return wrapper;
+		}
+
+		async function reopen( wrapper: VueWrapper ): Promise<void> {
+			await wrapper.setProps( { open: false } );
+			await wrapper.setProps( { open: true } );
+			await flushPromises();
+		}
+
+		function nextAnswerNeverLands(): void {
+			vi.spyOn( subjectSummaryLookup, 'getSubjectSummaries' ).mockReturnValueOnce( new Promise( () => {
+				// Never lands.
+			} ) );
+		}
+
+		it( 'tells the editor that Subjects may use a Schema the reader sees Subjects of', async () => {
+			schemasWithSubjects = [ 'TestSchema' ];
+
+			expect( editorIsToldSubjectsMayUseSchema( await openedEditor() ) ).toBe( true );
+		} );
+
+		it( 'tells the editor that no Subject uses a Schema the reader sees no Subjects of', async () => {
+			schemasWithSubjects = [ 'Other' ];
+
+			expect( editorIsToldSubjectsMayUseSchema( await openedEditor() ) ).toBe( false );
+		} );
+
+		it( 'tells the editor that Subjects may use the Schema while the answer is on its way', async () => {
+			nextAnswerNeverLands();
+
+			expect( editorIsToldSubjectsMayUseSchema( await openedEditor() ) ).toBe( true );
+		} );
+
+		it( 'tells the editor that Subjects may use the Schema when the wiki does not answer', async () => {
+			vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
+			vi.spyOn( subjectSummaryLookup, 'getSubjectSummaries' ).mockRejectedValueOnce( new Error( 'offline' ) );
+
+			expect( editorIsToldSubjectsMayUseSchema( await openedEditor() ) ).toBe( true );
+		} );
+
+		it( 'asks again each time it opens', async () => {
+			schemasWithSubjects = [ 'TestSchema' ];
+			const wrapper = await openedEditor();
+			schemasWithSubjects = [];
+
+			await reopen( wrapper );
+
+			expect( editorIsToldSubjectsMayUseSchema( wrapper ) ).toBe( false );
+		} );
+
+		it( 'tells the editor that Subjects may use the Schema while the answer to a reopening is on its way', async () => {
+			const wrapper = await openedEditor();
+			nextAnswerNeverLands();
+
+			await reopen( wrapper );
+
+			expect( editorIsToldSubjectsMayUseSchema( wrapper ) ).toBe( true );
+		} );
+
+		it( 'goes by the latest answer when an earlier one lands late', async () => {
+			let landEarlierAnswer: ( summaries: SubjectSummaries ) => void = () => undefined;
+			vi.spyOn( subjectSummaryLookup, 'getSubjectSummaries' ).mockReturnValueOnce( new Promise( ( resolve ) => {
+				landEarlierAnswer = resolve;
+			} ) );
+			schemasWithSubjects = [ 'TestSchema' ];
+			const wrapper = await openedEditor();
+			await reopen( wrapper );
+
+			landEarlierAnswer( { subjects: [], nextCursor: null } );
+			await flushPromises();
+
+			expect( editorIsToldSubjectsMayUseSchema( wrapper ) ).toBe( true );
+		} );
+
+		it( 'goes by the Schema a host switches it to', async () => {
+			schemasWithSubjects = [ 'TestSchema' ];
+			const wrapper = await openedEditor();
+
+			await wrapper.setProps( { initialSchema: newSchema( { title: 'Person' } ) } );
+			await flushPromises();
+
+			expect( editorIsToldSubjectsMayUseSchema( wrapper ) ).toBe( false );
 		} );
 	} );
 
@@ -350,6 +467,7 @@ describe( 'SchemaEditorDialog', () => {
 					stubs: { ...stubs, SchemaEditor: RelationEditorStub, SchemaCreatorDialog: SchemaCreatorDialogStub, SeverityInput: true },
 					provide: {
 						[ Service.SchemaPermissionHints ]: { canCreateSchemas: async () => true },
+						[ Service.SubjectSummaryLookup ]: subjectSummaryLookup,
 					},
 				},
 			} );

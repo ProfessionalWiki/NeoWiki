@@ -12,7 +12,14 @@
 				ref="nameInput"
 				v-model="nameText"
 				input-type="text"
+				:readonly="nameLocked"
 			/>
+			<template
+				v-if="nameLocked"
+				#description
+			>
+				{{ $i18n( 'neowiki-property-editor-name-locked' ).text() }}
+			</template>
 		</CdxField>
 
 		<CdxField>
@@ -98,6 +105,8 @@ const props = defineProps<{
 	property: PropertyDefinition;
 	/** The names of the Schema's other properties, which this one cannot take. */
 	otherPropertyNames: string[];
+	/** Keeps the name the property has. */
+	nameLocked: boolean;
 	/** Selects the name when the editor opens, so that typing replaces it. */
 	selectName?: boolean;
 }>();
@@ -137,6 +146,11 @@ const nameText = ref( openedName );
 const canonicalName = computed( (): string => canonicalPropertyName( nameText.value ) );
 
 const nameError = computed( (): string | null => {
+	// A locked name can only be a near-duplicate of another name, which the save names instead and which can change.
+	if ( props.nameLocked ) {
+		return null;
+	}
+
 	const name = canonicalName.value;
 
 	if ( name === '' ) {
@@ -289,7 +303,8 @@ export interface PropertyDefinitionEditorExposes {
  * the user cannot see.
  */
 function unparseableInputMessage(): string | null {
-	return nameError.value ??
+	// Not for the name the editor opened with, even one the wiki refuses: the save refuses that.
+	return ( nameText.value === openedName ? null : nameError.value ) ??
 		labelsInput.value?.unparseableInputMessage() ??
 		attributesEditor.value?.unparseableInputMessage?.() ??
 		defaultValueInput.value?.unparseableInputMessage?.() ??
