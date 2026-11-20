@@ -7,7 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application\GraphRebuild;
 use Exception;
 use MediaWiki\Title\TitleFactory;
 use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
-use ProfessionalWiki\NeoWiki\Application\PageRebuilder;
+use ProfessionalWiki\NeoWiki\Application\GraphStorePageRebuilder;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
 use ProfessionalWiki\NeoWiki\Domain\GraphRebuild\RebuildPhase;
@@ -83,7 +83,7 @@ class GraphRebuildExecutor {
 	public function execute(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		PageRebuilder $pageRebuilder,
+		GraphStorePageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -115,7 +115,7 @@ class GraphRebuildExecutor {
 	public function executeOneBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		PageRebuilder $pageRebuilder,
+		GraphStorePageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -138,7 +138,7 @@ class GraphRebuildExecutor {
 	private function runBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		PageRebuilder $pageRebuilder,
+		GraphStorePageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -203,7 +203,7 @@ class GraphRebuildExecutor {
 	private function projectPageBatch(
 		RebuildRun $run,
 		GraphDatabasePlugin $store,
-		PageRebuilder $pageRebuilder,
+		GraphStorePageRebuilder $pageRebuilder,
 		int $batchSize,
 		RebuildBatchObserver $observer
 	): RebuildRun {
@@ -329,7 +329,7 @@ class GraphRebuildExecutor {
 	private function projectPage(
 		int $pageId,
 		RebuildProgress $progress,
-		PageRebuilder $pageRebuilder
+		GraphStorePageRebuilder $pageRebuilder
 	): ProjectedPageOutcome {
 		$title = $this->titleFactory->newFromID( $pageId );
 

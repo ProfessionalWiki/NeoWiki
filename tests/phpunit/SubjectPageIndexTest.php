@@ -28,7 +28,7 @@ use Throwable;
  *
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex
  * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndexRebuilder
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
+ * @covers \ProfessionalWiki\NeoWiki\EntryPoints\SubjectIndexer
  * @group Database
  */
 class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
@@ -230,8 +230,8 @@ class SubjectPageIndexTest extends NeoWikiIntegrationTestCase {
 		$this->emptyIndexOf( $pageId );
 
 		$outcome = NeoWikiExtension::getInstance()
-			->newPageRebuilderFor( new SpyGraphDatabasePlugin() )
-			->rebuild( Title::newFromText( 'Reprojected page' ) );
+			->newGraphStorePageRebuilder( new SpyGraphDatabasePlugin() )
+			->rebuildFromReplica( Title::newFromText( 'Reprojected page' ) );
 
 		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome, 'the page should have been reprojected' );
 		$this->assertSame( [], $this->indexedSubjectsOf( $pageId ) );

@@ -67,7 +67,10 @@
 		"PageUndeleteComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageUndeleteComplete",
 		"AfterImportPage": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onAfterImportPage",
 		"ArticleRevisionVisibilitySet": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onArticleRevisionVisibilitySet",
-		"LinksUpdateComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\LinksRefreshHandler::onLinksUpdateComplete",
+		"RevisionDataUpdates": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onRevisionDataUpdates",
+		"ArticleProtectComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onArticleProtectComplete",
+		"PageMoveComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onPageMoveComplete",
+		"FileUpload": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onFileUpload",
 		"BlockIpComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onBlockIpComplete",
 		"UnblockUserComplete": "ProfessionalWiki\\NeoWiki\\EntryPoints\\NeoWikiHooks::onUnblockUserComplete",
 
@@ -104,6 +107,10 @@
 		},
 		"neowikiRebuildLastEditorPages": {
 			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\RebuildLastEditorPagesJob",
+			"needsPage": false
+		},
+		"neowikiProjectPage": {
+			"class": "ProfessionalWiki\\NeoWiki\\EntryPoints\\Jobs\\ProjectPageJob",
 			"needsPage": false
 		}
 	},
