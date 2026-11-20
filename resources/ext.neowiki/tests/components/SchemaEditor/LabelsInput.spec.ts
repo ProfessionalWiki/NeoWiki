@@ -2,7 +2,7 @@ import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
-import { announcedLanguage, createTestWrapper, setupMwMock } from '../../VueTestHelpers.ts';
+import { announcedLanguage, createTestWrapper, searchLanguageFromHandle, setupMwMock } from '../../VueTestHelpers.ts';
 
 // Every row's language picker listens to the document while it is open, so no mount is left standing.
 enableAutoUnmount( afterEach );
@@ -93,6 +93,20 @@ describe( 'LabelsInput', () => {
 		expect( lastEmittedLabels( wrapper ) ).toBeUndefined();
 	} );
 
+	describe( 'a label typed once every data language has one', () => {
+		beforeEach( () => {
+			useDataLanguages( 'en' );
+		} );
+
+		it( 'is input the save has to wait for while it has no language', async () => {
+			const wrapper = newWrapper( { en: 'Date of birth' } );
+
+			await typeInRow( wrapper, 1, 'Geburtsdatum' );
+
+			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-monolingual-text-language-missing' );
+		} );
+	} );
+
 	describe( 'a second label in a language', () => {
 		beforeEach( () => {
 			useDataLanguages( 'en' );
@@ -101,6 +115,7 @@ describe( 'LabelsInput', () => {
 		async function typeSecondEnglishLabel(): Promise<VueWrapper> {
 			const wrapper = newWrapper( { en: 'Date of birth' } );
 			await typeInRow( wrapper, 1, 'Birthday' );
+			await searchLanguageFromHandle( rows( wrapper )[ 1 ], 'English' );
 
 			return wrapper;
 		}

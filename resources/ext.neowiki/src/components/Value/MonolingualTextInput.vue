@@ -28,7 +28,7 @@
 						:model-value="view.row.text"
 						:status="view.severity ?? 'default'"
 						:aria-label="view.textLabel"
-						:style="{ '--ext-neowiki-language-tag-length': view.language.length }"
+						:style="{ '--ext-neowiki-language-tag-length': tagLength( view.language ) }"
 						@update:model-value="( text: string ) => onTextInput( index, text )"
 					/>
 					<LanguageInput
@@ -64,11 +64,12 @@ import {
 	ValueType
 } from '@/domain/Value.ts';
 import type { Severity } from '@/domain/Severity.ts';
+import type { SubjectViolation } from '@/domain/SubjectViolation.ts';
 import { MonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
 import LanguageInput from '@/components/common/LanguageInput.vue';
 import { ValueInputEmits, ValueInputExposes, ValueInputProps } from '@/components/Value/ValueInputContract.ts';
 import { preferErrorViolation, useServerViolations, violationStatus } from '@/composables/useServerViolations.ts';
-import { newPartLanguageTag } from '@/presentation/languages.ts';
+import { newPartLanguageTag, unusedLanguageTag } from '@/presentation/languages.ts';
 
 /**
  * One editable part.
@@ -77,8 +78,10 @@ import { newPartLanguageTag } from '@/presentation/languages.ts';
  * moves the ones below it rather than shifting their contents into DOM elements the user may be
  * typing in.
  *
- * `language` is null on a new row until it holds a part or the user picks its language. Until then
- * it follows the value, showing the language the next part would start in.
+ * `language` is null on a new row, which follows the value until it holds text or the user picks
+ * its language, showing the language the next part would start in. Where each language takes one
+ * part, the value can already have every language a part could start in: the row then shows none,
+ * and text typed into it waits for the user to pick one.
  */
 interface Row {
 	id: number;
@@ -88,7 +91,7 @@ interface Row {
 
 interface RowView {
 	row: Row;
-	language: string;
+	language: string | null;
 	textLabel: string;
 	languageLabel: string;
 	message?: string;
@@ -123,29 +126,48 @@ function rowOf( part: MonolingualText ): Row {
 	return { id: ++lastRowId, text: part.text, language: part.language };
 }
 
-function holdsPart( row: Row ): boolean {
+function holdsText( row: Row ): boolean {
 	return row.text.trim() !== '';
 }
 
-function languageOf( row: Row ): string {
-	return row.language ?? newPartLanguageTag(
-		rows.value
-			.filter( holdsPart )
-			.map( ( other ) => other.language )
-			.filter( ( tag ): tag is string => tag !== null )
-	);
+function holdsPart( row: Row ): row is Row & { language: string } {
+	return holdsText( row ) && row.language !== null;
+}
+
+function lacksLanguage( row: Row ): boolean {
+	return holdsText( row ) && row.language === null;
+}
+
+function languageOf( row: Row ): string | null {
+	if ( row.language !== null || holdsText( row ) ) {
+		return row.language;
+	}
+
+	return newPartLanguage();
+}
+
+function newPartLanguage(): string | null {
+	const partLanguages = rows.value.filter( holdsPart ).map( ( row ) => row.language );
+
+	if ( props.property.uniqueLanguages ) {
+		return unusedLanguageTag( partLanguages ) ?? null;
+	}
+
+	return newPartLanguageTag( partLanguages );
+}
+
+function rowsOf( value: Value | undefined ): Row[] {
+	return withNewRow( partsOf( value ).map( rowOf ) );
 }
 
 /**
- * The rows to edit a Value with: one per part it holds, plus the trailing empty row that is how a
- * part is added on a multi-valued property. A single-valued property gets no trailing row, so no
- * part can be added, but it still shows every part the Value carries: exceeding `multiple` is a
- * Violation rather than a refusal, so a stored Value can hold several, and a row the editor never
- * shows is a part the next save would silently drop.
+ * The rows to edit with: the ones holding text, plus the trailing empty row that is how a part is
+ * added on a multi-valued property. A single-valued property gets no trailing row, so no part can be
+ * added, but it still shows every part the Value carries: exceeding `multiple` is a Violation rather
+ * than a refusal, so a stored Value can hold several, and a row the editor never shows is a part the
+ * next save would silently drop.
  */
-function rowsOf( value: Value | undefined ): Row[] {
-	const editable = partsOf( value ).map( rowOf );
-
+function withNewRow( editable: Row[] ): Row[] {
 	if ( !props.property.multiple ) {
 		return editable.length === 0 ? [ newRow() ] : editable;
 	}
@@ -159,7 +181,7 @@ function partsOf( value: Value | undefined ): MonolingualText[] {
 
 function currentValue(): MonolingualTextValue | undefined {
 	const value = newMonolingualTextValue(
-		rows.value.map( ( row ) => ( { text: row.text, language: languageOf( row ) } ) )
+		rows.value.filter( holdsPart ).map( ( row ) => ( { text: row.text, language: row.language } ) )
 	);
 
 	return value.parts.length === 0 ? undefined : value;
@@ -169,29 +191,38 @@ function emitValue(): void {
 	emit( 'update:modelValue', currentValue() );
 }
 
+function unparseableInputMessage(): string | null {
+	return rows.value.some( lacksLanguage ) ? languageMissingText() : null;
+}
+
+function languageMissingText(): string {
+	return mw.message( 'neowiki-monolingual-text-language-missing' ).text();
+}
+
 function onTextInput( index: number, text: string ): void {
 	const row = rows.value[ index ];
+	const heldText = holdsText( row );
 	const heldPart = holdsPart( row );
 
 	row.text = text;
 
-	const holdsPartNow = holdsPart( row );
+	const holdsTextNow = holdsText( row );
 
 	// A part's language is its own: following the value it is now part of would move it, and the
 	// next new row would show the same language.
-	if ( holdsPartNow && row.language === null ) {
-		row.language = languageOf( row );
+	if ( holdsTextNow && !heldText && row.language === null ) {
+		row.language = newPartLanguage();
 	}
 
 	// The trailing empty row is what the next part is typed into, so a new one takes its place the
-	// moment it holds a part. A row emptied again is dropped when the user leaves it.
-	if ( props.property.multiple && holdsPartNow && index === rows.value.length - 1 ) {
+	// moment it holds text. A row emptied again is dropped when the user leaves it.
+	if ( props.property.multiple && holdsTextNow && index === rows.value.length - 1 ) {
 		rows.value.push( newRow() );
 	}
 
 	// A part appearing or disappearing shifts every index after it, so the held violations no longer
 	// say which part they are about and all of them are dropped.
-	if ( holdsPartNow === heldPart ) {
+	if ( holdsPart( row ) === heldPart ) {
 		emitClears( clearScopeOf( index ) );
 	} else {
 		emitClears( 'all' );
@@ -239,12 +270,12 @@ function userIsAway( event: FocusEvent ): boolean {
 }
 
 /**
- * Which rows survive focus leaving them: the ones holding a part, the only row, since a field the
+ * Which rows survive focus leaving them: the ones holding text, the only row, since a field the
  * user cannot type in is no field, and the trailing row of a multi-valued property, which is where
  * the next part is typed.
  */
 function rowStays( index: number ): boolean {
-	return holdsPart( rows.value[ index ] ) ||
+	return holdsText( rows.value[ index ] ) ||
 		rows.value.length === 1 ||
 		( props.property.multiple && index === rows.value.length - 1 );
 }
@@ -259,7 +290,7 @@ function commitLanguage( index: number, tag: string ): void {
 
 	row.language = tag;
 
-	if ( holdsPart( row ) ) {
+	if ( holdsText( row ) ) {
 		emitClears( props.property.uniqueLanguages ? 'all' : clearScopeOf( index ) );
 		emitValue();
 	}
@@ -273,9 +304,9 @@ function clearScopeOf( rowIndex: number ): number[] {
 
 /**
  * Which part of the emitted Value a row holds, or null when it holds none. `valuePartIndex` counts
- * the parts the server was sent, so a row left blank shifts every row below it away from its own
- * violation unless the two are counted separately. A single-valued property shows its one
- * violation under the field rather than under the row, so no row of one claims a part.
+ * the parts the server was sent, so a row left blank or without a language shifts every row below
+ * it away from its own violation unless the two are counted separately. A single-valued property
+ * shows its one violation under the field rather than under the row, so no row of one claims a part.
  */
 function partIndexOf( rowIndex: number ): number | null {
 	if ( !props.property.multiple || !holdsPart( rows.value[ rowIndex ] ) ) {
@@ -288,22 +319,35 @@ function partIndexOf( rowIndex: number ): number | null {
 const rowViews = computed<RowView[]>( () => {
 	const held = relevant();
 
-	return rows.value.map( ( row, index ) => {
-		const partIndex = partIndexOf( index );
-		const hit = partIndex === null ?
-			undefined :
-			preferErrorViolation( held.filter( ( violation ) => violation.valuePartIndex === partIndex ) );
-
-		return {
-			row: row,
-			language: languageOf( row ),
-			textLabel: mw.message( 'neowiki-monolingual-text-text-label', props.label, index + 1 ).text(),
-			languageLabel: mw.message( 'neowiki-monolingual-text-language-label', props.label, index + 1 ).text(),
-			message: hit === undefined ? undefined : format( hit ),
-			severity: hit?.severity
-		};
-	} );
+	return rows.value.map( ( row, index ) => ( {
+		row: row,
+		language: languageOf( row ),
+		textLabel: mw.message( 'neowiki-monolingual-text-text-label', props.label, index + 1 ).text(),
+		languageLabel: mw.message( 'neowiki-monolingual-text-language-label', props.label, index + 1 ).text(),
+		...rowMessage( row, index, held )
+	} ) );
 } );
+
+function rowMessage( row: Row, index: number, held: readonly SubjectViolation[] ): Pick<RowView, 'message' | 'severity'> {
+	if ( lacksLanguage( row ) ) {
+		return { message: languageMissingText(), severity: 'error' };
+	}
+
+	const partIndex = partIndexOf( index );
+	const hit = partIndex === null ?
+		undefined :
+		preferErrorViolation( held.filter( ( violation ) => violation.valuePartIndex === partIndex ) );
+
+	return { message: hit === undefined ? undefined : format( hit ), severity: hit?.severity };
+}
+
+/**
+ * How many characters of room the language list takes at the end of the text field. The icon it
+ * shows for no language takes about as much as a two-letter tag.
+ */
+function tagLength( language: string | null ): number {
+	return language?.length ?? 2;
+}
 
 /**
  * A server violation with no part to attach to, such as `required`, is shown under the whole
@@ -323,10 +367,10 @@ watch( () => props.modelValue, ( value ) => {
 } );
 
 watch( () => props.property.multiple, () => {
-	rows.value = rowsOf( currentValue() );
+	rows.value = withNewRow( rows.value.filter( holdsText ) );
 } );
 
-defineExpose<ValueInputExposes>( { getCurrentValue: currentValue } );
+defineExpose<ValueInputExposes>( { getCurrentValue: currentValue, unparseableInputMessage } );
 </script>
 
 <style lang="less">

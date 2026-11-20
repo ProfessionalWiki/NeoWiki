@@ -1,5 +1,6 @@
 import { enableAutoUnmount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CdxMessage } from '@wikimedia/codex';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import { type MonolingualTextValue, newMonolingualTextValue, ValueType } from '@/domain/Value';
 import {
@@ -12,6 +13,7 @@ import {
 	chooseFromLanguageList,
 	createTestWrapper,
 	pickInLanguageSearch,
+	searchLanguageFromHandle,
 	setupMwMock,
 } from '../../VueTestHelpers.ts';
 
@@ -21,6 +23,8 @@ enableAutoUnmount( afterEach );
 describe( 'MonolingualTextInput', () => {
 
 	const singleValued = newMonolingualTextProperty( { name: 'Original title', multiple: false } );
+
+	const onePerLanguage = newMonolingualTextProperty( { name: 'Original title', multiple: true, uniqueLanguages: true } );
 
 	function newWrapper(
 		props: Partial<ValueInputProps<MonolingualTextProperty>> = {},
@@ -84,9 +88,9 @@ describe( 'MonolingualTextInput', () => {
 		await chooseFromList( wrapper, index, 'Other language…' );
 	}
 
-	async function chooseLanguage( wrapper: VueWrapper, query: string ): Promise<void> {
-		await openLanguageSearch( wrapper, 0 );
-		await pickInLanguageSearch( rowElements( wrapper )[ 0 ], query );
+	async function searchLanguageOfRow( wrapper: VueWrapper, index: number, query: string ): Promise<void> {
+		await openLanguageSearch( wrapper, index );
+		await pickInLanguageSearch( rowElements( wrapper )[ index ], query );
 	}
 
 	// The messages render as they do in a wiki, so an assertion on a label reads as what a user hears.
@@ -102,6 +106,8 @@ describe( 'MonolingualTextInput', () => {
 				'neowiki-monolingual-text-language-label': ( property, position ) =>
 					`${ property } language ${ position }`,
 				'neowiki-language-input-other': 'Other language…',
+				'neowiki-language-input-choose': 'Choose a language',
+				'neowiki-monolingual-text-language-missing': 'Choose a language for this text.',
 			},
 		} );
 	}
@@ -224,6 +230,107 @@ describe( 'MonolingualTextInput', () => {
 			{ text: 'Kino', language: 'it' },
 			{ text: 'Cinéma', language: 'fr' },
 		] );
+	} );
+
+	it( 'starts the new row in a language the value already has where a language takes several values', () => {
+		const wrapper = newWrapper( { modelValue: newMonolingualTextValue( [ { text: 'Cinema', language: 'en' } ] ) } );
+
+		expect( rowLanguages( wrapper ) ).toEqual( [ 'English', 'English' ] );
+	} );
+
+	describe( 'where each language takes one value', () => {
+
+		function newWrapperWithEnglishTitle(): VueWrapper<InstanceType<typeof MonolingualTextInput>> {
+			return newWrapper( {
+				property: onePerLanguage,
+				modelValue: newMonolingualTextValue( [ { text: 'Cinema', language: 'en' } ] ),
+			} );
+		}
+
+		it( 'starts the new row without a language once the value has every data language and the content language', () => {
+			const wrapper = newWrapperWithEnglishTitle();
+
+			expect( rowLanguages( wrapper ) ).toEqual( [ 'English', 'Choose a language' ] );
+		} );
+
+		async function typeWithoutLanguage(): Promise<VueWrapper<InstanceType<typeof MonolingualTextInput>>> {
+			const wrapper = newWrapperWithEnglishTitle();
+			await textInputs( wrapper )[ 1 ].setValue( 'Zinema' );
+
+			return wrapper;
+		}
+
+		it( 'reports the edit of a part typed without a language, leaving that part out of the value', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			expect( lastEmittedValue( wrapper )?.parts ).toEqual( [ { text: 'Cinema', language: 'en' } ] );
+		} );
+
+		it( 'shows a violation under the row holding the part it names, below a part without a language', async () => {
+			const wrapper = await typeWithoutLanguage();
+			await searchLanguageFromHandle( rowElements( wrapper )[ 2 ], 'Germ' );
+			await textInputs( wrapper )[ 2 ].setValue( 'Ki' );
+
+			await wrapper.setProps( { serverViolations: [
+				{ propertyName: 'Original title', code: 'min-length', args: [ 3 ], severity: 'error', valuePartIndex: 1 },
+			] } );
+
+			expect( rowMessages( wrapper ) )
+				.toEqual( [ undefined, 'Choose a language for this text.', 'neowiki-field-min-length3', undefined ] );
+		} );
+
+		it( 'asks the parent to drop no violation for text typed without a language', async () => {
+			const wrapper = newWrapperWithEnglishTitle();
+			await wrapper.setProps( { serverViolations: [
+				{ propertyName: 'Original title', code: 'max-length', args: [ 3 ], severity: 'error', valuePartIndex: 0 },
+			] } );
+
+			await textInputs( wrapper )[ 1 ].setValue( 'Zinema' );
+
+			expect( wrapper.emitted( 'clear-server-violation' ) ).toBeUndefined();
+		} );
+
+		it( 'keeps a part typed without a language once the property becomes single-valued', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			await wrapper.setProps( { property: singleValued } );
+
+			expect( textValues( wrapper ) ).toEqual( [ 'Cinema', 'Zinema' ] );
+		} );
+
+		it( 'asks for the language of a part typed without one, as an error under its row', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			expect( rowMessages( wrapper ) ).toEqual( [ undefined, 'Choose a language for this text.', undefined ] );
+			expect( rowElements( wrapper )[ 1 ].findComponent( CdxMessage ).props( 'type' ) ).toBe( 'error' );
+		} );
+
+		it( 'holds the save while a part has no language', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			expect( wrapper.vm.unparseableInputMessage?.() ).toBe( 'Choose a language for this text.' );
+		} );
+
+		it( 'emits a part typed without a language once its language is picked', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			await searchLanguageFromHandle( rowElements( wrapper )[ 1 ], 'Basq' );
+
+			expect( lastEmittedValue( wrapper )?.parts ).toEqual( [
+				{ text: 'Cinema', language: 'en' },
+				{ text: 'Zinema', language: 'eu' },
+			] );
+		} );
+
+		it( 'leaves the language of a part typed without one to the user when another part frees a language', async () => {
+			const wrapper = await typeWithoutLanguage();
+
+			await searchLanguageOfRow( wrapper, 0, 'Germ' );
+			await textInputs( wrapper )[ 1 ].setValue( 'Zinemak' );
+
+			expect( rowLanguages( wrapper ) ).toEqual( [ 'German', 'Choose a language', 'English' ] );
+		} );
+
 	} );
 
 	it( 'opens another empty row once the trailing one is typed into', async () => {
@@ -440,7 +547,7 @@ describe( 'MonolingualTextInput', () => {
 	it( 'reports no change for a language chosen on a row holding no text', async () => {
 		const wrapper = newWrapper();
 
-		await chooseLanguage( wrapper, 'Basq' );
+		await searchLanguageOfRow( wrapper, 0, 'Basq' );
 
 		expect( wrapper.emitted( 'update:modelValue' ) ).toBeUndefined();
 	} );
@@ -570,7 +677,7 @@ describe( 'MonolingualTextInput', () => {
 	it( 'asks the parent to drop every indexed violation when a language changes where each language takes one value', async () => {
 		setUpWiki( [ 'en', 'de', 'pt' ] );
 		const wrapper = newWrapper( {
-			property: newMonolingualTextProperty( { name: 'Original title', multiple: true, uniqueLanguages: true } ),
+			property: onePerLanguage,
 			modelValue: newMonolingualTextValue( [
 				{ text: 'Eiffel Tower at dusk', language: 'en' },
 				{ text: 'Eiffel Tower at sunset', language: 'en' },
