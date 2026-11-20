@@ -13,6 +13,7 @@ export class Schema {
 		private readonly description: string,
 		private readonly properties: PropertyDefinitionList,
 		private readonly subjectsDependent: boolean,
+		private readonly subjectsControlled: boolean,
 		/**
 		 * Keyed by lowercase language tag. Absent when the Schema has none.
 		 */
@@ -40,6 +41,10 @@ export class Schema {
 		return this.subjectsDependent;
 	}
 
+	public subjectsAreControlled(): boolean {
+		return this.subjectsControlled;
+	}
+
 	public getPropertyDefinition( propertyName: string|PropertyName ): PropertyDefinition {
 		return this.properties.get(
 			propertyName instanceof PropertyName ? propertyName : new PropertyName( propertyName ),
@@ -47,19 +52,23 @@ export class Schema {
 	}
 
 	public withName( name: SchemaName ): Schema {
-		return new Schema( name, this.description, this.properties, this.subjectsDependent, this.labels );
+		return new Schema( name, this.description, this.properties, this.subjectsDependent, this.subjectsControlled, this.labels );
 	}
 
 	public withDescription( description: string ): Schema {
-		return new Schema( this.name, description, this.properties, this.subjectsDependent, this.labels );
+		return new Schema( this.name, description, this.properties, this.subjectsDependent, this.subjectsControlled, this.labels );
 	}
 
 	public withLabels( labels: Readonly<Record<string, string>> | undefined ): Schema {
-		return new Schema( this.name, this.description, this.properties, this.subjectsDependent, labels );
+		return new Schema( this.name, this.description, this.properties, this.subjectsDependent, this.subjectsControlled, labels );
 	}
 
 	public withSubjectsAreDependent( subjectsAreDependent: boolean ): Schema {
-		return new Schema( this.name, this.description, this.properties, subjectsAreDependent, this.labels );
+		return new Schema( this.name, this.description, this.properties, subjectsAreDependent, this.subjectsControlled, this.labels );
+	}
+
+	public withSubjectsAreControlled( subjectsAreControlled: boolean ): Schema {
+		return new Schema( this.name, this.description, this.properties, this.subjectsDependent, subjectsAreControlled, this.labels );
 	}
 
 	public withAddedPropertyDefinition( property: PropertyDefinition ): Schema {
@@ -68,6 +77,7 @@ export class Schema {
 			this.description,
 			new PropertyDefinitionList( [ ...this.properties, property ] ),
 			this.subjectsDependent,
+			this.subjectsControlled,
 			this.labels,
 		);
 	}
@@ -78,6 +88,7 @@ export class Schema {
 			this.description,
 			this.properties.reordered( names ),
 			this.subjectsDependent,
+			this.subjectsControlled,
 			this.labels,
 		);
 	}
@@ -88,6 +99,7 @@ export class Schema {
 			this.description,
 			this.properties.withoutNames( [ propertyName ] ),
 			this.subjectsDependent,
+			this.subjectsControlled,
 			this.labels,
 		);
 	}

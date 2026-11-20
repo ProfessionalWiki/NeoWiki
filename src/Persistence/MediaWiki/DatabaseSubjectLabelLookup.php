@@ -37,7 +37,7 @@ class DatabaseSubjectLabelLookup implements SubjectLabelLookup {
 	 * @return SubjectLabelLookupResult[]
 	 */
 	public function getSubjectLabelsMatching( string $search, int $limit, ?array $schemaNames ): array {
-		if ( trim( $search ) === '' || $schemaNames === [] ) {
+		if ( $schemaNames === [] || ( trim( $search ) === '' && $schemaNames === null ) ) {
 			return [];
 		}
 
@@ -78,16 +78,19 @@ class DatabaseSubjectLabelLookup implements SubjectLabelLookup {
 			->select( [ 'nws_subject_id', 'nws_display_name', 'page_id', 'page_namespace', 'page_title' ] )
 			->from( DatabasePublishedSubjectIndex::SUBJECT_TABLE, 'subject' )
 			->join( 'page', null, 'page_id = subject.nws_page_id' )
-			->where( $db->expr(
-				'subject.nws_display_name_key',
-				IExpression::LIKE,
-				new LikeValue( CaseInsensitiveKey::of( $search ), $db->anyString() )
-			) )
-			->andWhere( [ 'subject.nws_dependent' => 0 ] )
+			->where( [ 'subject.nws_dependent' => 0 ] )
 			->andWhere( LowestPageRows::condition( $db, 'subject' ) )
 			->orderBy( [ 'subject.nws_display_name_key', 'subject.nws_subject_id' ] )
 			->limit( $limit )
 			->caller( __METHOD__ );
+
+		if ( trim( $search ) !== '' ) {
+			$query->andWhere( $db->expr(
+				'subject.nws_display_name_key',
+				IExpression::LIKE,
+				new LikeValue( CaseInsensitiveKey::of( $search ), $db->anyString() )
+			) );
+		}
 
 		if ( $schemaNames !== null ) {
 			$query->andWhere( [ 'subject.nws_schema' => array_values( $schemaNames ) ] );

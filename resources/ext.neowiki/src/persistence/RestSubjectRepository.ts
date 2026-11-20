@@ -451,15 +451,22 @@ export class RestSubjectRepository implements SubjectRepository {
 		dependentSubjects: readonly Subject[],
 		comment?: string,
 	): Promise<SubjectWriteResult> {
-		const response = await this.httpClient.put(
-			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
-			{
-				label,
-				statements: statementsToJson( statements ),
-				comment,
-				...dependentSubjectsField( dependentSubjects ),
-			},
-		);
+		let response: Response;
+
+		// A refusal, such as of a Controlled Subject the user may not edit, carries the server's reason, not a status code.
+		try {
+			response = await this.httpClient.put(
+				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
+				{
+					label,
+					statements: statementsToJson( statements ),
+					comment,
+					...dependentSubjectsField( dependentSubjects ),
+				},
+			);
+		} catch ( error ) {
+			throw new Error( this.rejectedMessageOf( error ) ?? 'Error updating subject' );
+		}
 
 		await throwOn422IfPossible( response );
 

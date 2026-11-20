@@ -33,7 +33,7 @@
 						:aria-label="$i18n( 'neowiki-subjects-search-placeholder' ).text()"
 					/>
 					<CdxButton
-						v-if="fixedSchema === undefined && canCreate && createsWithoutHost"
+						v-if="fixedSchema === undefined && canCreate && selectionIsCreatable"
 						class="ext-neowiki-subjects-table__create"
 						@click="emit( 'create', selectedSchema ?? undefined )"
 					>
@@ -92,6 +92,7 @@ import { cdxIconAdd } from '@wikimedia/codex-icons';
 import SubjectSummaryCell from './SubjectSummaryCell.vue';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useCursorPagination } from '@/composables/useCursorPagination.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 import { isSubjectFirst } from '@/wikiMode.ts';
 import type { SubjectSummary } from '@/application/SubjectSummaryLookup.ts';
@@ -129,6 +130,7 @@ const ALL_SCHEMAS = '';
 const lookup = NeoWikiServices.getSubjectSummaryLookup();
 const schemaStore = useSchemaStore();
 const pagination = useCursorPagination();
+const { mayEditSubjects } = useControlledSubjectRight();
 
 const table = ref<InstanceType<typeof CdxTable> | null>( null );
 const rows = ref<SubjectSummary[]>( [] );
@@ -165,8 +167,9 @@ const schemaMenuItems = computed( (): MenuItemData[] => [
 		.map( ( name ) => ( { value: name, label: schemaNamer.value( name ) } ) )
 ] );
 
-const createsWithoutHost = computed( (): boolean => selectedSchema.value === null ||
-	schemaSummaries.value.some( ( summary ) => summary.name === selectedSchema.value && !summary.subjectsAreDependent ) );
+const selectionIsCreatable = computed( (): boolean => selectedSchema.value === null ||
+	schemaSummaries.value.some( ( summary ) => summary.name === selectedSchema.value &&
+		!summary.subjectsAreDependent && mayEditSubjects( summary.subjectsAreControlled ) ) );
 
 const createLabel = computed( () => selectedSchema.value === null ?
 	mw.msg( 'neowiki-createsubject-button' ) :

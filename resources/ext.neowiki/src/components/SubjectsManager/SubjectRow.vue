@@ -81,7 +81,7 @@
 				</span>
 				<span class="ext-neowiki-subject-row__actions">
 					<CdxButton
-						v-if="canEdit"
+						v-if="offersEdit"
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
 						:title="$i18n( 'neowiki-managesubjects-row-edit' ).text()"
@@ -107,7 +107,7 @@
 						<CdxIcon :icon="cdxIconPushPin" />
 					</CdxButton>
 					<CdxButton
-						v-if="canMove"
+						v-if="offersMove"
 						weight="quiet"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-move' ).text()"
 						:title="$i18n( 'neowiki-managesubjects-row-move' ).text()"
@@ -116,7 +116,7 @@
 						<CdxIcon :icon="cdxIconArticleRedirect" />
 					</CdxButton>
 					<CdxButton
-						v-if="canDelete"
+						v-if="offersDelete"
 						weight="quiet"
 						action="destructive"
 						:aria-label="$i18n( 'neowiki-managesubjects-row-delete' ).text()"
@@ -259,6 +259,7 @@ import { reorderHandleLabel } from '@/components/common/reordering.ts';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 
 /**
  * Which Main Subject control the row carries: the pin that demotes the page's Main Subject, the pin
@@ -349,6 +350,14 @@ provide( RelationTargetUrlKey, subjectLinkUrlFromRow );
 const schemaStore = useSchemaStore();
 
 const schema = computed( () => schemaStore.schemas.get( props.subject.getSchemaName() ) as Schema | undefined );
+
+// Changing which Subject a page is about changes none of its Subjects, so the Main Subject controls need no more than
+// the page decided.
+const { mayEditSubjects } = useControlledSubjectRight();
+const mayChangeSubject = computed( (): boolean => mayEditSubjects( schema.value?.subjectsAreControlled() === true ) );
+const offersEdit = computed( (): boolean => props.canEdit && mayChangeSubject.value );
+const offersMove = computed( (): boolean => props.canMove && mayChangeSubject.value );
+const offersDelete = computed( (): boolean => props.canDelete && mayChangeSubject.value );
 const displayName = computed( () => identifyingSubjectName( props.subject, schema.value ) );
 const shownSchemaName = computed( () => subjectSchemaDisplayName( props.subject ) );
 const schemaName = computed( () => schemaNameToShow( props.subject ) );
@@ -380,7 +389,7 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 		} );
 	}
 
-	if ( props.canEdit ) {
+	if ( offersEdit.value ) {
 		items.push( {
 			value: 'edit',
 			label: mw.msg( 'neowiki-managesubjects-row-edit' ),
@@ -403,7 +412,7 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 		} );
 	}
 
-	if ( props.canMove ) {
+	if ( offersMove.value ) {
 		items.push( {
 			value: 'move',
 			label: mw.msg( 'neowiki-managesubjects-row-move' ),
@@ -411,7 +420,7 @@ const menuItems = computed<MenuButtonItemData[]>( () => {
 		} );
 	}
 
-	if ( props.canDelete ) {
+	if ( offersDelete.value ) {
 		items.push( {
 			value: 'delete',
 			label: mw.msg( 'neowiki-managesubjects-row-delete' ),

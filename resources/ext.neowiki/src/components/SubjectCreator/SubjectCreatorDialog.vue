@@ -30,6 +30,7 @@
 			:schema-names="offeredSchemaNames"
 			:aria-label="$i18n( 'neowiki-subject-creator-schema-field' ).text()"
 			:standalone-only="true"
+			:uncontrolled-only="!canEditControlledSubjects"
 			@select="onSchemaSelected"
 			@create="openSchemaCreator"
 		>
@@ -256,6 +257,7 @@ import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError.ts';
 import { WriteRefusedError } from '@/components/SubjectEditor/WriteRefusedError.ts';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
 import { useSubjectPermissions } from '@/composables/useSubjectPermissions.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 import { useChangeDetection } from '@/composables/useChangeDetection.ts';
 import { useCloseConfirmation } from '@/composables/useCloseConfirmation.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
@@ -364,6 +366,7 @@ const pageTitleInputRef = ref<InstanceType<typeof PageTitleInput> | null>( null 
 const pagePickerRef = ref<InstanceType<typeof PagePicker> | null>( null );
 
 const { canCreateSubjectPage, checkCreateSubjectPagePermission } = useSubjectPermissions();
+const { canEditControlledSubjects, whenAnswered: controlledSubjectRightAnswered } = useControlledSubjectRight();
 
 interface PageOption {
 	value: SubjectPageChoice;
@@ -787,6 +790,15 @@ async function loadSchema( schemaName: string ): Promise<void> {
 			if ( currentSequence === requestSequence ) {
 				leaveSchemaStepOpen();
 				mw.notify( mw.msg( 'neowiki-create-subject-error-dependent-subjects', schemaDisplayName( schema ) ), { type: 'error' } );
+			}
+
+			return;
+		}
+
+		if ( schema.subjectsAreControlled() && !await controlledSubjectRightAnswered() ) {
+			if ( currentSequence === requestSequence ) {
+				leaveSchemaStepOpen();
+				mw.notify( mw.msg( 'neowiki-create-subject-error-controlled-subjects', schemaDisplayName( schema ) ), { type: 'error' } );
 			}
 
 			return;

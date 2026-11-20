@@ -165,10 +165,13 @@ function toView( element: HTMLElement ): View|null {
 }
 
 async function withEditPermission( view: View ): Promise<ViewData> {
+	const subject = useSubjectStore().findSubject( view.subjectId );
+
 	return {
 		...view,
 		canEditSubject: isLatestRevision() && await canEditSubjectOnItsPage(
-			useSubjectStore().findSubject( view.subjectId ),
+			subject,
+			subject === undefined ? undefined : useSchemaStore().schemas.get( subject.getSchemaName() ),
 			subjectPermissionHints
 		)
 	};

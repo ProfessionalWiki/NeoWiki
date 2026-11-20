@@ -21,6 +21,9 @@
 		<p v-if="hostRemoval !== null">
 			{{ hostRemoval }}
 		</p>
+		<p v-if="usage !== null">
+			{{ usage }}
+		</p>
 		<template #footer>
 			<SummaryAction
 				help-text=""
@@ -35,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import { CdxDialog } from '@wikimedia/codex';
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import { cdxIconTrash } from '@wikimedia/codex-icons';
@@ -43,6 +46,8 @@ import I18nSlot from '@/components/common/I18nSlot.vue';
 import SummaryAction from '@/components/common/SummaryAction.vue';
 import type { Subject } from '@/domain/Subject.ts';
 import type { Schema } from '@/domain/Schema.ts';
+import type { ReferencingSubjects } from '@/domain/SubjectRepository.ts';
+import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { isNamedAfterHostSubject } from '@/domain/dependentSubjects.ts';
 import { displayNameOf, identifyingSubjectName } from '@/presentation/subjectDisplayName.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -62,6 +67,7 @@ const emit = defineEmits<{
 
 const schemaStore = useSchemaStore();
 const subjectStore = useSubjectStore();
+const subjectRepository = NeoWikiServices.getSubjectRepository();
 
 // So the user sees which Subject they are losing, of several that may share a name.
 const subjectName = computed( (): string => props.subject === null ? '' : identifyingSubjectName(
@@ -82,6 +88,45 @@ const hostRemoval = computed( (): string | null => {
 			'neowiki-managesubjects-delete-confirm-removed-from-host-with-dependents' :
 			'neowiki-managesubjects-delete-confirm-removed-from-host',
 		displayNameOf( host )
+	).text();
+} );
+
+// Null until read, and for a Dependent Subject: its Host Subject is the one Subject pointing at it, and the Relation
+// goes with it.
+const referencingSubjects = shallowRef<ReferencingSubjects | null>( null );
+let referencingRead = 0;
+
+watch( [ () => props.open, () => props.subject ], async ( [ open, subject ] ) => {
+	const read = ++referencingRead;
+	referencingSubjects.value = null;
+
+	if ( !open || subject === null || subject.getHostSubject() !== null ) {
+		return;
+	}
+
+	try {
+		const referencing = await subjectRepository.getReferencingSubjects( subject.getId() );
+
+		if ( read === referencingRead ) {
+			referencingSubjects.value = referencing;
+		}
+	} catch ( error ) {
+		console.error( 'Failed to load the Subjects that use the Subject to delete:', error );
+	}
+}, { immediate: true } );
+
+const usage = computed( (): string | null => {
+	const referencing = referencingSubjects.value;
+
+	if ( referencing === null || referencing.subjects.length === 0 ) {
+		return null;
+	}
+
+	return mw.message(
+		referencing.truncated ?
+			'neowiki-managesubjects-delete-confirm-used-by-many' :
+			'neowiki-managesubjects-delete-confirm-used-by',
+		referencing.subjects.length
 	).text();
 } );
 

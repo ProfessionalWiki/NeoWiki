@@ -62,6 +62,18 @@ describe( 'SchemaDisplayHeader', () => {
 		expect( wrapper.text() ).not.toContain( 'neowiki-schema-subjects-are-dependent' );
 	} );
 
+	it( 'says that the Subjects of a Schema of Controlled Subjects are controlled', () => {
+		const wrapper = mountComponent( newSchema( { subjectsAreControlled: true } ) );
+
+		expect( wrapper.text() ).toContain( 'neowiki-schema-subjects-are-controlled' );
+	} );
+
+	it( 'says nothing about control for a Schema whose Subjects are not controlled', () => {
+		const wrapper = mountComponent( newSchema() );
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-schema-subjects-are-controlled' );
+	} );
+
 	it( 'shows edit button when canEditSchema is true', () => {
 		const wrapper = mountComponent( newSchema(), true );
 

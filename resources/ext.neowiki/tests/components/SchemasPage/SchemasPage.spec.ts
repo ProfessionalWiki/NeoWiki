@@ -59,6 +59,8 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 	} ),
 } ) );
 
+let mayEditControlledSubjects = false;
+
 const getSchemaMock = vi.fn();
 const saveSchemaMock = vi.fn();
 let pinia: ReturnType<typeof createPinia>;
@@ -106,7 +108,7 @@ const SchemaEditorDialogStub = {
 };
 
 function summaries( names: string[] ): SchemaSummary[] {
-	return names.map( ( name ) => ( { name, description: '', propertyCount: 1, subjectsAreDependent: false } ) );
+	return names.map( ( name ) => ( { name, description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false } ) );
 }
 
 function neverLands(): Mock<() => Promise<never>> {
@@ -145,6 +147,7 @@ function mountPage( options: PageOptions = {} ): VueWrapper {
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 				[ Service.SubjectSummaryLookup ]: options.subjectSummaryLookup ?? { getSubjectSummaries: vi.fn() },
 				[ Service.SubjectCountLookup ]: options.subjectCountLookup ?? absentCounts,
+				[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => mayEditControlledSubjects },
 			},
 			stubs: {
 				...( options.realCards ? {} : { SchemaCard: SchemaCardStub } ),
@@ -219,6 +222,7 @@ describe( 'SchemasPage', () => {
 		canDeleteSchemaRef.value = false;
 		mayCreateSubjectPages = false;
 		canCreateSubjectPageRef.value = false;
+		mayEditControlledSubjects = false;
 		getSchemaMock.mockReset();
 		saveSchemaMock.mockReset().mockResolvedValue( undefined );
 		pinia = createPinia();
@@ -393,7 +397,7 @@ describe( 'SchemasPage', () => {
 	it( 'keeps the Schemas whose label in the reader\'s language contains the find text', async () => {
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
 			...summaries( [ 'Artist', 'City' ] ),
-			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Museum wing' } },
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, subjectsAreControlled: false, labels: { en: 'Museum wing' } },
 		] );
 		const wrapper = mountPage();
 		await flushPromises();
@@ -430,7 +434,7 @@ describe( 'SchemasPage', () => {
 	it( 'lists the Schemas in the order of what the reader sees them called', async () => {
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
 			...summaries( [ 'Artist', 'City' ] ),
-			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { en: 'Annex' } },
+			{ name: 'Department', description: '', propertyCount: 0, subjectsAreDependent: false, subjectsAreControlled: false, labels: { en: 'Annex' } },
 		] );
 		const wrapper = mountPage();
 		await flushPromises();
@@ -604,13 +608,29 @@ describe( 'SchemasPage', () => {
 	it( 'lets the cards offer Subject creation only for Schemas whose Subjects are standalone', async () => {
 		mayCreateSubjectPages = true;
 		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
-			{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false },
-			{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true },
+			{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
+			{ name: 'Birth', description: '', propertyCount: 1, subjectsAreDependent: true, subjectsAreControlled: false },
 		] );
 		const wrapper = mountPage();
 		await flushPromises();
 
 		expect( cards( wrapper ).map( ( card ) => card.props( 'canCreateSubject' ) ) ).toEqual( [ true, false ] );
+	} );
+
+	it.each( [
+		[ 'without', false, [ true, false ] ],
+		[ 'with', true, [ true, true ] ],
+	] )( 'lets the cards offer Subject creation for a Schema of Controlled Subjects to a user %s the right to edit them', async ( _, mayEdit, offered ) => {
+		mayCreateSubjectPages = true;
+		mayEditControlledSubjects = mayEdit;
+		schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+			{ name: 'Artist', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: false },
+			{ name: 'Gender', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: true },
+		] );
+		const wrapper = mountPage();
+		await flushPromises();
+
+		expect( cards( wrapper ).map( ( card ) => card.props( 'canCreateSubject' ) ) ).toEqual( offered );
 	} );
 
 	it( 'lets the cards offer deleting to a user who may delete Schemas', async () => {

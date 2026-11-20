@@ -153,6 +153,17 @@ describe( 'SchemaPicker', () => {
 			expect( listedSchemas( wrapper ) ).toEqual( [ 'City', 'Product' ] );
 		} );
 
+		it( 'leaves out the schemas whose subjects are controlled where it offers uncontrolled ones only', async () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Gender', description: '', propertyCount: 1, subjectsAreDependent: false, subjectsAreControlled: true },
+				{ name: 'Person', description: '', propertyCount: 3, subjectsAreDependent: false, subjectsAreControlled: false },
+			] );
+
+			const wrapper = await mountLoadedPicker( { uncontrolledOnly: true } );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Person' ] );
+		} );
+
 		describe( 'where it offers standalone ones only', () => {
 			// Codex shows the line in place of results, under its own class, and keeps an empty one where it has none.
 			function noResultsLine( wrapper: VueWrapper ): string {

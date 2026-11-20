@@ -128,6 +128,15 @@ class SchemaContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 		$this->assertStatusGood( $status );
 	}
 
+	public function testDeclaringTheSubjectsBothDependentAndControlledFailsValidation(): void {
+		$status = $this->validate(
+			'{ "subjectsAreDependent": true, "subjectsAreControlled": true, "propertyDefinitions": {} }',
+			'Birth'
+		);
+
+		$this->assertStatusError( 'neowiki-schema-controlled-dependent', $status );
+	}
+
 	public function testARelationPropertyTargetingSchemasWithDependentAndWithStandaloneSubjectsFailsValidation(): void {
 		$this->createSchema( 'Birth', '{"subjectsAreDependent":true,"propertyDefinitions":{}}' );
 		$this->createSchema( 'Place', '{"propertyDefinitions":{}}' );

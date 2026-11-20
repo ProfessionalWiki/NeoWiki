@@ -16,6 +16,7 @@ readonly class Schema {
 		private string $description,
 		private PropertyDefinitions $properties,
 		private bool $subjectsAreDependent,
+		private bool $subjectsAreControlled,
 		private array $labels = [],
 	) {
 	}
@@ -56,6 +57,10 @@ readonly class Schema {
 
 	public function subjectsAreDependent(): bool {
 		return $this->subjectsAreDependent;
+	}
+
+	public function subjectsAreControlled(): bool {
+		return $this->subjectsAreControlled;
 	}
 
 }

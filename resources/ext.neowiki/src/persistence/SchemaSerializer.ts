@@ -15,6 +15,7 @@ export class SchemaSerializer {
 			description: schema.getDescription(),
 			...( schema.getLabels() === undefined ? {} : { labels: schema.getLabels() } ),
 			...( schema.subjectsAreDependent() ? { subjectsAreDependent: true } : {} ),
+			...( schema.subjectsAreControlled() ? { subjectsAreControlled: true } : {} ),
 			propertyDefinitions: this.serializePropertyDefinitions( schema.getPropertyDefinitions() ),
 		};
 	}

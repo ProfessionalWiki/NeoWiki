@@ -93,6 +93,18 @@ describe( 'RestSubjectRepository over the production HTTP client', () => {
 		expect( ( error as SubjectIdInUseError ).subjectId ).toBe( 's44444444444444' );
 	} );
 
+	it( 'carries the reason an update was refused for', async () => {
+		const repository = repositoryAnswering( 403, {
+			status: 'error',
+			message: 'The Subjects of the Schema Gender are controlled: only users with the right to edit Controlled ' +
+				'Subjects can add, change or remove them.',
+		} );
+
+		await expect(
+			repository.updateSubject( new SubjectId( 's44444444444444' ), 'Woman', new StatementList( [] ), [] ),
+		).rejects.toThrowError( 'The Subjects of the Schema Gender are controlled' );
+	} );
+
 	it( 'carries the reason a write that failed gave', async () => {
 		const repository = repositoryAnswering( 500, {
 			status: 'error',

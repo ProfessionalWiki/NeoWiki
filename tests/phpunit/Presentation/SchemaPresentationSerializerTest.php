@@ -171,6 +171,13 @@ class SchemaPresentationSerializerTest extends TestCase {
 		);
 	}
 
+	public function testSchemaWithControlledSubjectsDeclaresThem(): void {
+		$this->assertSerializesTo(
+			'{ "description": "", "subjectsAreControlled": true, "propertyDefinitions": {} }',
+			TestSchema::build( name: 'Gender', description: '', subjectsAreControlled: true )
+		);
+	}
+
 	public function testSchemaWithStandaloneSubjectsLeavesTheDeclarationOut(): void {
 		$this->assertSerializesTo(
 			'{ "description": "", "propertyDefinitions": {} }',

@@ -49,6 +49,7 @@ use Wikimedia\Rdbms\IResultWrapper;
 use NullIndexField;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Application\SchemaLookup;
+use ProfessionalWiki\NeoWiki\Application\ControlledSubjectRules;
 use ProfessionalWiki\NeoWiki\Application\Search\SubjectSearchHit;
 use ProfessionalWiki\NeoWiki\Application\SubjectPermissionHints;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\BackendFailureMessage;
@@ -353,6 +354,31 @@ class NeoWikiHooks {
 		}
 
 		$result = [ 'neowiki-subject-page-immovable' ];
+
+		return false;
+	}
+
+	/**
+	 * Reads the page's Subjects, so it is asked of a move itself, not of the Move tab every page view shows: the tab
+	 * stays, and the move is refused.
+	 *
+	 * @param array|string|MessageSpecifier &$result
+	 */
+	public static function onGetUserPermissionsErrorsExpensive( Title $title, User $user, string $action, &$result ): bool {
+		if ( $action !== 'move' || $user->isAllowed( ControlledSubjectRules::RIGHT ) || !$title->exists() ) {
+			return true;
+		}
+
+		$extension = NeoWikiExtension::getInstance();
+		$schemaName = $extension->newControlledSubjectRules()->controlledSchemaAPageMoveCanRename(
+			$extension->newPageSubjectsLookup()->getPageSubjects( new PageId( $title->getArticleID() ) )->getAllSubjects()
+		);
+
+		if ( $schemaName === null ) {
+			return true;
+		}
+
+		$result = [ 'neowiki-controlled-subject-page-immovable', $schemaName->getText() ];
 
 		return false;
 	}

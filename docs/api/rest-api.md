@@ -51,7 +51,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `GET /neowiki/v0/subjects` | List Subjects, newest first. [Cursor-paginated](#cursor-pagination) with `limit` and `cursor`. Query: `schema` (only that Schema's Subjects; without it, [Dependent Subjects](subject-format.md#dependent-subjects) are left out), `search` (case-insensitive substring of the name or page title, or case-sensitive prefix of the ID), `sort` (`newest`, `name`, `schema`, `page`, `edited`) and `direction` (`asc`, `desc`; ignored by `newest`). A `search` that runs longer than the wiki allows answers `503` with `errorType` `searchTimeout`; retry with a `schema` to search fewer Subjects. |
 | `GET /neowiki/v0/recently-edited-subjects` | List the Subjects whose data was edited most recently, newest first, each once. Adding a Subject counts as editing it, and adding or changing a [Dependent Subject](subject-format.md#dependent-subjects) as editing the standalone Subject at the top of its chain of Host Subjects. Returns `{"subjects": [...]}`, rows as in `GET /subjects` but with `lastEdited` the time of the Subject's last edit. Query: `limit` (1–50, default 10). A request looks back no further than the wiki's 2,000 newest revisions, of any page, and can return fewer Subjects than `limit` even when more were edited within them. |
 | `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. |
-| `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects and [Dependent Subjects](subject-format.md#dependent-subjects) are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix), `limit`. |
+| `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects and [Dependent Subjects](subject-format.md#dependent-subjects) are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix; empty, it lists the Subjects of the Schemas in `schema` sorted by name, and returns an empty list without `schema`), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
 
 ### Pages and Subjects
@@ -154,6 +154,11 @@ not read and for a page id that does not exist; the write endpoints keyed by Sub
 page you may not read and for a Subject id that does not exist. `POST /neowiki/v0/subjects` is keyed by a title you
 supply rather than by an existing page: it answers `403` for a title you may not create, whether or not a page holds
 it, and `409` for one already taken, carrying that title and nothing about the page holding it.
+
+Adding, changing or removing a [Controlled Subject](../glossary.md#controlled-subject), a Subject whose Schema has
+[`subjectsAreControlled`](schema-format.md#top-level-structure), also needs the `neowiki-controlled-subject-edit` right.
+Without it, a write that would do so answers `403` with a `message` naming the Schema, and writes nothing. Setting the
+Main Subject and reordering a page's Subjects need no such right.
 
 The Schema write endpoints need the same permissions as creating, editing, or deleting the Schema's page in the wiki.
 They answer `403` when you may read that page but not make the change, and `404` when you may not read it.

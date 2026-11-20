@@ -93,6 +93,21 @@ describe( 'Schema', () => {
 
 	} );
 
+	describe( 'withSubjectsAreControlled', () => {
+
+		it( 'returns a new Schema declaring its Subjects controlled, the rest unchanged', () => {
+			const originalSchema = newSchema( {
+				properties: new PropertyDefinitionList( [ newTextProperty( { name: 'Authority URI' } ) ] ),
+			} );
+
+			const updatedSchema = originalSchema.withSubjectsAreControlled( true );
+
+			expect( updatedSchema.subjectsAreControlled() ).toBe( true );
+			expect( updatedSchema.withSubjectsAreControlled( false ) ).toEqual( originalSchema );
+		} );
+
+	} );
+
 	describe( 'withAddedPropertyDefinition', () => {
 
 		it( 'adds a Property Definition when Schema has no properties', () => {
@@ -186,6 +201,27 @@ describe( 'Schema', () => {
 			[ 'withRemovedPropertyDefinition', () => schemaOfDependentSubjects.withRemovedPropertyDefinition( new PropertyName( 'foo' ) ) ],
 		] )( '%s keeps the declaration that the subjects are dependent', ( _, derive ) => {
 			expect( derive().subjectsAreDependent() ).toBe( true );
+		} );
+
+	} );
+
+	describe( 'subjectsAreControlled', () => {
+
+		const schemaOfControlledSubjects = newSchema( {
+			properties: new PropertyDefinitionList( [ newTextProperty( { name: 'foo' } ), newNumberProperty( { name: 'bar' } ) ] ),
+			subjectsAreControlled: true,
+		} );
+
+		it.each( [
+			[ 'withName', () => schemaOfControlledSubjects.withName( 'Renamed' ) ],
+			[ 'withDescription', () => schemaOfControlledSubjects.withDescription( 'Described' ) ],
+			[ 'withLabels', () => schemaOfControlledSubjects.withLabels( { de: 'Geschlecht' } ) ],
+			[ 'withSubjectsAreDependent', () => schemaOfControlledSubjects.withSubjectsAreDependent( false ) ],
+			[ 'withAddedPropertyDefinition', () => schemaOfControlledSubjects.withAddedPropertyDefinition( newTextProperty( { name: 'baz' } ) ) ],
+			[ 'withReorderedPropertyDefinitions', () => schemaOfControlledSubjects.withReorderedPropertyDefinitions( [ new PropertyName( 'bar' ), new PropertyName( 'foo' ) ] ) ],
+			[ 'withRemovedPropertyDefinition', () => schemaOfControlledSubjects.withRemovedPropertyDefinition( new PropertyName( 'foo' ) ) ],
+		] )( '%s keeps the declaration that the subjects are controlled', ( _, derive ) => {
+			expect( derive().subjectsAreControlled() ).toBe( true );
 		} );
 
 	} );
