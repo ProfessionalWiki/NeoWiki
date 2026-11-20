@@ -194,6 +194,19 @@ describe( 'SchemaPicker', () => {
 				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsBranch' );
 			} );
 
+			it( 'names a Schema found by what the reader sees it called before one found only by a label in another language', async () => {
+				schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+					{ name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: true, labels: { de: 'Kunstwerk' } },
+					{ name: 'Kunstschule', description: '', propertyCount: 0, subjectsAreDependent: true },
+					...SUMMARIES,
+				] );
+				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
+
+				await type( wrapper, 'kunst' );
+
+				expect( noResultsLine( wrapper ) ).toBe( 'neowiki-create-subject-error-dependent-subjectsKunstschule' );
+			} );
+
 			it( 'says nothing of typed text that finds no Schema at all', async () => {
 				const wrapper = await mountLoadedPicker( { standaloneOnly: true } );
 
@@ -528,6 +541,32 @@ describe( 'SchemaPicker', () => {
 			await nextTick();
 
 			expect( fieldText( wrapper ) ).toBe( 'Merchandise' );
+		} );
+	} );
+
+	describe( 'for a Schema with a label only in another language', () => {
+		beforeEach( () => {
+			schemaStore.fetchAllSchemaSummaries = vi.fn().mockResolvedValue( [
+				{ name: 'Artwork', description: '', propertyCount: 0, subjectsAreDependent: false, labels: { de: 'Kunstwerk' } },
+				{ name: 'Kunsthalle', description: '', propertyCount: 0, subjectsAreDependent: false },
+				...SUMMARIES,
+			] );
+		} );
+
+		it( 'finds it by that label', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'kunstwerk' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Artwork' ] );
+		} );
+
+		it( 'lists it after the schemas found by what the reader sees them called', async () => {
+			const wrapper = await mountLoadedPicker();
+
+			await type( wrapper, 'kunst' );
+
+			expect( listedSchemas( wrapper ) ).toEqual( [ 'Kunsthalle', 'Artwork' ] );
 		} );
 	} );
 

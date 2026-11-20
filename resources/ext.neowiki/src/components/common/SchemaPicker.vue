@@ -32,7 +32,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { CdxLookup } from '@wikimedia/codex';
 import { normalizeSchemaName, useSchemaStore } from '@/stores/SchemaStore.ts';
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
-import { CREATE_SCHEMA, matchesSchemaSearch, schemaMenu, type SchemaMenu } from '@/presentation/schemaMenu.ts';
+import { CREATE_SCHEMA, schemaMenu, schemasMatchingSearch, type SchemaMenu } from '@/presentation/schemaMenu.ts';
 import { schemaDisplayName, schemaNamerFor } from '@/presentation/schemaDisplayName.ts';
 
 const props = defineProps<{
@@ -113,9 +113,9 @@ const leftOutDependentSchema = computed( (): string | null => {
 		return null;
 	}
 
-	const found = summaries.value.filter( ( summary ) => summary.subjectsAreDependent &&
-		( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) &&
-		matchesSchemaSearch( summary, search ) );
+	const leftOut = summaries.value.filter( ( summary ) => summary.subjectsAreDependent &&
+		( props.schemaNames === undefined || props.schemaNames.includes( summary.name ) ) );
+	const found = schemasMatchingSearch( leftOut, search );
 	const named = found.find( ( summary ) => summary.name.toLowerCase() === search ||
 		schemaDisplayName( summary ).toLowerCase() === search ) ?? found[ 0 ];
 

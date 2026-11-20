@@ -27,7 +27,8 @@ export type SchemaNamesInMenu = 'beside-every-label' | 'beside-shared-labels';
 
 /**
  * The menu of a lookup for choosing Schemas: those that match the search text, each under the label the reader
- * sees, in the order of those labels, and, unless `offeredName` is null, the offer to create a Schema of that name.
+ * sees, in the order schemasMatchingSearch() lists them, and, unless `offeredName` is null, the offer to create a
+ * Schema of that name.
  *
  * Below Schemas, the offer is the menu's footer, which Codex keeps in view while the list scrolls. Alone,
  * it is the list's one item: a Codex lookup neither opens a menu nor moves through it by keyboard while it
@@ -53,18 +54,35 @@ export function schemaMenu(
 }
 
 /**
- * Whether the Schema's name or the label the reader sees contains the search text, in any case.
+ * In the order of what the reader sees them called, with those found only by a label the reader does not see after
+ * the others.
+ */
+export function schemasMatchingSearch( summaries: readonly SchemaSummary[], search: string ): SchemaSummary[] {
+	const found = sortedByDisplayName( summaries.filter( ( summary ) => matchesSchemaSearch( summary, search ) ) );
+	const foundByNameOrShownName = ( summary: SchemaSummary ): boolean =>
+		contains( summary.name, search ) || contains( schemaDisplayName( summary ), search );
+
+	return [
+		...found.filter( foundByNameOrShownName ),
+		...found.filter( ( summary ) => !foundByNameOrShownName( summary ) ),
+	];
+}
+
+/**
+ * Whether the Schema's name or any of its labels contains the search text, in any case.
  */
 export function matchesSchemaSearch( summary: SchemaSummary, search: string ): boolean {
-	const text = search.trim().toLowerCase();
+	return [ summary.name, ...Object.values( summary.labels ?? {} ) ].some( ( known ) => contains( known, search ) );
+}
 
-	return summary.name.toLowerCase().includes( text ) || schemaDisplayName( summary ).toLowerCase().includes( text );
+function contains( known: string, search: string ): boolean {
+	return known.toLowerCase().includes( search.trim().toLowerCase() );
 }
 
 function matchingItems( summaries: readonly SchemaSummary[], search: string, names: SchemaNamesInMenu ): MenuItemData[] {
 	const sharedLabels = names === 'beside-every-label' ? null : labelsSharedBy( summaries );
 
-	return sortedByDisplayName( summaries.filter( ( summary ) => matchesSchemaSearch( summary, search ) ) )
+	return schemasMatchingSearch( summaries, search )
 		.map( ( summary ) => {
 			const shownName = schemaDisplayName( summary );
 			const showsName = shownName !== summary.name && ( sharedLabels === null || sharedLabels.has( shownName ) );
