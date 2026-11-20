@@ -1,5 +1,6 @@
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
+import { withItemMoved } from '@/components/common/reordering.ts';
 
 export interface UnifiedRow {
 	property: PropertyDefinition;
@@ -56,9 +57,7 @@ export function rulesAfterReorder(
 	oldIndex: number,
 	newIndex: number,
 ): DisplayRule[] {
-	const rows = unifiedRows( schemaProperties, displayRules );
-	const [ moved ] = rows.splice( oldIndex, 1 );
-	rows.splice( newIndex, 0, moved );
+	const rows = withItemMoved( unifiedRows( schemaProperties, displayRules ), oldIndex, newIndex );
 
 	return rulesFromRows( rows, displayRules );
 }

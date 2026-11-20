@@ -1,13 +1,12 @@
 import { DOMWrapper, enableAutoUnmount, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DisplayRuleList from '@/components/LayoutEditor/DisplayRuleList.vue';
 import type { DisplayRuleListExposes, PreviewMarks } from '@/components/LayoutEditor/DisplayRuleList.vue';
-import { useSortable, type UseSortableOptions } from '@/composables/useSortable.ts';
 import { PropertyName, type PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { newDisplayRules } from '@/TestHelpers';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { chooseReorderMove, createI18nMock, enabledReorderMoves, lastSortableOptions, liveRegionText, REORDER_MESSAGES, setupMwMock } from '../../VueTestHelpers.ts';
 
 vi.mock( '@/composables/useSortable.ts', () => ( {
 	useSortable: vi.fn(),
@@ -63,10 +62,8 @@ function rowOf( wrapper: VueWrapper, name: string ): DOMWrapper<Element> {
 	return row!;
 }
 
-// jsdom cannot drag, so a drag is the options the list hands useSortable.
-function sortableOptions(): UseSortableOptions {
-	const calls = vi.mocked( useSortable ).mock.calls;
-	return calls[ calls.length - 1 ][ 1 ];
+function rowName( row: DOMWrapper<Element> ): string {
+	return row.find( '.ext-neowiki-display-rule-list__item__name' ).text();
 }
 
 function emittedRuleNames( wrapper: VueWrapper ): string[] {
@@ -77,13 +74,17 @@ function emittedRuleNames( wrapper: VueWrapper ): string[] {
 
 describe( 'DisplayRuleList', () => {
 
+	beforeEach( () => {
+		setupMwMock( { messages: REORDER_MESSAGES } );
+	} );
+
 	const schemaProperties = [ property( 'Alpha' ), property( 'Beta' ), property( 'Gamma' ), property( 'Delta' ) ];
 
 	it( 'renders every schema property as a row, all shown in the default state', () => {
 		const wrapper = createWrapper( schemaProperties, [], [] );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
-		expect( rows.map( ( row ) => row.text() ) ).toEqual( [ 'Alpha', 'Beta', 'Gamma', 'Delta' ] );
+		expect( rows.map( rowName ) ).toEqual( [ 'Alpha', 'Beta', 'Gamma', 'Delta' ] );
 		expect( rows.some( ( row ) => row.classes().includes( HIDDEN_CLASS ) ) ).toBe( false );
 	} );
 
@@ -91,7 +92,7 @@ describe( 'DisplayRuleList', () => {
 		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ), [] );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
-		expect( rows.map( ( row ) => row.text() ) ).toEqual( [ 'Gamma', 'Beta', 'Alpha', 'Delta' ] );
+		expect( rows.map( rowName ) ).toEqual( [ 'Gamma', 'Beta', 'Alpha', 'Delta' ] );
 		expect( rows.map( ( row ) => row.classes().includes( HIDDEN_CLASS ) ) ).toEqual(
 			[ false, false, true, true ],
 		);
@@ -109,7 +110,7 @@ describe( 'DisplayRuleList', () => {
 	it( 'appends a rule when showing a hidden property', async () => {
 		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Beta' ), [] );
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
-		const gammaRowIndex = rows.findIndex( ( row ) => row.text() === 'Gamma' );
+		const gammaRowIndex = rows.findIndex( ( row ) => rowName( row ) === 'Gamma' );
 		const toggles = wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' );
 
 		await toggles[ gammaRowIndex ].trigger( 'click' );
@@ -157,10 +158,42 @@ describe( 'DisplayRuleList', () => {
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
 		const hasHandle = rows.map(
-			( row ) => row.find( '.ext-neowiki-display-rule-list__item__drag-handle' ).exists(),
+			( row ) => row.find( '.ext-neowiki-reorder-handle' ).exists(),
 		);
 
 		expect( hasHandle ).toEqual( [ true, true, false, false ] );
+	} );
+
+	it( 'drags shown properties by their handles alone', () => {
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ), [] );
+		const handle = lastSortableOptions().handle!;
+
+		expect( wrapper.find( 'button[aria-label="Reorder Beta"]' ).element.closest( handle ) ).not.toBeNull();
+		expect( wrapper.find( '.ext-neowiki-display-rule-list__item__action' ).element.closest( handle ) ).toBeNull();
+	} );
+
+	it( 'moves a shown property with its handle', async () => {
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta', 'Alpha' ), [] );
+
+		await chooseReorderMove( wrapper, 'Reorder Alpha', 'Move to top' );
+
+		expect( emittedRuleNames( wrapper ) ).toEqual( [ 'Alpha', 'Gamma', 'Beta' ] );
+	} );
+
+	it( 'moves a shown property no further down than the last one shown', async () => {
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta' ), [] );
+
+		await wrapper.find( 'button[aria-label="Reorder Beta"]' ).trigger( 'click' );
+
+		expect( enabledReorderMoves( wrapper ) ).toEqual( [ 'Move to top', 'Move up' ] );
+	} );
+
+	it( 'tells a screen reader where it moved a property to', async () => {
+		const wrapper = createWrapper( schemaProperties, newDisplayRules( 'Gamma', 'Beta', 'Alpha' ), [] );
+
+		await chooseReorderMove( wrapper, 'Reorder Alpha', 'Move up' );
+
+		expect( liveRegionText( wrapper ) ).toBe( 'Alpha moved to position 2 of 3.' );
 	} );
 
 	it( 'gives each toggle a tooltip naming the action it performs', () => {
@@ -216,7 +249,7 @@ describe( 'DisplayRuleList', () => {
 		);
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
 
-		expect( rows.map( ( row ) => row.text() ) ).toEqual( [ 'Alpha', 'Beta', 'Attendance' ] );
+		expect( rows.map( rowName ) ).toEqual( [ 'Alpha', 'Beta', 'Attendance' ] );
 		expect( rows.map( ( row ) => row.classes().includes( HIDDEN_CLASS ) ) ).toEqual( [ false, false, true ] );
 	} );
 
@@ -238,7 +271,7 @@ describe( 'DisplayRuleList', () => {
 			[ new PropertyName( 'Attendance' ) ],
 		);
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
-		const betaRowIndex = rows.findIndex( ( row ) => row.text() === 'Beta' );
+		const betaRowIndex = rows.findIndex( ( row ) => rowName( row ) === 'Beta' );
 
 		await wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' )[ betaRowIndex ].trigger( 'click' );
 
@@ -252,7 +285,7 @@ describe( 'DisplayRuleList', () => {
 			[ new PropertyName( 'Attendance' ) ],
 		);
 		const rows = wrapper.findAll( '.ext-neowiki-display-rule-list__item' );
-		const attendanceRowIndex = rows.findIndex( ( row ) => row.text() === 'Attendance' );
+		const attendanceRowIndex = rows.findIndex( ( row ) => rowName( row ) === 'Attendance' );
 
 		await wrapper.findAll( '.ext-neowiki-display-rule-list__item__action' )[ attendanceRowIndex ].trigger( 'click' );
 
@@ -266,7 +299,7 @@ describe( 'DisplayRuleList', () => {
 			[ new PropertyName( 'Attendance' ) ],
 		);
 
-		sortableOptions().onReorder!( 1, 0 );
+		lastSortableOptions().onReorder!( 1, 0 );
 
 		expect( emittedRuleNames( wrapper ) ).toEqual( [ 'Beta', 'Alpha' ] );
 	} );
@@ -292,8 +325,8 @@ describe( 'DisplayRuleList', () => {
 	it( 'reports the order a dragged row would give while it is dragged, and none once the drag is over', () => {
 		const wrapper = createWrapper( schemaProperties, [], [] );
 
-		sortableOptions().onMove!( 0, 2 );
-		sortableOptions().onDragEnd!();
+		lastSortableOptions().onMove!( 0, 2 );
+		lastSortableOptions().onDragEnd!();
 
 		const reported = wrapper.emitted( 'reordering' ) as [ { rules: DisplayRule[]; property: string } | null ][];
 		expect( reported[ 0 ][ 0 ]!.rules.map( ( rule ) => rule.property.toString() ) ).toEqual( [ 'Beta', 'Gamma', 'Alpha', 'Delta' ] );

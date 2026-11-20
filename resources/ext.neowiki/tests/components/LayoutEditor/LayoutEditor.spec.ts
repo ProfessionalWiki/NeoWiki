@@ -12,7 +12,7 @@ import { newTextProperty } from '@/domain/propertyTypes/Text.ts';
 import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { Service } from '@/NeoWikiServices.ts';
 import { newDisplayRules, newSchema } from '@/TestHelpers.ts';
-import { createI18nMock } from '../../VueTestHelpers.ts';
+import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 
 // Attached, because where the focus goes is part of what is asserted.
 enableAutoUnmount( afterEach );
@@ -35,6 +35,7 @@ describe( 'LayoutEditor', () => {
 	let schemaRepository: InMemorySchemaRepository;
 
 	beforeEach( () => {
+		setupMwMock();
 		pinia = createPinia();
 		setActivePinia( pinia );
 
@@ -73,7 +74,8 @@ describe( 'LayoutEditor', () => {
 	}
 
 	function row( wrapper: VueWrapper, name: string ): DOMWrapper<Element> {
-		const found = wrapper.findAll( '.ext-neowiki-display-rule-list__item' ).find( ( item ) => item.text() === name );
+		const found = wrapper.findAll( '.ext-neowiki-display-rule-list__item' )
+			.find( ( item ) => item.find( '.ext-neowiki-display-rule-list__item__name' ).text() === name );
 		expect( found, `row ${ name }` ).toBeDefined();
 		return found!;
 	}

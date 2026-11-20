@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
@@ -320,7 +321,11 @@ describe( 'SubjectRow', () => {
 		expect( wrapper.find( '.ext-neowiki-subject-row__label' ).text() ).toBe( 'Attendance of Rijksmuseum (Year: 2024)' );
 	} );
 
-	it( 'shows the drag handle only where the page offers reordering', () => {
+	it( 'offers no reorder handle where the page gives the row no place to move to', () => {
+		expect( mountRow( { canEdit: true } ).findComponent( ReorderHandle ).exists() ).toBe( false );
+	} );
+
+	it( 'shows the handle that only drags where the page asks for it', () => {
 		const handle = '[title="neowiki-managesubjects-row-drag-handle"]';
 
 		expect( mountRow( { canEdit: true } ).find( handle ).exists() ).toBe( false );

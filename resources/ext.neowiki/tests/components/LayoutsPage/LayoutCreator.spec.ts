@@ -53,7 +53,7 @@ describe( 'LayoutCreator', () => {
 	let schemaRepository: RestApiLikeSchemaRepository;
 
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg' ] } );
+		setupMwMock( { functions: [ 'msg', 'message' ] } );
 		pinia = createPinia();
 		setActivePinia( pinia );
 
@@ -136,11 +136,11 @@ describe( 'LayoutCreator', () => {
 	}
 
 	function listedProperties( wrapper: VueWrapper ): string[] {
-		return wrapper.findAll( '.ext-neowiki-display-rule-list__item' ).map( ( row ) => row.text() );
+		return wrapper.findAll( '.ext-neowiki-display-rule-list__item__name' ).map( ( name ) => name.text() );
 	}
 
 	function hiddenProperties( wrapper: VueWrapper ): string[] {
-		return wrapper.findAll( '.ext-neowiki-display-rule-list__item--hidden' ).map( ( row ) => row.text() );
+		return wrapper.findAll( '.ext-neowiki-display-rule-list__item--hidden .ext-neowiki-display-rule-list__item__name' ).map( ( name ) => name.text() );
 	}
 
 	// As the dialog's "Create layout" does.

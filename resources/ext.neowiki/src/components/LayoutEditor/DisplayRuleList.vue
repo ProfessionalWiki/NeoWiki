@@ -33,7 +33,7 @@
 			class="ext-neowiki-display-rule-list__items"
 		>
 			<li
-				v-for="row in rows"
+				v-for="( row, index ) in rows"
 				:key="row.property.name.toString()"
 				class="ext-neowiki-display-rule-list__item"
 				:class="{
@@ -44,22 +44,17 @@
 				@mouseenter="emit( 'hover', row.property.name.toString() )"
 				@mouseleave="emit( 'hover', null )"
 			>
-				<span
+				<ReorderHandle
 					v-if="row.shown"
-					class="ext-neowiki-display-rule-list__item__drag-handle"
-				>
-					<CdxIcon
-						:icon="cdxIconDraggable"
-						:aria-hidden="true"
-					/>
-				</span>
+					:position="index"
+					:count="shownCount"
+					:label="reorderHandleLabel( row.property.name.toString() )"
+					@move="moveRow( index, $event )"
+				/>
 				<span
 					v-else
 					class="ext-neowiki-display-rule-list__item__drag-placeholder"
-					:aria-hidden="true"
-				>
-					<CdxIcon :icon="cdxIconDraggable" />
-				</span>
+				/>
 				<span
 					class="ext-neowiki-display-rule-list__item__action-tooltip"
 					:title="$i18n( toggleMessageKey( row.shown ) ).text()"
@@ -92,16 +87,20 @@
 				</span>
 			</li>
 		</ul>
+		<LiveAnnouncement ref="announcementRef" />
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, type ComponentPublicInstance } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
-import { cdxIconDraggable, cdxIconEye, cdxIconEyeClosed } from '@wikimedia/codex-icons';
+import { cdxIconEye, cdxIconEyeClosed } from '@wikimedia/codex-icons';
 import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { useSortable } from '@/composables/useSortable.ts';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
+import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
+import { movedAnnouncement, REORDER_HANDLE_SELECTOR, reorderHandleLabel } from '@/components/common/reordering.ts';
 import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder, type UnifiedRow } from './displayRuleEditing.ts';
 
 /** The order a row being dragged would give, and the property of that row. */
@@ -133,6 +132,7 @@ const emit = defineEmits<{
 }>();
 
 const listRef = ref<HTMLElement | null>( null );
+const announcementRef = ref<LiveAnnouncementExposes | null>( null );
 
 // Without Display Rules, a View shows every property but those pointing at Dependent Subjects.
 const rulesInEffect = computed( (): DisplayRule[] => {
@@ -202,16 +202,22 @@ defineExpose( {
 	}
 } );
 
+// Shown rows come first, so a row's index is also its place among them.
+function moveRow( from: number, to: number ): void {
+	const announcement = movedAnnouncement( rows.value[ from ].property.name.toString(), to, shownCount.value );
+
+	emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, rulesInEffect.value, from, to ) );
+	announcementRef.value?.announce( announcement );
+}
+
 useSortable( listRef, {
-	handle: '.ext-neowiki-display-rule-list__item__drag-handle',
+	handle: REORDER_HANDLE_SELECTOR,
 	// Only shown rows take part in sorting. Hidden rows have no handle (can't be
 	// grabbed) and excluding them here stops a shown row from being dropped into
 	// the hidden region, where it would otherwise snap back on the next render.
 	draggable: '.ext-neowiki-display-rule-list__item:not(.ext-neowiki-display-rule-list__item--hidden)',
 	ghostClass: 'ext-neowiki-display-rule-list__item--ghost',
-	onReorder( oldIndex: number, newIndex: number ): void {
-		emit( 'update:display-rules', rulesAfterReorder( props.schemaProperties, rulesInEffect.value, oldIndex, newIndex ) );
-	},
+	onReorder: moveRow,
 	onMove( oldIndex: number, newIndex: number ): void {
 		emit( 'reordering', {
 			rules: rulesAfterReorder( props.schemaProperties, rulesInEffect.value, oldIndex, newIndex ),
@@ -306,33 +312,10 @@ useSortable( listRef, {
 			color: @color-progressive;
 		}
 
-		&__drag-handle,
+		/* Holds a hidden row's name in line with the shown ones', which a handle precedes. */
 		&__drag-placeholder {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-
-			.cdx-icon {
-				color: @color-placeholder;
-			}
-		}
-
-		&__drag-placeholder {
-			visibility: hidden;
-		}
-
-		&__drag-handle {
-			opacity: @opacity-transparent;
-			transition: opacity @transition-duration-medium @transition-timing-function-system;
-			cursor: grab;
-
-			.ext-neowiki-display-rule-list__item:hover &,
-			.ext-neowiki-display-rule-list__item:has( :focus-visible ) & {
-				// :has( :focus-visible ) rather than :focus-within: keyboard tabbing must reveal the
-				// drag handle, but a mouse click also focuses the control it hits and would keep the
-				// handle pinned visible after the pointer leaves.
-				opacity: @opacity-base;
-			}
+			flex-shrink: 0;
+			width: @min-size-interactive-pointer;
 		}
 
 		&__action-tooltip {

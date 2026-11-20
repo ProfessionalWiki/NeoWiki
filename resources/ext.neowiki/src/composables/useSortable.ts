@@ -27,6 +27,8 @@ export function useSortable( containerRef: Ref<HTMLElement | null>, options: Use
 		const sortableOptions: Sortable.Options = {
 			handle: options.handle,
 			animation: 150,
+			// A tap that shifts a few pixels on a touch screen stays a tap, so a handle that is also a button opens.
+			fallbackTolerance: 4,
 			ghostClass: options.ghostClass ?? 'ext-neowiki-property-list__item--ghost',
 			onEnd: ( event ) => {
 				// Revert sortablejs's DOM mutation FIRST so Vue can re-render from

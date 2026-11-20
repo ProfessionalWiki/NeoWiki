@@ -1,7 +1,11 @@
-import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LanguageListInput from '@/components/ConfigEditor/LanguageListInput.vue';
-import { listedLanguages, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseReorderMove, lastSortableOptions, listedLanguages, liveRegionText, REORDER_MESSAGES, setupMwMock } from '../../VueTestHelpers.ts';
+
+vi.mock( '@/composables/useSortable.ts', () => ( {
+	useSortable: vi.fn(),
+} ) );
 
 // Mounted with the real language search and Codex components, and attached, because where the focus
 // goes is part of what is asserted.
@@ -13,13 +17,10 @@ describe( 'LanguageListInput', () => {
 		setupMwMock( {
 			config: { wgUserLanguage: userLanguage, wgContentLanguage: contentLanguage },
 			messages: {
+				...REORDER_MESSAGES,
 				'neowiki-config-editor-add-language': 'Add language',
-				'neowiki-config-editor-move-language-up': ( name: string ) => `Move ${ name } up`,
-				'neowiki-config-editor-move-language-down': ( name: string ) => `Move ${ name } down`,
 				'neowiki-config-editor-remove-language': ( name: string ) => `Remove ${ name }`,
 				'neowiki-config-editor-language-added': ( name: string ) => `${ name } added.`,
-				'neowiki-config-editor-language-moved': ( name: string, position: string, count: string ) =>
-					`${ name } moved to position ${ position } of ${ count }.`,
 				'neowiki-config-editor-language-removed': ( name: string ) => `${ name } removed.`,
 			},
 		} );
@@ -72,10 +73,6 @@ describe( 'LanguageListInput', () => {
 	function offeredLanguage( list: VueWrapper, name: string ): DOMWrapper<Element> {
 		return list.findAll( '.ext-neowiki-searchable-picker__menu .cdx-menu-item' )
 			.find( ( item ) => item.find( '.cdx-menu-item__text__label' ).text() === name )!;
-	}
-
-	function announcement( list: VueWrapper ): string {
-		return list.find( '[aria-live="polite"], [role="status"]' ).text();
 	}
 
 	it( 'lists its languages in their order, by name', () => {
@@ -134,27 +131,29 @@ describe( 'LanguageListInput', () => {
 		expect( offeredLanguage( list, 'German' ).attributes( 'aria-disabled' ) ).toBe( 'true' );
 	} );
 
-	it( 'moves a language up', async () => {
+	it( 'moves a language with its handle', async () => {
 		const list = newWrapper( [ 'fr', 'de', 'it' ] );
 
-		await press( list, 'Move Italian up' );
+		await chooseReorderMove( list, 'Reorder Italian', 'Move up' );
 
 		expect( listedLanguages( list ) ).toEqual( [ 'French', 'Italian', 'German' ] );
 	} );
 
-	it( 'moves a language down', async () => {
-		const list = newWrapper( [ 'fr', 'de', 'it' ] );
+	it( 'drags languages by their handles alone', () => {
+		const list = newWrapper( [ 'fr', 'de' ] );
+		const handle = lastSortableOptions().handle!;
 
-		await press( list, 'Move French down' );
-
-		expect( listedLanguages( list ) ).toEqual( [ 'German', 'French', 'Italian' ] );
+		expect( button( list, 'Reorder German' ).element.closest( handle ) ).not.toBeNull();
+		expect( button( list, 'Remove German' ).element.closest( handle ) ).toBeNull();
 	} );
 
-	it( 'cannot move its first language up or its last one down', () => {
-		const list = newWrapper( [ 'fr', 'de' ] );
+	it( 'moves a dragged language to where it was dropped', async () => {
+		const list = newWrapper( [ 'fr', 'de', 'it' ] );
 
-		expect( button( list, 'Move French up' ).element.disabled ).toBe( true );
-		expect( button( list, 'Move German down' ).element.disabled ).toBe( true );
+		lastSortableOptions().onReorder!( 0, 2 );
+		await flushPromises();
+
+		expect( listedLanguages( list ) ).toEqual( [ 'German', 'Italian', 'French' ] );
 	} );
 
 	it( 'cannot remove its only language', () => {
@@ -169,23 +168,12 @@ describe( 'LanguageListInput', () => {
 		expect( listedLanguages( list ) ).toEqual( [ 'French', 'Italian' ] );
 	} );
 
-	it( 'keeps the focus on the button that moved the language', async () => {
+	it( 'keeps the focus on the handle of the language it moved', async () => {
 		const list = newWrapper( [ 'fr', 'de', 'it' ] );
 
-		await press( list, 'Move Italian up' );
+		await chooseReorderMove( list, 'Reorder Italian', 'Move to top' );
 
-		expect( document.activeElement ).toBe( button( list, 'Move Italian up' ).element );
-	} );
-
-	it.each( [
-		[ 'Move German up', 'Move German down' ],
-		[ 'Move French down', 'Move French up' ],
-	] )( 'hands the focus to the other move button once the language cannot move further: %s', async ( pressed, focused ) => {
-		const list = newWrapper( [ 'fr', 'de' ] );
-
-		await press( list, pressed );
-
-		expect( document.activeElement ).toBe( button( list, focused ).element );
+		expect( document.activeElement ).toBe( button( list, 'Reorder Italian' ).element );
 	} );
 
 	it( 'hands the focus to the language that takes the place of a removed one', async () => {
@@ -218,15 +206,15 @@ describe( 'LanguageListInput', () => {
 		await searchFor( list, 'ital' );
 		await offeredLanguage( list, 'Italian' ).trigger( 'click' );
 
-		expect( announcement( list ) ).toBe( 'Italian added.' );
+		expect( liveRegionText( list ) ).toBe( 'Italian added.' );
 	} );
 
 	it( 'tells a screen reader where it moved a language to', async () => {
 		const list = newWrapper( [ 'fr', 'de', 'it' ] );
 
-		await press( list, 'Move Italian up' );
+		await chooseReorderMove( list, 'Reorder Italian', 'Move up' );
 
-		expect( announcement( list ) ).toBe( 'Italian moved to position 2 of 3.' );
+		expect( liveRegionText( list ) ).toBe( 'Italian moved to position 2 of 3.' );
 	} );
 
 	it( 'tells a screen reader what it removed', async () => {
@@ -234,7 +222,7 @@ describe( 'LanguageListInput', () => {
 
 		await press( list, 'Remove German' );
 
-		expect( announcement( list ) ).toBe( 'German removed.' );
+		expect( liveRegionText( list ) ).toBe( 'German removed.' );
 	} );
 
 	it( 'offers no way to change the list when disabled', () => {

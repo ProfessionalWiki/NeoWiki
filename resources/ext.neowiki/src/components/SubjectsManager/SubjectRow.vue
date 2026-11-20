@@ -125,8 +125,15 @@
 					>
 						<CdxIcon :icon="cdxIconTrash" />
 					</CdxButton>
+					<ReorderHandle
+						v-if="reorderPlace !== null"
+						:position="reorderPlace.position"
+						:count="reorderPlace.count"
+						:label="reorderHandleLabel( displayName )"
+						@move="emit( 'reorder', subject, $event )"
+					/>
 					<span
-						v-if="showDragHandle"
+						v-else-if="showDragHandle"
 						class="ext-neowiki-subject-row__drag-handle"
 						:title="$i18n( 'neowiki-managesubjects-row-drag-handle' ).text()"
 						@click.stop
@@ -247,6 +254,8 @@ import { rdfProjectionsFor, subjectExportUrls } from '@/presentation/DataExportM
 import { subjectIri } from '@/presentation/subjectIri.ts';
 import { copyToClipboard } from '@/presentation/copyToClipboard.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
+import ReorderHandle from '@/components/common/ReorderHandle.vue';
+import { reorderHandleLabel } from '@/components/common/reordering.ts';
 import SubjectStatementsView from '@/components/SubjectsManager/SubjectStatementsView.vue';
 import DataExportButtons from '@/components/SubjectsManager/DataExportButtons.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -280,6 +289,12 @@ const props = withDefaults( defineProps<{
 	/** Whether this surface offers moving the Subject to another page at all. */
 	canMove?: boolean;
 	mainSubjectControl?: MainSubjectControl;
+	/** The row's place among the rows it can be reordered with, from 0. Null where it cannot be. */
+	reorderPlace?: { position: number; count: number } | null;
+	/**
+	 * A handle that only drags, for the row that has no place to be reordered in but can be dragged
+	 * elsewhere, such as the Main Subject's.
+	 */
 	showDragHandle?: boolean;
 	/**
 	 * The page the Subject is stored on, linked in the expanded footer. Null where naming it says
@@ -305,6 +320,7 @@ const props = withDefaults( defineProps<{
 	canDelete: false,
 	canMove: false,
 	mainSubjectControl: 'none',
+	reorderPlace: null,
 	showDragHandle: false,
 	page: null,
 	caption: null,
@@ -320,6 +336,8 @@ const emit = defineEmits<{
 	promote: [ subject: Subject ];
 	demote: [ subject: Subject ];
 	move: [ subject: Subject ];
+	/** To the place, from 0, the row's handle chose. */
+	reorder: [ subject: Subject, to: number ];
 	delete: [ subject: Subject ];
 	'copy-link': [ subject: Subject ];
 }>();
@@ -697,20 +715,21 @@ function copySubjectIri(): Promise<void> {
 			.ext-neowiki-subject-row:hover &,
 			.ext-neowiki-subject-row:has( :focus-visible ) &,
 			.ext-neowiki-subject-row--highlighted &,
-			.ext-neowiki-subject-row--expanded & {
+			.ext-neowiki-subject-row--expanded &,
+			&:has( [ aria-expanded='true' ] ) {
 				// :has( :focus-visible ) rather than :focus-within: keyboard focus must reveal the
 				// controls a user is tabbing through, but mouse clicks also focus what they hit (a copy
 				// button, the summary when toggling a row) and would pin the controls visible after the
 				// pointer leaves.
 				opacity: 1;
-				transform: translateX( 0 );
+				// None rather than translateX( 0 ): any transform makes a stacking context, which would keep an
+				// open menu in it under the rows below.
+				transform: none;
 			}
 		}
 	}
 
 	&__drag-handle {
-		// Set off from the buttons: this is grabbed, not clicked, and delete sits right before it.
-		margin-inline-start: @spacing-50;
 		min-width: @min-size-interactive-pointer;
 		min-height: @min-size-interactive-pointer;
 		padding-inline: @spacing-30;
