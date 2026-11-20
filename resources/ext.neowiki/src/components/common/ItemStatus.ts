@@ -6,3 +6,8 @@ export const UNSAVED: ItemStatus = { kind: 'unsaved' };
 export function errorStatus( message: string ): ItemStatus {
 	return { kind: 'error', message };
 }
+
+/** The status in words: an error's message, or what the unsaved mark means. */
+export function statusText( status: ItemStatus ): string {
+	return status.kind === 'error' ? status.message : mw.msg( 'neowiki-subject-editor-unsaved' );
+}

@@ -2,10 +2,11 @@ import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from 
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
+import { errorStatus, type ItemStatus } from '@/components/common/ItemStatus.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { createPropertyDefinitionFromJson, PropertyName } from '@/domain/PropertyDefinition.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
-import { chooseReorderMove, createI18nMock, lastSortableOptions, liveRegionText, REORDER_MESSAGES, setupMwMock } from '../../VueTestHelpers.ts';
+import { chooseReorderMove, createI18nMock, lastSortableOptions, liveRegionText, REORDER_MESSAGES, setupMwMock, statusInWords } from '../../VueTestHelpers.ts';
 
 vi.mock( '@/composables/useSortable.ts', () => ( {
 	useSortable: vi.fn(),
@@ -31,14 +32,14 @@ function createWrapper(
 	selection: PropertyListRow,
 	attachTo?: HTMLElement,
 	showsLabelRow: boolean = true,
-	listeners: Record<string, ( ...args: never[] ) => unknown> = {},
+	otherProps: Record<string, unknown> = {},
 ): VueWrapper {
 	return mount( PropertyList, {
 		props: {
 			properties,
 			selection,
 			showsLabelRow,
-			...listeners,
+			...otherProps,
 		},
 		attachTo,
 		global: {
@@ -216,6 +217,20 @@ describe( 'PropertyList', () => {
 		await findRow( wrapper, 'Beta' ).trigger( 'click' );
 
 		expect( selections( wrapper ) ).toEqual( [ propertyRow( 'Beta' ) ] );
+	} );
+
+	it( 'marks each row as it is told', () => {
+		const statusOf = ( row: PropertyListRow ): ItemStatus | null => {
+			if ( row.kind === 'schema' ) {
+				return errorStatus( 'A schema with this name already exists.' );
+			}
+			return row.kind === 'property' && row.name === 'Beta' ? errorStatus( 'Target schema is required.' ) : null;
+		};
+
+		const wrapper = createWrapper( properties, propertyRow( 'Alpha' ), undefined, true, { statusOf } );
+
+		expect( [ SCHEMA_ROW_TITLE, LABEL_ROW_TITLE, 'Alpha', 'Beta' ].map( ( title ) => statusInWords( findRow( wrapper, title ) ) ) )
+			.toStrictEqual( [ 'A schema with this name already exists.', null, null, 'Target schema is required.' ] );
 	} );
 
 	it( 'offers no delete button on the Schema\'s row or the Label row', () => {

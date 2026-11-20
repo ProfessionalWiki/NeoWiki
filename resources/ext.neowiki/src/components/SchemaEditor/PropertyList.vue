@@ -113,14 +113,21 @@ import ReorderHandle from '@/components/common/ReorderHandle.vue';
 import LiveAnnouncement, { type LiveAnnouncementExposes } from '@/components/common/LiveAnnouncement.vue';
 import { movedAnnouncement, reorderHandleLabel, withItemMoved } from '@/components/common/reordering.ts';
 import EditorListItem from '@/components/common/EditorListItem.vue';
+import type { ItemStatus } from '@/components/common/ItemStatus.ts';
 import type { Icon } from '@wikimedia/codex-icons';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
 
-const props = defineProps<{
+type RowStatus = ( row: PropertyListRow ) => ItemStatus | null;
+
+const props = withDefaults( defineProps<{
 	properties: PropertyDefinitionList;
 	selection: PropertyListRow;
 	showsLabelRow: boolean;
-}>();
+	/** The mark on each row: a problem the row's pane shows, for one. */
+	statusOf?: RowStatus;
+}>(), {
+	statusOf: () => null
+} );
 
 const emit = defineEmits<{
 	select: [ row: PropertyListRow ];
@@ -173,11 +180,12 @@ const selectedPosition = computed( (): number => {
 } );
 
 // The selected row is the list's Tab stop, except alone: it has no other row to move to, so Tab passes the list.
-function rowState( position: number ): { selected: boolean; tabindex: number } {
+function rowState( position: number ): { selected: boolean; status: ItemStatus | null; tabindex: number } {
 	const selected = position === selectedPosition.value;
 
 	return {
 		selected,
+		status: props.statusOf( rowAt( position ) ),
 		tabindex: selected && lastPosition.value > SCHEMA_POSITION ? 0 : -1
 	};
 }

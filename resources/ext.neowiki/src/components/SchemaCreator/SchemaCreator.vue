@@ -6,6 +6,7 @@
 		:subjects-are-dependent="subjectsAreDependent"
 		:opens-on-schema="true"
 		:subjects-may-use-schema="false"
+		:schema-error="nameError"
 		@change="onChange"
 	>
 		<template #name>

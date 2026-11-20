@@ -135,6 +135,12 @@ export function describedAs( wrapper: VueWrapper, element: DOMWrapper<Element> )
 }
 
 /** The buttons and menu items in an element, in order, each by its accessible name or, lacking one, its text. */
+/** What a row of an editor's list says of its status in words, for assistive technology; null when it says nothing. */
+export function statusInWords( row: Pick<DOMWrapper<Element>, 'find'> ): string | null {
+	const status = row.find( '.ext-neowiki-editor-list-item__status' );
+	return status.exists() ? status.text() : null;
+}
+
 export function offeredActions( element: VueWrapper | DOMWrapper<Element> ): string[] {
 	return element.findAll( 'button, .cdx-menu-item' )
 		.map( ( control ) => control.attributes( 'aria-label' ) ?? control.text() );

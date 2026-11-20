@@ -28,6 +28,12 @@
 			<slot name="description" />
 		</span>
 		<span
+			v-if="props.status"
+			class="ext-neowiki-editor-list-item__status"
+		>
+			{{ statusText( props.status ) }}
+		</span>
+		<span
 			v-if="slots.actions"
 			class="ext-neowiki-editor-list-item__actions"
 		>
@@ -38,7 +44,7 @@
 
 <script setup lang="ts">
 import StatusMark from '@/components/common/StatusMark.vue';
-import type { ItemStatus } from '@/components/common/ItemStatus.ts';
+import { statusText, type ItemStatus } from '@/components/common/ItemStatus.ts';
 
 const props = withDefaults( defineProps<{
 	selected: boolean;
@@ -60,6 +66,7 @@ const slots = defineSlots<{
 
 <style lang="less">
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+@import ( reference ) '@/assets/mixins.less';
 
 /* Codex's menu item states, which CdxMenuItem itself cannot give these rows: it keeps the focus off a row it is
 	clicked on, and its padding leaves no room for the gutter. The background is a custom property because the
@@ -178,6 +185,10 @@ const slots = defineSlots<{
 		-webkit-line-clamp: 2;
 		overflow: hidden;
 		overflow-wrap: anywhere;
+	}
+
+	&__status {
+		.ext-neowiki-visually-hidden();
 	}
 
 	&__actions {

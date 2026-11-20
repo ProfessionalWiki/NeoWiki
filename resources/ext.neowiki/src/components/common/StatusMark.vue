@@ -1,26 +1,26 @@
-<!-- The mark sits inside a list row's accessible name, which the row takes from its content,
-	so it needs text of its own: an error's message, or a label for the dot, which is also its tooltip. -->
+<!-- Seen, not read: the row says its status in words after its own text, where a screen reader reaches it after the
+	row's name. The tooltip says it for the pointer. -->
 <template>
 	<CdxIcon
 		v-if="status.kind === 'error'"
 		class="ext-neowiki-status-mark ext-neowiki-status-mark--error"
 		:icon="cdxIconError"
-		:icon-label="status.message"
+		:title="statusText( status )"
 		size="x-small"
+		aria-hidden="true"
 	/>
 	<span
 		v-else
 		class="ext-neowiki-status-mark ext-neowiki-status-mark--unsaved"
-		role="img"
-		:aria-label="$i18n( 'neowiki-subject-editor-unsaved' ).text()"
-		:title="$i18n( 'neowiki-subject-editor-unsaved' ).text()"
+		:title="statusText( status )"
+		aria-hidden="true"
 	/>
 </template>
 
 <script setup lang="ts">
 import { CdxIcon } from '@wikimedia/codex';
 import { cdxIconError } from '@wikimedia/codex-icons';
-import type { ItemStatus } from '@/components/common/ItemStatus.ts';
+import { statusText, type ItemStatus } from '@/components/common/ItemStatus.ts';
 
 defineProps<{
 	status: ItemStatus;
@@ -41,7 +41,8 @@ defineProps<{
 		background-color: @color-progressive;
 	}
 
-	&--error {
+	/* Compounded with Codex's own class, whose colour would otherwise win where its stylesheet loads later. */
+	&--error.cdx-icon {
 		color: @color-error;
 	}
 }
