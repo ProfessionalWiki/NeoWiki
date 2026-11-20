@@ -51,6 +51,16 @@ describe( 'FrontendRegistrar', () => {
 		expect( componentRegistry.getIcon( 'bar' ) ).toBe( reg.icon );
 	} );
 
+	it( 'inserts the Display Attributes editor a type gives into the component registry', () => {
+		const componentRegistry = new TypeSpecificComponentRegistry();
+		const registrar = new FrontendRegistrar( componentRegistry, new PropertyTypeRegistry(), new ViewTypeRegistry() );
+		const displayAttributesEditor = markRaw( { render: (): null => null } );
+
+		registrar.registerPropertyType( { ...registration( 'gauge' ), displayAttributesEditor } );
+
+		expect( componentRegistry.getDisplayAttributesEditor( 'gauge' ) ).toBe( displayAttributesEditor );
+	} );
+
 	it( 'inserts a registered view type into the view type registry', () => {
 		const viewTypeRegistry = new ViewTypeRegistry();
 		const registrar = new FrontendRegistrar(

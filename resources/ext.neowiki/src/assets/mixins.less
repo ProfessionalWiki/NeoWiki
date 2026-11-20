@@ -157,3 +157,15 @@
 	.ext-neowiki-editor-dialog-height( @stack-shrink );
 	max-width: calc( @size-5600 - @stack-shrink );
 }
+
+/*
+ * Pulls a list out of a dialog body's padding to the dialog's edges, for rows that hold the dialog's gutter
+ * themselves, as EditorListItem's do, so that their hover and selected backgrounds reach the edge.
+ */
+.ext-neowiki-edge-to-edge-in-dialog() {
+	margin-inline: -@spacing-100;
+
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		margin-inline: -@spacing-150;
+	}
+}

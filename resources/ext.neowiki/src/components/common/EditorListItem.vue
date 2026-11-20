@@ -1,11 +1,15 @@
-<!-- A row of an editor's list: the Schema editor's properties, the Subject editor's open Subjects. Each list
-	keeps its own list behaviour; the row is what they look like and how they show a status. -->
+<!-- A row of an editor's list: the Schema editor's and the Layout editor's properties, the Subject editor's open
+	Subjects. Each list keeps its own list behaviour; the row is what they look like and how they show a status. -->
 <template>
 	<li
-		role="option"
+		:role="props.unselectable ? 'listitem' : 'option'"
 		class="ext-neowiki-editor-list-item"
-		:class="{ 'ext-neowiki-editor-list-item--selected': props.selected }"
-		:aria-selected="props.selected"
+		:class="{
+			'ext-neowiki-editor-list-item--selected': props.selected,
+			'ext-neowiki-editor-list-item--unselectable': props.unselectable,
+			'ext-neowiki-editor-list-item--with-end': !!slots.end
+		}"
+		:aria-selected="props.unselectable ? undefined : props.selected"
 	>
 		<span
 			v-if="slots.icon"
@@ -28,6 +32,12 @@
 			<slot name="description" />
 		</span>
 		<span
+			v-if="slots.end"
+			class="ext-neowiki-editor-list-item__end"
+		>
+			<slot name="end" />
+		</span>
+		<span
 			v-if="props.status"
 			class="ext-neowiki-editor-list-item__status"
 		>
@@ -48,6 +58,8 @@ import { statusText, type ItemStatus } from '@/components/common/ItemStatus.ts';
 
 const props = withDefaults( defineProps<{
 	selected: boolean;
+	/** For a row nothing selects: a plain list item, its actions shown at all times. */
+	unselectable?: boolean;
 	status?: ItemStatus | null;
 }>(), {
 	status: null
@@ -59,7 +71,9 @@ const slots = defineSlots<{
 	icon?(): unknown;
 	/** A second line under the label. */
 	description?(): unknown;
-	/** Shown at the row's end on hover, selection and keyboard focus. */
+	/** An icon that ends the row at all times, beside the actions. */
+	end?(): unknown;
+	/** Shown at the row's end on hover, selection and keyboard focus, and at all times on a row nothing selects. */
 	actions?(): unknown;
 }>();
 </script>
@@ -86,6 +100,10 @@ const slots = defineSlots<{
 	background-color: var( --ext-neowiki-editor-list-item-background );
 	cursor: pointer;
 	list-style: none;
+
+	&--unselectable {
+		cursor: auto;
+	}
 	transition-property: @transition-property-base;
 	transition-duration: @transition-duration-base;
 
@@ -187,6 +205,18 @@ const slots = defineSlots<{
 		overflow-wrap: anywhere;
 	}
 
+	/* Above the actions, which leave it room, so that it takes clicks while they are shown or not. */
+	&__end {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex: none;
+	}
+
+	&--with-end &__actions {
+		padding-inline-end: calc( @spacing-75 + @size-icon-small + @spacing-50 );
+	}
+
 	&__status {
 		.ext-neowiki-visually-hidden();
 	}
@@ -209,6 +239,7 @@ const slots = defineSlots<{
 		// click also focuses the button it hits and would keep them pinned after the pointer leaves.
 		.ext-neowiki-editor-list-item:hover &,
 		.ext-neowiki-editor-list-item--selected &,
+		.ext-neowiki-editor-list-item--unselectable &,
 		.ext-neowiki-editor-list-item:has( [ aria-expanded='true' ] ) &,
 		.ext-neowiki-editor-list-item:has( :focus-visible ) & {
 			opacity: 1;

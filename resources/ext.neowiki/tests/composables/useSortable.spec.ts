@@ -217,6 +217,20 @@ describe( 'useSortable', () => {
 		expect( onMove.mock.calls ).toEqual( [ [ 0, 1 ], [ 0, 2 ] ] );
 	} );
 
+	it( 'reports an item a drag brings in from another list, and the place it would take', () => {
+		const container = document.createElement( 'ul' );
+		const other = document.createElement( 'ul' );
+		const item = document.createElement( 'li' );
+		const onMove = vi.fn();
+		const onMoveIn = vi.fn();
+
+		mountComposable( ref<HTMLElement | null>( container ), { onMove, onMoveIn } );
+		lastOptions().onChange( { from: other, to: container, oldIndex: 3, newIndex: 1, item } );
+
+		expect( onMoveIn ).toHaveBeenCalledWith( item, 1 );
+		expect( onMove ).not.toHaveBeenCalled();
+	} );
+
 	it( 'reports the end of a drag, whether or not it moved the item', () => {
 		const container = document.createElement( 'ul' );
 		const item = document.createElement( 'li' );

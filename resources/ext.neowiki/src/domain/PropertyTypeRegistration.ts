@@ -16,6 +16,8 @@ export interface PropertyTypeRegistration {
 	displayComponent: Component;
 	inputComponent: Component;
 	attributesEditor: Component;
+	/** Sets the type's Display Attributes for a Layout; a type without one offers none to set there. */
+	displayAttributesEditor?: Component;
 	label: string;
 	icon: Icon;
 }

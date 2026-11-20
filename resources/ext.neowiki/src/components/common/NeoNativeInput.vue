@@ -5,6 +5,7 @@
 		:model-value="unparseable ? '' : shown"
 		@update:model-value="onInput"
 		@keyup="onKeyup"
+		@wheel.passive="onWheel"
 	/>
 </template>
 
@@ -66,6 +67,13 @@ function onInput( value: string | number ): void {
 
 	shown.value = value;
 	emit( 'update:modelValue', String( value ) );
+}
+
+// A focused number field steps its value under the wheel, where the reader means to scroll.
+function onWheel(): void {
+	if ( props.inputType === 'number' ) {
+		nativeInput().blur();
+	}
 }
 
 function nativeInput(): HTMLInputElement {
