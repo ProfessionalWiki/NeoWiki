@@ -121,6 +121,24 @@ describe( 'TypeSpecificComponentRegistry', () => {
 		} );
 	} );
 
+	describe( 'getDisplayAttributesEditor', () => {
+		it( 'returns the Display Attributes editor of a registered type', () => {
+			const registry = new TypeSpecificComponentRegistry();
+			registerComponent( registry, 'url', { displayAttributesEditor: { name: 'UrlWrong' } } );
+			registerComponent( registry, 'number', { displayAttributesEditor: { name: 'NumberRight' } } );
+			registerComponent( registry, 'date', { displayAttributesEditor: { name: 'DateWrong' } } );
+
+			expect( registry.getDisplayAttributesEditor( 'number' ) ).toStrictEqual( { name: 'NumberRight' } );
+		} );
+
+		it( 'returns none for a type without Display Attributes to edit', () => {
+			const registry = new TypeSpecificComponentRegistry();
+			registerComponent( registry, 'text' );
+
+			expect( registry.getDisplayAttributesEditor( 'text' ) ).toBeUndefined();
+		} );
+	} );
+
 	describe( 'getLabel', () => {
 		it( 'returns the label for a registered type', () => {
 			const registry = new TypeSpecificComponentRegistry();

@@ -6,7 +6,7 @@ import { setupMwMock, statusInWords } from '../../VueTestHelpers.ts';
 
 const ICON = '<span class="test-icon"></span>';
 
-function mountItem( props: { selected?: boolean; status?: ItemStatus | null } = {}, slots: Record<string, string> = {} ): VueWrapper {
+function mountItem( props: { selected?: boolean; unselectable?: boolean; status?: ItemStatus | null } = {}, slots: Record<string, string> = {} ): VueWrapper {
 	return mount( EditorListItem, {
 		props: { selected: false, ...props },
 		slots: { default: 'Birth date', ...slots },
@@ -25,6 +25,13 @@ describe( 'EditorListItem', () => {
 
 	it( 'is an option that says it is selected', () => {
 		expect( mountItem( { selected: true } ).attributes( 'aria-selected' ) ).toBe( 'true' );
+	} );
+
+	it( 'is a plain list item when nothing selects it', () => {
+		const wrapper = mountItem( { unselectable: true } );
+
+		expect( wrapper.attributes( 'role' ) ).toBe( 'listitem' );
+		expect( wrapper.attributes( 'aria-selected' ) ).toBeUndefined();
 	} );
 
 	it( 'is an option that says it is not selected', () => {
@@ -97,5 +104,15 @@ describe( 'EditorListItem', () => {
 		expect( wrapper.text() ).toContain( 'Birth date' );
 		expect( wrapper.find( '.test-description' ).exists() ).toBe( true );
 		expect( wrapper.find( '.test-action' ).exists() ).toBe( true );
+	} );
+
+	it( 'ends with what it shows at all times, apart from the actions that show only now and then', () => {
+		const wrapper = mountItem( {}, {
+			end: '<span class="test-end">›</span>',
+			actions: '<button class="test-action">Delete</button>',
+		} );
+
+		expect( wrapper.text() ).toMatch( /Birth date.*›/s );
+		expect( wrapper.find( '.ext-neowiki-editor-list-item__actions .test-end' ).exists() ).toBe( false );
 	} );
 } );

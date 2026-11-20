@@ -22,6 +22,7 @@ export * from './application/SchemaRepository';
 export * from './application/SubjectPermissionHints';
 export * from './assets/CustomIcons';
 export * from './components/SchemaEditor/Property/AttributesEditorContract';
+export * from './components/LayoutEditor/DisplayAttributes/DisplayAttributesEditorContract';
 export * from './components/SchemaEditor/Property/minExceedsMax';
 export * from './components/Value/ValueDisplayContract';
 export * from './components/Value/ValueInputContract';

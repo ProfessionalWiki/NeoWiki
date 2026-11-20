@@ -83,14 +83,17 @@ mw.hook( 'neowiki.registration' ).add( ( registrar ) => {
 ```
 
 The registration object's shape is defined by
-[`PropertyTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/PropertyTypeRegistration.ts); every field is required, including
-`attributesEditor` even for a type with no configurable attributes. `typeName` must equal the backend
+[`PropertyTypeRegistration.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/domain/PropertyTypeRegistration.ts); every field is required but
+`displayAttributesEditor`, including `attributesEditor` even for a type with no configurable attributes. `typeName` must equal the backend
 `PropertyType::getTypeName()`; `createPropertyDefinitionFromJson( base, json )` extends the common definition `base`
 with the type-specific fields your `PropertyDefinition` class serializes; `label` is a message key your module
 registers. The components conform to
 [`ValueDisplayContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Value/ValueDisplayContract.ts),
 [`ValueInputContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/Value/ValueInputContract.ts), and
 [`AttributesEditorContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/SchemaEditor/Property/AttributesEditorContract.ts).
+A `displayAttributesEditor` sets the type's Display Attributes for one Layout, in the Layout editor, and conforms to
+[`DisplayAttributesEditorContract.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/src/components/LayoutEditor/DisplayAttributes/DisplayAttributesEditorContract.ts);
+a type without one offers no Display Attributes to set there.
 
 `icon` is a Codex `Icon`: a stock icon from the
 [gallery](https://doc.wikimedia.org/codex/latest/icons/all-icons.html), declared via `CodexModule::getIcons` as
