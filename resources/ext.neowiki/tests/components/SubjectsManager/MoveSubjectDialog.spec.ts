@@ -28,7 +28,7 @@ const CdxDialogStub = {
 
 describe( 'MoveSubjectDialog', () => {
 	let createMock: ReturnType<typeof vi.fn>;
-	let getPageSubjectsMock: ReturnType<typeof vi.fn>;
+	let getPageSubjectsForEditingMock: ReturnType<typeof vi.fn>;
 	let subjectStore: ReturnType<typeof useSubjectStore>;
 	let pinia: ReturnType<typeof createPinia>;
 
@@ -94,14 +94,14 @@ describe( 'MoveSubjectDialog', () => {
 		} );
 		stubUpdateTooltipAccessKeys();
 
-		getPageSubjectsMock = vi.fn().mockResolvedValue( {
+		getPageSubjectsForEditingMock = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, null, [] ),
 			referencedSubjects: [],
 			schemas: [],
 		} );
 
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue(
-			{ getSubjectRepository: () => ( { getPageSubjects: getPageSubjectsMock } ) } as unknown as NeoWikiExtension,
+			{ getSubjectRepository: () => ( { getPageSubjectsForEditing: getPageSubjectsForEditingMock } ) } as unknown as NeoWikiExtension,
 		);
 
 		subjectStore = useSubjectStore();
@@ -211,7 +211,7 @@ describe( 'MoveSubjectDialog', () => {
 	} );
 
 	it( 'names the main subject that promoting would demote', async () => {
-		getPageSubjectsMock.mockResolvedValue( {
+		getPageSubjectsForEditingMock.mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, new SubjectId( TARGET_MAIN_ID ), [
 				newSubject( { id: TARGET_MAIN_ID, label: 'The Night Watch' } ),
 			] ),
@@ -228,7 +228,7 @@ describe( 'MoveSubjectDialog', () => {
 	} );
 
 	it( 'names a main subject nobody named by its id when promoting would demote it', async () => {
-		getPageSubjectsMock.mockResolvedValue( {
+		getPageSubjectsForEditingMock.mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, new SubjectId( TARGET_MAIN_ID ), [
 				newSubject( { id: TARGET_MAIN_ID, label: null, displayNameIsGenerated: true } ),
 			] ),
@@ -244,7 +244,7 @@ describe( 'MoveSubjectDialog', () => {
 	} );
 
 	it( 'says nothing about demotion while promoting is unchecked', async () => {
-		getPageSubjectsMock.mockResolvedValue( {
+		getPageSubjectsForEditingMock.mockResolvedValue( {
 			pageSubjects: new PageSubjects( TARGET_PAGE_ID, new SubjectId( TARGET_MAIN_ID ), [
 				newSubject( { id: TARGET_MAIN_ID, label: 'The Night Watch' } ),
 			] ),
@@ -413,7 +413,7 @@ describe( 'MoveSubjectDialog', () => {
 	} );
 
 	it( 'keeps the move available when the target page could not be read', async () => {
-		getPageSubjectsMock.mockRejectedValue( new Error( 'unreadable' ) );
+		getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'unreadable' ) );
 		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 		const wrapper = mountDialog();
 

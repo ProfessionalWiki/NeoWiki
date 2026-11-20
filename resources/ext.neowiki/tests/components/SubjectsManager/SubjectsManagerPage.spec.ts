@@ -69,6 +69,7 @@ vi.mock( '@/stores/SubjectStore.ts', async ( importOriginal ) => {
 			}
 			return {
 				loadPageSubjects: loadPageSubjectsMock,
+				loadPageSubjectsForEditing: loadPageSubjectsMock,
 				deleteSubject: deleteSubjectMock,
 				setPageMainSubject: setPageMainSubjectMock,
 				setPageSubjectsOrdering: setPageSubjectsOrderingMock,
@@ -107,6 +108,7 @@ vi.mock( '@/stores/SchemaStore.ts', () => ( {
 const canDeleteSubjectRef = ref( false );
 const canEditSubjectRef = ref( false );
 const canCreateOtherSubjectRef = ref( false );
+const checkPermissionsMock = vi.fn().mockResolvedValue( undefined );
 
 // openEditor reads through the injected repositories; the edit-flow describe below arms these.
 const getSubjectForEditingRepoMock = vi.fn();
@@ -118,7 +120,7 @@ vi.mock( '@/composables/useSubjectPermissions.ts', () => ( {
 		canCreateOtherSubject: canCreateOtherSubjectRef,
 		canEditSubject: canEditSubjectRef,
 		canDeleteSubject: canDeleteSubjectRef,
-		checkPermissions: vi.fn().mockResolvedValue( undefined ),
+		checkPermissions: checkPermissionsMock,
 	} ),
 } ) );
 
@@ -178,7 +180,7 @@ async function mountPage( subjectFirst = false, renderValues = false ): Promise<
 				[ Service.SubjectRepository ]: {
 					getSubjectForEditing: getSubjectForEditingRepoMock,
 					// What the delete routing reads to see whether the page is down to its last Subject.
-					getPageSubjects: getPageSubjectsRepoMock,
+					getPageSubjectsForEditing: getPageSubjectsRepoMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaRepoMock },
 				[ Service.ComponentRegistry ]: componentRegistry,
@@ -367,7 +369,7 @@ describe( 'SubjectsManagerPage rows after arrival', () => {
 		getPageSubjectsRepoMock.mockReset().mockResolvedValue( pageWithMainSubject( ID_A ) );
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
 			getSubjectRepository: () => ( {
-				getPageSubjects: getPageSubjectsRepoMock,
+				getPageSubjectsForEditing: getPageSubjectsRepoMock,
 				setMainSubject: vi.fn().mockResolvedValue( undefined ),
 			} ),
 		} as unknown as NeoWikiExtension );
@@ -382,6 +384,48 @@ describe( 'SubjectsManagerPage rows after arrival', () => {
 
 		expect( wrapper.get( '.ext-neowiki-subjects-manager__main-slot' ).text() ).toContain( 'Label ' + ID_B );
 		expect( openRowIds( wrapper ) ).toEqual( [ ID_A ] );
+	} );
+
+} );
+
+describe( 'SubjectsManagerPage which revision it lists', () => {
+
+	function listing( label: string ): unknown {
+		return {
+			pageSubjects: new PageSubjects( PAGE_ID, new SubjectId( ID_A ), [
+				newSubject( { id: ID_A, label, schemaName: 'Person' } ),
+			] ),
+			referencedSubjects: [],
+			notFoundTargetIds: [],
+			schemas: [],
+		};
+	}
+
+	beforeEach( () => {
+		useRealSubjectStore = true;
+		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
+			getSubjectRepository: () => ( {
+				getPageSubjects: vi.fn().mockResolvedValue( listing( 'Published label' ) ),
+				getPageSubjectsForEditing: vi.fn().mockResolvedValue( listing( 'Draft label' ) ),
+			} ),
+		} as unknown as NeoWikiExtension );
+	} );
+
+	it( 'lists the Subjects the page publishes to a viewer who cannot edit them', async () => {
+		const wrapper = await mountPage();
+
+		expect( wrapper.get( '.ext-neowiki-subjects-manager__main-slot' ).text() ).toContain( 'Published label' );
+	} );
+
+	it( 'lists the page\'s current Subjects to a viewer who can edit them', async () => {
+		checkPermissionsMock.mockImplementationOnce( async () => {
+			await Promise.resolve();
+			canEditSubjectRef.value = true;
+		} );
+
+		const wrapper = await mountPage();
+
+		expect( wrapper.get( '.ext-neowiki-subjects-manager__main-slot' ).text() ).toContain( 'Draft label' );
 	} );
 
 } );
@@ -1008,7 +1052,7 @@ describe( 'SubjectsManagerPage saves from the editor', () => {
 		} );
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
 			getSubjectRepository: () => ( {
-				getPageSubjects: getPageSubjectsRepoMock,
+				getPageSubjectsForEditing: getPageSubjectsRepoMock,
 				updateSubject: vi.fn().mockResolvedValue( { subjectId: host.getId(), subject: host, schema: null } ),
 			} ),
 		} as unknown as NeoWikiExtension );
@@ -1037,6 +1081,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// above): the deletion race this describe exercises lives in the store's own registry
 		// semantics, which the plain-object mock the other describes use cannot reproduce.
 		useRealSubjectStore = true;
+		canEditSubjectRef.value = true;
 		canDeleteSubjectRef.value = true;
 
 		deleteSubjectRepoMock = vi.fn().mockResolvedValue( true );
@@ -1053,7 +1098,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		vi.spyOn( NeoWikiExtension, 'getInstance' ).mockReturnValue( {
 			getSubjectRepository: () => ( {
 				deleteSubject: deleteSubjectRepoMock,
-				getPageSubjects: getPageSubjectsRepoMock,
+				getPageSubjectsForEditing: getPageSubjectsRepoMock,
 			} ),
 		} as unknown as NeoWikiExtension );
 
@@ -1126,7 +1171,7 @@ describe( 'SubjectsManagerPage delete flow', () => {
 		// This is the live Critical bug (C1): the deleted subject's registry entry must not be
 		// dropped until pageSubjects itself stops naming it, or SubjectsManagerPage's `subjects`
 		// computed throws mid-render. Queue the deferred for the delete-triggered re-sync call
-		// (the mount's own getPageSubjects call already resolved via the beforeEach default above).
+		// (the mount's own getPageSubjectsForEditing call already resolved via the beforeEach default above).
 		let resolveResync!: ( value: unknown ) => void;
 		const resyncPending = new Promise( ( resolve ) => {
 			resolveResync = resolve;

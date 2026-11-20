@@ -242,7 +242,7 @@ describe( 'SubjectCreatorDialog', () => {
 	let schemaStore: ReturnType<typeof useSchemaStore>;
 	const canCreateSchemas = ref( true );
 	const getSchemaMock = vi.fn();
-	let getPageSubjectsMock: ReturnType<typeof vi.fn>;
+	let getPageSubjectsForEditingMock: ReturnType<typeof vi.fn>;
 	let mintSubjectIdMock: ReturnType<typeof vi.fn>;
 	let repositorySpy: ReturnType<typeof vi.spyOn>;
 
@@ -401,13 +401,13 @@ describe( 'SubjectCreatorDialog', () => {
 		// Picking a Schema mints the id the Subject being created is held under, so every path
 		// through the dialog reaches these.
 		mintSubjectIdMock = vi.fn().mockResolvedValue( new SubjectId( MINTED_ID ) );
-		getPageSubjectsMock = vi.fn().mockResolvedValue( {
+		getPageSubjectsForEditingMock = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, [] ),
 			referencedSubjects: [],
 			schemas: [],
 		} );
 		repositorySpy = vi.spyOn( NeoWikiExtension.getInstance(), 'getSubjectRepository' ).mockReturnValue(
-			{ getPageSubjects: getPageSubjectsMock, mintSubjectId: mintSubjectIdMock } as unknown as SubjectRepository,
+			{ getPageSubjectsForEditing: getPageSubjectsForEditingMock, mintSubjectId: mintSubjectIdMock } as unknown as SubjectRepository,
 		);
 
 		canCreateSubjectPage.value = true;
@@ -1144,7 +1144,7 @@ describe( 'SubjectCreatorDialog', () => {
 		}
 
 		async function pickPageWithMainSubject( wrapper: VueWrapper ): Promise<void> {
-			getPageSubjectsMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
+			getPageSubjectsForEditingMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
 			await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
 		}
 
@@ -1155,7 +1155,7 @@ describe( 'SubjectCreatorDialog', () => {
 				pageId: CREATED_PAGE_ID,
 			} );
 
-			getPageSubjectsMock.mockResolvedValue( {
+			getPageSubjectsForEditingMock.mockResolvedValue( {
 				pageSubjects: new PageSubjects( EXISTING_PAGE_ID, null, [] ),
 				referencedSubjects: [],
 				schemas: [],
@@ -1827,7 +1827,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'leaves focus where it is when a page picked in the open section cannot be read', async () => {
 				const read = deferred<unknown>();
-				getPageSubjectsMock.mockImplementationOnce( () => read.promise );
+				getPageSubjectsForEditingMock.mockImplementationOnce( () => read.promise );
 				const wrapper = mountAttached();
 				await pickSchema( wrapper );
 				await openSection( wrapper );
@@ -2018,7 +2018,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			it( 'opens the section on a page whose subjects could not be read', async () => {
-				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+				getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
 				await pickSchema( wrapper );
 				await choose( wrapper, 'anotherPage' );
@@ -2116,7 +2116,7 @@ describe( 'SubjectCreatorDialog', () => {
 			 */
 			it( 'names no page until what that page holds is known', async () => {
 				const slowRead = deferred<unknown>();
-				getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
+				getPageSubjectsForEditingMock.mockReturnValueOnce( slowRead.promise );
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 
@@ -2135,7 +2135,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			it( 'names no page whose subjects could not be read', async () => {
-				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+				getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 
@@ -2149,7 +2149,7 @@ describe( 'SubjectCreatorDialog', () => {
 			 * unread whatever else is typed, and saving onto it would guess at where the Subject goes.
 			 */
 			it( 'keeps a page that could not be read blocking while the rest of the form is edited', async () => {
-				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+				getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
@@ -2206,7 +2206,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			it( 'blocks saving when the chosen page could not be read', async () => {
-				getPageSubjectsMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
+				getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'Graph store unavailable' ) );
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
@@ -2221,7 +2221,7 @@ describe( 'SubjectCreatorDialog', () => {
 
 			it( 'ignores the main-subject answer for a page the user has moved off', async () => {
 				const slowRead = deferred<unknown>();
-				getPageSubjectsMock.mockReturnValueOnce( slowRead.promise );
+				getPageSubjectsForEditingMock.mockReturnValueOnce( slowRead.promise );
 				const wrapper = mountDialog();
 				await chooseAnotherPage( wrapper );
 				await pickPage( wrapper, { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' } );
@@ -2437,15 +2437,15 @@ describe( 'SubjectCreatorDialog', () => {
 				} );
 				await flushPromises();
 
-				expect( getPageSubjectsMock ).not.toHaveBeenCalled();
+				expect( getPageSubjectsForEditingMock ).not.toHaveBeenCalled();
 
 				await open( wrapper );
 
-				expect( getPageSubjectsMock ).toHaveBeenCalledWith( EXISTING_PAGE_ID );
+				expect( getPageSubjectsForEditingMock ).toHaveBeenCalledWith( EXISTING_PAGE_ID );
 			} );
 
 			it( 'saves onto a fixed page with a main Subject as another Subject', async () => {
-				getPageSubjectsMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
+				getPageSubjectsForEditingMock.mockResolvedValue( pageWithMainSubject( 'ACME Inc' ) );
 				const wrapper = mountWithInitialPage( {
 					choice: 'anotherPage',
 					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },
@@ -2466,7 +2466,7 @@ describe( 'SubjectCreatorDialog', () => {
 			} );
 
 			it( 'shows an error and blocks saving when the fixed page cannot be read', async () => {
-				getPageSubjectsMock.mockRejectedValue( new Error( 'network down' ) );
+				getPageSubjectsForEditingMock.mockRejectedValue( new Error( 'network down' ) );
 				const wrapper = mountWithInitialPage( {
 					choice: 'anotherPage',
 					page: { pageId: EXISTING_PAGE_ID, title: 'ACME Inc' },

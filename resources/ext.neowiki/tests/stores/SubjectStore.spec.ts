@@ -102,7 +102,7 @@ describe( 'SubjectStore createSubject', () => {
 			createSubjectPage: vi.fn().mockResolvedValue(
 				{ ...writeResult( null ), pageTitle: 'Anvil', pageId: 12 },
 			),
-			getPageSubjects: vi.fn( ( readPageId: number ) => Promise.resolve( pageRead( readPageId ) ) ),
+			getPageSubjectsForEditing: vi.fn( ( readPageId: number ) => Promise.resolve( pageRead( readPageId ) ) ),
 		};
 
 		withSubjectRepository( repository );
@@ -172,13 +172,13 @@ describe( 'SubjectStore deleteSubject', () => {
 	} );
 
 	it( 're-syncs pageSubjects from the backend after deleting a listed subject', async () => {
-		const getPageSubjects = vi.fn().mockResolvedValue( {
+		const getPageSubjectsForEditing = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
 			notFoundTargetIds: [],
 			schemas: [],
 		} );
-		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjects } );
+		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( kept );
 		store.setSubject( doomed );
@@ -186,7 +186,7 @@ describe( 'SubjectStore deleteSubject', () => {
 
 		await store.deleteSubject( doomed.getId() );
 
-		expect( getPageSubjects ).toHaveBeenCalledWith( pageId );
+		expect( getPageSubjectsForEditing ).toHaveBeenCalledWith( pageId );
 		expect( store.pageSubjects?.getSubjects() ).toEqual( [ kept ] );
 		// The registry entry is only dropped once pageSubjects itself no longer names the id
 		// (see the deleteSubject invariant comment): confirm both sides of that invariant hold
@@ -197,21 +197,21 @@ describe( 'SubjectStore deleteSubject', () => {
 	} );
 
 	it( 'does not refetch the page listing when the subject is not listed on it', async () => {
-		const getPageSubjects = vi.fn();
-		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjects } );
+		const getPageSubjectsForEditing = vi.fn();
+		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( doomed );
 		store.pageSubjects = new PageSubjects( pageId, null, [ kept ] );
 
 		await store.deleteSubject( doomed.getId() );
 
-		expect( getPageSubjects ).not.toHaveBeenCalled();
+		expect( getPageSubjectsForEditing ).not.toHaveBeenCalled();
 	} );
 
 	it( 'still resolves when the post-delete re-sync fetch fails, leaving the registry consistent', async () => {
 		const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
-		const getPageSubjects = vi.fn().mockRejectedValue( new Error( 'sync failed' ) );
-		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjects } );
+		const getPageSubjectsForEditing = vi.fn().mockRejectedValue( new Error( 'sync failed' ) );
+		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( kept );
 		store.setSubject( doomed );
@@ -238,8 +238,8 @@ describe( 'SubjectStore deleteSubject', () => {
 		const pending = new Promise( ( resolve ) => {
 			resolveGetPageSubjects = resolve;
 		} );
-		const getPageSubjects = vi.fn().mockReturnValue( pending );
-		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjects } );
+		const getPageSubjectsForEditing = vi.fn().mockReturnValue( pending );
+		withSubjectRepository( { deleteSubject: vi.fn().mockResolvedValue( true ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( kept );
 		store.setSubject( doomed );
@@ -298,7 +298,7 @@ describe( 'SubjectStore ordering guards', () => {
 		withSubjectRepository( {
 			getSubject: () => pending,
 			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
-			getPageSubjects: vi.fn().mockResolvedValue( pageRead( 0, updated ) ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageRead( 0, updated ) ),
 		} );
 		const store = useSubjectStore();
 
@@ -332,7 +332,8 @@ describe( 'SubjectStore ordering guards', () => {
 			resolveLoad = resolve;
 		} );
 		withSubjectRepository( {
-			getPageSubjects: vi.fn().mockReturnValueOnce( pending ).mockResolvedValue( pageRead( 7, updated ) ),
+			getPageSubjects: vi.fn().mockReturnValueOnce( pending ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageRead( 7, updated ) ),
 			updateSubject: vi.fn().mockResolvedValue( writeResult( updated ) ),
 		} );
 		const store = useSubjectStore();
@@ -377,6 +378,44 @@ describe( 'SubjectStore ordering guards', () => {
 
 } );
 
+describe( 'SubjectStore re-reads after its own writes', () => {
+
+	const onPage = new PageIdentifiers( 7, 'Page' );
+	const published = newSubject( { id: 's11111111111111', label: 'published', pageIdentifiers: onPage } );
+	const draft = newSubject( { id: 's11111111111111', label: 'draft', pageIdentifiers: onPage } );
+
+	beforeEach( () => {
+		setActivePinia( createPinia() );
+		withSubjectRepository( {
+			getPageSubjects: vi.fn().mockResolvedValue( pageRead( 7, published ) ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageRead( 7, draft ) ),
+			setMainSubject: vi.fn().mockResolvedValue( undefined ),
+			setSubjectsOrdering: vi.fn().mockResolvedValue( undefined ),
+		} );
+	} );
+
+	afterEach( () => {
+		vi.restoreAllMocks();
+	} );
+
+	it( 'lists the page\'s current Subjects after setting its Main Subject', async () => {
+		const store = useSubjectStore();
+
+		await store.setPageMainSubject( 7, draft.getId() );
+
+		expect( store.pageSubjects?.getSubjects() ).toEqual( [ draft ] );
+	} );
+
+	it( 'lists the page\'s current Subjects after reordering them', async () => {
+		const store = useSubjectStore();
+
+		await store.setPageSubjectsOrdering( 7, draft.getId(), [] );
+
+		expect( store.pageSubjects?.getSubjects() ).toEqual( [ draft ] );
+	} );
+
+} );
+
 describe( 'SubjectStore write results', () => {
 
 	const id = new SubjectId( 's11111111111111' );
@@ -392,7 +431,7 @@ describe( 'SubjectStore write results', () => {
 
 	// The page read that follows each write fails, so the registry holds what the write itself recorded.
 	function withWritingRepository( repository: Record<string, unknown> ): void {
-		withSubjectRepository( { ...repository, getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ) } );
+		withSubjectRepository( { ...repository, getPageSubjectsForEditing: vi.fn().mockRejectedValue( new Error( 'read failed' ) ) } );
 	}
 
 	it( 'records the Subject the update returned, not the one it was given', async () => {
@@ -430,7 +469,7 @@ describe( 'SubjectStore write results', () => {
 				updateSubject: () => new Promise( ( resolve ) => {
 					resolveUpdate = resolve;
 				} ),
-				getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
+				getPageSubjectsForEditing: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 			} ),
 			getSchemaRepository: () => ( { saveSchema: vi.fn().mockResolvedValue( undefined ) } ),
 		};
@@ -531,7 +570,7 @@ describe( 'SubjectStore moveSubject', () => {
 
 	it( 'passes the target page and the promotion choice to the repository', async () => {
 		const moveSubject = vi.fn().mockResolvedValue( undefined );
-		withSubjectRepository( { moveSubject, getPageSubjects: vi.fn().mockResolvedValue( {
+		withSubjectRepository( { moveSubject, getPageSubjectsForEditing: vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
 			notFoundTargetIds: [],
@@ -547,13 +586,13 @@ describe( 'SubjectStore moveSubject', () => {
 	} );
 
 	it( 're-syncs the page listing so the moved subject leaves it', async () => {
-		const getPageSubjects = vi.fn().mockResolvedValue( {
+		const getPageSubjectsForEditing = vi.fn().mockResolvedValue( {
 			pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 			referencedSubjects: [],
 			notFoundTargetIds: [],
 			schemas: [],
 		} );
-		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
+		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( kept );
 		store.setSubject( moved );
@@ -561,14 +600,14 @@ describe( 'SubjectStore moveSubject', () => {
 
 		await store.moveSubject( moved.getId(), targetPageId, false );
 
-		expect( getPageSubjects ).toHaveBeenCalledWith( pageId );
+		expect( getPageSubjectsForEditing ).toHaveBeenCalledWith( pageId );
 		expect( store.pageSubjects?.getSubjects() ).toEqual( [ kept ] );
 	} );
 
 	it( 'drops the registry copy, whose page context the move has just changed', async () => {
 		withSubjectRepository( {
 			moveSubject: vi.fn().mockResolvedValue( undefined ),
-			getPageSubjects: vi.fn().mockResolvedValue( {
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( {
 				pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 				referencedSubjects: [],
 				notFoundTargetIds: [],
@@ -595,7 +634,7 @@ describe( 'SubjectStore moveSubject', () => {
 		} );
 		withSubjectRepository( {
 			moveSubject: vi.fn().mockResolvedValue( undefined ),
-			getPageSubjects: vi.fn().mockResolvedValue( {
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( {
 				pageSubjects: new PageSubjects( pageId, null, [ kept ] ),
 				referencedSubjects: [ movedElsewhere ],
 				schemas: [],
@@ -612,22 +651,22 @@ describe( 'SubjectStore moveSubject', () => {
 	} );
 
 	it( 'does not refetch the page listing for a subject that page does not list', async () => {
-		const getPageSubjects = vi.fn();
-		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjects } );
+		const getPageSubjectsForEditing = vi.fn();
+		withSubjectRepository( { moveSubject: vi.fn().mockResolvedValue( undefined ), getPageSubjectsForEditing } );
 		const store = useSubjectStore();
 		store.setSubject( moved );
 		store.pageSubjects = new PageSubjects( pageId, null, [ kept ] );
 
 		await store.moveSubject( moved.getId(), targetPageId, false );
 
-		expect( getPageSubjects ).not.toHaveBeenCalled();
+		expect( getPageSubjectsForEditing ).not.toHaveBeenCalled();
 	} );
 
 	it( 'keeps the registry entry when the post-move re-sync fails, so the listing stays renderable', async () => {
 		const consoleError = vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 		withSubjectRepository( {
 			moveSubject: vi.fn().mockResolvedValue( undefined ),
-			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'sync failed' ) ),
+			getPageSubjectsForEditing: vi.fn().mockRejectedValue( new Error( 'sync failed' ) ),
 		} );
 		const store = useSubjectStore();
 		store.setSubject( kept );
@@ -645,10 +684,10 @@ describe( 'SubjectStore moveSubject', () => {
 	} );
 
 	it( 'rejects without touching the listing when the move itself fails', async () => {
-		const getPageSubjects = vi.fn();
+		const getPageSubjectsForEditing = vi.fn();
 		withSubjectRepository( {
 			moveSubject: vi.fn().mockRejectedValue( new Error( 'Subject is already on the target page' ) ),
-			getPageSubjects,
+			getPageSubjectsForEditing,
 		} );
 		const store = useSubjectStore();
 		store.setSubject( moved );
@@ -657,7 +696,7 @@ describe( 'SubjectStore moveSubject', () => {
 		await expect( store.moveSubject( moved.getId(), targetPageId, false ) )
 			.rejects.toThrow( 'Subject is already on the target page' );
 
-		expect( getPageSubjects ).not.toHaveBeenCalled();
+		expect( getPageSubjectsForEditing ).not.toHaveBeenCalled();
 		expect( store.subjects.has( moved.getId().text ) ).toBe( true );
 	} );
 
@@ -730,10 +769,10 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 		};
 	}
 
-	function repositoryAnswering( page: Record<string, unknown> ): { updateSubject: Mock; getPageSubjects: Mock } {
+	function repositoryAnswering( page: Record<string, unknown> ): { updateSubject: Mock; getPageSubjectsForEditing: Mock } {
 		const repository = {
 			updateSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
-			getPageSubjects: vi.fn().mockResolvedValue( page ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( page ),
 		};
 
 		withSubjectRepository( repository );
@@ -810,7 +849,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
 		withSubjectRepository( {
 			updateSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
-			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
+			getPageSubjectsForEditing: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 		} );
 
 		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBeUndefined();
@@ -820,7 +859,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 		setupMwMock( { config: { wgNeoWikiSubjectFirst: true } } );
 		const repository = {
 			createSubjectPage: vi.fn().mockResolvedValue( { ...writeResult( null ), pageTitle: 'Pablo Picasso', pageId: 12 } ),
-			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
 		};
 		withSubjectRepository( repository );
 
@@ -835,14 +874,14 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 			pageTitle: undefined,
 			id: host.getId(),
 		} ) );
-		expect( repository.getPageSubjects ).toHaveBeenCalledWith( 12 );
+		expect( repository.getPageSubjectsForEditing ).toHaveBeenCalledWith( 12 );
 	} );
 
 	it( 'creates a Subject on the page it was given together with its Dependent Subjects', async () => {
 		setupMwMock( { config: { wgNeoWikiSubjectFirst: false } } );
 		const repository = {
 			createOtherSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
-			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
 		};
 		withSubjectRepository( repository );
 
@@ -855,7 +894,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 	it( 'creates a page\'s Main Subject together with its Dependent Subjects', async () => {
 		const repository = {
 			createMainSubject: vi.fn().mockResolvedValue( writeResult( host ) ),
-			getPageSubjects: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
+			getPageSubjectsForEditing: vi.fn().mockResolvedValue( pageHolding( host, birth ) ),
 		};
 		withSubjectRepository( repository );
 

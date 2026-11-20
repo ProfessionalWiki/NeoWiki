@@ -110,7 +110,7 @@ const referencedSubject = subject( {
 const getSubjectWithReferencedSubjectsMock = vi.fn();
 const getReferencingSubjectsMock = vi.fn();
 const getSubjectForEditingMock = vi.fn();
-const getPageSubjectsMock = vi.fn();
+const getPageSubjectsForEditingMock = vi.fn();
 const getSchemaMock = vi.fn();
 const checkPermissionsMock = vi.fn();
 
@@ -220,7 +220,7 @@ function mountPage( subjectFirst = false, renderValues = false, host: HostOption
 					getSubjectWithReferencedSubjects: getSubjectWithReferencedSubjectsMock,
 					getReferencingSubjects: getReferencingSubjectsMock,
 					getSubjectForEditing: getSubjectForEditingMock,
-					getPageSubjects: getPageSubjectsMock,
+					getPageSubjectsForEditing: getPageSubjectsForEditingMock,
 				},
 				[ Service.SchemaRepository ]: { getSchema: getSchemaMock },
 				[ Service.ComponentRegistry ]: componentRegistry,
@@ -266,7 +266,7 @@ describe( 'SubjectPage', () => {
 				Promise.reject( new Error( `Unknown schema: ${ name }` ) ) :
 				Promise.resolve( SCHEMAS[ name ] ) );
 		getSubjectForEditingMock.mockReset();
-		getPageSubjectsMock.mockReset().mockResolvedValue( {
+		getPageSubjectsForEditingMock.mockReset().mockResolvedValue( {
 			pageSubjects: new PageSubjects( PAGE_ID, new SubjectId( SUBJECT_ID ), [ requestedSubject ] ),
 			referencedSubjects: [],
 			schemas: [],
@@ -640,7 +640,7 @@ describe( 'SubjectPage', () => {
 
 		it( 'deletes the Subject alone where its page holds others, which outlive it', async () => {
 			canDeleteSubjectRef.value = true;
-			getPageSubjectsMock.mockResolvedValue( {
+			getPageSubjectsForEditingMock.mockResolvedValue( {
 				pageSubjects: new PageSubjects(
 					PAGE_ID,
 					new SubjectId( SUBJECT_ID ),

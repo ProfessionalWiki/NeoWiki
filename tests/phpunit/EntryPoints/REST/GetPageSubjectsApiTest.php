@@ -5,10 +5,14 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\REST;
 
 use MediaWiki\Page\PageIdentity;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
+use ProfessionalWiki\NeoWiki\Application\NullRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Domain\Schema\SchemaName;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
+use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectLabel;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectMap;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi;
@@ -17,12 +21,14 @@ use ProfessionalWiki\NeoWiki\Tests\Data\TestStatement;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
+use ProfessionalWiki\NeoWiki\Tests\TestDoubles\FixedRevisionPolicy;
 use ProfessionalWiki\NeoWiki\Tests\TestDoubles\InMemorySource;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\REST\GetPageSubjectsApi
  * @covers \ProfessionalWiki\NeoWiki\Presentation\RestGetPageSubjectsPresenter
  * @covers \ProfessionalWiki\NeoWiki\Application\Queries\GetPageSubjects\GetPageSubjectsQuery
+ * @covers \ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\LatestSubjectLookup
  * @group Database
  */
 class GetPageSubjectsApiTest extends NeoWikiIntegrationTestCase {
@@ -340,21 +346,6 @@ JSON
 	}
 
 	public function testReferencedSubjectOnAnUnreadablePageIsOmitted(): void {
-		$this->createSchema(
-			'GetPageSubjectsApiTestRelationSchema2',
-			<<<JSON
-{
-	"title": "GetPageSubjectsApiTestRelationSchema2",
-	"propertyDefinitions": {
-		"MyRelation": {
-			"type": "relation",
-			"targetSchemas": [ "GetPageSubjectsApiTestSchema" ]
-		}
-	}
-}
-JSON
-		);
-
 		$this->createPageWithSubjects(
 			'GetPageSubjectsApiTest_RestrictedTarget',
 			mainSubject: TestSubject::build(
@@ -363,18 +354,7 @@ JSON
 			)
 		);
 
-		$sourcePageId = $this->createPageWithSubjects(
-			'GetPageSubjectsApiTest_Source',
-			mainSubject: TestSubject::build(
-				id: 'sTestGPS1111152',
-				schemaName: new SchemaName( 'GetPageSubjectsApiTestRelationSchema2' ),
-				statements: new StatementList( [
-					TestStatement::buildRelation( 'MyRelation', [
-						TestRelation::build( id: 'rTestGPS1111152', targetId: 'sTestGPS1111151' ),
-					] ),
-				] )
-			)
-		)->getPage()->getId();
+		$sourcePageId = $this->createSourceReferencing( 'sTestGPS1111152', 'sTestGPS1111151' );
 
 		$denyTargetPage = static fn ( string $permission, ?PageIdentity $page = null ): bool =>
 			$page === null || $page->getDBkey() !== 'GetPageSubjectsApiTest_RestrictedTarget';
@@ -391,6 +371,196 @@ JSON
 
 		$this->assertArrayHasKey( 'sTestGPS1111152', $body['subjects'] );
 		$this->assertSame( [], $body['referencedSubjects'] );
+	}
+
+	public function testServesTheRevisionThePagePublishes(): void {
+		$published = $this->createPageWithADraft();
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $published ) );
+
+		$body = $this->requestPageSubjects( $published->getPageId(), [] );
+
+		$this->assertSame( [ 'sTestGPS1111161' ], array_keys( $body['subjects'] ) );
+		$this->assertSame( 'published label', $body['subjects']['sTestGPS1111161']['label'] );
+	}
+
+	public function testLatestServesTheCurrentRevisionToAViewerThePolicyLetsSeeIt(): void {
+		$published = $this->createPageWithADraft();
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $published ) );
+
+		$body = $this->requestPageSubjects( $published->getPageId(), [ 'latest' => '1' ] );
+
+		$this->assertSame( [ 'sTestGPS1111161', 'sTestGPS1111162' ], array_keys( $body['subjects'] ) );
+		$this->assertSame( 'draft label', $body['subjects']['sTestGPS1111161']['label'] );
+	}
+
+	public function testLatestRefusedByThePolicyIsIndistinguishableFromAPageWithoutSubjects(): void {
+		$hiddenPageId = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_LatestHidden',
+			mainSubject: $this->newSubject( 'sTestGPS1111191', 'draft label' )
+		)->getPageId();
+
+		$emptyPageId = $this->insertPage(
+			'GetPageSubjectsApiTest_LatestNoSubjects',
+			'Just wikitext, no NeoWiki subjects.'
+		)['id'];
+
+		$this->registerRevisionPolicy( FixedRevisionPolicy::hidingEveryRevision() );
+
+		$query = [ 'latest' => '1', 'expand' => 'schemas|relations' ];
+		$hidden = $this->requestPageSubjects( $hiddenPageId, $query );
+		$empty = $this->requestPageSubjects( $emptyPageId, $query );
+
+		// Only the echoed page id may differ between "hidden" and "has no Subjects".
+		$empty['pageId'] = $hiddenPageId;
+		$this->assertSame( $empty, $hidden );
+	}
+
+	public function testReferencedSubjectComesFromItsOwnPagesPublishedRevision(): void {
+		[ $sourcePageId, $publishedTarget ] = $this->createSourceReferencingATargetWithADraft();
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $publishedTarget ) );
+
+		$body = $this->requestPageSubjects( $sourcePageId, [ 'expand' => 'relations' ] );
+
+		$this->assertSame( 'published target', $body['referencedSubjects']['sTestGPS11111b1']['label'] );
+	}
+
+	public function testReferencedSubjectIsNamedAsItsPagesPublishedRevisionNamesIt(): void {
+		$publishedTarget = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_NamedTarget',
+			mainSubject: $this->newSubject( 'sTestGPS11111c1', null )
+		);
+
+		$this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_NamedTarget',
+			mainSubject: $this->newSubject( 'sTestGPS11111c2', 'main Subject of the draft' ),
+			otherSubjects: new SubjectMap( $this->newSubject( 'sTestGPS11111c1', null ) )
+		);
+
+		$sourcePageId = $this->createSourceReferencing( 'sTestGPS11111c3', 'sTestGPS11111c1' );
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $publishedTarget ) );
+
+		$body = $this->requestPageSubjects( $sourcePageId, [ 'expand' => 'relations' ] );
+
+		$this->assertSame(
+			'GetPageSubjectsApiTest NamedTarget',
+			$body['referencedSubjects']['sTestGPS11111c1']['displayName']
+		);
+	}
+
+	public function testLatestTakesReferencedSubjectsFromTheirPagesLatestRevisions(): void {
+		[ $sourcePageId, $publishedTarget ] = $this->createSourceReferencingATargetWithADraft();
+		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $publishedTarget ) );
+
+		$body = $this->requestPageSubjects( $sourcePageId, [ 'latest' => '1', 'expand' => 'relations' ] );
+
+		$this->assertSame( 'draft target', $body['referencedSubjects']['sTestGPS11111b1']['label'] );
+	}
+
+	public function testLatestOmitsAReferencedSubjectWhosePageThePolicyRefuses(): void {
+		[ $sourcePageId, $publishedTarget ] = $this->createSourceReferencingATargetWithADraft();
+
+		$this->registerRevisionPolicy( new class( $publishedTarget->getPageId() ) extends NullRevisionPolicy {
+
+			public function __construct( private readonly int $refusedPageId ) {
+			}
+
+			public function revisionIsReadableBy( RevisionRecord $revision, Authority $viewer ): bool {
+				return $revision->getPageId() !== $this->refusedPageId;
+			}
+
+		} );
+
+		$body = $this->requestPageSubjects( $sourcePageId, [ 'latest' => '1', 'expand' => 'relations' ] );
+
+		$this->assertArrayHasKey( 'sTestGPS11111b2', $body['subjects'] );
+		$this->assertArrayNotHasKey( 'sTestGPS11111b1', $body['referencedSubjects'] );
+	}
+
+	/**
+	 * The page's revision before its draft, which relabels its Subject and adds another.
+	 */
+	private function createPageWithADraft(): RevisionRecord {
+		$published = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_WithADraft',
+			mainSubject: $this->newSubject( 'sTestGPS1111161', 'published label' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_WithADraft',
+			mainSubject: $this->newSubject( 'sTestGPS1111161', 'draft label' ),
+			otherSubjects: new SubjectMap( $this->newSubject( 'sTestGPS1111162', 'only in the draft' ) )
+		);
+
+		return $published;
+	}
+
+	/**
+	 * @return array{int, RevisionRecord} The source page's id, and the target's revision before its draft
+	 */
+	private function createSourceReferencingATargetWithADraft(): array {
+		$publishedTarget = $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_PublishedTarget',
+			mainSubject: $this->newSubject( 'sTestGPS11111b1', 'published target' )
+		);
+
+		$this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_PublishedTarget',
+			mainSubject: $this->newSubject( 'sTestGPS11111b1', 'draft target' )
+		);
+
+		return [ $this->createSourceReferencing( 'sTestGPS11111b2', 'sTestGPS11111b1' ), $publishedTarget ];
+	}
+
+	private function createSourceReferencing( string $sourceId, string $targetId ): int {
+		$this->createSchema(
+			'GetPageSubjectsApiTestRelationSchema3',
+			<<<JSON
+{
+	"title": "GetPageSubjectsApiTestRelationSchema3",
+	"propertyDefinitions": {
+		"MyRelation": {
+			"type": "relation",
+			"targetSchemas": [ "GetPageSubjectsApiTestSchema" ]
+		}
+	}
+}
+JSON
+		);
+
+		return $this->createPageWithSubjects(
+			'GetPageSubjectsApiTest_Source_' . $sourceId,
+			mainSubject: TestSubject::build(
+				id: $sourceId,
+				schemaName: new SchemaName( 'GetPageSubjectsApiTestRelationSchema3' ),
+				statements: new StatementList( [
+					TestStatement::buildRelation( 'MyRelation', [
+						TestRelation::build( targetId: $targetId ),
+					] ),
+				] )
+			)
+		)->getPageId();
+	}
+
+	private function newSubject( string $id, ?string $label ): Subject {
+		return TestSubject::build(
+			id: $id,
+			label: $label === null ? null : new SubjectLabel( $label ),
+			schemaName: new SchemaName( 'GetPageSubjectsApiTestSchema' )
+		);
+	}
+
+	/**
+	 * @param array<string, string> $queryParams
+	 */
+	private function requestPageSubjects( int $pageId, array $queryParams ): array {
+		return json_decode( $this->executeHandler(
+			new GetPageSubjectsApi(),
+			new RequestData( [
+				'method' => 'GET',
+				'pathParams' => [ 'pageId' => (string)$pageId ],
+				'queryParams' => $queryParams,
+			] )
+		)->getBody()->getContents(), true );
 	}
 
 }

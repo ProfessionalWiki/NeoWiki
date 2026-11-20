@@ -61,8 +61,8 @@ Subjects and arrange them.
 
 | Endpoint | Description |
 |---|---|
-| `GET /neowiki/v0/page/{pageId}/subjects` | List all of the page's Subjects. `expand` with `schemas` or `relations`. |
-| `GET /neowiki/v0/page/{pageId}/mainSubject` | Fetch the page's main Subject. Returns `{pageId, subject}`, the Subject carrying its [page fields](subject-format.md#reading-subjects); `subject` is `null` when the page has none. |
+| `GET /neowiki/v0/page/{pageId}/subjects` | List the page's Subjects as the wiki publishes them. With `latest=1`, for editing, list them as of the page's current revision, or none when you may not see that revision. `expand` with `schemas` or `relations`. |
+| `GET /neowiki/v0/page/{pageId}/mainSubject` | Fetch the page's main Subject as the wiki publishes it. Returns `{pageId, subject}`, the Subject carrying its [page fields](subject-format.md#reading-subjects); `subject` is `null` when the page has none. |
 | `GET /neowiki/v0/page/{pageId}/editNotices` | List the notices to show before editing the page's Subjects, in display order. Optional `schema` adds notices scoped to that Schema. Returns `{notices: [{key, html}]}`. See [Edit notices](../authoring/edit-notices.md). |
 | `GET /neowiki/v0/page/{pageId}/rdf` | Export the page's Subjects and metadata as RDF. For `format` and `projection`, see [RDF export](rdf-export.md#endpoint). |
 | `POST /neowiki/v0/page/{pageId}/mainSubject` | Create the page's main Subject. See [Creating Subjects](subject-format.md#creating-subjects). |

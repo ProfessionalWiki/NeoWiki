@@ -21,14 +21,14 @@ import { isSubjectFirst } from '@/wikiMode';
 export async function pageDeleteFormUrl(
 	subjectId: SubjectId,
 	page: PageIdentifiers | null,
-	subjectLookup: Pick<SubjectRepository, 'getPageSubjects'>,
+	subjectLookup: Pick<SubjectRepository, 'getPageSubjectsForEditing'>,
 ): Promise<string | null> {
 	if ( !isSubjectFirst() || page === null || page.getPageName() === '' ) {
 		return null;
 	}
 
 	try {
-		const { pageSubjects } = await subjectLookup.getPageSubjects( page.getPageId() );
+		const { pageSubjects } = await subjectLookup.getPageSubjectsForEditing( page.getPageId() );
 		const standalone = pageSubjects.getSubjects().filter( ( subject ) => !isNamedAfterHostSubject( subject ) );
 
 		if ( standalone.length !== 1 || standalone[ 0 ].getId().text !== subjectId.text ) {

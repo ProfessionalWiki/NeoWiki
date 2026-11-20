@@ -31,7 +31,7 @@ export type LoadedSchemas = ReadonlyMap<string, Schema | null>;
 export class DependentSubjectLoader {
 
 	public constructor(
-		private readonly subjectRepository: Pick<SubjectRepository, 'getPageSubjects' | 'mintSubjectId'>,
+		private readonly subjectRepository: Pick<SubjectRepository, 'getPageSubjectsForEditing' | 'mintSubjectId'>,
 		private readonly schemaLookup: Pick<SchemaLookup, 'getSchema'>,
 		private readonly schemaSummaries: () => Promise<readonly SchemaSummary[]>,
 	) {
@@ -138,7 +138,7 @@ export class DependentSubjectLoader {
 			return [];
 		}
 
-		const page = await this.subjectRepository.getPageSubjects( pageId );
+		const page = await this.subjectRepository.getPageSubjectsForEditing( pageId );
 		const seen = new Set( [ host.getId().text ] );
 		const loaded: Subject[] = [];
 		let frontier = [ host ];

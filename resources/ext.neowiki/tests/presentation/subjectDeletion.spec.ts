@@ -30,9 +30,9 @@ function page(): PageIdentifiers {
 }
 
 /** A lookup answering with a page of these Subjects. */
-function holding( ...subjects: Subject[] ): Pick<SubjectRepository, 'getPageSubjects'> & { getPageSubjects: ReturnType<typeof vi.fn> } {
+function holding( ...subjects: Subject[] ): Pick<SubjectRepository, 'getPageSubjectsForEditing'> & { getPageSubjectsForEditing: ReturnType<typeof vi.fn> } {
 	return {
-		getPageSubjects: vi.fn( () => Promise.resolve( {
+		getPageSubjectsForEditing: vi.fn( () => Promise.resolve( {
 			pageSubjects: new PageSubjects( PAGE_ID, null, subjects ),
 			referencedSubjects: [],
 			schemas: [],
@@ -67,20 +67,20 @@ describe( 'pageDeleteFormUrl', () => {
 		const lookup = holding( ANVIL );
 
 		expect( await pageDeleteFormUrl( ANVIL.getId(), page(), lookup ) ).toBeNull();
-		expect( lookup.getPageSubjects ).not.toHaveBeenCalled();
+		expect( lookup.getPageSubjectsForEditing ).not.toHaveBeenCalled();
 	} );
 
 	it( 'is nothing for a Subject whose page the read did not resolve', async () => {
 		const lookup = holding( ANVIL );
 
 		expect( await pageDeleteFormUrl( ANVIL.getId(), null, lookup ) ).toBeNull();
-		expect( lookup.getPageSubjects ).not.toHaveBeenCalled();
+		expect( lookup.getPageSubjectsForEditing ).not.toHaveBeenCalled();
 	} );
 
 	// A blip reading the page leaves the Subject's own delete working, rather than a dead button.
 	it( 'is nothing when the page\'s Subjects cannot be read', async () => {
 		vi.spyOn( console, 'error' ).mockImplementation( () => undefined );
-		const lookup = { getPageSubjects: () => Promise.reject( new Error( 'network down' ) ) } as never;
+		const lookup = { getPageSubjectsForEditing: () => Promise.reject( new Error( 'network down' ) ) } as never;
 
 		expect( await pageDeleteFormUrl( ANVIL.getId(), page(), lookup ) ).toBeNull();
 	} );
@@ -92,7 +92,7 @@ describe( 'pageDeleteFormUrl', () => {
 
 		await pageDeleteFormUrl( ANVIL.getId(), page(), lookup );
 
-		expect( lookup.getPageSubjects ).toHaveBeenCalledWith( PAGE_ID );
+		expect( lookup.getPageSubjectsForEditing ).toHaveBeenCalledWith( PAGE_ID );
 	} );
 
 } );
