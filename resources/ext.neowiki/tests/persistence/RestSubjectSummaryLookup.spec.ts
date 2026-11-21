@@ -26,7 +26,7 @@ const RESULT: SubjectSummaries = {
 };
 
 function jsonResponse( body: unknown ): Response {
-	return { ok: true, json: async () => body } as Response;
+	return new Response( JSON.stringify( body ) );
 }
 
 function newLookup( responses: Record<string, Response> ): RestSubjectSummaryLookup {
@@ -54,7 +54,7 @@ describe( 'RestSubjectSummaryLookup', () => {
 	} );
 
 	it( 'throws when the endpoint fails', async () => {
-		const lookup = newLookup( { [ LIST_URL ]: { ok: false, json: async () => RESULT } as Response } );
+		const lookup = newLookup( { [ LIST_URL ]: new Response( '{}', { status: 500 } ) } );
 
 		await expect( lookup.getSubjectSummaries( FIRST_PAGE ) ).rejects.toThrow( 'Error fetching subject summaries' );
 	} );
@@ -116,7 +116,7 @@ describe( 'RestSubjectSummaryLookup', () => {
 
 	it( 'throws when the Subjects edited last cannot be fetched', async () => {
 		const lookup = newLookup( {
-			[ RECENTLY_EDITED_URL ]: { ok: false, json: async () => ( { subjects: RESULT_JSON.subjects } ) } as Response,
+			[ RECENTLY_EDITED_URL ]: new Response( JSON.stringify( { subjects: RESULT_JSON.subjects } ), { status: 500 } ),
 		} );
 
 		await expect( lookup.getRecentlyEditedSubjects( 3 ) ).rejects.toThrow();

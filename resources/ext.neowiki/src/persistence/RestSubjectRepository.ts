@@ -370,34 +370,18 @@ export class RestSubjectRepository implements SubjectRepository {
 		pageTitle?: string,
 		id?: SubjectId,
 	): Promise<SubjectPageWriteResult> {
-		let response: Response;
-
-		// A create can fail for reasons the user can act on - the page is protected, the write did
-		// not land - so the server's own message is carried through rather than collapsed into a
-		// status code. Which of the two paths below carries it depends on the status: the
-		// production client resolves 409 and 422 and rejects the rest.
-		try {
-			response = await this.httpClient.post(
-				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subjects`,
-				{
-					label: label,
-					pageTitle,
-					schema: schemaName,
-					statements: statementsToJson( statements ),
-					comment,
-					id: id?.text,
-					...dependentSubjectsField( dependentSubjects ),
-				},
-			);
-		} catch ( error ) {
-			const refusedTitle = this.refusedPageTitleOf( error );
-
-			if ( refusedTitle !== null ) {
-				throw new InvalidPageTitleError( refusedTitle );
-			}
-
-			throw new Error( this.rejectedMessageOf( error ) ?? 'Error creating subject page' );
-		}
+		const response = await this.httpClient.post(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subjects`,
+			{
+				label: label,
+				pageTitle,
+				schema: schemaName,
+				statements: statementsToJson( statements ),
+				comment,
+				id: id?.text,
+				...dependentSubjectsField( dependentSubjects ),
+			},
+		);
 
 		await throwOn422IfPossible( response );
 
@@ -412,6 +396,16 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new PageTitleTakenError( takenTitle ?? '' );
 		}
 
+		// A malformed body is refused with a 400 too, and only a refused title is named.
+		const refusedTitle = response.status === 400 ? await this.stringFieldOf( response, 'pageTitle' ) : null;
+
+		if ( refusedTitle !== null ) {
+			throw new InvalidPageTitleError( refusedTitle );
+		}
+
+		// A create can fail for reasons the user can act on - the page is protected, the write did
+		// not land - so the server's own message is carried through rather than collapsed into a
+		// status code.
 		if ( !response.ok ) {
 			throw new Error( await this.stringFieldOf( response, 'message' ) ?? 'Error creating subject page' );
 		}
@@ -489,57 +483,30 @@ export class RestSubjectRepository implements SubjectRepository {
 		makeMainSubject: boolean,
 		comment?: string,
 	): Promise<void> {
-		let response: Response;
+		const response = await this.httpClient.post(
+			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/move`,
+			{
+				targetPageId,
+				makeMainSubject,
+				comment,
+			},
+		);
 
 		// A move can fail for reasons the user can act on - the target page is protected, the Subject
 		// is already there - so the server's own message is carried through rather than collapsed into
-		// a status code. Which of the two paths below carries it depends on the status: the production
-		// client resolves 409 and 422 and rejects the rest.
-		try {
-			response = await this.httpClient.post(
-				`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }/move`,
-				{
-					targetPageId,
-					makeMainSubject,
-					comment,
-				},
-			);
-		} catch ( error ) {
-			throw new Error( this.rejectedMessageOf( error ) ?? 'Error moving subject' );
-		}
-
+		// a status code.
 		if ( !response.ok ) {
 			throw new Error( await this.stringFieldOf( response, 'message' ) ?? 'Error moving subject' );
 		}
 	}
 
-	private rejectedMessageOf( error: unknown ): string | null {
-		const message = ( error as { response?: { data?: { message?: unknown } } } )?.response?.data?.message;
-
-		return typeof message === 'string' ? message : null;
-	}
-
-	/**
-	 * The title a refused create named as one it cannot use, or null where it refused something
-	 * else: a malformed body is refused with the same status, and only a refused title is named.
-	 */
-	private refusedPageTitleOf( error: unknown ): string | null {
-		const response = ( error as { response?: { status?: unknown; data?: { pageTitle?: unknown } } } )?.response;
-
-		if ( response?.status !== 400 ) {
-			return null;
-		}
-
-		return typeof response.data?.pageTitle === 'string' ? response.data.pageTitle : null;
-	}
-
 	/**
 	 * One field of an error body the server sent, or null when it sent none that reads as a string:
-	 * an error response need not carry JSON at all.
+	 * an error response need not carry JSON at all. The body stays readable for the next field.
 	 */
 	private async stringFieldOf( response: Response, field: string ): Promise<string | null> {
 		try {
-			const value = ( await response.json() as Record<string, unknown> )?.[ field ];
+			const value = ( await response.clone().json() as Record<string, unknown> )?.[ field ];
 
 			return typeof value === 'string' ? value : null;
 		} catch {
@@ -574,7 +541,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		try {
 			response = await this.httpClient.post( url, payload );
 		} catch {
-			// 400/404 (malformed input / missing schema) reject in ProductionHttpClient — no live feedback, fall back silently.
+			// A dry-run that cannot reach the wiki gives no live feedback; the editor goes on without it.
 			return [];
 		}
 

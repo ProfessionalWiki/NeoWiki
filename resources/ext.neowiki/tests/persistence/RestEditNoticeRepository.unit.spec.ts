@@ -57,11 +57,9 @@ describe( 'RestEditNoticeRepository', () => {
 		] );
 	} );
 
-	it( 'shows no notices rather than breaking the editor when the request fails', async () => {
-		// Rejecting rather than resolving, because ProductionHttpClient's validateStatus rejects any
-		// non-2xx that is not a 422, so a resolved error response is not a path production can take.
+	it( 'shows no notices rather than breaking the editor when the wiki cannot be reached', async () => {
 		const httpClient: HttpClient = {
-			get: () => Promise.reject( new Error( 'Request failed with status code 500' ) ),
+			get: () => Promise.reject( new TypeError( 'Failed to fetch' ) ),
 		} as unknown as HttpClient;
 
 		expect( await newRepository( httpClient ).getNotices( PAGE_ID ) ).toStrictEqual( [] );

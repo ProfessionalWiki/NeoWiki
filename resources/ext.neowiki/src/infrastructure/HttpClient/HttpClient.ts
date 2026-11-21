@@ -1,5 +1,6 @@
 /**
- * Sends a plain-object request body as JSON, unless the request is labelled with another content type.
+ * Resolves with the response the server sends, whatever its status, and rejects only when none arrives. Sends a
+ * request body as JSON.
  */
 export interface HttpClient {
 	get( url: string, config?: Record<string, any> ): Promise<Response>;
@@ -7,5 +8,4 @@ export interface HttpClient {
 	patch( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response>;
 	put( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response>;
 	delete( url: string, config?: Record<string, any> ): Promise<Response>;
-	[key: string]: any;
 }
