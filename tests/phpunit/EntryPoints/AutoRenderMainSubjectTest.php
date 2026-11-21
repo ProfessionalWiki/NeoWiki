@@ -72,9 +72,17 @@ class AutoRenderMainSubjectTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringContainsString( self::viewOf( self::SUBJECT_ID ), self::htmlAboveThePageText( $html ) );
 	}
 
-	public function testRendersAppContainerWhenAutoRenderDisabled(): void {
+	public function testLoadsTheFrontendForAReaderOfAPageShowingItsMainSubjectAutomatically(): void {
+		$this->createPageWithMainSubjectAndText();
+		$this->setGroupPermissions( '*', 'edit', false );
+
+		$this->assertContains( 'ext.neowiki', $this->viewPage( [] )->getModules() );
+	}
+
+	public function testRendersAppContainerForAViewerWhoMayEditWhenAutoRenderDisabled(): void {
 		$this->createPageWithMainSubjectAndText();
 		$this->overrideConfigValue( 'NeoWikiAutoRenderMainSubject', false );
+		$this->setGroupPermissions( '*', 'edit', true );
 
 		$html = $this->renderRequest( [] );
 

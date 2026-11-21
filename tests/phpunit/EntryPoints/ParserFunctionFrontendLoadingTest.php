@@ -43,6 +43,12 @@ class ParserFunctionFrontendLoadingTest extends NeoWikiIntegrationTestCase {
 		$this->assertArrayHasKey( 'wgNeoWikiCreateSubjectPageDeniedReason', $out->getJsConfigVars() );
 	}
 
+	public function testAddsTheFrontendConfigVarsToAContentPageCarryingAButton(): void {
+		$out = $this->displayPage( Title::makeTitle( NS_MAIN, 'Carries a button' ), requestsTheFrontend: true );
+
+		$this->assertArrayHasKey( 'wgNeoWikiValidationDebounceMs', $out->getJsConfigVars() );
+	}
+
 	public function testAddsNoDeniedReasonToAContentPageWithoutAButton(): void {
 		$out = $this->displayPage( Title::makeTitle( NS_MAIN, 'Carries nothing' ), requestsTheFrontend: false );
 

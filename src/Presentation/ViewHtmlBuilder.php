@@ -63,6 +63,14 @@ class ViewHtmlBuilder {
 		return preg_match( '/<div id="ext-neowiki-main-subject"(?: [\w-]+="[^"]*")* data-mw-neowiki-subject-id="/', $html ) === 1;
 	}
 
+	/**
+	 * Whether the HTML holds a placeholder made by viewPlaceholderHtml(), also after a parser such as Parsoid added
+	 * attributes of its own.
+	 */
+	public static function containsView( string $html ): bool {
+		return preg_match( '/\sclass="(?:[^"]*\s)?ext-neowiki-view[\s"]/', $html ) === 1;
+	}
+
 	public static function viewPlaceholderHtml( string $subjectId, ?string $layoutName = null ): string {
 		$attributes = [
 			'class' => 'ext-neowiki-view',

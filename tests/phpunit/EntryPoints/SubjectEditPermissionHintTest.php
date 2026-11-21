@@ -9,6 +9,7 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
+use ProfessionalWiki\NeoWiki\Presentation\ViewHtmlBuilder;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiMockAuthorityTrait;
 
@@ -60,6 +61,9 @@ class SubjectEditPermissionHintTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'data-mw-neowiki-create-subject', $protected->getHTML() );
 	}
 
+	/**
+	 * The page shows a View, so the frontend loads whether or not the viewer may edit.
+	 */
 	private function renderContentPage( Title $title, Authority $authority ): OutputPage {
 		$context = new RequestContext();
 		$context->setTitle( $title );
@@ -68,6 +72,7 @@ class SubjectEditPermissionHintTest extends NeoWikiIntegrationTestCase {
 		$out = $context->getOutput();
 		$out->setArticleFlag( true );
 		$out->setRevisionId( $title->getLatestRevID() );
+		$out->addHTML( ViewHtmlBuilder::viewPlaceholderHtml( 's1demo1aaaaaaa1' ) );
 
 		NeoWikiHooks::onBeforePageDisplay( $out, $context->getSkin() );
 

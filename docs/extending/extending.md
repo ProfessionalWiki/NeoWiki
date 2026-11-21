@@ -73,7 +73,9 @@ and frontend registries independently.
 ### Frontend module
 
 Register frontend extension points from a ResourceLoader module that depends on `ext.neowiki`. The
-`NeoWikiGetFrontendModules` hook loads it wherever NeoWiki's UI loads; on pages of your own, load it as any module.
+`NeoWikiGetFrontendModules` hook loads it wherever NeoWiki's UI loads, which on a content page is only where the page
+shows a View, its Main Subject in full or a `{{#create_subject}}` button, or the viewer may edit it. On pages of your
+own, load it as any module.
 
 ```json
 "ResourceModules": {
