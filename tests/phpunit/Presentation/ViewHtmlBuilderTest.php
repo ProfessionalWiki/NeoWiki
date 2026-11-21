@@ -220,4 +220,37 @@ class ViewHtmlBuilderTest extends TestCase {
 		];
 	}
 
+	/**
+	 * @dataProvider htmlWithViewProvider
+	 */
+	public function testRecognizesAView( string $html ): void {
+		$this->assertTrue( ViewHtmlBuilder::containsView( $html ) );
+	}
+
+	public static function htmlWithViewProvider(): iterable {
+		yield 'a placeholder' => [ '<p>Text</p>' . ViewHtmlBuilder::viewPlaceholderHtml( self::TITLING_SUBJECT_ID ) ];
+		yield 'a placeholder naming its Layout' => [
+			ViewHtmlBuilder::viewPlaceholderHtml( self::TITLING_SUBJECT_ID, 'Infobox' )
+		];
+		// Parsoid adds attributes of its own to the elements a parser function returns.
+		yield 'a placeholder a parser rewrote' => [
+			'<div about="#mwt1" typeof="mw:Transclusion" class="ext-neowiki-view mw-extra" data-mw-neowiki-subject-id="s1"></div>'
+		];
+	}
+
+	/**
+	 * @dataProvider htmlWithoutViewProvider
+	 */
+	public function testFindsNoViewInHtmlWithoutOne( string $html ): void {
+		$this->assertFalse( ViewHtmlBuilder::containsView( $html ) );
+	}
+
+	public static function htmlWithoutViewProvider(): iterable {
+		yield 'plain text' => [ '<p>Paris is the capital of France.</p>' ];
+		yield 'the mount for the Main Subject in full' => [
+			ViewHtmlBuilder::mainSubjectInFullPlaceholderHtml( self::TITLING_SUBJECT_ID )
+		];
+		yield 'a class that only starts like it' => [ '<div class="ext-neowiki-view-schema"></div>' ];
+	}
+
 }

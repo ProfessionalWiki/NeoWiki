@@ -46,8 +46,9 @@ class RdfAutodiscoveryLinksTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringStartsWith( 'http', $trig );
 	}
 
-	public function testAdvertisesTurtleAndTrigExportsForPageWithoutSubjects(): void {
+	public function testAdvertisesTurtleAndTrigExportsToAReaderOfAPageWithoutSubjects(): void {
 		$this->editPage( 'Autodiscovery without subjects', 'Plain page, no Subjects.' );
+		$this->setGroupPermissions( '*', 'edit', false );
 		$title = Title::newFromText( 'Autodiscovery without subjects' );
 
 		$out = $this->renderContentPage( 'Autodiscovery without subjects', $title->getLatestRevID() );

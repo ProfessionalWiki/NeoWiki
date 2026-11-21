@@ -98,7 +98,7 @@ class NeoWikiHooks {
 		$carriesCreateSubjectButton = self::carriesCreateSubjectButton( $out );
 
 		if ( self::isContentPage( $out ) ) {
-			self::handleContentPage( $out, $skin );
+			self::handleContentPage( $out, $skin, $carriesCreateSubjectButton );
 		} elseif ( self::isActionOnContentPage( $out ) ) {
 			self::nameActionPageByMainSubject( $out );
 		} elseif ( self::isSchemaPage( $out ) && $out->isArticle() ) {
@@ -138,20 +138,41 @@ class NeoWikiHooks {
 		return MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $out->getTitle()->getNamespace() );
 	}
 
-	private static function handleContentPage( OutputPage $out, Skin $skin ): void {
+	private static function handleContentPage( OutputPage $out, Skin $skin, bool $carriesCreateSubjectButton ): void {
 		self::warnAboutHalfConfiguredNeo4j();
+		self::addRdfAutodiscoveryLinks( $out );
+		self::showMainSubject( $out );
 
 		$extension = NeoWikiExtension::getInstance();
 		$permissionHints = $extension->newSubjectPermissionHints( $out->getAuthority() );
+		$canEditPageSubjects = $permissionHints->canEditSubject( new PageId( $out->getTitle()->getArticleID() ) );
 
-		$extension->newFrontendModuleLoader()->loadWithSubjectPermissions(
-			$out,
-			$skin,
-			$permissionHints->canEditSubject( new PageId( $out->getTitle()->getArticleID() ) )
-		);
+		if ( !self::needsFrontend( $out, $canEditPageSubjects, $carriesCreateSubjectButton ) ) {
+			return;
+		}
+
+		$extension->newFrontendModuleLoader()->loadWithSubjectPermissions( $out, $skin, $canEditPageSubjects );
 		$out->addHtml( self::getNeoWikiAppHtml( $out, $permissionHints ) );
-		self::addRdfAutodiscoveryLinks( $out );
+	}
 
+	/**
+	 * A reader of a page that shows no Subject and no button would download the frontend for nothing.
+	 */
+	private static function needsFrontend(
+		OutputPage $out,
+		bool $canEditPageSubjects,
+		bool $carriesCreateSubjectButton
+	): bool {
+		$html = $out->getHTML();
+
+		return $canEditPageSubjects
+			|| $carriesCreateSubjectButton
+			|| ViewHtmlBuilder::containsMainSubjectInFull( $html )
+			|| ViewHtmlBuilder::containsView( $html );
+	}
+
+	private static function showMainSubject( OutputPage $out ): void {
+		$extension = NeoWikiExtension::getInstance();
 		$revisionId = self::revisionIdUnlessLatest( $out );
 		$builder = $extension->newViewHtmlBuilder();
 
