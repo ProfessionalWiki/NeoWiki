@@ -39,11 +39,13 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 
 		const response = await this.httpClient.get(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subjects?${ params.toString() }`,
-		).catch( ( error: unknown ) => {
-			throw isSearchTimeout( error ) ? new SubjectSummarySearchTimeoutError() : error;
-		} );
+		);
 
 		if ( !response.ok ) {
+			if ( await isSearchTimeout( response ) ) {
+				throw new SubjectSummarySearchTimeoutError();
+			}
+
 			throw new Error( 'Error fetching subject summaries' );
 		}
 
@@ -67,8 +69,13 @@ export class RestSubjectSummaryLookup implements SubjectSummaryLookup {
 }
 
 /**
- * The production client rejects the 503 a search timeout is answered with, so the timeout is read from the rejection.
+ * The wiki answers a search it stopped for taking too long with a 503 that names the timeout; an error response
+ * need not carry JSON at all.
  */
-function isSearchTimeout( error: unknown ): boolean {
-	return ( error as { response?: { data?: { errorType?: unknown } } } )?.response?.data?.errorType === 'searchTimeout';
+async function isSearchTimeout( response: Response ): Promise<boolean> {
+	try {
+		return ( await response.json() )?.errorType === 'searchTimeout';
+	} catch {
+		return false;
+	}
 }

@@ -16,6 +16,7 @@ import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import { SubjectIdInUseError } from '@/persistence/SubjectIdInUseError';
 import { SubjectNotFoundError } from '@/persistence/SubjectNotFoundError';
 import { PageTitleTakenError } from '@/persistence/PageTitleTakenError';
+import { InvalidPageTitleError } from '@/persistence/InvalidPageTitleError';
 import { SchemaDeserializer } from '@/persistence/SchemaDeserializer';
 
 function newRepository( apiUrl: string, httpClient: InMemoryHttpClient ): RestSubjectRepository {
@@ -819,32 +820,61 @@ describe( 'RestSubjectRepository', () => {
 			).rejects.toThrowError( 'Error creating subject page' );
 		} );
 
-		/**
-		 * The production client resolves 2xx, 409 and 422 and rejects the rest, so a write that did
-		 * not land arrives as a rejection carrying the parsed body. Its message says what went
-		 * wrong, where the status code alone says only that something did.
-		 */
-		it( 'carries the server\'s own reason through a rejection', async () => {
-			const repository = newRepository( 'https://example.com/rest.php', {
-				post: vi.fn().mockRejectedValue( Object.assign(
-					new Error( 'Request failed with status code 500' ),
-					{ response: { status: 500, data: { status: 'error', message: 'The database is locked' } } },
-				) ),
-			} as unknown as InMemoryHttpClient );
+		it( 'carries the server\'s own reason for a write that did not land', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ url ]: new Response( JSON.stringify( { status: 'error', message: 'The database is locked' } ), { status: 500 } ),
+			} ) );
 
 			await expect(
 				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'The database is locked' );
 		} );
 
-		it( 'falls back to its own message when a rejection carries none', async () => {
-			const repository = newRepository( 'https://example.com/rest.php', {
-				post: vi.fn().mockRejectedValue( new Error( 'Network Error' ) ),
-			} as unknown as InMemoryHttpClient );
+		it( 'falls back to its own message when a failed write gives none', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ url ]: new Response( '<html>Internal error</html>', { status: 500 } ),
+			} ) );
 
 			await expect(
 				repository.createSubjectPage( 'John Doe', 'Employee', new StatementList( [] ), [] ),
 			).rejects.toThrowError( 'Error creating subject page' );
+		} );
+
+		it( 'names the title it refused when that title can title no page', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ url ]: new Response( JSON.stringify( {
+					status: 'error',
+					message: '"Help:John Doe" is not a main namespace page title that can be created here',
+					pageTitle: 'Help:John Doe',
+				} ), { status: 400 } ),
+			} ) );
+
+			const error = await repository
+				.createSubjectPage( null, 'Employee', new StatementList( [] ), [], undefined, 'Help:John Doe' )
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).toBeInstanceOf( InvalidPageTitleError );
+			expect( ( error as InvalidPageTitleError ).pageTitle ).toBe( 'Help:John Doe' );
+		} );
+
+		/**
+		 * The endpoint refuses a malformed request body with the same status, so it is the title it
+		 * names that tells a refused title from any other refusal.
+		 */
+		it( 'carries the reason a request refused over something else gave', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				[ url ]: new Response(
+					JSON.stringify( { status: 'error', message: 'Property type of "Color" must be a string' } ),
+					{ status: 400 },
+				),
+			} ) );
+
+			const error = await repository
+				.createSubjectPage( null, 'Employee', new StatementList( [] ), [] )
+				.catch( ( thrown: unknown ) => thrown );
+
+			expect( error ).not.toBeInstanceOf( InvalidPageTitleError );
+			expect( ( error as Error ).message ).toBe( 'Property type of "Color" must be a string' );
 		} );
 
 	} );

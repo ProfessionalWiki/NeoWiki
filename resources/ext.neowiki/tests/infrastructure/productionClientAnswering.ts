@@ -1,29 +1,26 @@
+import { vi } from 'vitest';
 import { ProductionHttpClient } from '@/infrastructure/HttpClient/ProductionHttpClient';
 
 /**
- * axios leaves applying validateStatus to the adapter, so this stand-in for the network applies the client's own,
- * and rejects as axios does when it says no.
+ * A ProductionHttpClient whose network answers its requests with these statuses in turn, the last for any
+ * further request, each with this body: a string body as it is, any other as JSON.
  */
 export function productionClientAnswering(
-	status: number,
+	status: number | number[],
 	body: unknown,
-	onRequest?: ( config: any ) => void,
+	onRequest?: ( request: Request ) => void,
 ): ProductionHttpClient {
-	const httpClient = new ProductionHttpClient();
+	const statuses = Array.isArray( status ) ? status : [ status ];
+	let requestCount = 0;
 
-	( httpClient.getAxiosInstance() as any ).defaults.adapter = ( config: any ): Promise<unknown> => {
-		onRequest?.( config );
-		const response = { data: body, status, statusText: '', headers: {}, config };
+	vi.stubGlobal( 'fetch', async ( input: RequestInfo | URL, init?: RequestInit ): Promise<Response> => {
+		// Built as a browser's fetch builds it, so the stand-in refuses what a browser refuses.
+		const request = new Request( input instanceof Request ? input : new URL( String( input ), document.baseURI ), init );
+		onRequest?.( request );
+		const answer = statuses[ Math.min( requestCount++, statuses.length - 1 ) ];
 
-		if ( config.validateStatus( status ) ) {
-			return Promise.resolve( response );
-		}
+		return new Response( typeof body === 'string' ? body : JSON.stringify( body ), { status: answer } );
+	} );
 
-		return Promise.reject( Object.assign(
-			new Error( `Request failed with status code ${ status }` ),
-			{ response, config, isAxiosError: true },
-		) );
-	};
-
-	return httpClient;
+	return new ProductionHttpClient();
 }

@@ -19,30 +19,9 @@ function newRepository( httpClient: Partial<HttpClient> ): RestSubjectRepository
 	);
 }
 
-/**
- * What the production client does with most refused moves: it accepts 2xx, 409 and 422, so every
- * other status arrives as a rejection carrying the parsed body, never as a Response.
- */
-function rejectingLike( status: number, body: unknown ): Partial<HttpClient> {
-	return {
-		post: vi.fn().mockRejectedValue(
-			Object.assign( new Error( `Request failed with status code ${ status }` ), {
-				response: { status, data: body },
-			} ),
-		),
-	};
-}
-
-/**
- * The statuses the production client resolves arrive as a Response instead, body and all.
- */
 function respondingLike( status: number, body: unknown ): Partial<HttpClient> {
 	return {
-		post: vi.fn().mockResolvedValue( {
-			ok: false,
-			status,
-			json: () => Promise.resolve( body ),
-		} as unknown as Response ),
+		post: vi.fn().mockResolvedValue( new Response( typeof body === 'string' ? body : JSON.stringify( body ), { status } ) ),
 	};
 }
 
@@ -57,46 +36,20 @@ describe( 'RestSubjectRepository.moveSubject', () => {
 		expect( post.mock.calls[ 0 ][ 1 ] ).toEqual( { targetPageId: 12, makeMainSubject: true, comment: 'Filed properly' } );
 	} );
 
-	it( 'carries the server\'s own reason through a rejection', async () => {
-		const repository = newRepository(
-			rejectingLike( 500, { status: 'error', message: 'The graph store is unreachable' } ),
-		);
+	it.each( [
+		[ 403, 'You do not have the necessary permissions to move this subject' ],
+		[ 409, 'Subject is already on the target page' ],
+		[ 500, 'The graph store is unreachable' ],
+	] )( 'carries the server\'s own reason for a %i, rather than the status code', async ( status, message ) => {
+		const repository = newRepository( respondingLike( status, { status: 'error', message } ) );
 
-		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )
-			.rejects.toThrow( 'The graph store is unreachable' );
+		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) ).rejects.toThrow( message );
 	} );
 
-	// A conflict is one the production client resolves rather than rejects, so its reason is on the
-	// Response rather than on a rejection - and it is the most actionable reason a move has.
-	it( 'carries the server\'s own reason through a conflict', async () => {
-		const repository = newRepository(
-			respondingLike( 409, { status: 'error', message: 'Subject is already on the target page' } ),
-		);
+	it( 'falls back to a generic message when a failed move gives none', async () => {
+		const repository = newRepository( respondingLike( 500, '<html>Internal error</html>' ) );
 
 		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )
-			.rejects.toThrow( 'Subject is already on the target page' );
-	} );
-
-	it( 'carries a refusal\'s reason through, rather than the status code', async () => {
-		const repository = newRepository(
-			rejectingLike( 403, { status: 'error', message: 'You do not have the necessary permissions to move this subject' } ),
-		);
-
-		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )
-			.rejects.toThrow( 'You do not have the necessary permissions to move this subject' );
-	} );
-
-	it( 'falls back to a generic message when the rejection carries none', async () => {
-		const repository = newRepository( { post: vi.fn().mockRejectedValue( new Error( 'Network down' ) ) } );
-
-		await expect( repository.moveSubject( SUBJECT_ID, 12, false ) )
-			.rejects.toThrow( 'Error moving subject' );
-	} );
-
-	it( 'reports a non-ok response as a failed move', async () => {
-		const post = vi.fn().mockResolvedValue( { ok: false } as Response );
-
-		await expect( newRepository( { post } ).moveSubject( SUBJECT_ID, 12, false ) )
 			.rejects.toThrow( 'Error moving subject' );
 	} );
 

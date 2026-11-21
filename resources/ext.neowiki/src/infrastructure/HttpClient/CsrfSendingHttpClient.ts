@@ -1,4 +1,3 @@
-import type { AxiosError, AxiosResponse } from 'axios';
 import type { HttpClient } from '@/infrastructure/HttpClient/HttpClient';
 
 export enum HttpStatus {
@@ -8,77 +7,36 @@ export enum HttpStatus {
 export class CsrfSendingHttpClient implements HttpClient {
 
 	public constructor( private readonly httpClient: HttpClient ) {
-		this.setCsrfToken();
 	}
 
 	public async get( url: string, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.httpClient
-			.get( url, config )
-			.catch( ( err ) => this.handleError( err ) );
-
-		return this.convertResponse( response );
+		return this.resendingOnceForbidden( () => this.httpClient.get( url, withCsrfToken( config ) ) );
 	}
 
 	public async post( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.httpClient
-			.post( url, data, config )
-			.catch( ( err ) => this.handleError( err ) );
-
-		return this.convertResponse( response );
+		return this.resendingOnceForbidden( () => this.httpClient.post( url, data, withCsrfToken( config ) ) );
 	}
 
 	public async patch( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.httpClient
-			.patch( url, data, config )
-			.catch( ( err ) => this.handleError( err ) );
-
-		return this.convertResponse( response );
+		return this.resendingOnceForbidden( () => this.httpClient.patch( url, data, withCsrfToken( config ) ) );
 	}
 
 	public async put( url: string, data?: Record<string, any>, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.httpClient
-			.put( url, data, config )
-			.catch( ( err ) => this.handleError( err ) );
-
-		return this.convertResponse( response );
+		return this.resendingOnceForbidden( () => this.httpClient.put( url, data, withCsrfToken( config ) ) );
 	}
 
 	public async delete( url: string, config?: Record<string, any> ): Promise<Response> {
-		const response = await this.httpClient
-			.delete( url, config )
-			.catch( ( err ) => this.handleError( err ) );
-
-		return this.convertResponse( response );
+		return this.resendingOnceForbidden( () => this.httpClient.delete( url, withCsrfToken( config ) ) );
 	}
 
-	private convertResponse( response: AxiosResponse|Response ): Response {
-		if ( response instanceof Response ) {
-			return response;
+	private async resendingOnceForbidden( send: () => Promise<Response> ): Promise<Response> {
+		const response = await send();
+
+		if ( response.status === HttpStatus.Forbidden && await this.updateCsrfToken().catch( () => false ) ) {
+			return send();
 		}
 
-		return new Response( JSON.stringify( response.data ), {
-			status: response.status,
-			statusText: response.statusText,
-		} );
-	}
-
-	private setCsrfToken(): void {
-		this.httpClient.getAxiosInstance().defaults.headers.common[ 'X-CSRF-TOKEN' ] = mw.user.tokens.get( 'csrfToken' );
-	}
-
-	private async handleError( error: AxiosError ): Promise<any> {
-		if (
-			error.response?.status === HttpStatus.Forbidden &&
-			error.config && error.config.url
-		) {
-			const isUpdated = await this.updateCsrfToken();
-			if ( isUpdated ) {
-				// resend with updated token
-				error.config.headers[ 'X-CSRF-TOKEN' ] = mw.user.tokens.get( 'csrfToken' );
-				return this.httpClient.getAxiosInstance().request( error.config );
-			}
-		}
-		throw error;
+		return response;
 	}
 
 	private async updateCsrfToken(): Promise<boolean> {
@@ -95,4 +53,12 @@ export class CsrfSendingHttpClient implements HttpClient {
 		}
 		return false;
 	}
+}
+
+// Read on every send, so a resend carries the token fetched after the 403.
+function withCsrfToken( config?: Record<string, any> ): Record<string, any> {
+	const headers = new Headers( config?.headers );
+	headers.set( 'X-CSRF-TOKEN', mw.user.tokens.get( 'csrfToken' ) );
+
+	return { ...config, headers };
 }
