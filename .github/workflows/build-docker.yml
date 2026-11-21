@@ -17,6 +17,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
 env:
+  # The package gives this repository the Admin role under "Manage Actions access", which lets the workflow's own
+  # token push and delete its versions.
   IMAGE: ghcr.io/professionalwiki/neowiki
   # A run on another branch builds as master too, but only master and tags publish.
   NEOWIKI_IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'master' }}
@@ -137,7 +139,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.PAT_write_packages }}
+          password: ${{ github.token }}
         if: env.PUBLISH == 'true'
 
       - name: Push Docker Image
@@ -159,7 +161,8 @@ jobs:
   publish_mediawiki:
     needs: build_and_deploy_mediawiki
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      packages: write
     if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
 
     steps:
@@ -168,7 +171,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.PAT_write_packages }}
+          password: ${{ github.token }}
 
       - name: Publish multi-platform image
         run: |
@@ -184,7 +187,7 @@ jobs:
         id: children
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.PAT_write_packages }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           tagged=$(gh api --paginate /orgs/ProfessionalWiki/packages/container/neowiki/versions \
             --jq '.[] | select(.metadata.container.tags != []) | .name')
@@ -202,7 +205,6 @@ jobs:
           package-type: 'container'
           delete-only-untagged-versions: true
           ignore-versions: ${{ steps.children.outputs.regex }}
-          token: ${{ secrets.PAT_write_packages }}
 
   # Fails when a demo wiki of the previous release, upgraded to the image just published as
   # docs/operations/upgrading.md says, loses a page, a Subject or a graph store's Subject.
