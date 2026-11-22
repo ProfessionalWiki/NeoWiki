@@ -55,8 +55,49 @@ readonly class RdfNamespaces {
 		return $this->baseUri . '/entity/';
 	}
 
-	public function property( string $propertyName ): Iri {
-		return new Iri( $this->baseUri . '/prop/' . self::localName( $propertyName ) );
+	/**
+	 * Scoped to the Schema, as Property Definitions are: "Name" in Person and "Name" in City are two predicates.
+	 */
+	public function property( SchemaName $schemaName, string $propertyName ): Iri {
+		return new Iri( $this->propertyNamespace( self::localName( $schemaName->getText() ) ) . self::localName( $propertyName ) );
+	}
+
+	private function propertyNamespace( string $schemaLocalName ): string {
+		return $this->propertyIriBase() . $schemaLocalName . '/';
+	}
+
+	private function propertyIriBase(): string {
+		return $this->baseUri . '/prop/';
+	}
+
+	/**
+	 * One prefix per Schema whose property predicates the quads use, labelled with the Schema's name as its
+	 * predicates spell it. A label may not be a valid prefix label; a serializer leaves those out.
+	 *
+	 * @return array<array-key, string> Prefix label to namespace IRI.
+	 */
+	public function propertyPrefixes( QuadList $quads ): array {
+		$prefixes = [];
+
+		foreach ( $quads->asArray() as $quad ) {
+			$schemaLocalName = $this->schemaLocalNameOfProperty( $quad->predicate );
+
+			if ( $schemaLocalName !== null ) {
+				$prefixes[$schemaLocalName] = $this->propertyNamespace( $schemaLocalName );
+			}
+		}
+
+		return $prefixes;
+	}
+
+	private function schemaLocalNameOfProperty( Iri $predicate ): ?string {
+		if ( !str_starts_with( $predicate->value, $this->propertyIriBase() ) ) {
+			return null;
+		}
+
+		$localNames = explode( '/', substr( $predicate->value, strlen( $this->propertyIriBase() ) ) );
+
+		return count( $localNames ) === 2 ? $localNames[0] : null;
 	}
 
 	public function schemaClass( SchemaName $schemaName ): Iri {
@@ -150,9 +191,11 @@ readonly class RdfNamespaces {
 	 * forge extra triples.
 	 *
 	 * The rule (NativeRdfProjection.md Q7):
-	 * 1. Spaces become underscores, keeping the spec's readable `neo-prop:Has_author` convention.
+	 * 1. Spaces become underscores, keeping IRIs such as `Person:Birth_date` readable.
 	 * 2. `%` and the IRIREF-illegal ASCII characters (`< > " { } | ^ \` and backtick) plus control
 	 *    characters (0x00–0x1F, 0x7F) are percent-encoded, so a name can never break out of the IRI.
+	 *    So are `/`, `#` and `?`, so a name can neither add a path segment, as in `$base/prop/{Schema}/{Property}`,
+	 *    nor start a fragment or query.
 	 * 3. Everything else, including non-ASCII Unicode, is kept raw so multilingual names stay readable.
 	 *
 	 * The base URI is trusted admin config and is not encoded here.
@@ -180,7 +223,7 @@ readonly class RdfNamespaces {
 			return false;
 		}
 
-		return !in_array( $byte, [ '%', '<', '>', '"', '{', '}', '|', '^', '\\', '`' ], true );
+		return !in_array( $byte, [ '%', '<', '>', '"', '{', '}', '|', '^', '\\', '`', '/', '#', '?' ], true );
 	}
 
 	/**
@@ -194,7 +237,6 @@ readonly class RdfNamespaces {
 		return [
 			'neo' => $this->baseUri . '/ontology/',
 			'neo-subj' => $this->subjectIriBase(),
-			'neo-prop' => $this->baseUri . '/prop/',
 			'neo-schema' => $this->baseUri . '/schema/',
 			'neo-rel' => $this->baseUri . '/relation/',
 			'neo-page' => $this->baseUri . '/page/',

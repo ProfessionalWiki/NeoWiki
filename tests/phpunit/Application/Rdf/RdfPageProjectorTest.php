@@ -134,7 +134,8 @@ class RdfPageProjectorTest extends TestCase {
 		return <<<TRIG
 			@prefix neo: <https://wiki.example/ontology/> .
 			@prefix neo-subj: <https://wiki.example/entity/> .
-			@prefix neo-prop: <https://wiki.example/prop/> .
+			@prefix Company: <https://wiki.example/prop/Company/> .
+			@prefix Person: <https://wiki.example/prop/Person/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix neo-rel: <https://wiki.example/relation/> .
 			@prefix neo-page: <https://wiki.example/page/> .
@@ -156,18 +157,18 @@ class RdfPageProjectorTest extends TestCase {
 
 				neo-subj:s1acmeaaaaaaaa1 a neo-schema:Company ;
 					rdfs:label "ACME Corp" ;
-					neo-prop:Website <https://acme.example> ;
-					neo-prop:Founded 2019 ;
-					neo-prop:CEO neo-subj:s1janeaaaaaaaa2 .
+					Company:Website <https://acme.example> ;
+					Company:Founded 2019 ;
+					Company:CEO neo-subj:s1janeaaaaaaaa2 .
 
 				neo-rel:r1ceoaaaaaaaaa3 a neo:Relation ;
 					neo:source neo-subj:s1acmeaaaaaaaa1 ;
 					neo:target neo-subj:s1janeaaaaaaaa2 ;
-					neo:relationType neo-prop:CEO .
+					neo:relationType Company:CEO .
 
 				neo-subj:s1janeaaaaaaaa2 a neo-schema:Person ;
 					rdfs:label "Jane Smith" ;
-					neo-prop:Age 45 .
+					Person:Age 45 .
 			}
 			TRIG;
 	}
@@ -187,12 +188,12 @@ class RdfPageProjectorTest extends TestCase {
 
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
-			$this->ns->property( 'Website' ),
+			$this->companyProperty( 'Website' ),
 			new Iri( 'https://a.example' )
 		) ) );
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
-			$this->ns->property( 'Website' ),
+			$this->companyProperty( 'Website' ),
 			new Iri( 'https://b.example' )
 		) ) );
 	}
@@ -229,7 +230,7 @@ class RdfPageProjectorTest extends TestCase {
 		// The schema-less Subject leaves no trace: no type, label, statements, or page reference.
 		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfType(), $this->ns->schemaClass( new SchemaName( 'Company' ) ) ) ) );
 		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfsLabel(), RdfLiteralFactory::typed( 'ACME Corp', 'string' ) ) ) );
-		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->ns->property( 'Founded' ), RdfLiteralFactory::typed( '2019', 'integer' ) ) ) );
+		$this->assertFalse( $quads->contains( $this->quad( $acmeIri, $this->companyProperty( 'Founded' ), RdfLiteralFactory::typed( '2019', 'integer' ) ) ) );
 		$this->assertFalse(
 			$quads->contains( $this->quad( $pageIri, $this->ns->term( RdfNamespaces::TERM_MAIN_SUBJECT ), $acmeIri ) ),
 			'A skipped Subject must not remain the page main subject.'
@@ -266,7 +267,7 @@ class RdfPageProjectorTest extends TestCase {
 		$acmeIri = $this->ns->subject( new SubjectId( self::ACME_ID ) );
 		$this->assertTrue( $quads->contains( $this->quad( $acmeIri, $this->ns->rdfsLabel(), RdfLiteralFactory::typed( 'ACME Corp', 'string' ) ) ) );
 		$this->assertFalse(
-			$quads->contains( $this->quad( $acmeIri, $this->ns->property( 'Colour' ), RdfLiteralFactory::typed( 'green', 'string' ) ) )
+			$quads->contains( $this->quad( $acmeIri, $this->companyProperty( 'Colour' ), RdfLiteralFactory::typed( 'green', 'string' ) ) )
 		);
 	}
 
@@ -319,7 +320,7 @@ class RdfPageProjectorTest extends TestCase {
 
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
-			$this->ns->property( 'Established' ),
+			$this->companyProperty( 'Established' ),
 			RdfLiteralFactory::typed( '2019-01-01', 'date' )
 		) ) );
 		$this->assertSame(
@@ -429,7 +430,7 @@ class RdfPageProjectorTest extends TestCase {
 
 		$this->assertTrue( $quads->contains( $this->quad(
 			$this->ns->subject( new SubjectId( self::ACME_ID ) ),
-			$this->ns->property( 'CEO' ),
+			$this->companyProperty( 'CEO' ),
 			$this->ns->subject( new SubjectId( self::JANE_ID ) )
 		) ) );
 	}
@@ -491,7 +492,7 @@ class RdfPageProjectorTest extends TestCase {
 		return <<<TRIG
 			@prefix neo: <https://wiki.example/ontology/> .
 			@prefix neo-subj: <https://wiki.example/entity/> .
-			@prefix neo-prop: <https://wiki.example/prop/> .
+			@prefix Company: <https://wiki.example/prop/Company/> .
 			@prefix neo-schema: <https://wiki.example/schema/> .
 			@prefix neo-rel: <https://wiki.example/relation/> .
 			@prefix neo-graph: <https://wiki.example/graph/native/page/> .
@@ -500,13 +501,13 @@ class RdfPageProjectorTest extends TestCase {
 			neo-graph:42 {
 				neo-subj:s1acmeaaaaaaaa1 a neo-schema:Company ;
 					rdfs:label "ACME Corp" ;
-					neo-prop:Founded 2019 ;
-					neo-prop:CEO neo-subj:s1janeaaaaaaaa2 .
+					Company:Founded 2019 ;
+					Company:CEO neo-subj:s1janeaaaaaaaa2 .
 
 				neo-rel:r1ceoaaaaaaaaa3 a neo:Relation ;
 					neo:source neo-subj:s1acmeaaaaaaaa1 ;
 					neo:target neo-subj:s1janeaaaaaaaa2 ;
-					neo:relationType neo-prop:CEO .
+					neo:relationType Company:CEO .
 			}
 			TRIG;
 	}
@@ -536,7 +537,7 @@ class RdfPageProjectorTest extends TestCase {
 		);
 
 		$this->assertSame(
-			ParsedRdf::canonicalQuads( $this->expectedTriGForTextProperty( 'https://wiki.example/prop/' . $expectedLocalName ) ),
+			ParsedRdf::canonicalQuads( $this->expectedTriGForTextProperty( 'https://wiki.example/prop/Company/' . $expectedLocalName ) ),
 			ParsedRdf::canonicalQuads( $output )
 		);
 	}
@@ -609,7 +610,11 @@ class RdfPageProjectorTest extends TestCase {
 	}
 
 	private function serialize( QuadList $quads ): string {
-		return ( new HardfRdfSerializer( $this->ns->prefixMap(), new NullLogger() ) )->serialize( $quads, RdfFormat::TriG );
+		return HardfRdfSerializer::withNamespaces( $this->ns, new NullLogger() )->serialize( $quads, RdfFormat::TriG );
+	}
+
+	private function companyProperty( string $propertyName ): Iri {
+		return $this->ns->property( new SchemaName( 'Company' ), $propertyName );
 	}
 
 	private function companySchema(): Schema {

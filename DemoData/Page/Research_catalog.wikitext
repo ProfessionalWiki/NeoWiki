@@ -6,11 +6,11 @@ A fictional research-output catalog showing NeoWiki's relations across instituti
 
 == Publications per project ==
 
-{{#invoke:NeoWikiDemo|query|SELECT ?Project (COUNT(DISTINCT ?p) AS ?Publications) WHERE { ?p a neo-schema:Publication ; neo-prop:Project ?pr . ?pr rdfs:label ?Project } GROUP BY ?Project ORDER BY DESC(?Publications) ?Project|linkColumns=Project}}
+{{#invoke:NeoWikiDemo|query|SELECT ?Project (COUNT(DISTINCT ?p) AS ?Publications) WHERE { ?p a neo-schema:Publication ; Publication:Project ?pr . ?pr rdfs:label ?Project } GROUP BY ?Project ORDER BY DESC(?Publications) ?Project|linkColumns=Project}}
 
 == Browse ==
 
-{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Title ?Year ?Venue WHERE { ?p a neo-schema:Publication ; rdfs:label ?Title . OPTIONAL { ?p neo-prop:Year ?Year } OPTIONAL { ?p neo-prop:Venue ?Venue } } ORDER BY DESC(?Year) ?Title|linkColumns=Title}}
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Title ?Year ?Venue WHERE { ?p a neo-schema:Publication ; rdfs:label ?Title . OPTIONAL { ?p Publication:Year ?Year } OPTIONAL { ?p Publication:Venue ?Venue } } ORDER BY DESC(?Year) ?Title|linkColumns=Title}}
 
 == Add your own ==
 
