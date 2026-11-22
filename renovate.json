@@ -39,6 +39,18 @@
       "enabled": false
     },
     {
+      "description": "Lock-file maintenance and minor and patch updates merge themselves once every check passes and the release is past the age gate. Renovate merges them on a later run rather than through GitHub's auto-merge, which waits only for required checks.",
+      "matchUpdateTypes": ["lockFileMaintenance", "minor", "patch"],
+      "automerge": true,
+      "platformAutomerge": false,
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Major updates wait on the Dependency Dashboard until someone ticks them.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
       "description": "One lock-file maintenance pull request per project, so a lock file that fails CI holds back only its own project.",
       "matchUpdateTypes": ["lockFileMaintenance"],
       "additionalBranchPrefix": "{{parentDir}}-",
@@ -56,7 +68,7 @@
       "groupName": "Node"
     },
     {
-      "description": "Digest updates carry no release timestamp, which timestamp-optional lets through the age gate. This keeps them flowing if the gate is ever made strict. Nothing auto-merges, so the age gate adds no safety for digest updates.",
+      "description": "Digest updates carry no release timestamp, which timestamp-optional lets through the age gate. This keeps them flowing if the gate is ever made strict. They never auto-merge, so the age gate adds no safety for them.",
       "matchUpdateTypes": ["digest"],
       "minimumReleaseAge": "0 days"
     },
@@ -79,10 +91,11 @@
       "allowedVersions": "<6"
     },
     {
-      "description": "Oxigraph releases can migrate the store one way, so their pull requests carry a note on recovery.",
+      "description": "Oxigraph releases can migrate the store one way, so their pull requests carry a note on recovery and never merge themselves.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/oxigraph/oxigraph"],
       "matchUpdateTypes": ["major", "minor"],
+      "automerge": false,
       "prBodyNotes": [
         "Oxigraph major and minor releases can migrate the store on first start, one way: older versions then refuse it. Read the release notes before merging. A stack that hits a problem can wipe its Oxigraph volume and refill it with `make rebuild-graph-databases`."
       ]
