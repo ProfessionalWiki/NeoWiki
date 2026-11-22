@@ -39,7 +39,7 @@ services:
   # Without the stacks' index volume the image has no /index, so the index is built in /tmp, as in
   # .github/workflows/ci-php.yml.
   qlever:
-    image: docker.io/adfreiburg/qlever@sha256:60f37fcbfb1bedc911ffc99d26ac404bf6a877ffb2413ee4fb6e41b9e426e2af
+    image: docker.io/adfreiburg/qlever@sha256:22bada6032ee54e80aabd94b745143f9e753ecc5921b2e2f3bd0796e75eb8c94
     entrypoint:
       - /bin/bash
       - -lc
