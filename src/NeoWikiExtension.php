@@ -122,6 +122,7 @@ use ProfessionalWiki\NeoWiki\Application\Rdf\SubjectIriResolver;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageExporter;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageLoader;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
+use ProfessionalWiki\NeoWiki\Application\Rdf\SchemaRdfsDescriber;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjection;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfProjectionResolution;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfSubjectExporter;
@@ -133,7 +134,9 @@ use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfNamespaces;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfSerializer;
 use ProfessionalWiki\NeoWiki\Domain\Rdf\RdfValueMapperRegistry;
 use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\HardfRdfSerializer;
+use ProfessionalWiki\NeoWiki\Infrastructure\Rdf\RdfXmlSerializer;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportPageRdfApi;
+use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSchemasRdfsApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ExportSubjectRdfApi;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\ResolveSubjectIriApi;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Persistence\Neo4jWriteQueryEngine;
@@ -773,6 +776,14 @@ class NeoWikiExtension {
 		return HardfRdfSerializer::withNamespaces( $this->getRdfNamespaces(), LoggerFactory::getInstance( 'NeoWiki' ) );
 	}
 
+	public function newSchemaRdfsDescriber(): SchemaRdfsDescriber {
+		return new SchemaRdfsDescriber( $this->getRdfNamespaces() );
+	}
+
+	public function newRdfXmlSerializer(): RdfXmlSerializer {
+		return new RdfXmlSerializer( $this->getRdfNamespaces(), LoggerFactory::getInstance( 'NeoWiki' ) );
+	}
+
 	private function newRdfPageProjector( SchemaResolver $schemaResolver ): RdfPageProjector {
 		return new RdfPageProjector(
 			$this->getRdfValueMapperRegistry(),
@@ -1030,6 +1041,10 @@ class NeoWikiExtension {
 
 	public static function newExportSubjectRdfApi(): ExportSubjectRdfApi {
 		return new ExportSubjectRdfApi();
+	}
+
+	public static function newExportSchemasRdfsApi(): ExportSchemasRdfsApi {
+		return new ExportSchemasRdfsApi();
 	}
 
 	public static function newResolveSubjectIriApi(): ResolveSubjectIriApi {
