@@ -189,8 +189,8 @@ class StatementListBuilderTest extends TestCase {
 
 	public function testNullValueIsDropped(): void {
 		$list = $this->newBuilder()->build( [
-			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
 			'Unwanted' => null,
+			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
 		] );
 
 		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );
@@ -348,17 +348,54 @@ class StatementListBuilderTest extends TestCase {
 	}
 
 	/**
+	 * @dataProvider nonObjectStatementProvider
+	 */
+	public function testStatementThatIsNotAnObjectIsRejected( mixed $statement ): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Statement "Name" must be an object, or null to remove it' );
+
+		$builder->build( [ 'Name' => $statement ] );
+	}
+
+	public static function nonObjectStatementProvider(): iterable {
+		yield 'string' => [ 'bare string' ];
+		yield 'number' => [ 2019 ];
+		yield 'false' => [ false ];
+	}
+
+	public function testStatementWithoutPropertyTypeIsRejected(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Statement "Founded at" must have a "propertyType"' );
+
+		$builder->build( [ 'Founded at' => [ 'value' => 2019 ] ] );
+	}
+
+	/**
 	 * The legacy `type` key is tolerated when reading stored revisions, never on API input:
 	 * accepting both here would restore the ambiguity the rename removed.
 	 */
-	public function testLegacyTypeKeyIsNotAcceptedAsPropertyType(): void {
-		$list = $this->newBuilder()->build( [
-			'Wanted' => [ 'propertyType' => 'text', 'value' => 'yes' ],
-			'Unwanted' => [ 'type' => 'text', 'value' => 'yes' ],
-		] );
+	public function testStatementUnderTheLegacyTypeKeyIsRejectedNamingPropertyType(): void {
+		$builder = $this->newBuilder();
 
-		$this->assertNotNull( $list->getStatement( new PropertyName( 'Wanted' ) ) );
-		$this->assertNull( $list->getStatement( new PropertyName( 'Unwanted' ) ) );
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage(
+			'Statement "Founded at" must give its property type as "propertyType", not "type"'
+		);
+
+		$builder->build( [ 'Founded at' => [ 'type' => 'number', 'value' => 2019 ] ] );
+	}
+
+	public function testStatementWithoutValueIsRejected(): void {
+		$builder = $this->newBuilder();
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Statement "Name" must have a "value"' );
+
+		$builder->build( [ 'Name' => [ 'propertyType' => 'text' ] ] );
 	}
 
 }
