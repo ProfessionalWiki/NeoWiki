@@ -11,7 +11,7 @@
   "minimumReleaseAgeBehaviour": "timestamp-optional",
   "dependencyDashboard": {
     "enabled": true,
-    "header": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\nTicked checkboxes are acted on by the next [Renovate run](https://github.com/{{repository}}/actions/workflows/renovate.yml), which happens daily and can be started early from that page with \"Run workflow\"."
+    "header": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\nTicked checkboxes are acted on by the next Renovate run, which happens daily."
   },
   "prConcurrentLimit": 10,
   "prHourlyLimit": 0,
