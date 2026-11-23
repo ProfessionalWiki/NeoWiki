@@ -15,11 +15,12 @@ Discussion: [#999](https://github.com/ProfessionalWiki/NeoWiki/discussions/999).
 > [Person → EDM example](../guide/person-to-edm.md). The sync into a configured SPARQL 1.1 store (e.g. QLever) has
 > shipped too, as the per-page graph replacement this document specifies.
 
-## Still open (2026-10)
+## Still open (2026-11)
 
 - [Q6 — Base URI conventions](#q6-base-uri-conventions): which base URI an ECCCH-integrated deployment mints under.
 - [Q8 — Writer's schema in RDF](#q8-writers-schema-in-rdf): whether a full-export mode carries it. Untracked.
-- [Q10 — Schema namespace page](#q10-schema-namespace-page): RDFS/OWL self-description of Schemas
+- [Q10 — Schema namespace page](#decided): the range of a relation to several Schemas, since several ranges intersect
+  and takin's Pletka reads no `owl:unionOf`; takin proposed a generated superclass
   ([#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163)).
 
 Everything else this document asked has been answered — see [Decided](#decided).
@@ -77,9 +78,7 @@ that write path, and the targets it is held to, are in the
   [Decided](#decided)). The plan is that NeoWiki provides the mapping
   mechanism, data modellers in the project create standard mapping + Schema bundles (e.g., for CIDOC-CRM), and users
   can optionally install those bundles where relevant.
-- **Schema definitions as RDF.** Schemas could be expressed as RDFS/OWL classes with property constraints (similar
-  to SHACL shapes). Valuable for validation and documentation, but a separate concern — see
-  [Q10](#q10-schema-namespace-page).
+- **Schema definitions as RDF.** A separate export of the Schemas as RDFS — see [Q10](#decided).
 - **RDF import.** This document covers the outbound direction (NeoWiki data to RDF). Importing RDF data into
   NeoWiki Subjects is a T3.2/T4.1 concern and has its own challenges (mapping external ontologies to NeoWiki
   Schemas).
@@ -113,16 +112,6 @@ NeoWiki Statements record the "writer's schema", the property type at write time
 Statement rather than about the entity, and useful mainly for debugging and round-tripping. Open: whether a
 "full export" mode should carry it. No issue tracks this.
 
-### Q10: Schema namespace page
-
-Should NeoWiki emit an RDFS/OWL definition for each Schema (as a class) and each Property Definition (as a property
-with domain/range)? This would make the RDF self-describing. Tentative answer: yes, but as a separate enhancement,
-not blocking the initial projection. Partner demand recorded (takin, 2026-07-03): an RDFS export of local Schemas is
-wanted as an input for authoring ontology mappings — a wiki's Schemas are effectively its own ontology, and the
-native projection should be able to say so in RDF. Tracked in
-[#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163). See also the generated shape exports in
-[ShapeLanguages.md](ShapeLanguages.md).
-
 ## Decided
 
 Answered by shipping or by partner feedback. Numbers are the original question numbers.
@@ -133,8 +122,6 @@ Answered by shipping or by partner feedback. Numbers are the original question n
   decision 6 would give a relation and a same-named literal property one predicate. Sharing across Schemas, when added,
   uses `rdfs:subPropertyOf`, not a shared predicate; `$base/prop/{Name}` is reserved for such name-level
   super-properties. Recorded cost: a query across Schemas must name each Schema's predicate.
-  [#1163](https://github.com/ProfessionalWiki/NeoWiki/issues/1163) replaces today's flat predicates before the first
-  release.
 - **Q2 — standard vocabulary.** The native projection stays minimal — `rdf:type`, `rdfs:label`, and
   `dcterms:created`/`dcterms:modified`. Further standard-vocabulary alignment belongs to an ontology mapping.
 - **Q3 — relation representation.** Wikibase-style reification alongside the direct triple, as specified
@@ -153,3 +140,5 @@ Answered by shipping or by partner feedback. Numbers are the original question n
 - **Q9 — ordering of multi-valued properties.** Ordering loss is accepted; ordering is a display concern for Views.
   Where ordering is real data, model it explicitly so it stays recoverable in the export (George Bruseker, takin,
   2026-07-06).
+- **Q10 — Schema namespace page.** The wiki's Schemas are exported as [RDFS](../api/rdf-export.md#schemas-as-rdfs);
+  constraints are left to shapes ([ShapeLanguages.md](ShapeLanguages.md)).
