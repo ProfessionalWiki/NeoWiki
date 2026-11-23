@@ -172,8 +172,22 @@ its own `rest.php` path:
 RewriteRule ^/?entity/(.+)$ http://127.0.0.1/w/rest.php/neowiki/v0/entity/$1 [P,L]
 ```
 
+On nginx, add this `location` to the wiki's `server` block, replacing `/w` with the wiki's `$wgScriptPath`:
+
+```nginx
+location ~ ^/entity/(.+)$ {
+    proxy_pass $scheme://127.0.0.1:$server_port/w/rest.php/neowiki/v0/entity/$1;
+    proxy_set_header Host $host;
+    proxy_ssl_server_name on;
+    proxy_ssl_name $host;
+}
+```
+
 This applies when `$wgNeoWikiRdfBaseUri` is the wiki's own host (the default); an external or institutional base URI is
 the operator's own routing concern.
+
+In a farm that separates its wikis by path, set each wiki's `$wgNeoWikiRdfBaseUri` to include its path, such as
+`https://example.org/nl`, and route `/nl/entity/{id}` to that wiki's REST path.
 
 ### Finding these exports
 
