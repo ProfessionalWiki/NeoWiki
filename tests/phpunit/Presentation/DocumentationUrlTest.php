@@ -11,7 +11,7 @@ use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 /**
  * Resolves each link into the documentation site against the docs tree the site is built from, so a moved page
  * or a renamed heading fails here rather than leaving readers on a 404 or at the top of the wrong page. The links
- * in extension.json are checked too, as JSON cannot use the enum.
+ * in extension.json and extension-model-bundles.json are checked too, as JSON cannot use the enum.
  *
  * @covers \ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl
  */
@@ -41,8 +41,10 @@ class DocumentationUrlTest extends TestCase {
 			yield $documentationUrl->name => [ $documentationUrl->value ];
 		}
 
-		foreach ( self::linksInExtensionJson() as $url ) {
-			yield "extension.json: $url" => [ $url ];
+		foreach ( [ 'extension.json', 'extension-model-bundles.json' ] as $file ) {
+			foreach ( self::linksIn( $file ) as $url ) {
+				yield "$file: $url" => [ $url ];
+			}
 		}
 	}
 
@@ -57,10 +59,10 @@ class DocumentationUrlTest extends TestCase {
 	/**
 	 * @return list<string>
 	 */
-	private static function linksInExtensionJson(): array {
+	private static function linksIn( string $file ): array {
 		preg_match_all(
 			'#' . preg_quote( self::SITE_PREFIX, '#' ) . '[A-Za-z0-9_/\#-]+#',
-			(string)file_get_contents( self::extensionRoot() . '/extension.json' ),
+			(string)file_get_contents( self::extensionRoot() . '/' . $file ),
 			$matches
 		);
 

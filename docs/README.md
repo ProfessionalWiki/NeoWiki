@@ -12,6 +12,8 @@ For people working in a wiki that runs NeoWiki.
   vocabulary
 * [Project a Person to EDM](guide/person-to-edm.md) — an ontology mapping walked end to end
 * [Keep your wiki current](guide/keep-your-wiki-current.md) — upgrade an evaluation wiki
+* [Share a Data Model](guide/share-a-data-model.md) — install the Data Model of other wikis, update it, and export
+  yours
 
 Concepts:
 
@@ -48,6 +50,8 @@ For developers building on NeoWiki from outside the wiki.
 * [JSON Schema](api/json-schema.md) — a Schema's Subjects as a JSON Schema document, for validating data before upload
 * [MediaWiki API](api/mediawiki-api.md) — pages, revisions, users, recent changes, and search, through the Action API
 * [MCP](api/mcp.md) — connect AI agents through the MediaWiki MCP Server
+* [Model Bundles](api/model-bundles.md) — the files that carry Schemas, Layouts, Mappings and Subjects between wikis,
+  their catalogs and install records
 
 ## Extending
 

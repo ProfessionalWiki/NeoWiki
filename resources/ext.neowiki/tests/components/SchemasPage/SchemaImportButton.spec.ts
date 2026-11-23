@@ -55,6 +55,16 @@ async function chooseFile( wrapper: VueWrapper, content: string ): Promise<void>
 	await flushPromises();
 }
 
+function installModelBundles(): void {
+	vi.mocked( mw.loader.getState ).mockImplementation(
+		( module ) => module === 'ext.neowiki.modelBundles' ? 'registered' : null,
+	);
+}
+
+function notification(): string | null {
+	return ( vi.mocked( mw.notify ).mock.calls[ 0 ][ 0 ] as Element ).textContent;
+}
+
 function plannedImport( wrapper: VueWrapper ): [ string, string ][] {
 	return ( wrapper.findComponent( SchemaImportDialog ).props( 'items' ) as SchemaImportItem[] )
 		.map( ( item ) => [ item.schema.getName(), item.status ] );
@@ -62,7 +72,7 @@ function plannedImport( wrapper: VueWrapper ): [ string, string ][] {
 
 describe( 'SchemaImportButton', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'msg', 'notify' ] } );
+		setupMwMock( { functions: [ 'msg', 'message', 'notify', 'loader' ] } );
 
 		pinia = createPinia();
 		setActivePinia( pinia );
@@ -89,6 +99,41 @@ describe( 'SchemaImportButton', () => {
 		await chooseFile( wrapper, exportFile( 'Person', 'Museum' ) );
 
 		expect( plannedImport( wrapper ) ).toEqual( [ [ 'Person', 'changed' ], [ 'Museum', 'new' ] ] );
+	} );
+
+	it( 'refers a file holding more than Schemas to the Data model page when Model Bundles is installed, importing nothing', async () => {
+		installModelBundles();
+		const wrapper = mountButton();
+
+		await chooseFile( wrapper, JSON.stringify( {
+			bundle: { name: 'Vocabularies' },
+			schemas: { Museum: { propertyDefinitions: {} } },
+		} ) );
+
+		expect( notification() ).toBe( 'neowiki-schemas-import-model-bundle' );
+		expect( wrapper.findComponent( SchemaImportDialog ).exists() ).toBe( false );
+	} );
+
+	it( 'offers only the Schemas of a file holding more, saying so, when Model Bundles is not installed', async () => {
+		const wrapper = mountButton();
+
+		await chooseFile( wrapper, JSON.stringify( {
+			layouts: { 'Museum card': { schema: 'Museum', type: 'infobox' } },
+			schemas: { Museum: { propertyDefinitions: {} } },
+		} ) );
+
+		expect( plannedImport( wrapper ) ).toEqual( [ [ 'Museum', 'new' ] ] );
+		expect( wrapper.text() ).toContain( 'neowiki-schemas-import-schemas-only' );
+	} );
+
+	it( 'offers a file of Schemas only as before when Model Bundles is installed', async () => {
+		installModelBundles();
+		const wrapper = mountButton();
+
+		await chooseFile( wrapper, exportFile( 'Museum' ) );
+
+		expect( plannedImport( wrapper ) ).toEqual( [ [ 'Museum', 'new' ] ] );
+		expect( wrapper.text() ).not.toContain( 'neowiki-schemas-import-schemas-only' );
 	} );
 
 	it( 'reports a file it cannot import, and opens no dialog', async () => {

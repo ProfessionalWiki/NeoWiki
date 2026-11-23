@@ -510,7 +510,7 @@ export interface MwMockOptions {
 	/** The languages mw.language.getData reports names for, keyed by language code. */
 	languageNames?: Record<string, string>;
 	functions?: (
-		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language'
+		'config' | 'message' | 'msg' | 'notify' | 'storage' | 'util' | 'language' | 'loader'
 	)[];
 }
 
@@ -569,6 +569,9 @@ export function setupMwMock(
 	const implementations: Record<string, any> = {
 		config: () => ( {
 			get: vi.fn( configValue ),
+			set: vi.fn( ( key: string, value: unknown ) => {
+				customConfig[ key ] = value;
+			} ),
 		} ),
 		message: () => vi.fn( ( key: string, ...params: any[] ) => ( {
 			text: () => resolveMessage( key, params ),
@@ -610,6 +613,10 @@ export function setupMwMock(
 			listToText: vi.fn( ( list: string[] ) => list.length < 2 ?
 				list.join( '' ) :
 				`${ list.slice( 0, -1 ).join( ', ' ) } and ${ list[ list.length - 1 ] }` ),
+		} ),
+		// As on a wiki that registers no module beyond NeoWiki's own, which a spec can change.
+		loader: () => ( {
+			getState: vi.fn( () => null ),
 		} ),
 		util: () => ( {
 			wikiScript: vi.fn( () => '/rest.php' ),

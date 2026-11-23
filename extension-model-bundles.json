@@ -1,0 +1,282 @@
+{
+	"name": "NeoWikiModelBundles",
+	"author": [
+		"[https://Professional.Wiki/ Professional Wiki]",
+		"[https://www.EntropyWins.wtf/mediawiki Jeroen De Dauw]",
+		"Morne Alberts",
+		"[https://www.mediawiki.org/wiki/User:Alistair3149 Alistair3149]",
+		"[https://github.com/ProfessionalWiki/NeoWiki/graphs/contributors?all=1 ...]"
+	],
+	"url": "https://neowiki.ai/docs/guide/share-a-data-model",
+	"license-name": "GPL-2.0-or-later",
+	"descriptionmsg": "neowiki-model-bundles-description",
+	"requires": {
+		"MediaWiki": ">= 1.43.0",
+		"extensions": {
+			"NeoWiki": "*"
+		}
+	},
+	"MessagesDirs": {
+		"NeoWikiModelBundles": [
+			"i18n/modelBundles"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"NeoWikiModelBundlesAliases": "i18n/modelBundles/_Aliases.php"
+	},
+	"SpecialPages": {
+		"DataModel": "ProfessionalWiki\\NeoWiki\\ModelBundles\\SpecialDataModel"
+	},
+	"Hooks": {
+		"NeoWikiGetFrontendModules": "ModelBundlesNoticeHook"
+	},
+	"HookHandlers": {
+		"ModelBundlesNoticeHook": {
+			"class": "ProfessionalWiki\\NeoWiki\\ModelBundles\\ModelBundlesNoticeHook"
+		}
+	},
+	"attributes": {
+		"NeoWiki": {
+			"OverviewLinks": [
+				{
+					"page": "Special:DataModel",
+					"label": "neowiki-special-datamodel",
+					"description": "neowiki-overview-datamodel-description",
+					"rights": [
+						"editsitejson",
+						"editinterface"
+					]
+				}
+			]
+		}
+	},
+	"config": {
+		"NeoWikiModelBundleCatalogs": {
+			"description": "The URLs of the catalogs of model bundles that Special:DataModel installs from. The browser reads them, so their servers have to let other websites read them (CORS). See https://neowiki.ai/docs/api/model-bundles#catalogs",
+			"value": []
+		},
+		"NeoWikiModelBundlePreselection": {
+			"description": "The names of the catalog entries that the data model setup selects by default.",
+			"value": []
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "NeoWiki"
+	},
+	"ResourceModules": {
+		"ext.neowiki.modelBundles": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"dependencies": [
+				"ext.neowiki",
+				"vue",
+				"pinia",
+				"mediawiki.api",
+				"mediawiki.util",
+				"mediawiki.storage"
+			],
+			"packageFiles": [
+				"resources/ext.neowiki/dist/modelBundles.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconCollapse",
+						"cdxIconDownload",
+						"cdxIconExpand",
+						"cdxIconPuzzle",
+						"cdxIconUpload"
+					]
+				}
+			],
+			"styles": [
+				"resources/ext.neowiki/dist/modelBundles.css"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxCard",
+				"CdxCheckbox",
+				"CdxField",
+				"CdxIcon",
+				"CdxInfoChip",
+				"CdxMessage",
+				"CdxProgressBar",
+				"CdxRadio",
+				"CdxTextArea",
+				"CdxTextInput",
+				"CdxToggleSwitch"
+			],
+			"messages": [
+				"neowiki-bundle-file-not-json",
+				"neowiki-bundle-file-empty",
+				"neowiki-bundle-file-section-not-object",
+				"neowiki-bundle-file-invalid-metadata",
+				"neowiki-bundle-file-duplicate",
+				"neowiki-bundle-file-schema-no-property-definitions",
+				"neowiki-bundle-file-invalid-schema",
+				"neowiki-bundle-file-invalid-layout",
+				"neowiki-bundle-file-layout-fields",
+				"neowiki-bundle-file-invalid-mapping",
+				"neowiki-bundle-file-invalid-subject",
+				"neowiki-data-model-intro",
+				"neowiki-bundle-install-title",
+				"neowiki-bundle-update-title",
+				"neowiki-bundle-export-title",
+				"neowiki-bundle-source-file",
+				"neowiki-bundle-source-file-button",
+				"neowiki-bundle-source-url",
+				"neowiki-bundle-source-url-button",
+				"neowiki-bundle-source-catalog",
+				"neowiki-bundle-catalog-models",
+				"neowiki-bundle-catalog-destinations",
+				"neowiki-bundle-catalog-installed",
+				"neowiki-bundle-catalog-installed-version",
+				"neowiki-bundle-catalog-load",
+				"neowiki-bundle-catalog-unreachable",
+				"neowiki-bundle-catalog-http",
+				"neowiki-bundle-catalog-invalid",
+				"neowiki-bundle-catalog-empty",
+				"neowiki-bundle-catalog-missing-requirement",
+				"neowiki-bundle-catalog-wrong-file",
+				"neowiki-bundle-setup-title",
+				"neowiki-bundle-setup-steps",
+				"neowiki-bundle-setup-card-description",
+				"neowiki-bundle-setup-empty-state",
+				"neowiki-bundle-setup-settings",
+				"neowiki-bundle-setup-settings-intro",
+				"neowiki-bundle-setup-settings-read-only",
+				"neowiki-bundle-setup-page-first-help",
+				"neowiki-bundle-setup-subject-first-help",
+				"neowiki-bundle-setup-settings-summary",
+				"neowiki-bundle-setup-model",
+				"neowiki-bundle-setup-empty",
+				"neowiki-bundle-setup-empty-description",
+				"neowiki-bundle-setup-recommended",
+				"neowiki-bundle-setup-no-catalog-read",
+				"neowiki-bundle-setup-destinations",
+				"neowiki-bundle-setup-review",
+				"neowiki-bundle-setup-done",
+				"neowiki-bundle-setup-create-subject",
+				"neowiki-bundle-setup-create-schema",
+				"neowiki-bundle-setup-open-data-model",
+				"neowiki-bundle-setup-nothing-installed",
+				"neowiki-bundle-setup-continue",
+				"neowiki-bundle-setup-back",
+				"neowiki-bundle-setup-finish",
+				"neowiki-bundle-setup-review-settings",
+				"neowiki-bundle-setup-step-model",
+				"neowiki-bundle-setup-step-destinations",
+				"neowiki-bundle-updates-available",
+				"neowiki-bundle-url-not-web",
+				"neowiki-bundle-url-unreachable",
+				"neowiki-bundle-url-failed",
+				"neowiki-bundle-other-bundle",
+				"neowiki-bundle-name",
+				"neowiki-bundle-name-help",
+				"neowiki-bundle-name-unusable",
+				"neowiki-bundle-version",
+				"neowiki-bundle-required-by",
+				"neowiki-bundle-updates",
+				"neowiki-bundle-updates-unversioned",
+				"neowiki-bundle-comparing",
+				"neowiki-bundle-progress",
+				"neowiki-bundle-install-button",
+				"neowiki-bundle-update-button",
+				"neowiki-bundle-back",
+				"neowiki-bundle-type-schema",
+				"neowiki-bundle-type-layout",
+				"neowiki-bundle-type-mapping",
+				"neowiki-bundle-type-subject",
+				"neowiki-bundle-preview-all",
+				"neowiki-bundle-preview-schema-group",
+				"neowiki-bundle-summary-schemas",
+				"neowiki-bundle-summary-layouts",
+				"neowiki-bundle-summary-mappings",
+				"neowiki-bundle-summary-subjects",
+				"neowiki-bundle-summary-all-new",
+				"neowiki-bundle-summary-all-unchanged",
+				"neowiki-bundle-summary-new",
+				"neowiki-bundle-summary-update",
+				"neowiki-bundle-summary-decide",
+				"neowiki-bundle-summary-unchanged",
+				"neowiki-bundle-items-show",
+				"neowiki-bundle-items-hide",
+				"neowiki-bundle-preview-show-changes",
+				"neowiki-bundle-preview-hide-changes",
+				"neowiki-bundle-diff-here",
+				"neowiki-bundle-diff-upstream",
+				"neowiki-bundle-status-new",
+				"neowiki-bundle-status-declined",
+				"neowiki-bundle-status-unchanged",
+				"neowiki-bundle-status-differs",
+				"neowiki-bundle-status-changed-upstream",
+				"neowiki-bundle-status-changed-both",
+				"neowiki-bundle-status-changed-here",
+				"neowiki-bundle-status-deleted-here",
+				"neowiki-bundle-status-deleted-here-changed-upstream",
+				"neowiki-bundle-status-removed-upstream",
+				"neowiki-bundle-status-conflict",
+				"neowiki-bundle-status-unreadable",
+				"neowiki-bundle-page-title-taken",
+				"neowiki-bundle-conflict-unreadable",
+				"neowiki-bundle-conflict-owned",
+				"neowiki-bundle-conflict-dependence",
+				"neowiki-bundle-conflict-subject-schema",
+				"neowiki-bundle-conflict-id-in-use",
+				"neowiki-bundle-conflict-dependent-schema",
+				"neowiki-bundle-remove-blocked-used",
+				"neowiki-bundle-remove-blocked-referenced",
+				"neowiki-bundle-remove-blocked-unreadable",
+				"neowiki-bundle-write-violations",
+				"neowiki-bundle-subject-noun",
+				"neowiki-bundle-installed",
+				"neowiki-bundle-updated",
+				"neowiki-bundle-updated-unversioned",
+				"neowiki-bundle-not-written",
+				"neowiki-bundle-count-created",
+				"neowiki-bundle-count-replaced",
+				"neowiki-bundle-count-removed",
+				"neowiki-bundle-count-nothing",
+				"neowiki-bundle-record-failed",
+				"neowiki-bundle-install-summary",
+				"neowiki-bundle-update-summary",
+				"neowiki-bundle-export-dependent-subjects",
+				"neowiki-bundle-export-subjects",
+				"neowiki-bundle-export-subjects-count",
+				"neowiki-bundle-export-no-subjects",
+				"neowiki-bundle-export-adds-schemas",
+				"neowiki-bundle-export-layouts",
+				"neowiki-bundle-export-metadata",
+				"neowiki-bundle-export-metadata-help",
+				"neowiki-bundle-export-version",
+				"neowiki-bundle-export-description",
+				"neowiki-bundle-export-button",
+				"neowiki-bundle-export-unreadable-page",
+				"neowiki-bundle-export-unreadable-subjects",
+				"neowiki-bundle-group-this-wiki",
+				"neowiki-bundle-group-expand",
+				"neowiki-bundle-group-collapse",
+				"neowiki-bundle-group-empty",
+				"neowiki-bundle-source-from-url",
+				"neowiki-bundle-source-from-file",
+				"neowiki-bundle-record-link",
+				"neowiki-bundle-changed-count",
+				"neowiki-bundle-version-available",
+				"neowiki-bundle-update-from-source",
+				"neowiki-bundle-update-from-file",
+				"neowiki-config-setting-subject-first",
+				"neowiki-config-setting-subject-first-page-first",
+				"neowiki-config-setting-subject-first-subject-first",
+				"neowiki-config-setting-data-languages",
+				"neowiki-config-setting-data-languages-help",
+				"neowiki-schema-noun",
+				"neowiki-layout-noun",
+				"neowiki-mapping-noun",
+				"cancel",
+				"colon-separator",
+				"comma-separator"
+			]
+		}
+	},
+	"manifest_version": 2
+}

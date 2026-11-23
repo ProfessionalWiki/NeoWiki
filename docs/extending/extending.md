@@ -103,6 +103,38 @@ JavaScript with no build step; [TypeScript](javascript.md#authoring-in-typescrip
 NeoWiki's UI starts once the modules this hook names have loaded or failed to load, so what they register as they run
 is in place before it reads any data, and a slow module delays it. It does not wait for a module you load yourself.
 
+### Notices on Special:NeoWiki and Special:Schemas
+
+In the `neowiki.registration` hook, `registrar.registerOverviewNotice( component, replacesFirstSteps )` shows the
+component above the cards of Special:NeoWiki, and `registrar.registerSchemasNotice( component, replacesEmptyNote )`
+above the Schemas of Special:Schemas. With `true`, the notice takes the place of the note that tells a new wiki how to
+start, which also makes Create subject a secondary button, or of the note that the wiki has no Schemas. Load the
+notice's module on those pages through the `NeoWikiGetFrontendModules` hook. Example:
+[`modelBundles.ts`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/modelBundles/src/modelBundles.ts)
+registers
+[`ModelBundlesNotice.vue`](https://github.com/ProfessionalWiki/NeoWiki/blob/master/resources/ext.neowiki/modelBundles/src/components/ModelBundlesNotice.vue).
+
+### Links on Special:NeoWiki
+
+Special:NeoWiki offers a card for each page your `extension.json` lists under `OverviewLinks`, with your messages as
+its label and description, to the users who have all the `rights` it names, if any. The cards come after the Subjects,
+Schemas, Ontology mappings and Layouts cards, and before Graph stores and Settings:
+
+```json
+"attributes": {
+	"NeoWiki": {
+		"OverviewLinks": [
+			{
+				"page": "Special:MyPage",
+				"label": "myext-overview-label",
+				"description": "myext-overview-description",
+				"rights": [ "myext-manage" ]
+			}
+		]
+	}
+}
+```
+
 ## Internal surfaces
 
 Not for extensions to build on, however reachable:

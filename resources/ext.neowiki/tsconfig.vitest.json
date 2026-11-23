@@ -4,7 +4,10 @@
 		"./node_modules/types-mediawiki",
 		"src/**/*.ts",
 		"src/**/*.vue",
-		"tests/**/*.ts"
+		"tests/**/*.ts",
+		"modelBundles/src/**/*.ts",
+		"modelBundles/src/**/*.vue",
+		"modelBundles/tests/**/*.ts"
 	],
 	"exclude": [],
 	"compilerOptions": {

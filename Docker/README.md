@@ -61,6 +61,16 @@ create for themselves.
 demo data over whatever `MARIADB_HOST` and `NEO4J_HOST` point at, so against a populated external
 server it destroys data rather than being inert.
 
+## Model Bundles
+
+`NEOWIKI_MODEL_BUNDLES=1` loads [Model Bundles](../docs/guide/share-a-data-model.md), which installs, updates and
+exports Data Models on Special:DataModel. The image leaves it off by default; a `MW_MODE=dev` stack always loads it.
+
+To install from [catalogs](../docs/api/model-bundles.md#catalogs), set `$wgNeoWikiModelBundleCatalogs` and
+`$wgNeoWikiModelBundlePreselection` in a `LocalSettings.local.php` mounted into the `mediawiki` service at
+`/var/www/html/w/LocalSettings.local.php`, which the image's `LocalSettings.php` loads last when it exists. A dev stack
+mounts `Docker/LocalSettings.local.php` there.
+
 ## Optional services
 
 The core of both stacks is `mediawiki` and `db`; everything else is optional. The targets that start a

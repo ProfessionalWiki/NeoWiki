@@ -1,0 +1,199 @@
+<template>
+	<div class="ext-neowiki-bundle-preview">
+		<section
+			v-for="section in sections"
+			:key="section.type"
+			class="ext-neowiki-bundle-preview__section"
+		>
+			<h3 class="ext-neowiki-bundle-preview__heading">
+				{{ $i18n( TYPE_HEADINGS[ section.type ] ).text() }}
+			</h3>
+
+			<div
+				v-for="group in section.groups"
+				:key="group.schema ?? ''"
+				class="ext-neowiki-bundle-preview__group"
+			>
+				<CdxCheckbox
+					v-if="tickedTogether( group.items ).length > 0"
+					class="ext-neowiki-bundle-preview__group-heading"
+					:model-value="tickedTogether( group.items ).every( isSelected )"
+					:indeterminate="isPartlySelected( tickedTogether( group.items ) )"
+					:disabled="disabled"
+					@update:model-value="setSelected( tickedTogether( group.items ), $event )"
+				>
+					<strong>{{ groupTitle( section.type, group ) }}</strong>
+				</CdxCheckbox>
+				<p
+					v-else
+					class="ext-neowiki-bundle-preview__group-heading"
+				>
+					<strong>{{ groupTitle( section.type, group ) }}</strong>
+				</p>
+
+				<div class="ext-neowiki-bundle-preview__items">
+					<div
+						v-for="item in group.items"
+						:key="item.id"
+						class="ext-neowiki-bundle-preview__item"
+					>
+						<CdxCheckbox
+							v-if="item.action !== null"
+							:model-value="isSelected( item )"
+							:disabled="disabled"
+							@update:model-value="setSelected( [ item ], $event )"
+						>
+							{{ itemName( item ) }}
+							<template
+								v-if="shownStatus( item ) !== null || installNotes( item ).length > 0"
+								#description
+							>
+								{{ shownStatus( item ) }}
+								<span
+									v-for="note in installNotes( item )"
+									:key="note"
+									class="ext-neowiki-bundle-preview__note"
+								>
+									{{ note }}
+								</span>
+							</template>
+						</CdxCheckbox>
+						<p
+							v-else
+							class="ext-neowiki-bundle-preview__static-item"
+						>
+							<span class="ext-neowiki-bundle-preview__name">{{ itemName( item ) }}</span>
+							<span
+								v-if="shownStatus( item ) !== null"
+								class="ext-neowiki-bundle-preview__status"
+							>{{ shownStatus( item ) }}</span>
+							<span
+								v-for="note in installNotes( item )"
+								:key="note"
+								class="ext-neowiki-bundle-preview__note"
+							>
+								{{ note }}
+							</span>
+						</p>
+						<ItemChanges :item="item" />
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { CdxCheckbox } from '@wikimedia/codex';
+import type { ItemType } from '../application/ModelBundle.ts';
+import type { InstallItem, InstallPlan } from '../application/installPlan.ts';
+import {
+	installNotes,
+	installStatusText,
+	itemName,
+	itemSections,
+	type ItemGroup,
+	needsDecision,
+	statusSaidBySummary,
+	TYPE_HEADINGS
+} from '../presentation/bundleItems.ts';
+import ItemChanges from './ItemChanges.vue';
+
+const props = defineProps<{
+	plan: InstallPlan;
+	modelValue: ReadonlySet<string>;
+	disabled: boolean;
+	/** Whether to show every item, rather than only those that need a decision. */
+	expanded: boolean;
+}>();
+
+const emit = defineEmits<{
+	'update:modelValue': [ chosen: Set<string> ];
+}>();
+
+const sections = computed( () => itemSections( props.expanded ? props.plan.items : props.plan.items.filter( needsDecision ) ) );
+const statusOfAll = computed( () => statusSaidBySummary( props.plan.items ) );
+
+// Left out where the bundle's summary line already says it of every item.
+function shownStatus( item: InstallItem ): string | null {
+	return item.status === statusOfAll.value ? null : installStatusText( item );
+}
+
+function groupTitle( type: ItemType, group: ItemGroup<InstallItem> ): string {
+	const count = group.items.length;
+
+	return type === 'subject' ?
+		mw.msg( 'neowiki-bundle-preview-schema-group', group.schema ?? '', count ) :
+		mw.msg( 'neowiki-bundle-preview-all', count );
+}
+
+/**
+ * A group's heading ticks what may be written, but never a removal: that takes ticking the item itself.
+ */
+function tickedTogether( items: readonly InstallItem[] ): InstallItem[] {
+	return items.filter( ( item ) => item.action !== null && item.action !== 'remove' );
+}
+
+function isSelected( item: InstallItem ): boolean {
+	return props.modelValue.has( item.id );
+}
+
+function isPartlySelected( items: InstallItem[] ): boolean {
+	return items.some( isSelected ) && !items.every( isSelected );
+}
+
+function setSelected( items: InstallItem[], selected: boolean ): void {
+	const chosen = new Set( props.modelValue );
+	items.forEach( ( item ) => selected ? chosen.add( item.id ) : chosen.delete( item.id ) );
+	emit( 'update:modelValue', chosen );
+}
+</script>
+
+<style lang="less">
+@import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
+
+.ext-neowiki-bundle-preview {
+	&__section:first-child {
+		margin-top: @spacing-50;
+	}
+
+	&__section + &__section {
+		margin-top: @spacing-150;
+	}
+
+	&__heading {
+		margin: 0 0 @spacing-50;
+		font-size: @font-size-large;
+	}
+
+	&__group + &__group {
+		margin-top: @spacing-100;
+	}
+
+	&__group-heading {
+		margin: 0;
+	}
+
+	&__items {
+		padding-inline-start: calc( @min-size-input-binary + @spacing-50 );
+	}
+
+	&__item {
+		margin-top: @spacing-25;
+	}
+
+	&__static-item {
+		margin: 0;
+	}
+
+	&__status {
+		margin-inline-start: @spacing-50;
+		color: @color-subtle;
+	}
+
+	&__note {
+		display: block;
+	}
+}
+</style>

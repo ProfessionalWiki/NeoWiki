@@ -87,3 +87,4 @@ Every architectural decision on record, in the order it was made.
 * [ADR 38: Property Names](adr/038-property-names.md)
 * [ADR 39: Schema and Property Labels](adr/039-schema-and-property-labels.md)
 * [ADR 40: Date Property Types](adr/040-date-property-types.md)
+* [ADR 41: Model Bundles](adr/041-model-bundles.md)

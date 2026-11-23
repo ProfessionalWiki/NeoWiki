@@ -57,7 +57,7 @@ describe( 'neowiki.registration hook end-to-end', () => {
 	it( 'lets a subscriber register a type visible via the component registry', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [], [] );
 
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
 			r.registerPropertyType( fakeRegistration( 'fake' ) );
@@ -72,7 +72,7 @@ describe( 'neowiki.registration hook end-to-end', () => {
 	it( 'invokes handlers that subscribe AFTER fire via replay', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [], [] );
 
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).fire( registrar );
 		( globalThis as any ).mw.hook( 'neowiki.registration' ).add( ( r: FrontendRegistrar ) => {
@@ -107,11 +107,17 @@ describe( 'ext.neowiki module load', () => {
 			typeName: 'boot-fake-view',
 			component: markRaw( { render: (): null => null } ),
 		} );
+		const notice = { render: (): null => null };
+		receivedRegistrar!.registerOverviewNotice( notice, true );
+		const schemasNotice = { render: (): null => null };
+		receivedRegistrar!.registerSchemasNotice( schemasNotice, false );
 
 		const ext = NeoWikiExtension.getInstance();
 		expect( ext.getPropertyTypeRegistry().getTypeNames() ).toContain( 'boot-fake' );
 		expect( ext.getTypeSpecificComponentRegistry().getPropertyTypes() ).toContain( 'boot-fake' );
 		expect( ext.getViewTypeRegistry().hasType( 'boot-fake-view' ) ).toBe( true );
+		expect( ext.getOverviewNotices() ).toContainEqual( { component: notice, replacesNote: true } );
+		expect( ext.getSchemasNotices() ).toContainEqual( { component: schemasNotice, replacesNote: false } );
 	} );
 
 	async function loadNeoWikiAndLetItsUiStart(): Promise<void> {
@@ -130,6 +136,40 @@ describe( 'ext.neowiki module load', () => {
 		await loadNeoWikiAndLetItsUiStart();
 
 		expect( ( globalThis as any ).mw.log.warn ).not.toHaveBeenCalled();
+	} );
+
+	it( 'runs an initializer given before the UI starts once it starts', async () => {
+		let loadModule!: () => void;
+		( globalThis as any ).mw.config.get = ( name: string, fallback: unknown = null ): unknown =>
+			name === 'wgNeoWikiFrontendModules' ? [ 'ext.slow' ] : fallback;
+		( globalThis as any ).mw.loader = {
+			using: (): Promise<void> => new Promise( ( resolve ) => {
+				loadModule = resolve;
+			} ),
+		};
+		const initialize = vi.fn();
+
+		await loadNeoWikiAndLetItsUiStart();
+		const { onUiStart } = await import( '@/neowiki' );
+		onUiStart( initialize );
+		await flushPromises();
+		const calledBeforeTheModuleLoaded = initialize.mock.calls.length;
+		loadModule();
+		await flushPromises();
+
+		expect( calledBeforeTheModuleLoaded ).toBe( 0 );
+		expect( initialize ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'runs an initializer given once the UI has started', async () => {
+		const initialize = vi.fn();
+
+		await loadNeoWikiAndLetItsUiStart();
+		const { onUiStart } = await import( '@/neowiki' );
+		onUiStart( initialize );
+		await flushPromises();
+
+		expect( initialize ).toHaveBeenCalledTimes( 1 );
 	} );
 
 	it( 'warns about a Property Type registered once the UI has started', async () => {

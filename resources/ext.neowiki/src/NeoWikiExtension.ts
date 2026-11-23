@@ -1,3 +1,4 @@
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import { RightsBasedSubjectPermissionHints } from '@/persistence/RightsBasedSubjectPermissionHints.ts';
 import { CurrentPageSubjectPermissionHints } from '@/persistence/CurrentPageSubjectPermissionHints.ts';
 import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts';
@@ -199,6 +200,18 @@ export class NeoWikiExtension {
 		const registry = new ViewTypeRegistry();
 		registry.registerType( 'infobox', Infobox );
 		return registry;
+	}
+
+	private readonly overviewNotices: RegisteredNotice[] = [];
+
+	public getOverviewNotices(): RegisteredNotice[] {
+		return this.overviewNotices;
+	}
+
+	private readonly schemasNotices: RegisteredNotice[] = [];
+
+	public getSchemasNotices(): RegisteredNotice[] {
+		return this.schemasNotices;
 	}
 
 	private pinia: Pinia | undefined;

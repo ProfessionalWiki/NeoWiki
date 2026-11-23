@@ -17,6 +17,8 @@ export default defineConfig( {
 			fileName: () => 'neowiki.js',
 			formats: [ 'cjs' ],
 		},
+		// The Model Bundles build (vite.modelBundles.config.ts) writes to the same directory.
+		emptyOutDir: false,
 		rollupOptions: {
 			external: [ 'vue', '@wikimedia/codex', '@wikimedia/codex-icons', 'pinia', 'neo' ],
 			output: {
