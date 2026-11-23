@@ -86,7 +86,7 @@ jobs:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: EarlyCopy
 
@@ -95,7 +95,7 @@ jobs:
         working-directory: ~
         run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: mediawiki/extensions/NeoWiki
 
@@ -107,7 +107,7 @@ jobs:
       - name: Point the wiki at the test server
         run: echo "\$wgServer = '$MW_SERVER';" >> LocalSettings.php
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
 
