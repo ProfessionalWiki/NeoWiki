@@ -118,12 +118,36 @@ describe( 'DateTimeInput', () => {
 	} );
 
 	describe( 'getCurrentValue', () => {
-		// Written back in another form, the same instant would read as an edit to whatever compares values.
-		it( 'returns a value left as it is as the text it was stored as', () => {
-			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T14:00:00Z' ) } );
+		it.each( [
+			[ 'a value, seconds and offset included', '2025-06-15T23:30:45+05:00' ],
+			[ 'a value it cannot show', 'not a date' ],
+		] )( 'returns %s, left as it is, as stored', ( _, stored ) => {
+			const wrapper = newWrapper( { modelValue: newStringValue( stored ) } );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( stored ) );
+		} );
+
+		it( 'returns a value typed back to the minute it showed as stored', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T23:30:45+05:00' ) } );
+			const shown = wrapper.find( 'input' ).element.value;
+
+			await wrapper.find( 'input' ).setValue( '2030-01-01T10:00' );
+			await wrapper.find( 'input' ).setValue( shown );
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
-				.toEqual( newStringValue( '2025-06-15T14:00:00Z' ) );
+				.toEqual( newStringValue( '2025-06-15T23:30:45+05:00' ) );
+		} );
+
+		it.each( [
+			[ 'a stored value', '2025-06-15T14:00:00Z' ],
+			[ 'a stored value it cannot show', 'not a date' ],
+		] )( 'returns undefined once %s is typed over and cleared', async ( _, stored ) => {
+			const wrapper = newWrapper( { modelValue: newStringValue( stored ) } );
+
+			await wrapper.find( 'input' ).setValue( '2030-01-01T10:00' );
+			await wrapper.find( 'input' ).setValue( '' );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
 		it( 'returns the typed local instant as the corresponding UTC ISO', async () => {
@@ -135,23 +159,6 @@ describe( 'DateTimeInput', () => {
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
 				.toEqual( newStringValue( expectedIso ) );
-		} );
-
-		it( 'returns undefined for empty input', async () => {
-			const wrapper = newWrapper( {
-				modelValue: newStringValue( '2025-06-15T14:00:00Z' ),
-			} );
-
-			await wrapper.find( 'input' ).setValue( '' );
-
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
-		} );
-
-		it( 'returns a value with an explicit offset, left as it is, with that offset', () => {
-			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T23:30:00+05:00' ) } );
-
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
-				.toEqual( newStringValue( '2025-06-15T23:30:00+05:00' ) );
 		} );
 	} );
 
