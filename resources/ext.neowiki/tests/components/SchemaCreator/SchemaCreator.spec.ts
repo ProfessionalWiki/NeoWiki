@@ -31,6 +31,7 @@ const SchemaEditorStub = defineComponent( {
 	props: {
 		initialSchema: { type: Object, required: true },
 		subjectsAreDependent: { type: Boolean, default: undefined },
+		schemaError: { type: String, default: null },
 	},
 	emits: [ 'change' ],
 	methods: {
@@ -168,6 +169,17 @@ describe( 'SchemaCreator', () => {
 		await flushPromises();
 
 		expect( field.props( 'status' ) ).toBe( 'error' );
+	} );
+
+	it( 'hands the editor a taken name\'s error for the Schema\'s row, which another row may hide the field from', async () => {
+		schemaStore.schemaNameExists = vi.fn().mockResolvedValue( true );
+		const wrapper = mountComponent();
+
+		await wrapper.find( '.cdx-text-input-stub' ).setValue( EXISTING_SCHEMA_NAME );
+		vi.advanceTimersByTime( DEBOUNCE_DELAY );
+		await flushPromises();
+
+		expect( wrapper.findComponent( SchemaEditorStub ).props( 'schemaError' ) ).toBe( 'neowiki-schema-creator-name-taken' );
 	} );
 
 	it( 'does not check for duplicates before debounce delay', async () => {

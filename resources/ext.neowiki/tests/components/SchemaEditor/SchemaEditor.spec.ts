@@ -2,6 +2,7 @@ import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach, onTestFinished } from 'vitest';
 import SchemaEditor, { type SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
+import { errorStatus, type ItemStatus } from '@/components/common/ItemStatus.ts';
 import NumberInput from '@/components/Value/NumberInput.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -133,6 +134,24 @@ function saveBlocker( wrapper: VueWrapper ): ReturnType<SchemaEditorExposes['sav
 
 function editedSchema( wrapper: VueWrapper ): Schema {
 	return ( wrapper.vm as unknown as SchemaEditorExposes ).getSchema();
+}
+
+async function revealErrors( wrapper: VueWrapper ): Promise<void> {
+	( wrapper.vm as unknown as SchemaEditorExposes ).revealErrors();
+	await nextTick();
+}
+
+function propertyList( wrapper: VueWrapper ): VueWrapper {
+	return wrapper.findComponent( { name: 'PropertyList' } );
+}
+
+function schemaWith( ...properties: PropertyDefinition[] ): Schema {
+	return newSchema( { title: 'Test', description: '', properties: new PropertyDefinitionList( properties ) } );
+}
+
+// The state switching a property's type to Relation leaves behind.
+function relationPropertyWithoutTarget( name: string ): PropertyDefinition {
+	return newRelationProperty( { name, targetSchemas: [] } );
 }
 
 describe( 'SchemaEditor', () => {
@@ -771,10 +790,6 @@ describe( 'SchemaEditor', () => {
 			return wrapper;
 		}
 
-		function propertyList( wrapper: VueWrapper ): VueWrapper {
-			return wrapper.findComponent( { name: 'PropertyList' } );
-		}
-
 		it( 'stays on the property when another is chosen', async () => {
 			const wrapper = await editorHoldingUnreadableScore();
 
@@ -1098,15 +1113,6 @@ describe( 'SchemaEditor', () => {
 	} );
 
 	describe( 'Incomplete property definition', () => {
-		function schemaWith( ...properties: PropertyDefinition[] ): Schema {
-			return newSchema( { title: 'Test', description: '', properties: new PropertyDefinitionList( properties ) } );
-		}
-
-		// The state switching a property's type to Relation leaves behind.
-		function relationPropertyWithoutTarget( name: string ): PropertyDefinition {
-			return newRelationProperty( { name, targetSchemas: [] } );
-		}
-
 		it( 'reports nothing when every relation property has what it needs', () => {
 			const wrapper = createWrapper( schemaWith(
 				newRelationProperty( { name: 'Maker', targetSchemas: [ 'Company' ] } ),
@@ -1191,11 +1197,6 @@ describe( 'SchemaEditor', () => {
 		} );
 
 		describe( 'once errors are revealed', () => {
-			async function revealErrors( wrapper: VueWrapper ): Promise<void> {
-				( wrapper.vm as unknown as SchemaEditorExposes ).revealErrors();
-				await nextTick();
-			}
-
 			it( 'shows the missing target of the selected relation property', async () => {
 				const wrapper = createWrapperWithPropertyEditor( schemaWith( relationPropertyWithoutTarget( 'Maker' ) ) );
 
@@ -1231,6 +1232,120 @@ describe( 'SchemaEditor', () => {
 
 				expect( wrapper.text() ).toContain( 'Target schema is required.' );
 			} );
+		} );
+
+		// Its editor is rebuilt for the selection, with fields that have forgotten being left.
+		it( 'shows the missing target of a relation property the user left and came back to', async () => {
+			const wrapper = createWrapperWithPropertyEditor( schemaWith(
+				newNumberProperty( { name: 'Score' } ),
+				relationPropertyWithoutTarget( 'Maker' ),
+			) );
+			await selectProperty( wrapper, 'Maker' );
+			await selectProperty( wrapper, 'Score' );
+
+			await selectProperty( wrapper, 'Maker' );
+
+			expect( wrapper.text() ).toContain( 'Target schema is required.' );
+		} );
+	} );
+
+	describe( 'Marks on the rows', () => {
+		function statusOf( wrapper: VueWrapper, row: PropertyListRow ): ItemStatus | null {
+			return wrapper.findComponent( { name: 'PropertyList' } ).props( 'statusOf' )( row );
+		}
+
+		function editSelectedProperty( wrapper: VueWrapper, property: PropertyDefinition ): void {
+			wrapper.findComponent( { name: 'PropertyDefinitionEditor' } ).vm.$emit( 'update:propertyDefinition', property );
+		}
+
+		const SCORE = newNumberProperty( { name: 'Score' } );
+		const MAKER_WITHOUT_TARGET = relationPropertyWithoutTarget( 'Maker' );
+
+		it( 'marks the Schema\'s row with the problem the host reports in its fields', () => {
+			const wrapper = createWrapper( schemaWith( SCORE ), { schemaError: 'A schema with this name already exists.' } );
+
+			expect( statusOf( wrapper, SCHEMA_ROW ) ).toEqual( errorStatus( 'A schema with this name already exists.' ) );
+		} );
+
+		// The creator's name field holds no message as an empty one.
+		it( 'does not mark the Schema\'s row for an empty message', () => {
+			const wrapper = createWrapper( schemaWith( SCORE ), { schemaError: '' } );
+
+			expect( statusOf( wrapper, SCHEMA_ROW ) ).toBeNull();
+		} );
+
+		it( 'marks no row while nothing is wrong', () => {
+			const wrapper = createWrapper( schemaWith( SCORE ) );
+
+			expect( [ SCHEMA_ROW, LABEL_ROW, propertyRow( 'Score' ) ].map( ( row ) => statusOf( wrapper, row ) ) )
+				.toStrictEqual( [ null, null, null ] );
+		} );
+
+		// Its fields show the problem once they are left, not while the user is still filling them in.
+		it( 'does not mark an incomplete property the user has not left', async () => {
+			const wrapper = createWrapper( schemaWith( SCORE, MAKER_WITHOUT_TARGET ) );
+
+			await selectProperty( wrapper, 'Maker' );
+
+			expect( statusOf( wrapper, propertyRow( 'Maker' ) ) ).toBeNull();
+		} );
+
+		it( 'marks an incomplete property once the user has left it', async () => {
+			const wrapper = createWrapper( schemaWith( SCORE, MAKER_WITHOUT_TARGET ) );
+
+			await selectProperty( wrapper, 'Maker' );
+			await selectProperty( wrapper, 'Score' );
+
+			expect( statusOf( wrapper, propertyRow( 'Maker' ) ) ).toEqual( errorStatus( 'Target schema is required.' ) );
+		} );
+
+		it( 'marks every faulty property once errors are revealed', async () => {
+			const wrapper = createWrapper( schemaWith(
+				SCORE, MAKER_WITHOUT_TARGET, relationPropertyWithoutTarget( 'Owner' ), newTextProperty( { name: 'id' } ),
+			) );
+
+			await revealErrors( wrapper );
+
+			expect( [ 'Score', 'Maker', 'Owner', 'id' ].map( ( name ) => statusOf( wrapper, propertyRow( name ) ) ) ).toStrictEqual( [
+				null,
+				errorStatus( 'Target schema is required.' ),
+				errorStatus( 'Target schema is required.' ),
+				errorStatus( 'neowiki-property-name-reserved' ),
+			] );
+		} );
+
+		it( 'keeps marking a property the user left once it is renamed', async () => {
+			const wrapper = createWrapper( schemaWith( SCORE, MAKER_WITHOUT_TARGET ) );
+			await selectProperty( wrapper, 'Maker' );
+			await selectProperty( wrapper, 'Score' );
+			await selectProperty( wrapper, 'Maker' );
+
+			editSelectedProperty( wrapper, relationPropertyWithoutTarget( 'Makers' ) );
+
+			expect( statusOf( wrapper, propertyRow( 'Makers' ) ) ).toEqual( errorStatus( 'Target schema is required.' ) );
+		} );
+
+		// Added properties take the first free generated name, so one deleted is taken again.
+		it( 'does not mark a new property for a deleted one of the same name that the user left', async () => {
+			const wrapper = createWrapper( schemaWith( SCORE ) );
+			await propertyList( wrapper ).vm.$emit( 'addProperty' );
+			await selectProperty( wrapper, 'Score' );
+			await propertyList( wrapper ).vm.$emit( 'propertyDeleted', new PropertyName( 'New Property 1' ) );
+			await propertyList( wrapper ).vm.$emit( 'addProperty' );
+
+			editSelectedProperty( wrapper, relationPropertyWithoutTarget( 'New Property 1' ) );
+
+			expect( statusOf( wrapper, propertyRow( 'New Property 1' ) ) ).toBeNull();
+		} );
+
+		it( 'forgets the properties left in another Schema when it is given a new one', async () => {
+			const wrapper = createWrapper( schemaWith( SCORE, MAKER_WITHOUT_TARGET ) );
+			await selectProperty( wrapper, 'Maker' );
+			await selectProperty( wrapper, 'Score' );
+
+			await wrapper.setProps( { initialSchema: schemaWith( SCORE, MAKER_WITHOUT_TARGET ) } );
+
+			expect( statusOf( wrapper, propertyRow( 'Maker' ) ) ).toBeNull();
 		} );
 	} );
 } );

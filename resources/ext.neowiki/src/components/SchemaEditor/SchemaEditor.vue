@@ -10,6 +10,7 @@
 				:properties="currentSchema.getPropertyDefinitions()"
 				:selection="selection"
 				:shows-label-row="!subjectsAreDependent"
+				:status-of="statusOf"
 				@select="moveSelectionTo"
 				@add-property="addProperty"
 				@property-deleted="onPropertyDeleted"
@@ -65,6 +66,7 @@ import { Schema } from '@/domain/Schema.ts';
 import { ComponentPublicInstance, computed, nextTick, provide, ref, watch } from 'vue';
 import PropertyList from '@/components/SchemaEditor/PropertyList.vue';
 import { LABEL_ROW, propertyRow, SCHEMA_ROW, type PropertyListRow } from '@/components/SchemaEditor/PropertyListRow.ts';
+import { errorStatus, type ItemStatus } from '@/components/common/ItemStatus.ts';
 import PropertyDefinitionEditor, { type PropertyDefinitionEditorExposes } from '@/components/SchemaEditor/PropertyDefinitionEditor.vue';
 import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
@@ -91,8 +93,11 @@ const props = withDefaults( defineProps<{
 	 * properties would hide its values, so their names cannot change.
 	 */
 	subjectsMayUseSchema: boolean;
+	/** A problem the host's fields show, marked on the Schema's row: they are out of sight while another row is selected. */
+	schemaError?: string | null;
 }>(), {
-	subjectsAreDependent: null
+	subjectsAreDependent: null,
+	schemaError: null
 } );
 
 const emit = defineEmits<{
@@ -142,6 +147,10 @@ function propertyNameOf( row: PropertyListRow ): string | undefined {
 // name and dropping what the editor's fields hold.
 const propertyEditorKey = ref( 0 );
 
+// The properties the user has selected and moved away from, by name, which a deletion frees and a rename takes along.
+// From then on their fields show their problems, and their rows mark them.
+const touchedPropertyNames = ref( new Set<string>() );
+
 function select( row: PropertyListRow ): void {
 	if ( !isSelected( row ) ) {
 		selection.value = row;
@@ -172,6 +181,7 @@ watch( () => props.initialSchema, ( schema ) => {
 	currentSchema.value = schema;
 	deletedPropertyNames.value = [];
 	select( openingRow() );
+	touchedPropertyNames.value.clear();
 } );
 
 const detail = ref<HTMLElement | null>( null );
@@ -211,7 +221,17 @@ function propertyNamesOf( schema: Schema ): string[] {
 	return Object.keys( schema.getPropertyDefinitions().asRecord() );
 }
 
-const propertyNames = computed( (): string[] => propertyNamesOf( currentSchema.value as Schema ) );
+// The same array while the names stay the same, so that their problems are not worked out again on each keystroke in
+// a property's other fields.
+const propertyNames = computed( ( previous?: string[] ): string[] => {
+	const names = propertyNamesOf( currentSchema.value as Schema );
+
+	return previous !== undefined && sameNames( previous, names ) ? previous : names;
+} );
+
+function sameNames( names: readonly string[], otherNames: readonly string[] ): boolean {
+	return names.length === otherNames.length && names.every( ( name, index ) => name === otherNames[ index ] );
+}
 
 const otherPropertyNames = computed( (): string[] =>
 	propertyNames.value.filter( ( name ) => name !== selectedPropertyName.value )
@@ -248,6 +268,10 @@ function leaveSelectedRow( leave: () => void ): void {
 	if ( blocker !== null ) {
 		mw.notify( blocker.message, { title: blocker.propertyName, type: 'error' } );
 		return;
+	}
+
+	if ( selectedPropertyName.value !== undefined ) {
+		touchedPropertyNames.value.add( selectedPropertyName.value );
 	}
 
 	leave();
@@ -305,6 +329,7 @@ function onPropertyDeleted( name: PropertyName ): void {
 		select( defaultRow() );
 	}
 
+	touchedPropertyNames.value.delete( name.toString() );
 	emit( 'change' );
 }
 
@@ -320,6 +345,11 @@ function onPropertyReordered( names: PropertyName[] ): void {
 
 function onPropertyUpdated( updatedProperty: PropertyDefinition ): void {
 	currentSchema.value = buildUpdatedSchema( updatedProperty );
+
+	if ( selectedPropertyName.value !== undefined && touchedPropertyNames.value.has( selectedPropertyName.value ) ) {
+		touchedPropertyNames.value.delete( selectedPropertyName.value );
+		touchedPropertyNames.value.add( updatedProperty.name.toString() );
+	}
 
 	// Renamed in place: the editor showing it stays.
 	selection.value = propertyRow( updatedProperty.name.toString() );
@@ -384,13 +414,18 @@ const unparseableInput = (): SaveBlocker | null => {
 };
 
 /**
- * The first property whose name the wiki would refuse to store, or null. Read from the Schema: it can open with
- * such a name, and only the selected property has an editor mounted.
+ * The message for each property whose name the wiki would refuse to store, in the Schema's order. Read from the
+ * Schema: it can open with such a name, and only the selected property has an editor mounted.
  */
-const invalidPropertyName = (): SaveBlocker | null => {
-	const problem = propertyNameProblemsInSchema( propertyNames.value )[ 0 ];
+const propertyNameProblems = computed( (): ReadonlyMap<string, string> => new Map(
+	propertyNameProblemsInSchema( propertyNames.value ).map( ( problem ) => [ problem.name, propertyNameProblemMessage( problem ) ] )
+) );
 
-	return problem === undefined ? null : { propertyName: problem.name, message: propertyNameProblemMessage( problem ) };
+/** The first property whose name the wiki would refuse to store, or null. */
+const invalidPropertyName = (): SaveBlocker | null => {
+	const [ problem ] = propertyNameProblems.value;
+
+	return problem === undefined ? null : { propertyName: problem[ 0 ], message: problem[ 1 ] };
 };
 
 /**
@@ -402,19 +437,62 @@ const invalidPropertyName = (): SaveBlocker | null => {
  */
 const incompleteProperty = (): SaveBlocker | null => {
 	for ( const property of currentSchema.value.getPropertyDefinitions() ) {
-		const message = missingRelationAttribute( property ) ?? invalidSelectOption( property );
+		const message = definitionProblem( property );
 
 		if ( message !== null ) {
-			return { propertyName: property.name.toString(), message: mw.message( message ).text() };
+			return { propertyName: property.name.toString(), message };
 		}
 	}
 
 	return null;
 };
 
+function definitionProblem( property: PropertyDefinition ): string | null {
+	const message = missingRelationAttribute( property ) ?? invalidSelectOption( property );
+
+	return message === null ? null : mw.message( message ).text();
+}
+
+/**
+ * The mark on each row of the list. A property's problem is marked once its fields would show it: after the user
+ * has left the property, or once the host has revealed the errors.
+ */
+function statusOf( row: PropertyListRow ): ItemStatus | null {
+	if ( row.kind === 'schema' ) {
+		return props.schemaError ? errorStatus( props.schemaError ) : null;
+	}
+
+	if ( row.kind === 'subjectLabel' || !errorsRevealedFor( row.name ) ) {
+		return null;
+	}
+
+	const problem = propertyProblem( row.name );
+	return problem === null ? null : errorStatus( problem );
+}
+
+function propertyProblem( name: string ): string | null {
+	const nameProblem = propertyNameProblems.value.get( name );
+
+	if ( nameProblem !== undefined ) {
+		return nameProblem;
+	}
+
+	const properties = currentSchema.value.getPropertyDefinitions();
+	const propertyName = new PropertyName( name );
+
+	return properties.has( propertyName ) ? definitionProblem( properties.get( propertyName ) ) : null;
+}
+
 const errorsRevealed = ref( false );
 
-provide( ErrorsRevealedKey, errorsRevealed );
+function errorsRevealedFor( propertyName: string ): boolean {
+	return errorsRevealed.value || touchedPropertyNames.value.has( propertyName );
+}
+
+// The fields of a property the user left show its problems on coming back, as its row does: its editor is rebuilt
+// for the selection, with fields that have forgotten being left.
+provide( ErrorsRevealedKey, computed( (): boolean =>
+	selectedPropertyName.value !== undefined && errorsRevealedFor( selectedPropertyName.value ) ) );
 
 /** For the host to call when it refuses a save. Selects the row the save is refused over, so its errors show. */
 const revealErrors = (): void => {
@@ -448,14 +526,12 @@ defineExpose<SchemaEditorExposes>( {
 			}
 		}
 
-		/* As the Subject editor's list of open Subjects: a row reaches the dialog's edge, so the space
-			before its icon is the dialog's own gutter, and its hover and selected backgrounds start at
-			that edge. */
+		/* A row reaches the dialog's edge, so the space before its icon is the dialog's own gutter, and its hover and
+			selected backgrounds start at that edge. The rows have that gutter of their own; the Add row is given it. */
 		&__property-list {
 			@media ( min-width: @min-width-breakpoint-desktop ) {
 				padding-block: 0 @spacing-50;
 
-				.ext-neowiki-property-list__item,
 				.ext-neowiki-property-list__add-item {
 					padding-inline-start: @spacing-150;
 					border-start-start-radius: 0;
@@ -500,7 +576,9 @@ defineExpose<SchemaEditorExposes>( {
 				display: flex;
 				white-space: nowrap;
 
+				/* Side by side, the rows have no gutter: a mark sits on each row's icon. */
 				.ext-neowiki-property-list__item {
+					padding-inline-start: @spacing-75;
 					border-radius: 0;
 				}
 

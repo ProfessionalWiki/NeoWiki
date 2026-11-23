@@ -30,7 +30,7 @@ import CloseConfirmationDialog from '@/components/common/CloseConfirmationDialog
 import DialogHeader from '@/components/common/DialogHeader.vue';
 import { CdxDialog, CdxLookup, CdxMessage } from '@wikimedia/codex';
 import type { MenuItemData } from '@wikimedia/codex';
-import { createI18nMock, pressHeaderClose, setupMwMock, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
+import { createI18nMock, pressHeaderClose, setupMwMock, statusInWords, stubUpdateTooltipAccessKeys } from '../../VueTestHelpers.ts';
 import { ValidationFailedError } from '@/persistence/ValidationFailedError';
 import type { SubjectViolation } from '@/domain/SubjectViolation';
 import type { EditNotice } from '@/domain/EditNotice';
@@ -1489,12 +1489,16 @@ describe( 'SubjectEditorDialog', () => {
 		// failure — an unmounted pane loses unsaved work — so it throws rather than reading false.
 		function listRowHasDot( wrapper: VueWrapper, id: string ): boolean {
 			expect( listHasRow( wrapper, id ) ).toBe( true );
-			return listRow( wrapper, id ).find( '.ext-neowiki-unsaved-dot' ).exists();
+			return listRowStatus( wrapper, id ) === 'neowiki-subject-editor-unsaved';
 		}
 
 		function listRowBlocksSaving( wrapper: VueWrapper, id: string ): boolean {
 			expect( listHasRow( wrapper, id ) ).toBe( true );
-			return listRow( wrapper, id ).find( '[role="img"][aria-label="neowiki-subject-editor-save-blocked"]' ).exists();
+			return listRowStatus( wrapper, id ) === 'neowiki-subject-editor-save-blocked';
+		}
+
+		function listRowStatus( wrapper: VueWrapper, id: string ): string | null {
+			return statusInWords( listRow( wrapper, id ) );
 		}
 
 		function listRowLabel( wrapper: VueWrapper, id: string ): string {

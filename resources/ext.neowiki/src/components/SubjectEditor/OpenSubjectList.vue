@@ -7,13 +7,11 @@
 		:aria-label="$i18n( 'neowiki-subject-editor-open-subjects' ).text()"
 		@keydown="onKeydown"
 	>
-		<li
+		<EditorListItem
 			v-for="subject in subjects"
 			:key="idOf( subject )"
-			class="ext-neowiki-open-subject-list__item"
-			:class="{ 'ext-neowiki-open-subject-list__item--selected': isActive( subject ) }"
-			role="option"
-			:aria-selected="isActive( subject )"
+			:selected="isActive( subject )"
+			:status="statusOf( subject )"
 			:tabindex="isActive( subject ) ? 0 : -1"
 			:data-mw-neowiki-subject-id="idOf( subject )"
 			@click="select( subject )"
@@ -26,36 +24,23 @@
 				v-else
 				class="ext-neowiki-open-subject-list__name ext-neowiki-open-subject-list__name--unlabeled"
 			>{{ $i18n( 'neowiki-subject-no-label' ).text() }}</span>
-			<SchemaNameDisplay
-				v-if="schemaNameToShow( subject ) !== null"
-				class="ext-neowiki-open-subject-list__schema"
-				:schema-name="subject.getSchemaName()"
-				:display-name="subjectSchemaDisplayName( subject )"
-				link="none"
-			/>
-			<!-- Its own label, as the dot has: the row takes its accessible name from its content. -->
-			<span
-				v-if="blocksSaving( subject )"
-				class="ext-neowiki-open-subject-list__save-blocked"
-				role="img"
-				:aria-label="$i18n( 'neowiki-subject-editor-save-blocked' ).text()"
-				:title="$i18n( 'neowiki-subject-editor-save-blocked' ).text()"
-			>
-				<CdxIcon :icon="cdxIconError" size="x-small" />
-			</span>
-			<UnsavedDot
-				v-else-if="isUnsaved( subject )"
-				class="ext-neowiki-open-subject-list__unsaved"
-			/>
-		</li>
+			<template #description>
+				<SchemaNameDisplay
+					v-if="schemaNameToShow( subject ) !== null"
+					class="ext-neowiki-open-subject-list__schema"
+					:schema-name="subject.getSchemaName()"
+					:display-name="subjectSchemaDisplayName( subject )"
+					link="none"
+				/>
+			</template>
+		</EditorListItem>
 	</ul>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { CdxIcon } from '@wikimedia/codex';
-import { cdxIconError } from '@wikimedia/codex-icons';
-import UnsavedDot from '@/components/common/UnsavedDot.vue';
+import EditorListItem from '@/components/common/EditorListItem.vue';
+import { errorStatus, UNSAVED, type ItemStatus } from '@/components/common/ItemStatus.ts';
 import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import { subjectDisplayName } from '@/presentation/subjectDisplayName.ts';
 import { schemaNameToShow, subjectSchemaDisplayName } from '@/presentation/schemaNameToShow.ts';
@@ -92,12 +77,12 @@ function isActive( subject: Subject ): boolean {
 	return idOf( subject ) === props.activeId;
 }
 
-function isUnsaved( subject: Subject ): boolean {
-	return props.unsavedIds.includes( idOf( subject ) );
-}
+function statusOf( subject: Subject ): ItemStatus | null {
+	if ( props.blockingIds.includes( idOf( subject ) ) ) {
+		return errorStatus( mw.msg( 'neowiki-subject-editor-save-blocked' ) );
+	}
 
-function blocksSaving( subject: Subject ): boolean {
-	return props.blockingIds.includes( idOf( subject ) );
+	return props.unsavedIds.includes( idOf( subject ) ) ? UNSAVED : null;
 }
 
 function select( subject: Subject ): void {
@@ -142,83 +127,12 @@ function optionAt( index: number ): HTMLElement | undefined {
 	padding: 0;
 	list-style: none;
 
-	/* The row reaches the dialog's edge, so the space before its name is the dialog's own gutter.
-		The unsaved dot hangs in that space, in line with the other dots and moving nothing when it
-		appears. */
-	&__item {
-		box-sizing: @box-sizing-base;
-		position: relative;
-		display: grid;
-		grid-template-columns: minmax( 0, 1fr );
-		align-items: center;
-		gap: @spacing-12;
-		padding: @spacing-50 @spacing-100 @spacing-50 @spacing-150;
-		border-start-end-radius: @border-radius-base;
-		border-end-end-radius: @border-radius-base;
-		cursor: pointer;
-		transition-property: @transition-property-base;
-		transition-duration: @transition-duration-base;
-
-		&:hover {
-			background-color: @background-color-interactive-subtle;
-		}
-
-		&:active {
-			background-color: @background-color-button-quiet--active;
-			color: @color-emphasized;
-		}
-
-		/* Inside the row: the scroller around the list clips at the dialog's edge. */
-		&:focus-visible {
-			outline: @border-width-thick solid @outline-color-progressive--focus;
-			outline-offset: -@border-width-thick;
-		}
-
-		/* Codex's selected-menu-item state: background and colour, and no weight — a weight
-			that changed with the state would re-measure the row under the pointer that
-			selected it. */
-		&--selected {
-			background-color: @background-color-progressive-subtle;
-			color: @color-progressive;
-		}
-	}
-
-	/* A long name wraps rather than giving way at its end: the rows are few, so there is room.
-		Past two lines it does give way. */
-	&__name {
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		overflow: hidden;
-		overflow-wrap: anywhere;
-
-		&--unlabeled {
-			color: @color-subtle;
-		}
+	&__name--unlabeled {
+		color: @color-subtle;
 	}
 
 	&__schema {
-		justify-self: start;
-	}
-
-	/* On the name's first line, however many it wraps to. */
-	&__unsaved {
-		position: absolute;
-		inset-inline-start: @spacing-50;
-		inset-block-start: calc( @spacing-50 + ( 1lh - @size-50 ) / 2 );
-	}
-
-	/* Centred where the dot it replaces would be. */
-	&__save-blocked {
-		position: absolute;
-		inset-inline-start: calc( @spacing-50 + ( @size-50 - @size-icon-x-small ) / 2 );
-		inset-block-start: calc( @spacing-50 + ( 1lh - @size-icon-x-small ) / 2 );
-		display: flex;
-
-		/* Codex gives its icons a colour of their own. */
-		.cdx-icon {
-			color: @color-error;
-		}
+		margin-block-start: @spacing-12;
 	}
 }
 </style>
