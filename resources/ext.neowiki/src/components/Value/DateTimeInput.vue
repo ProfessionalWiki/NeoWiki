@@ -64,13 +64,13 @@ const { fieldMessages, fieldStatus, onUnparseableChange, unparseableInputMessage
 
 const internalInputValue = ref<string>( '' );
 
+function localInputValueOf( value: Value | undefined ): string {
+	const str = value?.type === ValueType.String ? ( value as StringValue ).parts[ 0 ] : undefined;
+	return str ? toLocalInputValue( str ) : '';
+}
+
 const initializeInputValue = ( value: Value | undefined ): void => {
-	if ( value && value.type === ValueType.String ) {
-		const str = ( value as StringValue ).parts[ 0 ];
-		internalInputValue.value = str ? toLocalInputValue( str ) : '';
-	} else {
-		internalInputValue.value = '';
-	}
+	internalInputValue.value = localInputValueOf( value );
 };
 
 initializeInputValue( props.modelValue );
@@ -89,6 +89,11 @@ function onInput( newValue: string ): void {
 
 defineExpose<ValueInputExposes>( {
 	getCurrentValue: function(): Value | undefined {
+		// Read back from the input, the same instant comes out in another form, which would count as a change.
+		if ( props.modelValue?.type === ValueType.String && internalInputValue.value === localInputValueOf( props.modelValue ) ) {
+			return props.modelValue;
+		}
+
 		const isoValue = fromLocalInputValue( internalInputValue.value );
 		return isoValue !== undefined ? newStringValue( isoValue ) : undefined;
 	},

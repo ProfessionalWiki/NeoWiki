@@ -118,17 +118,12 @@ describe( 'DateTimeInput', () => {
 	} );
 
 	describe( 'getCurrentValue', () => {
-		it( 'returns the initial modelValue as the same-instant ISO', () => {
-			const iso = '2025-06-15T14:00:00Z';
-			const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
+		// Written back in another form, the same instant would read as an edit to whatever compares values.
+		it( 'returns a value left as it is as the text it was stored as', () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T14:00:00Z' ) } );
 
-			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
-
-			if ( result === undefined || result.type !== ValueType.String ) {
-				throw new Error( 'expected a string value' );
-			}
-			const resultIso = result.parts[ 0 ];
-			expect( new Date( resultIso ).getTime() ).toBe( new Date( iso ).getTime() );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
+				.toEqual( newStringValue( '2025-06-15T14:00:00Z' ) );
 		} );
 
 		it( 'returns the typed local instant as the corresponding UTC ISO', async () => {
@@ -152,17 +147,11 @@ describe( 'DateTimeInput', () => {
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
-		it( 'preserves an explicit-offset modelValue as the same instant', () => {
-			const iso = '2025-06-15T23:30:00+05:00';
-			const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
+		it( 'returns a value with an explicit offset, left as it is, with that offset', () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T23:30:00+05:00' ) } );
 
-			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
-
-			if ( result === undefined || result.type !== ValueType.String ) {
-				throw new Error( 'expected a string value' );
-			}
-			const resultIso = result.parts[ 0 ];
-			expect( new Date( resultIso ).getTime() ).toBe( new Date( iso ).getTime() );
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
+				.toEqual( newStringValue( '2025-06-15T23:30:00+05:00' ) );
 		} );
 	} );
 
