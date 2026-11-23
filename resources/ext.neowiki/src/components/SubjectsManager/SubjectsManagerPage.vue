@@ -551,10 +551,10 @@ function onSubjectMoved( targetTitle: string ): void {
 	link.href = subjectRowUrl( targetTitle, subjectId );
 	link.textContent = targetTitle;
 
-	// parseDom rather than a message string: it takes the link as a node, which leaves the subject
-	// name beside it escaped.
+	// The message rather than a string: it takes the link as a node, which leaves the subject name
+	// beside it escaped.
 	mw.notify(
-		mw.message( 'neowiki-managesubjects-move-success', subjectName, link ).parseDom(),
+		mw.message( 'neowiki-managesubjects-move-success', subjectName, link ),
 		{ type: 'success' }
 	);
 }

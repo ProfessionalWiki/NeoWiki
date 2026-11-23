@@ -144,6 +144,11 @@ function highlightedRowIds( wrapper: VueWrapper ): ( string | null )[] {
 	return wrapper.findAll( '.' + HIGHLIGHT_CLASS ).map( ( row ) => subjectIdFromRowDomId( row.element.id ) );
 }
 
+function notifiedContent(): HTMLElement {
+	const [ message ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+	return message.parseDom();
+}
+
 // Taken before any test stands in for the extension singleton.
 const componentRegistry = NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry();
 
@@ -887,9 +892,10 @@ describe( 'SubjectsManagerPage move action', () => {
 		wrapper.findComponent( MoveSubjectDialog ).vm.$emit( 'moved', 'Rembrandt van Rijn' );
 		await flushPromises();
 
-		const [ content, options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
-		const link = ( content as HTMLElement ).querySelector( 'a' );
-		expect( ( content as HTMLElement ).textContent ).toContain( 'neowiki-managesubjects-move-success' );
+		const [ , options ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
+		const content = notifiedContent();
+		const link = content.querySelector( 'a' );
+		expect( content.textContent ).toBe( `neowiki-managesubjects-move-successLabel ${ ID_B }Rembrandt van Rijn` );
 		expect( link?.getAttribute( 'href' ) ).toBe( '/wiki/Rembrandt van Rijn?action=subjects#' + ID_B );
 		expect( link?.textContent ).toBe( 'Rembrandt van Rijn' );
 		expect( options ).toEqual( { type: 'success' } );
@@ -908,8 +914,7 @@ describe( 'SubjectsManagerPage move action', () => {
 		wrapper.findComponent( MoveSubjectDialog ).vm.$emit( 'moved', 'Rembrandt van Rijn' );
 		await flushPromises();
 
-		const [ content ] = ( mw.notify as ReturnType<typeof vi.fn> ).mock.calls[ 0 ];
-		expect( ( content as HTMLElement ).textContent ).toContain( `(${ ID_B })` );
+		expect( notifiedContent().textContent ).toContain( `(${ ID_B })` );
 	} );
 
 	// The dialog names it in the error it shows when the move fails.
