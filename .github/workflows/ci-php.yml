@@ -120,7 +120,7 @@ jobs:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
             path: EarlyCopy
 
@@ -129,7 +129,7 @@ jobs:
         working-directory: ~
         run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: mediawiki/extensions/NeoWiki
 
@@ -247,7 +247,7 @@ jobs:
           php-version: 8.3
 
       - name: Checkout NeoExtension
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         run: composer install
@@ -307,7 +307,7 @@ jobs:
           path: ~/.composer/cache
           key: composer-php${{ matrix.php }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: EarlyCopy
 
@@ -316,7 +316,7 @@ jobs:
         working-directory: ~
         run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} NeoWiki
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: mediawiki/extensions/NeoWiki
 
