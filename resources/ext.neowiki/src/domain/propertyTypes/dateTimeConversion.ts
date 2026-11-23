@@ -2,7 +2,7 @@
  * Host-timezone-aware conversion between ISO 8601 strings and the
  * `datetime-local` input wire format (`YYYY-MM-DDTHH:mm`).
  *
- * - Storage format is always UTC ISO 8601 (e.g. `...Z`).
+ * - Values read from an input come out as UTC ISO 8601 (e.g. `...Z`).
  * - `datetime-local` inputs operate in the host local timezone.
  * - Inputs with explicit offsets (`+05:00`) are accepted and round-tripped
  *   as the same instant; they are not silently re-interpreted as UTC.

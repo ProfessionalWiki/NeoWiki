@@ -118,17 +118,36 @@ describe( 'DateTimeInput', () => {
 	} );
 
 	describe( 'getCurrentValue', () => {
-		it( 'returns the initial modelValue as the same-instant ISO', () => {
-			const iso = '2025-06-15T14:00:00Z';
-			const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
+		it.each( [
+			[ 'a value, seconds and offset included', '2025-06-15T23:30:45+05:00' ],
+			[ 'a value it cannot show', 'not a date' ],
+		] )( 'returns %s, left as it is, as stored', ( _, stored ) => {
+			const wrapper = newWrapper( { modelValue: newStringValue( stored ) } );
 
-			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toEqual( newStringValue( stored ) );
+		} );
 
-			if ( result === undefined || result.type !== ValueType.String ) {
-				throw new Error( 'expected a string value' );
-			}
-			const resultIso = result.parts[ 0 ];
-			expect( new Date( resultIso ).getTime() ).toBe( new Date( iso ).getTime() );
+		it( 'returns a value typed back to the minute it showed as stored', async () => {
+			const wrapper = newWrapper( { modelValue: newStringValue( '2025-06-15T23:30:45+05:00' ) } );
+			const shown = wrapper.find( 'input' ).element.value;
+
+			await wrapper.find( 'input' ).setValue( '2030-01-01T10:00' );
+			await wrapper.find( 'input' ).setValue( shown );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
+				.toEqual( newStringValue( '2025-06-15T23:30:45+05:00' ) );
+		} );
+
+		it.each( [
+			[ 'a stored value', '2025-06-15T14:00:00Z' ],
+			[ 'a stored value it cannot show', 'not a date' ],
+		] )( 'returns undefined once %s is typed over and cleared', async ( _, stored ) => {
+			const wrapper = newWrapper( { modelValue: newStringValue( stored ) } );
+
+			await wrapper.find( 'input' ).setValue( '2030-01-01T10:00' );
+			await wrapper.find( 'input' ).setValue( '' );
+
+			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
 		} );
 
 		it( 'returns the typed local instant as the corresponding UTC ISO', async () => {
@@ -140,29 +159,6 @@ describe( 'DateTimeInput', () => {
 
 			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() )
 				.toEqual( newStringValue( expectedIso ) );
-		} );
-
-		it( 'returns undefined for empty input', async () => {
-			const wrapper = newWrapper( {
-				modelValue: newStringValue( '2025-06-15T14:00:00Z' ),
-			} );
-
-			await wrapper.find( 'input' ).setValue( '' );
-
-			expect( ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue() ).toBeUndefined();
-		} );
-
-		it( 'preserves an explicit-offset modelValue as the same instant', () => {
-			const iso = '2025-06-15T23:30:00+05:00';
-			const wrapper = newWrapper( { modelValue: newStringValue( iso ) } );
-
-			const result = ( wrapper.vm as unknown as ValueInputExposes ).getCurrentValue();
-
-			if ( result === undefined || result.type !== ValueType.String ) {
-				throw new Error( 'expected a string value' );
-			}
-			const resultIso = result.parts[ 0 ];
-			expect( new Date( resultIso ).getTime() ).toBe( new Date( iso ).getTime() );
 		} );
 	} );
 
