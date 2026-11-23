@@ -55,6 +55,16 @@ class SchemaRdfsDescriberTest extends TestCase {
 		);
 	}
 
+	public function testSchemaLabelsTakeTheirLanguageInPlaceOfTheName(): void {
+		$this->assertSame(
+			ParsedRdf::canonicalQuads( self::PREFIXES . <<<TURTLE
+				neo-schema:Person a rdfs:Class ;
+					rdfs:label "Human"@en, "Mensch"@de .
+				TURTLE ),
+			$this->triplesOf( TestSchema::build( 'Person', '', labels: [ 'en' => 'Human', 'de' => 'Mensch' ] ) )
+		);
+	}
+
 	public function testSchemaAndPropertyWithoutADescriptionHaveNoComment(): void {
 		$this->assertSame(
 			ParsedRdf::canonicalQuads( self::PREFIXES . <<<TURTLE

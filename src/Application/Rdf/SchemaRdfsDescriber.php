@@ -67,7 +67,7 @@ class SchemaRdfsDescriber {
 
 		$quads = [
 			$this->quad( $class, $this->type, $this->class ),
-			$this->quad( $class, $this->label, new Literal( $schema->getName()->getText(), $this->string ) ),
+			...$this->labelQuads( $class, $schema->getName()->getText(), $schema->getLabels() ),
 			...$this->commentQuads( $class, $schema->getDescription() ),
 		];
 
@@ -86,7 +86,7 @@ class SchemaRdfsDescriber {
 
 		$quads = [
 			$this->quad( $iri, $this->type, $this->property ),
-			...array_map( fn ( Literal $label ): Quad => $this->quad( $iri, $this->label, $label ), $this->labels( $name, $property ) ),
+			...$this->labelQuads( $iri, $name, $property->getLabels() ),
 			...$this->commentQuads( $iri, $property->getDescription() ),
 			$this->quad( $iri, $this->domain, $class ),
 		];
@@ -101,19 +101,23 @@ class SchemaRdfsDescriber {
 	}
 
 	/**
-	 * @return Literal[]
+	 * @param array<string, string> $labels
+	 * @return Quad[]
 	 */
-	private function labels( string $name, PropertyDefinition $property ): array {
-		$labels = [];
+	private function labelQuads( Iri $resource, string $name, array $labels ): array {
+		$literals = [];
 
-		foreach ( $property->getLabels() as $language => $text ) {
+		foreach ( $labels as $language => $text ) {
 			// Save-time validation can be bypassed by an import, and a Literal refuses an invalid tag.
 			if ( LanguageTag::isValid( (string)$language ) ) {
-				$labels[] = RdfLiteralFactory::languageTagged( $text, (string)$language );
+				$literals[] = RdfLiteralFactory::languageTagged( $text, (string)$language );
 			}
 		}
 
-		return $labels === [] ? [ new Literal( $name, $this->string ) ] : $labels;
+		return array_map(
+			fn ( Literal $label ): Quad => $this->quad( $resource, $this->label, $label ),
+			$literals === [] ? [ new Literal( $name, $this->string ) ] : $literals
+		);
 	}
 
 	/**

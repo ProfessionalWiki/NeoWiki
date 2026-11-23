@@ -201,8 +201,9 @@ Turtle; Turtle wins when `Accept` names both, and another `format` value returns
 | `turtle` (default) | `text/turtle` | `text/turtle; charset=utf-8` |
 | `rdfxml` | `application/rdf+xml` | `application/rdf+xml; charset=utf-8` |
 
-Each Schema's class (`neo-schema:Person`) is an `rdfs:Class`, with the Schema's name as `rdfs:label` and, when it has
-one, its description as `rdfs:comment`. Each of its properties (`Person:Birth_date`) is an `rdf:Property`, with:
+Each Schema's class (`neo-schema:Person`) is an `rdfs:Class`, with its description, when it has one, as `rdfs:comment`,
+and one language-tagged `rdfs:label` per label of the Schema, or the Schema's name, untagged, when it has none. Each of
+its properties (`Person:Birth_date`) is an `rdf:Property`, with:
 
 | Predicate | Value |
 |---|---|
