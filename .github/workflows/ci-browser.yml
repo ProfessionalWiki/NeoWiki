@@ -109,7 +109,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: '26'
 
       - name: Build NeoWiki JavaScript
         working-directory: mediawiki/extensions/NeoWiki/resources/ext.neowiki
