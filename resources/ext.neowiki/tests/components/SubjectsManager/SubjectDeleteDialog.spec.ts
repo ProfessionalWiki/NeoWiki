@@ -1,5 +1,5 @@
-import { mount, VueWrapper } from '@vue/test-utils';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import SubjectDeleteDialog from '@/components/SubjectsManager/SubjectDeleteDialog.vue';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -15,6 +15,8 @@ import type { Subject } from '@/domain/Subject.ts';
 import type { HostSubject } from '@/domain/HostSubject.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { CdxDialogStub, createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
+import { Service } from '@/NeoWikiServices.ts';
+import type { ReferencingSubjects } from '@/domain/SubjectRepository.ts';
 
 const BIRTH_ID = 's1birthAAAAAAA1';
 const RECORD_ID = 's1recordAAAAAA1';
@@ -56,14 +58,29 @@ describe( 'SubjectDeleteDialog', () => {
 		} ) );
 	} );
 
-	function mountDialog( subject: Subject ): VueWrapper {
+	let getReferencingSubjects: ReturnType<typeof vi.fn>;
+
+	function mountDialog( subject: Subject, referencing: ReferencingSubjects = { subjects: [], truncated: false } ): VueWrapper {
+		getReferencingSubjects = vi.fn().mockResolvedValue( referencing );
+
 		return mount( SubjectDeleteDialog, {
 			props: { open: true, subject },
 			global: {
 				mocks: { $i18n: createI18nMock() },
 				stubs: { CdxDialog: CdxDialogStub, SummaryAction: true },
+				provide: { [ Service.SubjectRepository ]: { getReferencingSubjects } },
 			},
 		} );
+	}
+
+	function referencingSubjects( count: number, truncated = false ): ReferencingSubjects {
+		return {
+			subjects: Array.from( { length: count }, ( _, index ) => ( {
+				subject: newSubject( { id: `s1user${ index + 1 }aaaaaaaa`, label: `User ${ index + 1 }` } ),
+				propertyNames: [ 'Gender' ],
+			} ) ),
+			truncated,
+		};
 	}
 
 	it( 'asks about a Subject by its name', () => {
@@ -100,6 +117,34 @@ describe( 'SubjectDeleteDialog', () => {
 		) ) );
 
 		expect( wrapper.text() ).toContain( 'neowiki-managesubjects-delete-confirm-removed-from-host-with-dependentsPablo Picasso' );
+	} );
+
+	it( 'says how many Subjects use the Subject, whose values will then point at a missing Subject', async () => {
+		const wrapper = mountDialog( newSubject( { label: 'Woman' } ), referencingSubjects( 3 ) );
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'neowiki-managesubjects-delete-confirm-used-by3' );
+	} );
+
+	it( 'says that at least as many Subjects use it as the lookup returns when there are more', async () => {
+		const wrapper = mountDialog( newSubject( { label: 'Woman' } ), referencingSubjects( 2, true ) );
+		await flushPromises();
+
+		expect( wrapper.text() ).toContain( 'neowiki-managesubjects-delete-confirm-used-by-many2' );
+	} );
+
+	it( 'says nothing of use for a Subject no other Subject uses', async () => {
+		const wrapper = mountDialog( newSubject( { label: 'Woman' } ) );
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-managesubjects-delete-confirm-used-by' );
+	} );
+
+	it( 'says nothing of use for a Dependent Subject', async () => {
+		const wrapper = mountDialog( birth(), referencingSubjects( 1 ) );
+		await flushPromises();
+
+		expect( wrapper.text() ).not.toContain( 'neowiki-managesubjects-delete-confirm-used-by' );
 	} );
 
 	it( 'says nothing more of a standalone Subject', () => {

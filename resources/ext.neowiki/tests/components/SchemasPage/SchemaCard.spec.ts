@@ -14,7 +14,7 @@ import {
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import type { SubjectSummary, SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 
-const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false };
+const ARTIST: SchemaSummary = { name: 'Artist', description: 'A person who creates works of art.', propertyCount: 4, subjectsAreDependent: false, subjectsAreControlled: false };
 const MORE_ACTIONS = 'neowiki-schemas-more-actions';
 
 function subject( id: string, displayName: string ): SubjectSummary {

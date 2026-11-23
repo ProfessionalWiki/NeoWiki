@@ -54,7 +54,7 @@
 					:aria-describedby="nameId( row.name )"
 				>{{ subjectListLinkText( subjectCountOf( row.name ) ) }}</a>
 				<CdxButton
-					v-if="canCreateSubject && !row.subjectsAreDependent"
+					v-if="canCreateSubject && !row.subjectsAreDependent && mayEditSubjects( row.subjectsAreControlled )"
 					action="progressive"
 					:aria-describedby="nameId( row.name )"
 					@click="emit( 'create-subject', row.name )"
@@ -75,6 +75,7 @@ import { type SubjectCounts, subjectListLinkText } from '@/composables/useSubjec
 import type { SchemaSummary } from '@/application/SchemaLookup.ts';
 import { schemaDisplayName } from '@/presentation/schemaDisplayName.ts';
 import SchemaActionsMenu from './SchemaActionsMenu.vue';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 
 const props = defineProps<{
 	schemas: SchemaSummary[];
@@ -85,6 +86,8 @@ const props = defineProps<{
 	subjectCountOf: SubjectCounts['subjectCountOf'];
 	subjectCountPending: boolean;
 }>();
+
+const { mayEditSubjects } = useControlledSubjectRight();
 
 const emit = defineEmits<{
 	edit: [ schemaName: string ];

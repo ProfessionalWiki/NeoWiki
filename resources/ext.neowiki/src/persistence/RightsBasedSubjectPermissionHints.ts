@@ -36,6 +36,11 @@ export class RightsBasedSubjectPermissionHints implements SubjectPermissionHints
 		return rights.includes( 'createpage' ) && rights.includes( 'edit' );
 	}
 
+	public async canEditControlledSubjects(): Promise<boolean> {
+		const rights = await this.rightsFetcher.getRights();
+		return rights.includes( 'neowiki-controlled-subject-edit' );
+	}
+
 	private async canEditPage(): Promise<boolean> {
 		const rights = await this.rightsFetcher.getRights();
 		return rights.includes( 'edit' );

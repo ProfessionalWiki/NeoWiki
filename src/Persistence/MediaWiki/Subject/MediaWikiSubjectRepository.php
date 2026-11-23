@@ -16,6 +16,7 @@ use ProfessionalWiki\NeoWiki\Application\DependentSubjectGuard;
 use ProfessionalWiki\NeoWiki\Application\PageIdentifiersLookup;
 use ProfessionalWiki\NeoWiki\Application\SubjectRepository;
 use ProfessionalWiki\NeoWiki\Application\Subject\Exception\DependentSubjectRulesViolatedException;
+use ProfessionalWiki\NeoWiki\Application\Subject\Exception\SubjectEditNotAuthorizedException;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Subject\Subject;
@@ -127,13 +128,24 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	}
 
 	private function saveContent( SubjectContent $content, PageId $pageId, ?string $comment = null ): PageContentSavingStatus {
-		return $this->pageContentSaver->saveContent(
+		return $this->throwWhenControlledSubjectEditRefused( $this->pageContentSaver->saveContent(
 			$pageId,
 			[
 				self::SLOT_NAME => $content,
 			],
 			CommentStoreComment::newUnsavedComment( $comment ?? 'Update NeoWiki subject' )
-		);
+		) );
+	}
+
+	/**
+	 * @throws SubjectEditNotAuthorizedException
+	 */
+	private function throwWhenControlledSubjectEditRefused( PageContentSavingStatus $status ): PageContentSavingStatus {
+		if ( $status->status === PageContentSavingStatus::CONTROLLED_SUBJECT_EDIT_REFUSED ) {
+			throw new SubjectEditNotAuthorizedException( $status->errorMessage ?? '' );
+		}
+
+		return $status;
 	}
 
 	public function deleteSubject( SubjectId $id, ?string $comment ): PageContentSavingStatus {
@@ -189,7 +201,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 	public function createPageWithSubjects( string $pageTitle, PageSubjects $pageSubjects, ?string $comment = null ): PageContentSavingStatus {
 		$title = $this->titleFactory->newFromTextThrow( $pageTitle );
 
-		return $this->pageContentSaver->createPage(
+		return $this->throwWhenControlledSubjectEditRefused( $this->pageContentSaver->createPage(
 			$title,
 			[
 				// Empty rather than absent, because a page needs a main slot.
@@ -199,7 +211,7 @@ class MediaWikiSubjectRepository implements SubjectRepository {
 				),
 			],
 			CommentStoreComment::newUnsavedComment( $comment ?? 'Create a page for a new NeoWiki subject' )
-		);
+		) );
 	}
 
 	private function emptyContent( Title $title ): Content {

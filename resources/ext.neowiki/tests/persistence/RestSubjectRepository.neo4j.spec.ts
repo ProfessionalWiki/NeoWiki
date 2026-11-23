@@ -894,6 +894,23 @@ describe( 'RestSubjectRepository', () => {
 			).rejects.toThrowError( 'Error updating subject' );
 		} );
 
+		it( 'carries the reason an update was refused for', async () => {
+			const repository = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s44444444444444': new Response(
+					JSON.stringify( {
+						status: 'error',
+						message: 'The Subjects of the Schema Gender are controlled: only users with the right to edit Controlled ' +
+							'Subjects can add, change or remove them.',
+					} ),
+					{ status: 403 },
+				),
+			} ) );
+
+			await expect(
+				repository.updateSubject( new SubjectId( 's44444444444444' ), 'Woman', new StatementList( [] ), [] ),
+			).rejects.toThrowError( 'The Subjects of the Schema Gender are controlled' );
+		} );
+
 		it( 'returns the subject and schema the server answered with', async () => {
 			const inMemoryHttpClient = new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':

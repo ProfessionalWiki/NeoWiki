@@ -15,6 +15,9 @@ use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\PageContentSavingStatus;
 /**
  * Every write but {@see self::restorePageSubjects()} refuses to break a rule for Dependent Subjects, and removes the
  * Dependent Subjects it leaves unreached.
+ *
+ * Every write throws SubjectEditNotAuthorizedException when it adds, changes or removes a Controlled Subject the
+ * writer may not edit.
  */
 interface SubjectRepository extends SubjectLookup {
 

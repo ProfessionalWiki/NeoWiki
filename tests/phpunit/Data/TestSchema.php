@@ -17,12 +17,14 @@ class TestSchema {
 		PropertyDefinitions $properties = new PropertyDefinitions( [] ),
 		bool $subjectsAreDependent = false,
 		array $labels = [],
+		bool $subjectsAreControlled = false,
 	): Schema {
 		return new Schema(
 			name: $name instanceof SchemaName ? $name : new SchemaName( $name ),
 			description: $description,
 			properties: $properties,
 			subjectsAreDependent: $subjectsAreDependent,
+			subjectsAreControlled: $subjectsAreControlled,
 			labels: $labels,
 		);
 	}

@@ -41,6 +41,11 @@ export class CurrentPageSubjectPermissionHints implements SubjectPermissionHints
 		return this.otherPages.canCreateSubjectPage();
 	}
 
+	/** Holding the right decides it, whichever page the Subject is on. */
+	public async canEditControlledSubjects(): Promise<boolean> {
+		return this.otherPages.canEditControlledSubjects();
+	}
+
 	/** Null where the server made no decision, which is every page but the one being viewed. */
 	private decisionFor( pageId: number ): boolean | null {
 		return pageId === this.currentPageId ? this.canEditCurrentPage : null;

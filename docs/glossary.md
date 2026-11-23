@@ -82,6 +82,17 @@ Example: Book -> Chapter -> Section
 
 In this example Chapter and Section are Dependent Subjects. Book and Chapter are Host Subjects.
 
+#### Controlled Subject
+
+A Subject whose Schema declares its Subjects controlled. Only users with the right to edit Controlled Subjects can add,
+change or remove such Subjects, and make a Schema's Subjects controlled or not. Everyone else can still choose them as
+the target of a Relation.
+
+A Schema's Controlled Subjects form a controlled vocabulary, such as a list of materials, each with a label and a URL
+property for its authority URI. The options of a Select property are a closed list too, but they are strings stored in
+one Schema, editable by whoever may edit that Schema, while relation properties in any Schema can point at Controlled
+Subjects.
+
 ### Schema
 
 A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Person, Company, Product, etc.
@@ -89,8 +100,9 @@ A Schema ([ADR 6](adr/006-schemas.md)) defines a type of Subject. Examples: Pers
 ![A Schema as its page shows it; callouts name its name, description and Property Definitions, and a Property Definition's property name and Property Type](schema.svg)
 
 Schemas have a name, optional **labels**, a description, and a list of Property Definitions, and declare whether their
-Subjects are [Dependent Subjects](#dependent-subject). Labels are what the UI calls the Schema, one per language, as
-for a Property Definition; references to the Schema use its name.
+Subjects are [Dependent Subjects](#dependent-subject) and whether they are [Controlled Subjects](#controlled-subject).
+Labels are what the UI calls the Schema, one per language, as for a Property Definition; references to the Schema use
+its name.
 
 #### Property Definition
 

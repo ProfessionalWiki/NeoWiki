@@ -17,4 +17,9 @@ export interface SubjectPermissionHints {
 	canCreateMainSubject( pageId: number ): Promise<boolean>;
 
 	canCreateSubjectPage(): Promise<boolean>;
+
+	/**
+	 * Whether to offer adding, changing and removing Controlled Subjects, on top of the hints above.
+	 */
+	canEditControlledSubjects(): Promise<boolean>;
 }

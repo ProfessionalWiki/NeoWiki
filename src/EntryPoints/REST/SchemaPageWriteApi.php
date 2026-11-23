@@ -11,6 +11,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\ResponseException;
 use MediaWiki\Title\Title;
+use ProfessionalWiki\NeoWiki\Application\ControlledSubjectRules;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\CsrfValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -39,6 +40,7 @@ abstract class SchemaPageWriteApi extends ActionModuleBasedHandler {
 		'editconflict' => 409,
 		'ratelimited' => 429,
 		'readonly' => 503,
+		ControlledSubjectRules::DECLARATION_CHANGE_REFUSED => 403,
 	];
 
 	private Title $schemaPage;

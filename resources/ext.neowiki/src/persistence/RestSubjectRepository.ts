@@ -457,8 +457,11 @@ export class RestSubjectRepository implements SubjectRepository {
 
 		await throwOn422IfPossible( response );
 
+		// A refusal, such as of a Controlled Subject the user may not edit, carries the server's reason, not a status code.
 		if ( !response.ok ) {
-			throw new Error( 'Error updating subject' );
+			const reason = response.status === 422 ? null : await this.stringFieldOf( response, 'message' );
+
+			throw new Error( reason ?? 'Error updating subject' );
 		}
 
 		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );

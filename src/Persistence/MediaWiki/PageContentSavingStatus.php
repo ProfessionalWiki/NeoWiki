@@ -11,6 +11,7 @@ class PageContentSavingStatus {
 	public const string REVISION_CREATED = 'revisionCreated';
 	public const string NO_CHANGES = 'noChanges';
 	public const string ERROR = 'error';
+	public const string CONTROLLED_SUBJECT_EDIT_REFUSED = 'controlledSubjectEditRefused';
 
 	public function __construct(
 		public readonly string $status,

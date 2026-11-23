@@ -77,6 +77,12 @@
 			>
 				{{ $i18n( 'neowiki-schema-subjects-are-dependent' ).text() }}
 			</p>
+
+			<SubjectsAreControlledInput
+				v-if="!subjectsAreDependent"
+				v-model="subjectsAreControlled"
+				@update:model-value="onChange"
+			/>
 		</template>
 	</SchemaEditor>
 </template>
@@ -87,10 +93,12 @@ import { CdxButton, CdxCheckbox, CdxField, CdxIcon, CdxTextArea, CdxTextInput } 
 import { cdxIconInfo } from '@wikimedia/codex-icons';
 import type { ValidationStatusType } from '@wikimedia/codex';
 import SchemaEditor from '@/components/SchemaEditor/SchemaEditor.vue';
+import SubjectsAreControlledInput from '@/components/SchemaEditor/SubjectsAreControlledInput.vue';
 import type { SchemaEditorExposes } from '@/components/SchemaEditor/SchemaEditor.vue';
 import { Schema } from '@/domain/Schema.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
+import { useControlledSubjectRight } from '@/composables/useControlledSubjectRight.ts';
 import type { SaveBlocker } from '@/components/common/SaveBlocker.ts';
 
 const props = withDefaults( defineProps<{
@@ -114,11 +122,13 @@ const schemaStore = useSchemaStore();
 const DEBOUNCE_DELAY = 300;
 
 const baseSchema = props.duplicateOf?.withLabels( undefined ) ??
-	new Schema( '', '', new PropertyDefinitionList( [] ), false, undefined );
+	new Schema( '', '', new PropertyDefinitionList( [] ), false, false, undefined );
 
 const schemaName = defineModel<string>( 'name', { default: '' } );
 const schemaDescription = ref( baseSchema.getDescription() );
 const subjectsAreDependent = ref( props.subjectsAreDependent ?? baseSchema.subjectsAreDependent() );
+const subjectsAreControlled = ref( baseSchema.subjectsAreControlled() );
+const { whenAnswered: controlledSubjectRightAnswered } = useControlledSubjectRight();
 const explanationShown = ref( false );
 const nameError = ref( '' );
 const nameStatus = ref<ValidationStatusType>( 'default' );
@@ -129,8 +139,14 @@ let requestSequence = 0;
 // The name, the first of the fields the editor opens on, is the field to fill in first. A task later: Codex focuses
 // the dialog's first focusable element, the Schema's row, one or two ticks after it opens, and would otherwise win.
 // Focusing it sooner would also stop Codex returning the focus on close.
-onMounted( () => {
+onMounted( async () => {
 	setTimeout( () => schemaEditorRef.value?.showSchema() );
+
+	// A duplicate starts with what the duplicated Schema declares, which a user who may not make the declaration
+	// could not save.
+	if ( subjectsAreControlled.value && !await controlledSubjectRightAnswered() ) {
+		subjectsAreControlled.value = false;
+	}
 } );
 
 function onChange(): void {
@@ -210,7 +226,8 @@ function getSchema(): Schema | null {
 	return ( schemaEditorRef.value?.getSchema() ?? baseSchema )
 		.withName( name )
 		.withDescription( schemaDescription.value.trim() )
-		.withSubjectsAreDependent( subjectsAreDependent.value );
+		.withSubjectsAreDependent( subjectsAreDependent.value )
+		.withSubjectsAreControlled( !subjectsAreDependent.value && subjectsAreControlled.value );
 }
 
 function saveBlocker(): SaveBlocker | null {

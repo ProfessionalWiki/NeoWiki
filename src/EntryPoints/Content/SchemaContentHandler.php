@@ -152,6 +152,11 @@ class SchemaContentHandler extends JsonContentHandler {
 	}
 
 	private function checkDependentSubjectRules( StatusValue $status, Schema $schema ): void {
+		if ( $schema->subjectsAreDependent() && $schema->subjectsAreControlled() ) {
+			$status->fatal( 'neowiki-schema-controlled-dependent' );
+			return;
+		}
+
 		$rules = new DependentSubjectSchemaRules( NeoWikiExtension::getInstance()->getSchemaResolver() );
 
 		if ( $rules->changesDeclaration( $schema ) ) {

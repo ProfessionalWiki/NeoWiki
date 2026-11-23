@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, shallowMount, VueWrapper } from '@vue/test-utils';
+import { flushPromises, mount, shallowMount, VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxMenuButton } from '@wikimedia/codex';
 import SubjectRow from '@/components/SubjectsManager/SubjectRow.vue';
@@ -7,6 +7,7 @@ import SchemaNameDisplay from '@/components/common/SchemaNameDisplay.vue';
 import ReorderHandle from '@/components/common/ReorderHandle.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
+import { Service } from '@/NeoWikiServices.ts';
 import { PageIdentifiers } from '@/domain/PageIdentifiers.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { StatementList } from '@/domain/StatementList.ts';
@@ -179,6 +180,57 @@ describe( 'SubjectRow', () => {
 
 			expect( wrapper.find( '.ext-neowiki-subject-row__main-indicator' ).exists() ).toBe( false );
 			expect( wrapper.find( '[aria-label="neowiki-managesubjects-row-promote"]' ).exists() ).toBe( false );
+		} );
+
+	} );
+
+	describe( 'the actions on a Controlled Subject', () => {
+
+		async function mountControlledSubjectRow( canEditControlledSubjects: boolean ): Promise<VueWrapper> {
+			stubMw();
+			useSchemaStore().setSchema( 'Gender', newSchema( { title: 'Gender', subjectsAreControlled: true } ) );
+
+			const wrapper = shallowMount( SubjectRow, {
+				props: {
+					subject: newSubject( { id: SUBJECT_ID, label: 'Woman', schemaName: 'Gender' } ),
+					expanded: true,
+					canEdit: true,
+					canDelete: true,
+					canMove: true,
+					mainSubjectControl: 'promote',
+				},
+				global: {
+					mocks: { $i18n: createI18nMock() },
+					stubs: { CdxIcon: true },
+					provide: {
+						[ Service.SubjectPermissionHints ]: { canEditControlledSubjects: async () => canEditControlledSubjects },
+					},
+				},
+			} );
+			await flushPromises();
+
+			return wrapper;
+		}
+
+		// The row carries each action twice, as a button and as a menu item, and its width decides which shows.
+		function offeredIn( wrapper: VueWrapper, action: string ): { buttons: boolean; menu: boolean } {
+			return {
+				buttons: wrapper.find( `[aria-label="neowiki-managesubjects-row-${ action }"]` ).exists(),
+				menu: ( wrapper.findComponent( CdxMenuButton ).props( 'menuItems' ) as { value: string }[] )
+					.some( ( item ) => item.value === action ),
+			};
+		}
+
+		it.each( [ 'edit', 'move', 'delete' ] )( 'offers no %s to a user without the right to edit Controlled Subjects', async ( action ) => {
+			expect( offeredIn( await mountControlledSubjectRow( false ), action ) ).toEqual( { buttons: false, menu: false } );
+		} );
+
+		it( 'offers editing to a user with the right to edit Controlled Subjects', async () => {
+			expect( offeredIn( await mountControlledSubjectRow( true ), 'edit' ) ).toEqual( { buttons: true, menu: true } );
+		} );
+
+		it( 'offers making it the Main Subject to a user without the right to edit Controlled Subjects', async () => {
+			expect( offeredIn( await mountControlledSubjectRow( false ), 'promote' ) ).toEqual( { buttons: true, menu: true } );
 		} );
 
 	} );

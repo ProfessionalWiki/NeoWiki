@@ -66,7 +66,7 @@ let pinia: ReturnType<typeof createPinia>;
 let downloads: CapturedDownload[];
 
 function summary( name: string ): SchemaSummary {
-	return { name, description: '', propertyCount: 0, subjectsAreDependent: false };
+	return { name, description: '', propertyCount: 0, subjectsAreDependent: false, subjectsAreControlled: false };
 }
 
 function listSchemas( ...names: string[] ): void {
