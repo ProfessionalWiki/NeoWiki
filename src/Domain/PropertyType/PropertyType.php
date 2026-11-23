@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\PropertyType;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Violation;
@@ -23,6 +24,7 @@ interface PropertyType {
 	public function getDisplayAttributeNames(): array;
 
 	/**
+	 * @throws InvalidFieldException When a field holds a value the Property Type cannot use, naming that field.
 	 * @throws InvalidArgumentException
 	 */
 	public function buildPropertyDefinitionFromJson( PropertyCore $core, array $property ): PropertyDefinition;

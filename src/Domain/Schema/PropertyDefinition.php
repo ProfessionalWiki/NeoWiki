@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Domain\Schema;
 
 use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeLookup;
 use ProfessionalWiki\NeoWiki\Domain\Schema\Property\UnregisteredTypeProperty;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
@@ -103,6 +104,7 @@ abstract class PropertyDefinition {
 	}
 
 	/**
+	 * @throws InvalidFieldException When the Property Type cannot use the value of a field, saying which.
 	 * @throws InvalidArgumentException
 	 */
 	public static function fromJson( array $json, PropertyTypeLookup $propertyTypeLookup ): self {
@@ -149,11 +151,54 @@ abstract class PropertyDefinition {
 			return UnregisteredTypeProperty::fromPartialJson( $propertyCore, $values );
 		}
 
+		return self::buildWithPropertyType( $propertyType, $propertyCore, $values, $json );
+	}
+
+	/**
+	 * @throws InvalidFieldException
+	 * @throws InvalidArgumentException
+	 */
+	private static function buildWithPropertyType(
+		PropertyType $propertyType,
+		PropertyCore $propertyCore,
+		array $values,
+		array $json
+	): self {
 		try {
 			return $propertyType->buildPropertyDefinitionFromJson( $propertyCore, $values );
+		} catch ( InvalidFieldException $e ) {
+			throw $e;
 		} catch ( Throwable $e ) {
 			throw new InvalidArgumentException( 'Invalid property definition: ' . json_encode( $json ), 0, $e );
 		}
+	}
+
+	/**
+	 * @throws InvalidFieldException
+	 */
+	protected static function wholeNumberOrNull( array $json, string $field ): ?int {
+		$value = $json[$field] ?? null;
+
+		if ( $value === null || is_int( $value ) ) {
+			return $value;
+		}
+
+		throw InvalidFieldException::mustBe( $field, 'a whole number', $value );
+	}
+
+	/**
+	 * @param string $expected What the field must hold, as in "must be $expected".
+	 *
+	 * @throws InvalidFieldException
+	 */
+	protected static function stringOrNull( array $json, string $field, string $expected ): ?string {
+		$value = $json[$field] ?? null;
+
+		if ( $value === null || is_string( $value ) ) {
+			return $value;
+		}
+
+		throw InvalidFieldException::mustBe( $field, $expected, $value );
 	}
 
 }

@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\RedHerb;
 
-use InvalidArgumentException;
+use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
@@ -27,16 +27,12 @@ class ColorProperty extends PropertyDefinition {
 	) {
 		foreach ( $allowedColors as $color ) {
 			if ( !self::isValidHex( $color ) ) {
-				throw new InvalidArgumentException(
-					'ColorProperty allowedColors must be 6-digit hex strings prefixed with #'
-				);
+				throw InvalidFieldException::mustBe( 'allowedColors', 'a list of colors in the form #RRGGBB', $allowedColors );
 			}
 		}
 
 		if ( $core->default !== null && !self::isValidHex( $core->default ) ) {
-			throw new InvalidArgumentException(
-				'ColorProperty default must be a 6-digit hex string prefixed with #'
-			);
+			throw InvalidFieldException::mustBe( 'default', 'a color in the form #RRGGBB', $core->default );
 		}
 
 		parent::__construct( $core );
@@ -65,7 +61,7 @@ class ColorProperty extends PropertyDefinition {
 		$allowedColors = $property['allowedColors'] ?? [];
 
 		if ( !is_array( $allowedColors ) ) {
-			throw new InvalidArgumentException( 'ColorProperty allowedColors must be an array' );
+			throw InvalidFieldException::mustBe( 'allowedColors', 'a list of colors in the form #RRGGBB', $allowedColors );
 		}
 
 		return new self(
