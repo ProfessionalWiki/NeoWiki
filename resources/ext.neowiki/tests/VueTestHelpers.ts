@@ -567,9 +567,9 @@ export function setupMwMock(
 		message: () => vi.fn( ( key: string, ...params: any[] ) => ( {
 			text: () => resolveMessage( key, params ),
 			parse: () => resolveMessage( key, params ),
-			// jqueryMsg's parseDom yields nodes rather than a string, which is what lets a message
-			// carry a link. The fake keeps that: a node parameter stays a node, everything else
-			// reads as the key-plus-parameters text the other formats produce.
+			// Renders a message the way mw.notify does since MediaWiki 1.46, as nodes rather than a
+			// string: a node parameter such as a link stays a node, everything else reads as the
+			// key-plus-parameters text the other formats produce.
 			parseDom: () => {
 				const container = document.createElement( 'span' );
 				container.append(
