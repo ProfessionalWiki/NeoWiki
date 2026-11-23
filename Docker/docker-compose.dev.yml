@@ -158,7 +158,7 @@ services:
   node:
     profiles:
       - node
-    image: node:24
+    image: node:26
     restart: on-failure:3
     mem_limit: 1536m
     # Run as the host user so node_modules/ and dist/ written into the bind mount
