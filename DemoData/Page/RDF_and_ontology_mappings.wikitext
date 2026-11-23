@@ -27,6 +27,10 @@ You don't need these links to reach an export: on any subject page, the Data tab
 # '''The Milkmaid''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:The Milkmaid}}/rdf?projection=HDTO HDTO]: an <code>HC3_Tangible_Heritage_Entity</code> linked to its image by <code>HP9i_has_visual_representation</code>. The painting's production by Vermeer (<code>E12_Production</code>) and its keeper, the Rijksmuseum (<code>P50_has_current_keeper</code>), use CIDOC CRM terms.
 # '''ACME Inc''', [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/page/{{PAGEID:ACME Inc}}/rdf?projection=EDM EDM]: its Company Schema has no EDM Mapping, so the EDM projection comes back empty. An unmapped Schema is simply left out, so the projection stays conformant.
 
+== The Schemas as RDFS ==
+
+The wiki's Schemas are also available as an [https://neowiki.ai/docs/api/rdf-export#schemas-as-rdfs RDF Schema vocabulary] of the native projection's terms, to load into ontology tools: a class per Schema, and per property an RDF property with that class as domain and, where one applies, a range. Download it as [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/schemas/rdfs Turtle] or [{{SERVER}}{{SCRIPTPATH}}/rest.php/neowiki/v0/schemas/rdfs?format=rdfxml RDF/XML].
+
 == Learn more ==
 
 * [https://neowiki.ai/docs/guide/author-an-ontology-mapping How to author an ontology mapping]: write your own Mapping page, step by step
