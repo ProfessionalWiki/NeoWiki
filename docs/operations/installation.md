@@ -6,7 +6,7 @@ order: 1
 # Installing NeoWiki
 
 NeoWiki is not production-ready yet. From 0.1 on, every breaking change to stored data ships with a migration script or
-written upgrade steps.
+written upgrade steps, except for data that [experimental features](#turning-features-on-or-off) store.
 
 Install the newest release in one of two ways:
 
@@ -208,6 +208,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |
 | `$wgNeoWikiDataLanguages` | Languages the wiki's data is in: see [Data languages](#data-languages) | `[]` (the content language) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
+| `$wgNeoWikiFeatures` | Turns features on or off: see [Turning features on or off](#turning-features-on-or-off) | `[]` (each feature's default) | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
 
 ## Choosing page-first or subject-first
@@ -227,11 +228,28 @@ Other languages stay one search away, and texts already in them keep their langu
 stands for the wiki's content language (`$wgLanguageCode`). You can also set the list in the
 [on-wiki settings](#on-wiki-settings).
 
+## Turning features on or off
+
+You can turn a feature on or off by its name:
+
+```php
+$wgNeoWikiFeatures['featureName'] = true;
+```
+
+A feature you leave out keeps its default, and any value other than `true` turns it off. NeoWiki [logs a
+warning](#logging) for a name it does not have and for a value other than `true` or `false`.
+
+Experimental features are off by default, and any release may change or remove one, so you may need to fix the data it
+stored by hand.
+
+No feature can be turned on or off yet.
+
 ## Logging
 
 NeoWiki logs on the `NeoWiki` channel: a graph store failing on save, the pages a rebuild could not project, a store
-entry or name it will not accept, and RDF a projection had to drop. Below `warning` it also records rebuild decisions
-and denied page reads. MediaWiki routes no channel anywhere by default, so none of it reaches you until you route it:
+entry or name it will not accept, a `$wgNeoWikiFeatures` entry it cannot use, and RDF a projection had to drop. Below
+`warning` it also records rebuild decisions and denied page reads. MediaWiki routes no channel anywhere by default, so
+none of it reaches you until you route it:
 
 ```php
 $wgDebugLogGroups['NeoWiki'] = '/var/log/mediawiki/neowiki.log';

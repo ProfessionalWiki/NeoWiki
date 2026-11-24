@@ -257,6 +257,10 @@
 			"description": "Whether some NeoWiki settings may also be set on the MediaWiki:NeoWiki JSON configuration page, which requires the editinterface and editsitejson rights to edit; its values take precedence over LocalSettings.php. When false, that page is never given the JSON content model, validated, or read, so only LocalSettings.php applies. See https://neowiki.ai/docs/operations/installation#on-wiki-settings",
 			"value": true
 		},
+		"NeoWikiFeatures": {
+			"description": "Turns NeoWiki features on or off by name, as in [ 'featureName' => true ]. A feature left out keeps its default, and any value other than true turns it off. See https://neowiki.ai/docs/operations/installation#turning-features-on-or-off",
+			"value": {}
+		},
 		"NeoWikiEnableLua": {
 			"description": "Whether NeoWiki registers its Lua library (mw.neowiki) with Scribunto. When false, requiring the library fails like any missing module. The parser functions are unaffected.",
 			"value": true
