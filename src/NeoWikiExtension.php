@@ -1483,8 +1483,12 @@ class NeoWikiExtension {
 	 * restricted content does not get it back by upgrading.
 	 */
 	public function isLuaEnabled(): bool {
-		return $this->isFeatureEnabled( NeoWikiFeatures::LUA )
-			&& MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableLua' ) === true;
+		if ( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableLua' ) !== true ) {
+			wfDeprecatedMsg( '$wgNeoWikiEnableLua is deprecated. Use $wgNeoWikiFeatures[\'lua\'] = false instead.' );
+			return false;
+		}
+
+		return $this->isFeatureEnabled( NeoWikiFeatures::LUA );
 	}
 
 	public function getPageContentFetcher(): PageContentFetcher {

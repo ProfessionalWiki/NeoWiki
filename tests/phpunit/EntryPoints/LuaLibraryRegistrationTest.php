@@ -67,8 +67,9 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( [], $libraries );
 	}
 
-	public function testTheDeprecatedSettingStillTurnsTheLibraryOff(): void {
+	public function testTheDeprecatedSettingStillTurnsTheLibraryOffWithADeprecationWarning(): void {
 		$this->overrideConfigValue( 'NeoWikiEnableLua', false );
+		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnableLua is deprecated/' );
 		$libraries = [];
 
 		NeoWikiHooks::onScribuntoExternalLibraries( 'lua', $libraries );
