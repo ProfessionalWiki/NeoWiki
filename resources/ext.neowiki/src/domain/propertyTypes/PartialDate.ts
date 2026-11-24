@@ -74,3 +74,15 @@ export function latestDayOf( value: string | undefined ): string | undefined {
 			return value;
 	}
 }
+
+/**
+ * Whether every day of the minimum falls after every day of the maximum, so that no date can
+ * satisfy both bounds. False when either bound is not a date.
+ */
+export function minimumExcludesMaximum( minimum: string | undefined, maximum: string | undefined ): boolean {
+	const earliest = earliestDayOf( minimum );
+	const latest = latestDayOf( maximum );
+
+	// Of four-digit years, so their order as text is their order in time.
+	return earliest !== undefined && latest !== undefined && earliest > latest;
+}

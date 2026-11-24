@@ -71,7 +71,6 @@ describe( 'NeoNativeInput', () => {
 
 	it.each( [
 		[ 'number', reportUnparseableNumber, 'neowiki-field-invalid-number' ],
-		[ 'date', reportPartlyClearedDate, 'neowiki-field-invalid-date' ],
 		[ 'datetime-local', reportPartlyClearedDate, 'neowiki-field-invalid-datetime' ],
 	] as const )( 'says a %s field holds text the browser cannot read', async ( inputType, report, message ) => {
 		const wrapper = newWrapper( { inputType } );
@@ -149,21 +148,21 @@ describe( 'NeoNativeInput', () => {
 		expect( lastUnparseableMessage( wrapper ) ).toBe( 'neowiki-field-invalid-number' );
 	} );
 
-	// A date field changes no value, and so fires no input event, when its first part is typed into it
+	// A date and time field changes no value, and so fires no input event, when its first part is typed into it
 	// empty or its last part is cleared: only the key's release tells.
 	describe( 'Date parts', () => {
-		const date = '2025-06-15';
+		const date = '2025-06-15T14:30';
 
 		it( 'says it holds a date the browser cannot read once a first part is typed into it empty', async () => {
-			const wrapper = newWrapper( { inputType: 'date' } );
+			const wrapper = newWrapper( { inputType: 'datetime-local' } );
 
 			await typeFirstDatePart( wrapper.find( 'input' ) );
 
-			expect( lastUnparseableMessage( wrapper ) ).toBe( 'neowiki-field-invalid-date' );
+			expect( lastUnparseableMessage( wrapper ) ).toBe( 'neowiki-field-invalid-datetime' );
 		} );
 
 		it( 'reports the empty text once the last part is cleared', async () => {
-			const wrapper = newWrapper( { inputType: 'date', modelValue: date } );
+			const wrapper = newWrapper( { inputType: 'datetime-local', modelValue: date } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
 			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
@@ -172,7 +171,7 @@ describe( 'NeoNativeInput', () => {
 		} );
 
 		it( 'withdraws the message once the last part is cleared', async () => {
-			const wrapper = newWrapper( { inputType: 'date', modelValue: date } );
+			const wrapper = newWrapper( { inputType: 'datetime-local', modelValue: date } );
 			await reportPartlyClearedDate( wrapper.find( 'input' ) );
 
 			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
@@ -181,7 +180,7 @@ describe( 'NeoNativeInput', () => {
 		} );
 
 		it( 'withdraws the message once a part typed into it empty is cleared again', async () => {
-			const wrapper = newWrapper( { inputType: 'date' } );
+			const wrapper = newWrapper( { inputType: 'datetime-local' } );
 			await typeFirstDatePart( wrapper.find( 'input' ) );
 
 			await clearRemainingDateParts( wrapper.find( 'input' ), 'Backspace' );
@@ -190,7 +189,7 @@ describe( 'NeoNativeInput', () => {
 		} );
 
 		it( 'reports nothing for a deletion key released in a field that still shows a date', async () => {
-			const wrapper = newWrapper( { inputType: 'date', modelValue: date } );
+			const wrapper = newWrapper( { inputType: 'datetime-local', modelValue: date } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
 
@@ -198,7 +197,7 @@ describe( 'NeoNativeInput', () => {
 		} );
 
 		it( 'reports nothing for a deletion key released in a field that held no date', async () => {
-			const wrapper = newWrapper( { inputType: 'date' } );
+			const wrapper = newWrapper( { inputType: 'datetime-local' } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Backspace' } );
 
@@ -208,7 +207,7 @@ describe( 'NeoNativeInput', () => {
 		// The browser shows nothing for a date it cannot display, such as one in the year 0. Tab's
 		// release lands in the field it moved the focus to.
 		it( 'keeps a date the field cannot show when Tab is released in it', async () => {
-			const wrapper = newWrapper( { inputType: 'date', modelValue: '0000-01-01' } );
+			const wrapper = newWrapper( { inputType: 'datetime-local', modelValue: '0000-01-01T00:00' } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Tab' } );
 
@@ -216,7 +215,7 @@ describe( 'NeoNativeInput', () => {
 		} );
 
 		it( 'empties a date the field cannot show once a deletion key is released in it', async () => {
-			const wrapper = newWrapper( { inputType: 'date', modelValue: '0000-01-01' } );
+			const wrapper = newWrapper( { inputType: 'datetime-local', modelValue: '0000-01-01T00:00' } );
 
 			await wrapper.find( 'input' ).trigger( 'keyup', { key: 'Delete' } );
 

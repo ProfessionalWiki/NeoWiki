@@ -30,48 +30,6 @@ export interface DateProperty extends PropertyDefinition {
 }
 
 /**
- * Matches xsd:date-like strings: a calendar date with no time or timezone
- * component. A subsequent calendar-overflow check is used to reject inputs
- * like `2025-02-30` that the regex alone cannot detect.
- */
-const ISO_DATE_REGEX = /^(-?\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-
-/**
- * Parses a strict ISO 8601 calendar date (`YYYY-MM-DD`). Returns a millisecond
- * timestamp at UTC midnight, or `null` if the value is malformed, carries a
- * time/timezone component, or is a calendar overflow (e.g. Feb 30) that `Date`
- * would silently roll over.
- *
- * The timestamp is only used for chronological ordering against the min/max
- * bounds; it is anchored to UTC so the comparison is independent of the host
- * timezone.
- */
-export function parseStrictDate( value: string ): number | null {
-	const match = ISO_DATE_REGEX.exec( value );
-	if ( match === null ) {
-		return null;
-	}
-
-	const timestamp = Date.parse( `${ value }T00:00:00Z` );
-	if ( isNaN( timestamp ) ) {
-		return null;
-	}
-
-	// Reject calendar overflows (e.g. Feb 30) that Date silently rolls over.
-	// Compare the declared year/month/day against the parsed UTC date.
-	const utc = new Date( timestamp );
-	if (
-		utc.getUTCFullYear() !== Number( match[ 1 ] ) ||
-		utc.getUTCMonth() + 1 !== Number( match[ 2 ] ) ||
-		utc.getUTCDate() !== Number( match[ 3 ] )
-	) {
-		return null;
-	}
-
-	return timestamp;
-}
-
-/**
  * Property type for calendar dates without a time component, of year, month or day precision:
  * ISO 8601 `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. The backend validates values and bounds.
  */
