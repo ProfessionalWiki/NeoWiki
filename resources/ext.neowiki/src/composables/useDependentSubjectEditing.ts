@@ -17,7 +17,8 @@ export interface UseDependentSubjectEditing {
 	startFrom( forEditing: DependentSubjectsForEditing, added: boolean ): void;
 	include( forEditing: DependentSubjectsForEditing, added: boolean ): void;
 	/**
-	 * After a save: a later save replaces rather than creates these, and writes them only once edited again.
+	 * After a save: these are what editing starts from again, a later save replaces rather than creates them, and
+	 * writes them only once edited again.
 	 */
 	markWritten( subjects: readonly Subject[] ): void;
 	/**
@@ -73,10 +74,8 @@ export function useDependentSubjectEditing(
 
 	function markWritten( written: readonly Subject[] ): void {
 		for ( const subject of written ) {
-			const held = subjects.get( subject.getId().text );
-
-			if ( held !== undefined ) {
-				subjects.set( subject.getId().text, { subject: held.subject, added: false } );
+			if ( subjects.has( subject.getId().text ) ) {
+				subjects.set( subject.getId().text, { subject, added: false } );
 				changedIds.delete( subject.getId().text );
 			}
 		}

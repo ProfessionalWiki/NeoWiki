@@ -8,6 +8,11 @@ import { InMemorySchemaLookup } from '@/application/SchemaLookup.ts';
 import { PropertyDefinitionList } from '@/domain/PropertyDefinitionList.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { SubjectId } from '@/domain/SubjectId.ts';
+import { Statement } from '@/domain/Statement.ts';
+import { StatementList } from '@/domain/StatementList.ts';
+import { PropertyName } from '@/domain/PropertyDefinition.ts';
+import { newStringValue } from '@/domain/Value.ts';
+import { TextType } from '@/domain/propertyTypes/Text.ts';
 import { newSchema, newSubject } from '@/TestHelpers.ts';
 import { setupMwMock } from '../VueTestHelpers.ts';
 
@@ -90,6 +95,22 @@ describe( 'useDependentSubjectEditing', () => {
 
 		expect( composable.unsavedTargetIds.value ).not.toContain( MINTED_ID );
 		expect( editing.isNew( MINTED_ID ) ).toBe( false );
+	} );
+
+	it( 'starts a Dependent Subject over as its save wrote it', () => {
+		const read = newSubject( { id: 's1birthAAAAAAA1', label: null, schemaName: 'Birth' } );
+		const written = newSubject( {
+			id: 's1birthAAAAAAA1',
+			label: null,
+			schemaName: 'Birth',
+			statements: new StatementList( [ new Statement( new PropertyName( 'Date' ), TextType.typeName, newStringValue( '25 October 1881' ) ) ] ),
+		} );
+		const { composable, editing } = mountEditor();
+		composable.startFrom( { subjects: [ read ], schemas: [ birthSchema ] }, false );
+
+		composable.markWritten( [ written ] );
+
+		expect( editing.subject( 's1birthAAAAAAA1' ) ).toEqual( written );
 	} );
 
 	it( 'counts the other Subjects the editor holds unsaved among the unsaved targets', async () => {

@@ -15,7 +15,8 @@ export interface DependentSubjectEditing {
 	schema( schemaName: string ): Schema | undefined;
 
 	/**
-	 * As editing started from it, not as its fields now hold it. Undefined for one that did not load.
+	 * As editing started from it or the last save wrote it, not as its fields now hold it. Undefined for one that did
+	 * not load.
 	 */
 	subject( id: string ): Subject | undefined;
 
