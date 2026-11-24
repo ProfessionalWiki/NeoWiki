@@ -965,7 +965,7 @@ function changeExtraPane( id: string, change: Partial<EditPane> ): void {
 }
 
 // A Subject this session invented has to be created rather than replaced, on the page its pane
-// was opened against. Answers as the save handler does; a create answers nothing.
+// was opened against.
 async function writeSubject(
 	pane: EditPane,
 	subject: Subject,

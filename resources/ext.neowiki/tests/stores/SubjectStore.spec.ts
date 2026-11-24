@@ -921,7 +921,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 		} );
 
-		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBe( host );
+		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toStrictEqual( host );
 	} );
 
 	it( 'creates a Subject on a page of its own together with its Dependent Subjects, and reads that page', async () => {
