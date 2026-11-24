@@ -1,0 +1,33 @@
+Museums describe what their objects are made of with shared terms, so that records from different collections agree and link to wider cultural-heritage data. This wiki keeps a controlled vocabulary of materials, each term matched to the [https://www.getty.edu/research/tools/vocabularies/aat/ Getty Art & Architecture Thesaurus] (AAT). Anyone editing an artwork picks its materials from this list, while only vocabulary editors can add, change or remove terms.
+
+== Featured ==
+
+{{#invoke:SubjectRow|render|sEpfwJLoABDZ18D|s1matvocabaaaaA}}
+
+== What are the artworks made of? ==
+
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Artwork ?Material WHERE { ?a a neo-schema:Artwork ; rdfs:label ?Artwork ; Artwork:Materials ?m . ?m rdfs:label ?Material } ORDER BY ?Artwork ?Material|linkColumns=Artwork, Material}}
+
+== Browse ==
+
+{{#invoke:NeoWikiDemo|query|SELECT DISTINCT ?Material ?Broader ?Getty_AAT WHERE { ?t a neo-schema:Material ; rdfs:label ?Material ; Material:Getty_AAT ?Getty_AAT . OPTIONAL { ?t Material:Broader ?b . ?b rdfs:label ?Broader } } ORDER BY COALESCE(?Broader, ?Material) BOUND(?Broader) ?Material|linkColumns=Material, Broader}}
+
+== Add your own ==
+
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+{{#create_subject: schema=Artwork | page=new}}
+{{#create_subject: schema=Material | page=new}}
+</div>
+
+An artwork's Materials field lists the vocabulary's terms to pick from. Only vocabulary editors can add a term; anyone else who tries is told why.
+
+== How this is built ==
+
+* [[Schema:Material]] defines the terms. Its "Subjects are controlled" setting makes them a controlled vocabulary.
+* [[Schema:Artwork]] links an artwork to its terms through the Materials relation, while its Medium field keeps the free-text description.
+* [[Mapping:EDM]] exports each term as a <code>skos:Concept</code> with <code>skos:exactMatch</code> to its AAT concept, and an artwork's materials as <code>dcterms:medium</code>.
+* [[Mapping:CIDOC-CRM]] exports each term as an E57 Material and links an artwork to its terms with P45 consists of.
+* [[Special:Subject/s1matvocabaaaaA|Gold leaf on Special:Subject]] lists The Kiss under Referenced by.
+* Administrators hold the right to edit Controlled Subjects; [[Special:ListGroupRights]] shows which groups have it.
+* [https://neowiki.ai/docs/glossary#controlled-subject Controlled Subject] in the NeoWiki glossary
+* [{{fullurl:{{FULLPAGENAME}}|action=edit}} Edit this page]

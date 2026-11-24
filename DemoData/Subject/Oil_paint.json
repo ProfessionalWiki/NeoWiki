@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa2",
+	"subjects": {
+		"s1matvocabaaaa2": {
+			"label": "Oil paint",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300015050" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa2", "target": "s1matvocabaaaa1" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "Paint made by binding pigment in a drying oil, usually linseed oil." ] }
+			}
+		}
+	}
+}

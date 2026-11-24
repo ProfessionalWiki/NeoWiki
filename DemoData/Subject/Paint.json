@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaa1",
+	"subjects": {
+		"s1matvocabaaaa1": {
+			"label": "Paint",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300015029" ] },
+				"Scope note": { "propertyType": "text", "value": [ "Pigment dispersed in a liquid binder, applied as a coating that dries to a film." ] }
+			}
+		}
+	}
+}

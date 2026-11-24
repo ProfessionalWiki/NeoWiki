@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa7",
+	"subjects": {
+		"s1matvocabaaaa7": {
+			"label": "Linen",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300014069" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa7", "target": "s1matvocabaaaa5" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "Cloth woven from the fibers of the flax plant." ] }
+			}
+		}
+	}
+}

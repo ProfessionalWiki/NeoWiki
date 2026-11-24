@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaa8",
+	"subjects": {
+		"s1matvocabaaaa8": {
+			"label": "Metal",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300010900" ] },
+				"Scope note": { "propertyType": "text", "value": [ "A lustrous, usually malleable material that conducts heat and electricity well." ] }
+			}
+		}
+	}
+}

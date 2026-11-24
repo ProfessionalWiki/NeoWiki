@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa4",
+	"subjects": {
+		"s1matvocabaaaa4": {
+			"label": "Watercolor",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300015045" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa4", "target": "s1matvocabaaaa1" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "Transparent paint made by binding pigment in a water-soluble gum, usually gum arabic." ] }
+			}
+		}
+	}
+}

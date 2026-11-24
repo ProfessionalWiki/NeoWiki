@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaaC",
+	"subjects": {
+		"s1matvocabaaaaC": {
+			"label": "Oak",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300012264" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaaC", "target": "s1matvocabaaaaB" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "The hard, durable wood of oak trees, of the genus Quercus." ] }
+			}
+		}
+	}
+}

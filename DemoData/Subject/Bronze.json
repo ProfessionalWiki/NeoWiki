@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa9",
+	"subjects": {
+		"s1matvocabaaaa9": {
+			"label": "Bronze",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300010957" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa9", "target": "s1matvocabaaaa8" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "An alloy of copper, mainly with tin, much used for cast sculpture." ] }
+			}
+		}
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaaE",
+	"subjects": {
+		"s1matvocabaaaaE": {
+			"label": "Marble",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300011443" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaaE", "target": "s1matvocabaaaaD" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "A metamorphic rock formed from limestone or dolomite, prized for sculpture and building because it takes a high polish." ] }
+			}
+		}
+	}
+}

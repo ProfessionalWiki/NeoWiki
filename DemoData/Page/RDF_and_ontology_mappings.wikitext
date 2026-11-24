@@ -9,7 +9,7 @@ Each export is produced on demand from the page's current data and downloads as 
 
 Each Mapping page targets one ontology, named by the page title, and holds an entry for every mapped Schema. [[Special:Mappings]] lists them all; this wiki ships three:
 
-* [[Mapping:EDM]]: the Person, City, Place, Artwork and Artist Schemas mapped to EDM; the Birth Schema, deliberately given no EDM class, instead contributes flat triples to the people it points at
+* [[Mapping:EDM]]: the Person, City, Place, Artwork, Artist and Material Schemas mapped to EDM; the Birth Schema, deliberately given no EDM class, instead contributes flat triples to the people it points at
 * [[Mapping:CIDOC-CRM]]: the same Schemas mapped to [http://www.cidoc-crm.org/ CIDOC CRM], which routes birth and production through event nodes that NeoWiki's data does not hold and the Mapping synthesizes
 * [[Mapping:HDTO]]: the Artwork, Artist and Museum Schemas mapped to the [https://echoes-eccch.github.io/HDTO-Heritage-Digital-Twin-Ontology/ Heritage Digital Twin Ontology] (HDTO), a CIDOC CRM extension, with CIDOC CRM terms wherever HDTO has none of its own
 

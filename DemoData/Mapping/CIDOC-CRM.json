@@ -1,7 +1,8 @@
 {
 	"version": 1,
 	"prefixes": {
-		"crm": "http://www.cidoc-crm.org/cidoc-crm/"
+		"crm": "http://www.cidoc-crm.org/cidoc-crm/",
+		"skos": "http://www.w3.org/2004/02/skos/core#"
 	},
 	"schemas": {
 		"Person": {
@@ -46,7 +47,16 @@
 				"production": { "class": "crm:E12_Production", "linkPredicate": "crm:P108i_was_produced_by", "per": "value" }
 			},
 			"properties": {
-				"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" }
+				"Creator": { "predicate": "crm:P14_carried_out_by", "node": "production" },
+				"Materials": { "predicate": "crm:P45_consists_of" }
+			}
+		},
+		"Material": {
+			"subject": { "class": "crm:E57_Material" },
+			"properties": {
+				"Getty AAT": { "predicate": "skos:exactMatch" },
+				"Broader": { "predicate": "crm:P127_has_broader_term" },
+				"Scope note": { "predicate": "crm:P3_has_note" }
 			}
 		},
 		"Artist": {

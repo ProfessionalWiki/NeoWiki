@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa3",
+	"subjects": {
+		"s1matvocabaaaa3": {
+			"label": "Tempera",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300015062" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa3", "target": "s1matvocabaaaa1" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "Paint made by binding pigment in an emulsion, traditionally egg yolk and water." ] }
+			}
+		}
+	}
+}

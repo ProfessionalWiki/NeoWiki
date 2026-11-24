@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaa5",
+	"subjects": {
+		"s1matvocabaaaa5": {
+			"label": "Textile",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300231565" ] },
+				"Scope note": { "propertyType": "text", "value": [ "Material made by weaving, felting or otherwise joining natural or synthetic fibers." ] }
+			}
+		}
+	}
+}

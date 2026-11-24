@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaaB",
+	"subjects": {
+		"s1matvocabaaaaB": {
+			"label": "Wood",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300011914" ] },
+				"Scope note": { "propertyType": "text", "value": [ "The hard, fibrous tissue that forms the trunks and branches of trees." ] }
+			}
+		}
+	}
+}

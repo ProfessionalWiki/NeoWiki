@@ -10,6 +10,12 @@
 			"type": "text",
 			"required": true
 		},
+		"Materials": {
+			"type": "relation",
+			"targetSchemas": [ "Material" ],
+			"multiple": true,
+			"description": "The materials the artwork is made of, as terms from the controlled vocabulary of materials. Medium keeps the free-text description."
+		},
 		"Condition": {
 			"type": "text",
 			"default": "Good"

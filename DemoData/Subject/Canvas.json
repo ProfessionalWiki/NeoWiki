@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaa6",
+	"subjects": {
+		"s1matvocabaaaa6": {
+			"label": "Canvas",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300014078" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaa6", "target": "s1matvocabaaaa5" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "A strong, closely woven cloth, usually of linen or cotton, widely used as a support for painting." ] }
+			}
+		}
+	}
+}

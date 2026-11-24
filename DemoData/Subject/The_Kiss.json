@@ -13,6 +13,23 @@
 					"propertyType": "text",
 					"value": [ "Oil on canvas with gold leaf" ]
 				},
+				"Materials": {
+					"propertyType": "relation",
+					"value": [
+						{
+							"id": "r1matvocabMaa52",
+							"target": "s1matvocabaaaa2"
+						},
+						{
+							"id": "r1matvocabMaa56",
+							"target": "s1matvocabaaaa6"
+						},
+						{
+							"id": "r1matvocabMaa5A",
+							"target": "s1matvocabaaaaA"
+						}
+					]
+				},
 				"Creator": {
 					"propertyType": "relation",
 					"value": [

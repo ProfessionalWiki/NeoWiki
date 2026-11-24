@@ -1,0 +1,20 @@
+{
+	"description": "A term in the wiki's controlled vocabulary of materials, matched to the Getty Art & Architecture Thesaurus (AAT). Only vocabulary editors can add, change or remove terms.",
+	"subjectsAreControlled": true,
+	"propertyDefinitions": {
+		"Getty AAT": {
+			"type": "url",
+			"required": true,
+			"description": "The term's concept IRI in the Getty AAT"
+		},
+		"Broader": {
+			"type": "relation",
+			"targetSchemas": [ "Material" ],
+			"description": "The broader term, if any"
+		},
+		"Scope note": {
+			"type": "text",
+			"description": "What the term means, in one short sentence"
+		}
+	}
+}

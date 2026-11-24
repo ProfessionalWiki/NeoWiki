@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaaF",
+	"subjects": {
+		"s1matvocabaaaaF": {
+			"label": "Paper",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300014109" ] },
+				"Scope note": { "propertyType": "text", "value": [ "Thin sheets of matted fibers, usually from plants, formed from a wet pulp and dried." ] }
+			}
+		}
+	}
+}

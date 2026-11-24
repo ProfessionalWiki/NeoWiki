@@ -9,6 +9,7 @@
 ** Special:Schemas|Schemas
 ** Subject views|Subject views
 ** Validation Demo|Validation
+** Controlled vocabularies|Controlled vocabularies
 ** RDF and ontology mappings|RDF and ontology mappings
 ** {{#ifexist:SPARQL queries|SPARQL queries{{!}}SPARQL queries|}}
 ** Developers|Developers hub

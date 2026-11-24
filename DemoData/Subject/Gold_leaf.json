@@ -1,0 +1,14 @@
+{
+	"mainSubject": "s1matvocabaaaaA",
+	"subjects": {
+		"s1matvocabaaaaA": {
+			"label": "Gold leaf",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300264831" ] },
+				"Broader": { "propertyType": "relation", "value": [ { "id": "r1matvocabBaaaA", "target": "s1matvocabaaaa8" } ] },
+				"Scope note": { "propertyType": "text", "value": [ "Gold hammered or rolled into extremely thin sheets, applied to surfaces in gilding." ] }
+			}
+		}
+	}
+}

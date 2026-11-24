@@ -1,0 +1,13 @@
+{
+	"mainSubject": "s1matvocabaaaaD",
+	"subjects": {
+		"s1matvocabaaaaD": {
+			"label": "Stone",
+			"schema": "Material",
+			"statements": {
+				"Getty AAT": { "propertyType": "url", "value": [ "http://vocab.getty.edu/aat/300011176" ] },
+				"Scope note": { "propertyType": "text", "value": [ "Rock that has been cut, shaped or otherwise worked for use." ] }
+			}
+		}
+	}
+}

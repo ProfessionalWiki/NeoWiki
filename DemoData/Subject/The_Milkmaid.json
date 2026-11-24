@@ -13,6 +13,19 @@
 					"propertyType": "text",
 					"value": [ "Oil on canvas" ]
 				},
+				"Materials": {
+					"propertyType": "relation",
+					"value": [
+						{
+							"id": "r1matvocabMaa32",
+							"target": "s1matvocabaaaa2"
+						},
+						{
+							"id": "r1matvocabMaa36",
+							"target": "s1matvocabaaaa6"
+						}
+					]
+				},
 				"Creator": {
 					"propertyType": "relation",
 					"value": [
