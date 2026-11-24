@@ -120,6 +120,15 @@ class SchemaContentHandlerValidateSaveTest extends NeoWikiIntegrationTestCase {
 		);
 	}
 
+	public function testUnknownMinPrecisionIsNamedWithThePrecisionsItCanHold(): void {
+		$status = $this->validate( '{ "propertyDefinitions": { "Founded": { "type": "date", "minPrecision": "week" } } }' );
+
+		$this->assertSame(
+			'(neowiki-schema-invalid: 1, (neowiki-schema-invalid-detail: /propertyDefinitions/Founded/minPrecision, must be "year", "month" or "day", not "week"))',
+			$this->firstMessageInQqx( $status )
+		);
+	}
+
 	public function testPointerToAFieldEscapesSlashAndTildeInThePropertyName(): void {
 		$status = $this->validate( '{ "propertyDefinitions": { "Height/We~ight": { "type": "text", "minLength": "five" } } }' );
 

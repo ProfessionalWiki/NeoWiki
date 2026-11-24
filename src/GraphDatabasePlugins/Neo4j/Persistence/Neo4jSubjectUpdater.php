@@ -11,6 +11,8 @@ use ProfessionalWiki\NeoWiki\Domain\Page\Page;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\Domain\Page\PageSubjects;
 use ProfessionalWiki\NeoWiki\Domain\Relation\TypedRelationList;
+use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyName;
+use ProfessionalWiki\NeoWiki\Domain\Schema\Schema;
 use ProfessionalWiki\NeoWiki\Domain\Statement;
 use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectDisplayName;
@@ -77,8 +79,8 @@ class Neo4jSubjectUpdater {
 
 			$subjects[] = new Neo4jPageSubject(
 				subject: $subject,
-				isMainSubject: $subject->id->text === $mainSubjectId,
-				isDependent: $schema->subjectsAreDependent()
+				schema: $schema,
+				isMainSubject: $subject->id->text === $mainSubjectId
 			);
 		}
 
@@ -128,7 +130,8 @@ class Neo4jSubjectUpdater {
 	private function nodeProperties( Neo4jPageSubject $pageSubject, Page $page ): array {
 		$subject = $pageSubject->subject;
 
-		$properties = $this->statementsToNodeProperties( $subject->getStatements() );
+		$properties = $this->statementsToNodeProperties( $subject->getStatements() )
+			+ $this->latestDateProperties( $subject->getStatements(), $pageSubject->schema );
 
 		// Assigned rather than array_merge()d: a property named like a decimal integer is an int
 		// key by then, and array_merge() renumbers those, which would file its value under a
@@ -211,6 +214,29 @@ class Neo4jSubjectUpdater {
 	}
 
 	/**
+	 * The node properties holding the latest day of each date, next to the earliest days under the date's own
+	 * name. A Property can carry the name the latest days would get, and then keeps it. The Schema is asked as
+	 * well as the Statements, so that a Subject leaving that Property empty does not get the latest days under
+	 * its name.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function latestDateProperties( StatementList $statements, Schema $schema ): array {
+		$properties = [];
+
+		foreach ( $statements->asArray() as $statement ) {
+			$latestDates = $this->valueBuilderRegistry->buildLatestDates( $statement->getPropertyType(), $statement->getValue() );
+			$name = $statement->getPropertyName()->text . Neo4jValueBuilderRegistry::LATEST_DATE_SUFFIX;
+
+			if ( $latestDates !== null && !$schema->hasProperty( $name ) && $statements->getStatement( new PropertyName( $name ) ) === null ) {
+				$properties[$name] = $latestDates;
+			}
+		}
+
+		return $properties;
+	}
+
+	/**
 	 * @param Neo4jPageSubject[] $subjects
 	 */
 	private function updateRelations( array $subjects ): void {
@@ -267,7 +293,7 @@ class Neo4jSubjectUpdater {
 					fn ( Neo4jPageSubject $pageSubject ) => [
 						'id' => $pageSubject->getId(),
 						'isMain' => $pageSubject->isMainSubject,
-						'isDependent' => $pageSubject->isDependent,
+						'isDependent' => $pageSubject->schema->subjectsAreDependent(),
 					],
 					$subjects
 				),

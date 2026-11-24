@@ -89,10 +89,14 @@ The PropertyType determines the value's Neo4j type:
 | `text`, `url`, `select` | list of strings |
 | `number` | integer or float |
 | `boolean` | boolean |
-| `date` | list of dates |
+| `date` | list of dates: the earliest day of each value |
 | `dateTime` | list of datetimes |
 | `monolingualText` | list of `text@language` strings (`['Zinema@eu']`); split on the last `@` |
 | `relation` | stored as a [relationship](#typed-relations), not a node property |
+
+A `date` Statement also writes `<Property Name>_latest`, the latest day of each value in the same order: `Born: 1984`
+gives `Born: [1984-01-01]` and `Born_latest: [1984-12-31]`. Where the Schema or the Subject has a Property of that
+name, the key holds that Property instead.
 
 A Property cannot be named after a fixed property: their names are [reserved](schema-format.md#property-names). Names
 are case-sensitive, so `s.name` is the Subject's label and `s.Name` a Property named "Name".

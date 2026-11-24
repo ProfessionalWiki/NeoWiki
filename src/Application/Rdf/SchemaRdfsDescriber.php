@@ -7,7 +7,6 @@ namespace ProfessionalWiki\NeoWiki\Application\Rdf;
 use ProfessionalWiki\NeoWiki\Domain\LanguageTag;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -145,9 +144,9 @@ class SchemaRdfsDescriber {
 			// Whole numbers project as xsd:integer, which XSD derives from xsd:decimal.
 			NumberType::NAME => $this->namespaces->xsd( 'decimal' ),
 			BooleanType::NAME => $this->namespaces->xsd( 'boolean' ),
-			DateType::NAME => $this->namespaces->xsd( 'date' ),
 			DateTimeType::NAME => $this->namespaces->xsd( 'dateTime' ),
 			MonolingualTextType::NAME => $this->namespaces->rdf( 'langString' ),
+			// A date value projects as xsd:date, xsd:gYearMonth or xsd:gYear by its precision, three disjoint datatypes.
 			// A url value projects as an IRI or, when it is not an absolute IRI, as an xsd:anyURI literal.
 			default => null,
 		};

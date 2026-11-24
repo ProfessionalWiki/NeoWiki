@@ -57,13 +57,13 @@ Each violation in the response has this shape:
 Severity decides whether a write can be rejected: warnings never block, errors can. Each code in the
 reference below documents its own severity.
 
-Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`,
-`minimum`, `maximum`, `minLength`, `maxLength`, `uniqueItems`, `uniqueLanguages`, `options` — that author sets its
-severity in the Schema, per Constraint, and the default is `warning`. See
-[Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is
-`warning`, an unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported
-state, and blocking is what an author opts into. Every other code reports a system condition rather
-than a user-correctable Constraint, so its severity is fixed.
+Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`, `minimum`,
+`maximum`, `minPrecision`, `minLength`, `maxLength`, `uniqueItems`, `uniqueLanguages`, `options` — that author
+sets its severity in the Schema, per Constraint, and the default is `warning`. See
+[Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is `warning`, an
+unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported state, and blocking is what an
+author opts into. Every other code reports a system condition rather than a user-correctable Constraint, so its
+severity is fixed.
 
 Blocking matters only when an admin enables enforcement (`$wgNeoWikiEnforceValidation`, or
 `enforceValidation` on [`MediaWiki:NeoWiki`](../operations/installation.md#on-wiki-settings); off by
@@ -122,7 +122,8 @@ length-checked.
 ### `min-value` / `max-value`
 
 On `number`, `date`, and `dateTime` properties. The value is below the property's inclusive
-`minimum` or above its inclusive `maximum`.
+`minimum` or above its inclusive `maximum`. A `date` of year or month precision is compared as
+[the days it stands for](schema-format.md#date-date).
 
 `args`: `[minimum]` / `[maximum]` — a number for `number` properties, the declared ISO 8601 string
 for `date` and `dateTime`. `severity`: set by the `minimum` / `maximum` Constraint (default
@@ -160,10 +161,18 @@ partial dates (`2025`, `2025-06`, `2025-06-15`), and missing offsets.
 
 ### `invalid-date`
 
-On `date` properties. The value is not a strict ISO 8601 calendar date (`YYYY-MM-DD`). Time or
-timezone components and calendar overflows like `2025-02-30` are rejected.
+On `date` properties. The value is not a date of year, month or day precision (`YYYY`,
+`YYYY-MM`, `YYYY-MM-DD`). Time or timezone components, calendar overflows like `2025-02-30`, and
+other forms such as `1984~` or `1984/1985` are rejected.
 
 `args`: `[]`. `severity`: `error` (fixed).
+
+### `min-precision-month` / `min-precision-day`
+
+On `date` properties. The value is less precise than the property's `minPrecision`, which is
+`"day"` when left out: a year alone under `"month"`, or a year or year and month under `"day"`.
+
+`args`: `[]`. `severity`: set by the `minPrecision` Constraint (default `warning`).
 
 ### `unregistered-type`
 
