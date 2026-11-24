@@ -54,8 +54,8 @@ class NeoWikiConfigFactory {
 
 		if ( !is_array( $setting ) ) {
 			$this->logger->warning(
-				'Ignoring NeoWikiFeatures, which is not an array of feature names to true or false, as in '
-				. '[ \'featureName\' => true ].'
+				'Ignoring NeoWikiFeatures, which is not an array of feature names to true or false. Set each '
+				. 'feature as in $wgNeoWikiFeatures[\'featureName\'] = true.'
 			);
 			$setting = [];
 		}

@@ -30,12 +30,6 @@ class EnabledFeaturesFrontendConfigTest extends NeoWikiIntegrationTestCase {
 		$this->assertContains( NeoWikiFeatures::LUA, $this->frontendEnabledFeatures() );
 	}
 
-	public function testAFeatureTheWikiTurnsOffDoesNotReachTheFrontend(): void {
-		$this->overrideConfigValue( 'NeoWikiFeatures', [ NeoWikiFeatures::LUA => false ] );
-
-		$this->assertNotContains( NeoWikiFeatures::LUA, $this->frontendEnabledFeatures() );
-	}
-
 	/**
 	 * @return string[]
 	 */

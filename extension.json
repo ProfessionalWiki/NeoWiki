@@ -258,11 +258,11 @@
 			"value": true
 		},
 		"NeoWikiFeatures": {
-			"description": "Turns optional NeoWiki features on or off by name, as in [ 'featureName' => true ]. See https://neowiki.ai/docs/operations/installation#turning-features-on-or-off",
+			"description": "Turns optional NeoWiki features on or off by name, as in $wgNeoWikiFeatures['featureName'] = true. See https://neowiki.ai/docs/operations/installation#turning-features-on-or-off",
 			"value": {}
 		},
 		"NeoWikiEnableLua": {
-			"description": "Deprecated: use $wgNeoWikiFeatures['lua'] = false. When false, NeoWiki does not register its Lua library (mw.neowiki) with Scribunto.",
+			"description": "Deprecated: use $wgNeoWikiFeatures['lua'] = false. When false, NeoWiki does not register its Lua library (mw.neowiki) with Scribunto, whatever $wgNeoWikiFeatures says.",
 			"value": true
 		},
 		"NeoWikiEnforceValidation": {
