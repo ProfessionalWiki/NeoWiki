@@ -12,6 +12,7 @@ readonly class Feature {
 	private function __construct(
 		public string $name,
 		public bool $enabledByDefault,
+		public ?string $replacedSetting,
 	) {
 	}
 
@@ -20,11 +21,16 @@ readonly class Feature {
 	 * remove it without migrating the data it wrote.
 	 */
 	public static function experimental( string $name ): self {
-		return new self( $name, enabledByDefault: false );
+		return new self( $name, enabledByDefault: false, replacedSetting: null );
 	}
 
-	public static function stable( string $name, bool $enabledByDefault ): self {
-		return new self( $name, $enabledByDefault );
+	/**
+	 * @param string|null $replacedSetting The setting, named without $wg, that switched this part of NeoWiki
+	 *  before it became a feature. While a wiki sets it away from the feature's default, it decides the feature
+	 *  and reports itself deprecated.
+	 */
+	public static function stable( string $name, bool $enabledByDefault, ?string $replacedSetting = null ): self {
+		return new self( $name, $enabledByDefault, $replacedSetting );
 	}
 
 }

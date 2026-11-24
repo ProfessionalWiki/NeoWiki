@@ -234,7 +234,7 @@ To turn on an optional feature, set it to `true`, or to `false` to turn it off:
 $wgNeoWikiFeatures['featureName'] = true;
 ```
 
-| Feature | What it turns on | Default |
+| Feature | Turns on | Default |
 |---|---|---|
 | `lua` | The [`mw.neowiki` Lua library](../authoring/lua-api.md) for Scribunto modules | On |
 

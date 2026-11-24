@@ -5,6 +5,7 @@ declare( strict_types = 1 );
 namespace ProfessionalWiki\NeoWiki\Tests;
 
 use MediaWiki\Config\HashConfig;
+use MediaWikiTestCaseTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -20,6 +21,7 @@ use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
 class NeoWikiConfigFactoryTest extends TestCase {
 
 	use HandlesNeo4jEnvOverrides;
+	use MediaWikiTestCaseTrait;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -406,6 +408,49 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		yield 'zero' => [ 0 ];
 		yield 'one' => [ 1 ];
 		yield 'string' => [ 'true' ];
+	}
+
+	public function testAReplacedSettingSetAwayFromTheDefaultDecidesTheFeatureWithADeprecationWarning(): void {
+		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnableLua/' );
+
+		$config = $this->buildConfig( [ 'NeoWikiEnableLua' => false ], [ $this->luaReplacingItsSetting() ] );
+
+		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
+	}
+
+	public function testAReplacedSettingSetAwayFromTheDefaultBeatsNeoWikiFeatures(): void {
+		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnableLua/' );
+
+		$config = $this->buildConfig(
+			[ 'NeoWikiEnableLua' => false, 'NeoWikiFeatures' => [ 'lua' => true ] ],
+			[ $this->luaReplacingItsSetting() ]
+		);
+
+		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
+	}
+
+	public function testAReplacedSettingAtTheDefaultLeavesTheFeatureToNeoWikiFeatures(): void {
+		$config = $this->buildConfig(
+			[ 'NeoWikiEnableLua' => true, 'NeoWikiFeatures' => [ 'lua' => false ] ],
+			[ $this->luaReplacingItsSetting() ]
+		);
+
+		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
+	}
+
+	public function testAReplacedSettingTurnsOnAFeatureThatIsOffByDefault(): void {
+		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnforceValidation/' );
+
+		$config = $this->buildConfig(
+			[ 'NeoWikiEnforceValidation' => true ],
+			[ Feature::stable( 'enforceValidation', enabledByDefault: false, replacedSetting: 'NeoWikiEnforceValidation' ) ]
+		);
+
+		$this->assertTrue( $config->isFeatureEnabled( 'enforceValidation' ) );
+	}
+
+	private function luaReplacingItsSetting(): Feature {
+		return Feature::stable( 'lua', enabledByDefault: true, replacedSetting: 'NeoWikiEnableLua' );
 	}
 
 	public function testSettingThatIsNotAMapLeavesEveryFeatureAtItsDefaultWithWarning(): void {

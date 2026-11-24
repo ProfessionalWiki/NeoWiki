@@ -17,7 +17,7 @@ class NeoWikiFeatures {
 	 */
 	public static function all(): array {
 		return [
-			Feature::stable( self::LUA, enabledByDefault: true ),
+			Feature::stable( self::LUA, enabledByDefault: true, replacedSetting: 'NeoWikiEnableLua' ),
 		];
 	}
 

@@ -6,24 +6,18 @@ namespace ProfessionalWiki\NeoWiki\Tests\Presentation;
 
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Title\Title;
-use MediaWikiIntegrationTestCase;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\NeoWikiFeatures;
+use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
- * The features the frontend learns are on, as every page loading it goes through the extension's frontend
- * module loader. Needs the database because the loader reads the MediaWiki:NeoWiki configuration page.
+ * Needs the database because the loader reads the MediaWiki:NeoWiki configuration page.
  *
  * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::newFrontendModuleLoader
  * @covers \ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader
  * @group Database
  */
-class EnabledFeaturesFrontendConfigTest extends MediaWikiIntegrationTestCase {
-
-	protected function setUp(): void {
-		parent::setUp();
-		NeoWikiExtension::resetInstance();
-	}
+class EnabledFeaturesFrontendConfigTest extends NeoWikiIntegrationTestCase {
 
 	protected function tearDown(): void {
 		NeoWikiExtension::resetInstance();
@@ -31,6 +25,8 @@ class EnabledFeaturesFrontendConfigTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testAFeatureOnByDefaultReachesTheFrontend(): void {
+		$this->overrideConfigValue( 'NeoWikiFeatures', [] );
+
 		$this->assertContains( NeoWikiFeatures::LUA, $this->frontendEnabledFeatures() );
 	}
 

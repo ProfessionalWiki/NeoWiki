@@ -65,6 +65,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiFeatures;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
 use ProfessionalWiki\NeoWiki\Presentation\PageToolsBuilder;
@@ -1175,7 +1176,7 @@ class NeoWikiHooks {
 	}
 
 	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): bool {
-		if ( $engine === 'lua' && NeoWikiExtension::getInstance()->isLuaEnabled() ) {
+		if ( $engine === 'lua' && NeoWikiExtension::getInstance()->isFeatureEnabled( NeoWikiFeatures::LUA ) ) {
 			$extraLibraries['mw.neowiki'] = ScribuntoLuaLibrary::class;
 		}
 

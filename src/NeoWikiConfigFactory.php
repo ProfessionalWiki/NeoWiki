@@ -62,7 +62,35 @@ class NeoWikiConfigFactory {
 
 		$this->warnAboutUnusableEntries( $setting );
 
-		return $this->namesOfEnabledFeatures( $setting );
+		return $this->namesOfEnabledFeatures( $this->withReplacedSettings( $config, $setting ) );
+	}
+
+	/**
+	 * A replaced setting a wiki still sets away from its feature's default keeps deciding the feature, so a wiki
+	 * that turned off the Lua library to protect restricted content does not get it back by upgrading.
+	 */
+	private function withReplacedSettings( Config $config, array $setting ): array {
+		foreach ( $this->features as $feature ) {
+			if ( $feature->replacedSetting === null ) {
+				continue;
+			}
+
+			$enabled = $config->get( $feature->replacedSetting ) === true;
+
+			if ( $enabled === $feature->enabledByDefault ) {
+				continue;
+			}
+
+			wfDeprecatedMsg(
+				"\$wg{$feature->replacedSetting} is deprecated: remove it, and set "
+					. "\$wgNeoWikiFeatures['{$feature->name}'] = " . var_export( $enabled, true ) . ' instead.',
+				callerOffset: false
+			);
+
+			$setting = [ $feature->name => $enabled ] + $setting;
+		}
+
+		return $setting;
 	}
 
 	/**

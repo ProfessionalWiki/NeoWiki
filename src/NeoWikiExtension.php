@@ -1478,19 +1478,6 @@ class NeoWikiExtension {
 			&& $title->getText() === self::CONFIG_PAGE_TITLE;
 	}
 
-	/**
-	 * The deprecated $wgNeoWikiEnableLua still turns the library off, so a wiki that removed it to protect
-	 * restricted content does not get it back by upgrading.
-	 */
-	public function isLuaEnabled(): bool {
-		if ( MediaWikiServices::getInstance()->getMainConfig()->get( 'NeoWikiEnableLua' ) !== true ) {
-			wfDeprecatedMsg( '$wgNeoWikiEnableLua is deprecated. Use $wgNeoWikiFeatures[\'lua\'] = false instead.' );
-			return false;
-		}
-
-		return $this->isFeatureEnabled( NeoWikiFeatures::LUA );
-	}
-
 	public function getPageContentFetcher(): PageContentFetcher {
 		return $this->newPageContentFetcher( $this->getRevisionPolicy() );
 	}

@@ -19,7 +19,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
 /**
  * @covers \ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks::onScribuntoExternalLibraries
- * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension::isLuaEnabled
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiFeatures
  * @group Database
  */
 class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
@@ -38,6 +38,12 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 		. "	return frame:preprocess( '{{#neowiki_value: Motto | page=' .. frame.args[1] .. ' }}' )\n"
 		. "end\n"
 		. 'return p';
+
+	protected function tearDown(): void {
+		NeoWikiExtension::resetInstance();
+
+		parent::tearDown();
+	}
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -68,8 +74,8 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testTheDeprecatedSettingStillTurnsTheLibraryOffWithADeprecationWarning(): void {
-		$this->overrideConfigValue( 'NeoWikiEnableLua', false );
-		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnableLua is deprecated/' );
+		$this->overrideSetting( 'NeoWikiEnableLua', false );
+		$this->expectDeprecationAndContinue( '/\$wgNeoWikiEnableLua/' );
 		$libraries = [];
 
 		NeoWikiHooks::onScribuntoExternalLibraries( 'lua', $libraries );
@@ -122,11 +128,15 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'scribunto-error', $html );
 	}
 
+	private function turnTheLibraryOff(): void {
+		$this->overrideSetting( 'NeoWikiFeatures', [ NeoWikiFeatures::LUA => false ] );
+	}
+
 	/**
 	 * Features are resolved once per NeoWikiExtension instance, which setUp() already built.
 	 */
-	private function turnTheLibraryOff(): void {
-		$this->overrideConfigValue( 'NeoWikiFeatures', [ NeoWikiFeatures::LUA => false ] );
+	private function overrideSetting( string $name, mixed $value ): void {
+		$this->overrideConfigValue( $name, $value );
 		NeoWikiExtension::resetInstance();
 	}
 
