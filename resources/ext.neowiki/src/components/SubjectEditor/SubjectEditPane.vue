@@ -133,6 +133,8 @@ const props = defineProps<{
 	subject: Subject;
 	schema: Schema;
 	nested?: boolean;
+	// Holds what the save is to write although nothing was typed into it, such as choices made in an edit conflict.
+	startsChanged?: boolean;
 	// A Subject this editing session invented, which the server has never seen. It is validated
 	// as a creation rather than as an update, and the dialog writes it with a create.
 	isNew?: boolean;
@@ -155,6 +157,10 @@ const subjectStore = useSubjectStore();
 
 const subjectEditorRef = ref<SubjectEditorExposes | null>( null );
 const { hasChanged: committed, markChanged, resetChanged } = useChangeDetection();
+
+if ( props.startsChanged === true ) {
+	markChanged();
+}
 
 const writes = ref( 0 );
 

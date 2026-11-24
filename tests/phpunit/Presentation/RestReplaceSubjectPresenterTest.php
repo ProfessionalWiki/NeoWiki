@@ -59,7 +59,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 		$presenter->presentUpdated( $this->newSubject(), null, [
 			new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' ),
 			new Violation( propertyName: null, code: 'schema-not-found', args: [ 'Person' ] ),
-		] );
+		], 42 );
 
 		$this->assertSame( 200, $presenter->getStatusCode() );
 		$this->assertSame( 'updated', $presenter->getJsonArray()['status'] );
@@ -76,7 +76,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 	public function testPresentUpdatedWithNoViolationsYieldsEmptyViolationsArray(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 
-		$presenter->presentUpdated( $this->newSubject(), null, [] );
+		$presenter->presentUpdated( $this->newSubject(), null, [], 42 );
 
 		$this->assertSame( 200, $presenter->getStatusCode() );
 		$this->assertSame( [], $presenter->getJsonArray()['violations'] );
@@ -85,7 +85,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 	public function testPresentUpdatedIncludesTheCanonicalSubjectWithItsPageIdentifiers(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 
-		$presenter->presentUpdated( $this->newSubject(), null, [] );
+		$presenter->presentUpdated( $this->newSubject(), null, [], 42 );
 
 		$this->assertSame(
 			[
@@ -106,7 +106,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 	public function testPresentUpdatedOmitsPageKeysWhenTheHostingPageIsUnresolved(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 
-		$presenter->presentUpdated( $this->newSubject( pageId: null ), null, [] );
+		$presenter->presentUpdated( $this->newSubject( pageId: null ), null, [], 42 );
 
 		$this->assertSame(
 			[
@@ -124,7 +124,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 	public function testPresentUpdatedIncludesTheSchemaBodyWithoutItsName(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 
-		$presenter->presentUpdated( $this->newSubject(), $this->newSchema(), [] );
+		$presenter->presentUpdated( $this->newSubject(), $this->newSchema(), [], 42 );
 
 		$this->assertSame(
 			[
@@ -149,7 +149,7 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 	public function testPresentUpdatedOmitsTheSchemaKeyWhenTheSchemaIsMissing(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 
-		$presenter->presentUpdated( $this->newSubject(), null, [] );
+		$presenter->presentUpdated( $this->newSubject(), null, [], 42 );
 
 		$this->assertArrayNotHasKey( 'schema', $presenter->getJsonArray() );
 	}

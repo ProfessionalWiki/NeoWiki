@@ -34,6 +34,7 @@ use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 class ControlledSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 
 	use HandlerTestTrait;
+	use WritesOnTheCurrentRevision;
 
 	private const string TERM = 'sCSRWWoman1111a';
 
@@ -109,7 +110,7 @@ class ControlledSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 			new ReplaceSubjectApi( $this->csrfValidator() ),
 			'PUT',
 			[ 'subjectId' => self::TERM ],
-			[ 'label' => 'Female', 'statements' => [] ]
+			$this->onTheCurrentRevision( self::TERM, [ 'label' => 'Female', 'statements' => [] ] )
 		) );
 	}
 

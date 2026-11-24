@@ -357,6 +357,29 @@ JSON,
 		$this->assertSame( 'published label', $this->labelOf( $response, 'sTestGSA1111252' ) );
 	}
 
+	private function revisionIdOf( Response $response ): ?int {
+		return json_decode( $response->getBody()->getContents(), true )['revisionId'] ?? null;
+	}
+
+	public function testLatestNamesTheLatestRevision(): void {
+		$published = $this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestRevision',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111267', 'published label' )
+		);
+
+		$draft = $this->createPageWithSubjects(
+			'GetSubjectApiTest_LatestRevision',
+			mainSubject: $this->newTestSubject( 'sTestGSA1111267', 'draft label' )
+		);
+
+		$response = $this->runWithRevisionPolicy(
+			FixedRevisionPolicy::publishing( $published ),
+			fn (): Response => $this->requestSubject( 'sTestGSA1111267', [ 'latest' => '1' ] )
+		);
+
+		$this->assertSame( $draft->getId(), $this->revisionIdOf( $response ) );
+	}
+
 	public function testSubjectAddedOnlyInAnUnpublishedDraftIsNotFound(): void {
 		$published = $this->createPageWithSubjects(
 			'GetSubjectApiTest_DraftOnly',
@@ -517,9 +540,13 @@ JSON,
 		);
 
 		$this->assertSame(
-			$this->requestSubject( 'sTestGSA1111262' )->getBody()->getContents(),
-			$this->requestSubject( 'sTestGSA1111262', [ 'latest' => '1' ] )->getBody()->getContents()
+			$this->subjectsOf( $this->requestSubject( 'sTestGSA1111262' ) ),
+			$this->subjectsOf( $this->requestSubject( 'sTestGSA1111262', [ 'latest' => '1' ] ) )
 		);
+	}
+
+	private function subjectsOf( Response $response ): array {
+		return json_decode( $response->getBody()->getContents(), true )['subjects'];
 	}
 
 	public function testFullExpansion(): void {

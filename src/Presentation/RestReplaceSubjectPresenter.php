@@ -32,10 +32,11 @@ class RestReplaceSubjectPresenter implements ReplaceSubjectPresenter {
 	/**
 	 * @param Violation[] $violations
 	 */
-	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations ): void {
+	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->apiResponse = [
 			'status' => 'updated',
 			'subjectId' => $subject->id,
+			'revisionId' => $revisionId,
 			'violations' => ViolationSerializer::serializeMany( $violations ),
 			'subject' => $this->subjectSerializer->serialize( $subject ),
 		];
@@ -57,6 +58,16 @@ class RestReplaceSubjectPresenter implements ReplaceSubjectPresenter {
 			'violations' => ViolationSerializer::serializeMany( $violations ),
 		];
 		$this->statusCode = 422;
+	}
+
+	public function presentConflict( GetSubjectResponseItem $currentSubject, int $currentRevisionId ): void {
+		$this->apiResponse = [
+			'status' => 'error',
+			'message' => 'The Subject changed after the base revision',
+			'revisionId' => $currentRevisionId,
+			'subject' => $this->subjectSerializer->serialize( $currentSubject ),
+		];
+		$this->statusCode = 409;
 	}
 
 	public function presentSaveFailed( ?string $errorMessage ): void {

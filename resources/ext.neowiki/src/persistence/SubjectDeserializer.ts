@@ -14,7 +14,11 @@ export class SubjectDeserializer {
 	) {
 	}
 
-	public deserialize( json: any ): Subject {
+	/**
+	 * A Subject's JSON does not carry the revision it was read from: a response serves that beside it, where it
+	 * names one.
+	 */
+	public deserialize( json: any, revisionId: number | null = null ): Subject {
 		const id = new SubjectId( json.id );
 		const label = json.label ?? null;
 		const displayName = json.displayName;
@@ -37,6 +41,7 @@ export class SubjectDeserializer {
 			pageIdentifiers,
 			hostSubjectFromJson( json.hostSubject ),
 			labelsFromJson( json.schemaLabels ),
+			revisionId,
 		);
 	}
 
