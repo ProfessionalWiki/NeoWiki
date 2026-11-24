@@ -464,23 +464,16 @@ describe( 'SubjectStore base revision of an update', () => {
 		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 42 ] );
 	} );
 
-	it( 'gives the Subject as the session\'s write stored it', async () => {
-		repositoryWritingRevisions( 42 );
-		const store = useSubjectStore();
+	it( 'answers with the Subject as its write stored it, not as the page read after the write holds it', async () => {
+		const written = newSubject( { id: id.text, label: 'Merged', revisionId: 42 } );
+		withSubjectRepository( {
+			updateSubject: vi.fn().mockResolvedValue( writeResult( written ) ),
+			getPageSubjects: vi.fn().mockResolvedValue( pageRead( 0, newSubject( { id: id.text, label: 'Merged' } ) ) ),
+		} );
 
-		await store.updateSubject( newSubject( { id: id.text, label: 'Mine', revisionId: 41 } ), [] );
+		const answer = await useSubjectStore().updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
 
-		expect( store.writtenSubject( id )?.getRevisionId() ).toBe( 42 );
-	} );
-
-	it( 'gives no written Subject once a read replaced what the write stored', async () => {
-		repositoryWritingRevisions( 42 );
-		const store = useSubjectStore();
-		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
-
-		store.setSubject( newSubject( { id: id.text, revisionId: 43 } ) );
-
-		expect( store.writtenSubject( id ) ).toBeUndefined();
+		expect( answer ).toStrictEqual( written );
 	} );
 
 	it( 'refuses an update based on no revision, writing nothing', async () => {
@@ -928,7 +921,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 		} );
 
-		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBeUndefined();
+		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBe( host );
 	} );
 
 	it( 'creates a Subject on a page of its own together with its Dependent Subjects, and reads that page', async () => {

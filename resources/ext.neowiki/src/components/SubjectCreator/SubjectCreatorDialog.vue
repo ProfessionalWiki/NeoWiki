@@ -1048,8 +1048,8 @@ watch( pageTitle, () => {
 } );
 
 // A Subject the user drilled into from a relation exists already, so the editor updates it.
-async function handleSaveExisting( subject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( subject, dependentSubjects, comment );
+async function handleSaveExisting( subject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<Subject | undefined> {
+	return subjectStore.updateSubject( subject, dependentSubjects, comment );
 }
 
 async function handleSchemaSave( updatedSchema: Schema, comment: string ): Promise<void> {

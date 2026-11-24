@@ -223,9 +223,10 @@ import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.t
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 /**
- * Writes a Subject the wiki holds and its `dependentSubjects` in one write.
+ * Writes a Subject the wiki holds and its `dependentSubjects` in one write. Answers with the Subject as the write stored
+ * it, where the wiki's answer carries it.
  */
-type SubjectSaveHandler = ( subject: Subject, dependentSubjects: DependentSubjects, comment: string ) => Promise<void>;
+type SubjectSaveHandler = ( subject: Subject, dependentSubjects: DependentSubjects, comment: string ) => Promise<Subject | undefined>;
 
 /**
  * Writes a Subject this session invented, carrying the id minted for it, as a Subject of the
@@ -964,17 +965,17 @@ function changeExtraPane( id: string, change: Partial<EditPane> ): void {
 }
 
 // A Subject this session invented has to be created rather than replaced, on the page its pane
-// was opened against.
+// was opened against. Answers as the save handler does; a create answers nothing.
 async function writeSubject(
 	pane: EditPane,
 	subject: Subject,
 	dependentSubjects: DependentSubjects,
 	comment: string
-): Promise<void> {
+): Promise<Subject | undefined> {
 	if ( !pane.isNew ) {
-		await props.onSave( subject, dependentSubjects, comment );
+		const stored = await props.onSave( subject, dependentSubjects, comment );
 		dependentSubjectEditing.markWritten( dependentSubjects );
-		return;
+		return stored;
 	}
 
 	if ( props.onCreate === undefined ) {
@@ -994,6 +995,7 @@ async function writeSubject(
 
 	markPaneWritten( pane.id );
 	dependentSubjectEditing.markWritten( dependentSubjects );
+	return undefined;
 }
 
 async function writeDirtyPanes( summary: string ): Promise<void> {
@@ -1074,16 +1076,16 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 	// Carried out of the loop rather than returned from inside it, so a part-way stop is
 	// reported once, below.
 	let failed = false;
-	const writtenPaneIds: string[] = [];
+	const storedSubjects = new Map<string, Subject | undefined>();
 
 	for ( const { id, pane, subject: updatedSubject, dependentSubjectsToWrite } of orderedTargets ) {
 		const subjectName = subjectDisplayName( updatedSubject );
 
 		try {
-			await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
+			const stored = await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
 			paneRefs.get( id )?.markWritten();
 			changedPaneIds.delete( id );
-			writtenPaneIds.push( id );
+			storedSubjects.set( id, stored );
 			savedNames.push( subjectName );
 		} catch ( error ) {
 			failed = true;
@@ -1100,7 +1102,7 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 			partialSave.value = { written: savedNames.length, attempted: targets.length };
 		}
 
-		startOverFromWhatTheWritesStored( writtenPaneIds );
+		startOverFromWhatTheWritesStored( storedSubjects );
 
 		if ( mayWriteUnasked && conflict.value?.editConflict.bothChanged.length === 0 ) {
 			await writePanes( summary, false );
@@ -1130,13 +1132,10 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 
 // A write the server merged holds what changed since beside the pane's edit, which the pane's form lacks: a pane left
 // open after a partial save starts over from what its write stored, so a later save of it keeps that.
-function startOverFromWhatTheWritesStored( paneIds: readonly string[] ): void {
-	for ( const paneId of paneIds ) {
-		const pane = panes.value.find( ( candidate ) => candidate.id === paneId );
-		const written = pane === undefined ? undefined : useSubjectStore().writtenSubject( pane.subject.getId() );
-
-		if ( written !== undefined ) {
-			replacePaneSubject( paneId, written );
+function startOverFromWhatTheWritesStored( storedSubjects: ReadonlyMap<string, Subject | undefined> ): void {
+	for ( const [ paneId, stored ] of storedSubjects ) {
+		if ( stored !== undefined ) {
+			replacePaneSubject( paneId, stored );
 			paneReloads.set( paneId, ( paneReloads.get( paneId ) ?? 0 ) + 1 );
 		}
 	}

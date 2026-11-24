@@ -98,15 +98,6 @@ export const useSubjectStore = defineStore( 'subject', {
 			return state.subjects.get( id.text ) as Subject | undefined;
 		},
 		/**
-		 * The Subject as this session's last write of it stored it, until a read replaces that copy.
-		 */
-		writtenSubject: ( state ) => function ( id: SubjectId ): Subject | undefined {
-			const subject = state.subjects.get( id.text ) as Subject | undefined;
-			const writtenRevisionId = state.writtenRevisionIds.get( id.text );
-
-			return writtenRevisionId !== undefined && subject?.getRevisionId() === writtenRevisionId ? subject : undefined;
-		},
-		/**
 		 * Whether a read found no Subject under this id. A Subject the registry holds under the id
 		 * outranks this: it may have been created or read since.
 		 */
@@ -151,7 +142,10 @@ export const useSubjectStore = defineStore( 'subject', {
 			}
 			return this.getSubject( id );
 		},
-		async updateSubject( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<void> {
+		/**
+		 * Answers with the Subject as the write stored it, where the wiki's answer carries it.
+		 */
+		async updateSubject( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<Subject | undefined> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject(
@@ -168,6 +162,8 @@ export const useSubjectStore = defineStore( 'subject', {
 			if ( result.subject !== null ) {
 				await this.reloadWrittenPage( result.subject.getPageIdentifiers().getPageId() );
 			}
+
+			return result.subject ?? undefined;
 		},
 		/**
 		 * Writes a Subject the client built, under the id it already carries. The counterpart to

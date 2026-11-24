@@ -161,7 +161,7 @@ describe( 'SubjectEditorDialog', () => {
 	const mountComponent = (
 		canEditSchema: boolean,
 		stubs: Record<string, any>,
-		onSave?: ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>,
+		onSave?: ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<Subject | undefined>,
 		schema: Schema = mockSchema,
 		provide: Record<string, unknown> = {},
 		subject: Subject = mockSubject,
@@ -1749,7 +1749,7 @@ describe( 'SubjectEditorDialog', () => {
 			target: Subject;
 		}
 
-		type SaveHandler = ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>;
+		type SaveHandler = ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<Subject | undefined>;
 
 		interface PaneStackOptions {
 			onSave?: SaveHandler;
@@ -2535,14 +2535,7 @@ describe( 'SubjectEditorDialog', () => {
 
 			it( 'keeps a change the server merged into a written subject when it is saved again after a partial failure', async () => {
 				const onSave = vi.fn()
-					.mockImplementationOnce( async ( written: Subject ) => {
-						useSubjectStore().recordWriteResult( {
-							subjectId: written.getId(),
-							subject: newSubject( { id: written.getId().text, label: 'Renamed meanwhile', revisionId: 50 } ),
-							schema: null,
-							revisionId: 50,
-						}, 0 );
-					} )
+					.mockResolvedValueOnce( newSubject( { id: rootSubjectId, label: 'Renamed meanwhile', revisionId: 50 } ) )
 					.mockRejectedValueOnce( new ValidationFailedError( [] ) )
 					.mockResolvedValue( undefined );
 				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
