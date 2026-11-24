@@ -20,6 +20,7 @@ class FrontendModuleLoader {
 
 	/**
 	 * @param string[] $dataLanguages
+	 * @param string[] $enabledFeatures
 	 */
 	public function __construct(
 		private readonly HookContainer $hookContainer,
@@ -27,6 +28,7 @@ class FrontendModuleLoader {
 		private readonly bool $validationEnforced,
 		private readonly bool $subjectFirst,
 		private readonly array $dataLanguages,
+		private readonly array $enabledFeatures,
 	) {
 	}
 
@@ -39,6 +41,7 @@ class FrontendModuleLoader {
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
 			'wgNeoWikiDataLanguages' => $this->dataLanguages,
+			'wgNeoWikiEnabledFeatures' => $this->enabledFeatures,
 			// The counts include Subjects on pages the viewer may not read, so only a viewer who may run queries
 			// gets them.
 			'wgNeoWikiSubjectCountsAvailable' => $out->getAuthority()->isAllowed( AuthorityBasedRawQueryAuthorizer::RIGHT ),

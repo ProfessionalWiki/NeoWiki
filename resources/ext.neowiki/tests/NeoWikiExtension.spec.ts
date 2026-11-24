@@ -89,6 +89,23 @@ describe( 'NeoWikiExtension.isValidationEnforced', () => {
 	} );
 } );
 
+describe( 'NeoWikiExtension.isFeatureEnabled', () => {
+	it( 'is true for a feature the wiki has on', () => {
+		setupMwMock( { config: { wgNeoWikiEnabledFeatures: [ 'lua', 'pageType', 'userType' ] } } );
+		expect( NeoWikiExtension.getInstance().isFeatureEnabled( 'pageType' ) ).toBe( true );
+	} );
+
+	it( 'is false for a feature the wiki has off', () => {
+		setupMwMock( { config: { wgNeoWikiEnabledFeatures: [ 'lua', 'userType' ] } } );
+		expect( NeoWikiExtension.getInstance().isFeatureEnabled( 'pageType' ) ).toBe( false );
+	} );
+
+	it( 'is false when the wiki did not say which features are on', () => {
+		setupMwMock();
+		expect( NeoWikiExtension.getInstance().isFeatureEnabled( 'pageType' ) ).toBe( false );
+	} );
+} );
+
 describe( 'NeoWikiExtension.getLatestStoreStateLoader', () => {
 	afterEach( () => {
 		vi.restoreAllMocks();

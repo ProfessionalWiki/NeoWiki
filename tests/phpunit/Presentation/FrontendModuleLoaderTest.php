@@ -159,6 +159,15 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectFirst'] ?? null );
 	}
 
+	public function testTellsTheFrontendWhichFeaturesAreOn(): void {
+		$this->clearHook( 'NeoWikiGetFrontendModules' );
+
+		$this->newLoader( enabledFeatures: [ 'lua', 'pageType' ] )
+			->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
+
+		$this->assertSame( [ 'lua', 'pageType' ], $this->addedJsConfigVars['wgNeoWikiEnabledFeatures'] ?? null );
+	}
+
 	public function testEmitsThatTheViewerMayEditThePagesSubjects(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
@@ -271,10 +280,14 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		return $out->getJsConfigVars()['wgNeoWikiCreateSubjectPageDeniedReason'];
 	}
 
+	/**
+	 * @param string[] $enabledFeatures
+	 */
 	private function newLoader(
 		int $validationDebounceMs = 300,
 		bool $validationEnforced = false,
-		bool $subjectFirst = false
+		bool $subjectFirst = false,
+		array $enabledFeatures = []
 	): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
@@ -282,6 +295,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 			$validationEnforced,
 			$subjectFirst,
 			[],
+			$enabledFeatures,
 		);
 	}
 

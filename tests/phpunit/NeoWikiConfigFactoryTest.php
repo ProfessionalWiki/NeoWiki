@@ -7,7 +7,9 @@ namespace ProfessionalWiki\NeoWiki\Tests;
 use MediaWiki\Config\HashConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
+use ProfessionalWiki\NeoWiki\Feature;
 use ProfessionalWiki\NeoWiki\NeoWikiConfig;
 use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
 use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
@@ -30,13 +32,10 @@ class NeoWikiConfigFactoryTest extends TestCase {
 	}
 
 	public function testUnsetUrlsProduceNullInsteadOfThrowing(): void {
-		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
-			'NeoWikiEnableDevelopmentUI' => false,
-			'NeoWikiRdfBaseUri' => null,
-			'CanonicalServer' => 'https://wiki.example',
+		$config = $this->buildConfig( [
 			'NeoWikiNeo4jInternalWriteUrl' => null,
 			'NeoWikiNeo4jInternalReadUrl' => null,
-		] ) );
+		] );
 
 		$this->assertNull( $config->neo4jInternalWriteUrl );
 		$this->assertNull( $config->neo4jInternalReadUrl );
@@ -44,13 +43,10 @@ class NeoWikiConfigFactoryTest extends TestCase {
 	}
 
 	public function testConfiguredUrlsArePassedThrough(): void {
-		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
-			'NeoWikiEnableDevelopmentUI' => false,
-			'NeoWikiRdfBaseUri' => null,
-			'CanonicalServer' => 'https://wiki.example',
+		$config = $this->buildConfig( [
 			'NeoWikiNeo4jInternalWriteUrl' => 'bolt://write:7687',
 			'NeoWikiNeo4jInternalReadUrl' => 'bolt://read:7687',
-		] ) );
+		] );
 
 		$this->assertSame( 'bolt://write:7687', $config->neo4jInternalWriteUrl );
 		$this->assertSame( 'bolt://read:7687', $config->neo4jInternalReadUrl );
@@ -61,38 +57,29 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		putenv( 'NEO4J_URL_OVERRIDE=bolt://env-write' );
 		putenv( 'NEO4J_URL_READ_OVERRIDE=bolt://env-read' );
 
-		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
-			'NeoWikiEnableDevelopmentUI' => false,
-			'NeoWikiRdfBaseUri' => null,
-			'CanonicalServer' => 'https://wiki.example',
+		$config = $this->buildConfig( [
 			'NeoWikiNeo4jInternalWriteUrl' => 'bolt://config-write',
 			'NeoWikiNeo4jInternalReadUrl' => 'bolt://config-read',
-		] ) );
+		] );
 
 		$this->assertSame( 'bolt://env-write', $config->neo4jInternalWriteUrl );
 		$this->assertSame( 'bolt://env-read', $config->neo4jInternalReadUrl );
 	}
 
 	public function testRdfBaseUriDefaultsToTheCanonicalServer(): void {
-		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
-			'NeoWikiEnableDevelopmentUI' => false,
-			'NeoWikiNeo4jInternalWriteUrl' => null,
-			'NeoWikiNeo4jInternalReadUrl' => null,
+		$config = $this->buildConfig( [
 			'NeoWikiRdfBaseUri' => null,
 			'CanonicalServer' => 'https://wiki.example',
-		] ) );
+		] );
 
 		$this->assertSame( 'https://wiki.example', $config->rdfBaseUri );
 	}
 
 	public function testConfiguredRdfBaseUriOverridesTheCanonicalServer(): void {
-		$config = ( new NeoWikiConfigFactory() )->buildFromMediaWikiConfig( new HashConfig( [
-			'NeoWikiEnableDevelopmentUI' => false,
-			'NeoWikiNeo4jInternalWriteUrl' => null,
-			'NeoWikiNeo4jInternalReadUrl' => null,
+		$config = $this->buildConfig( [
 			'NeoWikiRdfBaseUri' => 'https://id.example.org/ns',
 			'CanonicalServer' => 'https://wiki.example',
-		] ) );
+		] );
 
 		$this->assertSame( 'https://id.example.org/ns', $config->rdfBaseUri );
 	}
@@ -331,19 +318,156 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		);
 	}
 
+	public function testExperimentalFeatureIsOffUnlessTheWikiTurnsItOn(): void {
+		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), [] );
+
+		$this->assertFalse( $config->isFeatureEnabled( 'pageType' ) );
+	}
+
+	public function testExperimentalFeatureTheWikiTurnsOnIsEnabled(): void {
+		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), [ 'pageType' => true ] );
+
+		$this->assertTrue( $config->isFeatureEnabled( 'pageType' ) );
+	}
+
+	public function testStableFeatureOnByDefaultIsEnabledWhenTheWikiSaysNothing(): void {
+		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [] );
+
+		$this->assertTrue( $config->isFeatureEnabled( 'lua' ) );
+	}
+
+	public function testStableFeatureTheWikiTurnsOffIsDisabled(): void {
+		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [ 'lua' => false ] );
+
+		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
+	}
+
+	public function testEnabledFeaturesListsOnlyTheFeaturesThatAreOn(): void {
+		$config = $this->buildFeatureConfig(
+			[
+				Feature::stable( 'lua', enabledByDefault: true ),
+				Feature::experimental( 'pageType' ),
+				Feature::experimental( 'userType' ),
+				Feature::stable( 'rdf', enabledByDefault: true ),
+			],
+			[ 'userType' => true, 'rdf' => false ]
+		);
+
+		$this->assertEqualsCanonicalizing( [ 'lua', 'userType' ], $config->enabledFeatures );
+	}
+
+	public function testNameOfNoFeatureEnablesNothing(): void {
+		$config = $this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pagetype' => true ] );
+
+		$this->assertSame( [], $config->enabledFeatures );
+	}
+
+	public function testNameOfNoFeatureIsLoggedAsAWarning(): void {
+		$logger = new TestLogger();
+
+		$this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pagetype' => true ], $logger );
+
+		$this->assertTrue( $this->hasWarningNaming( $logger, 'pagetype' ) );
+	}
+
+	public function testFeatureSetToTrueOrFalseLogsNoWarning(): void {
+		$logger = new TestLogger();
+
+		$this->buildFeatureConfig(
+			[ Feature::experimental( 'pageType' ), Feature::stable( 'lua', enabledByDefault: true ) ],
+			[ 'pageType' => true, 'lua' => false ],
+			$logger
+		);
+
+		$this->assertFalse( $logger->hasWarningRecords() );
+	}
+
+	public function testNameListedWithoutTrueOrFalseIsLoggedAsAWarning(): void {
+		$logger = new TestLogger();
+
+		$this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pageType' ], $logger );
+
+		$this->assertTrue( $this->hasWarningNaming( $logger, 'pageType' ) );
+	}
+
+	/**
+	 * @dataProvider nonBooleanFeatureValueProvider
+	 */
+	public function testValueOtherThanTrueOrFalseTurnsTheFeatureOffWithWarning( mixed $value ): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [ 'lua' => $value ], $logger );
+
+		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
+		$this->assertTrue( $this->hasWarningNaming( $logger, 'lua' ) );
+	}
+
+	public function nonBooleanFeatureValueProvider(): iterable {
+		yield 'zero' => [ 0 ];
+		yield 'one' => [ 1 ];
+		yield 'string' => [ 'true' ];
+	}
+
+	public function testSettingThatIsNotAMapLeavesEveryFeatureAtItsDefaultWithWarning(): void {
+		$logger = new TestLogger();
+
+		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), 'pageType', $logger );
+
+		$this->assertSame( [ 'lua' ], $config->enabledFeatures );
+		$this->assertTrue( $logger->hasWarningRecords() );
+	}
+
+	/**
+	 * @return Feature[]
+	 */
+	private function luaPageTypeAndUserType(): array {
+		return [
+			Feature::stable( 'lua', enabledByDefault: true ),
+			Feature::experimental( 'pageType' ),
+			Feature::experimental( 'userType' ),
+		];
+	}
+
+	private function hasWarningNaming( TestLogger $logger, string $featureName ): bool {
+		return $logger->hasWarningThatPasses(
+			static fn ( array $record ): bool => ( $record['context']['name'] ?? null ) === $featureName
+		);
+	}
+
+	/**
+	 * @param Feature[] $features
+	 */
+	private function buildFeatureConfig(
+		array $features,
+		mixed $setting,
+		LoggerInterface $logger = new NullLogger()
+	): NeoWikiConfig {
+		return $this->buildConfig( [ 'NeoWikiFeatures' => $setting ], $features, $logger );
+	}
+
 	/**
 	 * @param array<int, mixed> $sparqlStores
 	 */
-	private function buildSparqlConfig( array $sparqlStores, ?LoggerInterface $logger = null ): NeoWikiConfig {
-		$factory = $logger === null ? new NeoWikiConfigFactory() : new NeoWikiConfigFactory( $logger );
+	private function buildSparqlConfig( array $sparqlStores, LoggerInterface $logger = new NullLogger() ): NeoWikiConfig {
+		return $this->buildConfig( [ 'NeoWikiSparqlStores' => $sparqlStores ], [], $logger );
+	}
 
-		return $factory->buildFromMediaWikiConfig( new HashConfig( [
+	/**
+	 * @param array<string, mixed> $settings
+	 * @param Feature[] $features
+	 */
+	private function buildConfig(
+		array $settings,
+		array $features = [],
+		LoggerInterface $logger = new NullLogger()
+	): NeoWikiConfig {
+		return ( new NeoWikiConfigFactory( $features, $logger ) )->buildFromMediaWikiConfig( new HashConfig( $settings + [
 			'NeoWikiEnableDevelopmentUI' => false,
 			'NeoWikiRdfBaseUri' => null,
 			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => null,
 			'NeoWikiNeo4jInternalReadUrl' => null,
-			'NeoWikiSparqlStores' => $sparqlStores,
+			'NeoWikiFeatures' => [],
 		] ) );
 	}
 

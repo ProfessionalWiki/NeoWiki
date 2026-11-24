@@ -6,7 +6,8 @@ order: 2
 # Upgrading NeoWiki
 
 Before you start, read the [release notes](https://github.com/ProfessionalWiki/NeoWiki/blob/master/RELEASE-NOTES.md)
-of every version after yours: they list any step an upgrade needs beyond the ones below.
+of every version after yours: they list any step an upgrade needs beyond the ones below, except for data that
+[experimental features](installation.md#turning-features-on-or-off) store.
 
 ## Upgrading a Docker install
 
