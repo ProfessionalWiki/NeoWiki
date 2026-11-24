@@ -230,19 +230,14 @@ stands for the wiki's content language (`$wgLanguageCode`). You can also set the
 
 ## Turning features on or off
 
-You can turn a feature on or off by its name:
+To turn on an optional feature, set it to `true`, or to `false` to turn it off:
 
 ```php
 $wgNeoWikiFeatures['featureName'] = true;
 ```
 
-A feature you leave out keeps its default, and any value other than `true` turns it off. NeoWiki [logs a
-warning](#logging) for a name it does not have and for a value other than `true` or `false`.
-
 Experimental features are off by default, and any release may change or remove one, so you may need to fix the data it
 stored by hand.
-
-No feature can be turned on or off yet.
 
 ## Logging
 
