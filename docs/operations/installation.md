@@ -241,10 +241,16 @@ stored by hand.
 
 ## Logging
 
-NeoWiki logs on the `NeoWiki` channel: a graph store failing on save, the pages a rebuild could not project, a store
-entry or name it will not accept, a `$wgNeoWikiFeatures` entry it cannot use, and RDF a projection had to drop. Below
-`warning` it also records rebuild decisions and denied page reads. MediaWiki routes no channel anywhere by default, so
-none of it reaches you until you route it:
+NeoWiki logs these on the `NeoWiki` channel:
+
+- A graph store failing on save
+- The pages a rebuild could not project
+- A `$wgNeoWikiSparqlStores` entry or graph store name it will not accept
+- A `$wgNeoWikiFeatures` entry it cannot use
+- RDF a projection had to drop
+
+Below `warning`, it also records rebuild decisions and denied page reads. MediaWiki routes no channel anywhere by
+default, so none of it reaches you until you route it:
 
 ```php
 $wgDebugLogGroups['NeoWiki'] = '/var/log/mediawiki/neowiki.log';
