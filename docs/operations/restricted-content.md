@@ -47,7 +47,7 @@ results.
 ## Removing the Lua library
 
 ```php
-$wgNeoWikiFeatures['lua'] = false;
+$wgNeoWikiEnableLua = false;
 ```
 
 `require('mw.neowiki')` then fails like any missing module, so a page whose module uses the library shows a script
