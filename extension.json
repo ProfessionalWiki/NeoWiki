@@ -262,7 +262,7 @@
 			"value": {}
 		},
 		"NeoWikiEnableLua": {
-			"description": "Whether NeoWiki registers its Lua library (mw.neowiki) with Scribunto. When false, requiring the library fails like any missing module. The parser functions are unaffected.",
+			"description": "Deprecated: use $wgNeoWikiFeatures['lua'] = false. When false, NeoWiki still does not register its Lua library (mw.neowiki) with Scribunto, so requiring it fails like any missing module. The parser functions are unaffected.",
 			"value": true
 		},
 		"NeoWikiEnforceValidation": {

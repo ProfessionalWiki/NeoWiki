@@ -12,6 +12,8 @@ use ProfessionalWiki\NeoWiki\Domain\Subject\StatementList;
 use ProfessionalWiki\NeoWiki\Domain\Value\StringValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiHooks;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
+use ProfessionalWiki\NeoWiki\NeoWikiExtension;
+use ProfessionalWiki\NeoWiki\NeoWikiFeatures;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
 
@@ -57,6 +59,15 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testNothingIsRegisteredWhenTheLibraryIsDisabled(): void {
+		$this->turnTheLibraryOff();
+		$libraries = [];
+
+		NeoWikiHooks::onScribuntoExternalLibraries( 'lua', $libraries );
+
+		$this->assertSame( [], $libraries );
+	}
+
+	public function testTheDeprecatedSettingStillTurnsTheLibraryOff(): void {
 		$this->overrideConfigValue( 'NeoWikiEnableLua', false );
 		$libraries = [];
 
@@ -88,7 +99,7 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testRequiringTheLibraryFailsWhenItIsDisabled(): void {
 		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
-		$this->overrideConfigValue( 'NeoWikiEnableLua', false );
+		$this->turnTheLibraryOff();
 
 		$html = $this->renderModule( self::LIBRARY_MODULE );
 
@@ -102,12 +113,20 @@ class LuaLibraryRegistrationTest extends NeoWikiIntegrationTestCase {
 	 */
 	public function testAModuleStillReachesTheParserFunctionsWhenTheLibraryIsDisabled(): void {
 		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
-		$this->overrideConfigValue( 'NeoWikiEnableLua', false );
+		$this->turnTheLibraryOff();
 
 		$html = $this->renderModule( self::PARSER_FUNCTION_MODULE );
 
 		$this->assertStringContainsString( self::MOTTO, $html );
 		$this->assertStringNotContainsString( 'scribunto-error', $html );
+	}
+
+	/**
+	 * Features are resolved once per NeoWikiExtension instance, which setUp() already built.
+	 */
+	private function turnTheLibraryOff(): void {
+		$this->overrideConfigValue( 'NeoWikiFeatures', [ NeoWikiFeatures::LUA => false ] );
+		NeoWikiExtension::resetInstance();
 	}
 
 	/**

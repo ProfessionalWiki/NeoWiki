@@ -200,7 +200,6 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiNeo4jInternalWriteUrl` | Bolt URL for writing the graph projection | _none_ | For Neo4j features |
 | `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For Neo4j features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
-| `$wgNeoWikiEnableLua` | Registers the `mw.neowiki` Lua library with Scribunto | `true` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `false` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox, or in full on a subject-first wiki | `true` | No |
 | `$wgNeoWikiSubjectFirst` | Puts Subjects before pages: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
@@ -234,6 +233,10 @@ To turn on an optional feature, set it to `true`, or to `false` to turn it off:
 ```php
 $wgNeoWikiFeatures['featureName'] = true;
 ```
+
+| Feature | What it turns on | Default |
+|---|---|---|
+| `lua` | The [`mw.neowiki` Lua library](../authoring/lua-api.md) for Scribunto modules | On |
 
 Experimental features are off by default, and any release may change or remove one, so you may need to fix the data it
 stored by hand.

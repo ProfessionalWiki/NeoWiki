@@ -6,6 +6,8 @@ namespace ProfessionalWiki\NeoWiki;
 
 class NeoWikiFeatures {
 
+	public const string LUA = 'lua';
+
 	/**
 	 * The features a wiki can turn on or off with $wgNeoWikiFeatures. List each one for admins, marking the
 	 * experimental ones, under "Turning features on or off" in docs/operations/installation.md. A feature that
@@ -14,7 +16,9 @@ class NeoWikiFeatures {
 	 * @return Feature[]
 	 */
 	public static function all(): array {
-		return [];
+		return [
+			Feature::stable( self::LUA, enabledByDefault: true ),
+		];
 	}
 
 }
