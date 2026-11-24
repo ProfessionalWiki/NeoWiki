@@ -2,12 +2,18 @@ import type { PropertyDefinition } from '@/domain/PropertyDefinition';
 import { PropertyName } from '@/domain/PropertyDefinition';
 import { newStringValue, type StringValue, ValueType } from '@/domain/Value';
 import { BasePropertyType } from '@/domain/PropertyType';
+import { formatDateForDisplay } from '@/domain/propertyTypes/dateText';
+import type { PartialDate } from '@/domain/propertyTypes/PartialDate';
+
+export { formatDateForDisplay };
+
+export type DatePrecision = PartialDate['precision'];
 
 export interface DateProperty extends PropertyDefinition {
 
 	/**
-	 * Inclusive lower bound. Must be a strict ISO 8601 calendar date in
-	 * `YYYY-MM-DD` form with no time or timezone component (e.g. `2025-06-15`).
+	 * Inclusive lower bound: an ISO 8601 calendar date of year, month or day precision
+	 * (e.g. `2025`, `2025-06`, `2025-06-15`).
 	 */
 	readonly minimum?: string;
 
@@ -15,6 +21,11 @@ export interface DateProperty extends PropertyDefinition {
 	 * Inclusive upper bound. Same shape rules as the minimum.
 	 */
 	readonly maximum?: string;
+
+	/**
+	 * Least precise date allowed. Left out, the property asks for a full date: see minPrecisionOf.
+	 */
+	readonly minPrecision?: DatePrecision;
 
 }
 
@@ -61,19 +72,8 @@ export function parseStrictDate( value: string ): number | null {
 }
 
 /**
- * Property type for xsd:date-style calendar dates without a time component.
- *
- * Values must be strict ISO 8601 dates in `YYYY-MM-DD` form (e.g.
- * `2025-06-15`). Values carrying a time or timezone component
- * (`2025-06-15T00:00:00Z`), partial values such as year-only (`2025`) or
- * year-month (`2025-06`), and calendar overflows like `2025-02-30` are
- * rejected. The `minimum` and `maximum` bounds are inclusive and must
- * themselves be well-formed ISO 8601 dates.
- *
- * If `minimum` or `maximum` on the passed-in property is itself malformed,
- * that bound is silently ignored during validation (fail-open). The PHP
- * persistence layer rejects malformed bounds at construction, so this only
- * matters if something bypasses that path.
+ * Property type for calendar dates without a time component, of year, month or day precision:
+ * ISO 8601 `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. The backend validates values and bounds.
  */
 export class DateType extends BasePropertyType<DateProperty, StringValue> {
 
@@ -92,35 +92,16 @@ export class DateType extends BasePropertyType<DateProperty, StringValue> {
 	public createPropertyDefinitionFromJson( base: PropertyDefinition, json: any ): DateProperty {
 		return {
 			...base,
-			minimum: json.minimum ?? undefined,
-			maximum: json.maximum ?? undefined,
+			minimum: typeof json.minimum === 'string' ? json.minimum : undefined,
+			maximum: typeof json.maximum === 'string' ? json.maximum : undefined,
+			minPrecision: json.minPrecision ?? undefined,
 		} as DateProperty;
 	}
 
 }
 
-/**
- * Formats a `YYYY-MM-DD` string as a human-readable date using the user's
- * browser locale, with no time component.
- *
- * The date is interpreted in UTC and rendered with `timeZone: 'UTC'` so the
- * displayed calendar day always matches the stored day regardless of the host
- * timezone. Falls back to the raw input when it cannot be parsed, so malformed
- * values surface verbatim in the UI rather than as `Invalid Date`.
- */
-export function formatDateForDisplay( iso: string ): string {
-	if ( parseStrictDate( iso ) === null ) {
-		return iso;
-	}
-
-	const date = new Date( `${ iso }T00:00:00Z` );
-
-	return date.toLocaleDateString( undefined, {
-		year: 'numeric',
-		month: 'short',
-		day: 'numeric',
-		timeZone: 'UTC',
-	} );
+export function minPrecisionOf( property: DateProperty ): DatePrecision {
+	return property.minPrecision ?? 'day';
 }
 
 type DatePropertyAttributes = Omit<Partial<DateProperty>, 'name'> & {
@@ -136,5 +117,6 @@ export function newDateProperty( attributes: DatePropertyAttributes = {} ): Date
 		default: attributes.default,
 		minimum: attributes.minimum,
 		maximum: attributes.maximum,
+		minPrecision: attributes.minPrecision,
 	};
 }

@@ -4,7 +4,7 @@ import { newTextProperty } from '@/domain/propertyTypes/Text';
 import { newNumberProperty } from '@/domain/propertyTypes/Number';
 import { newBooleanProperty } from '@/domain/propertyTypes/Boolean';
 import { newSelectProperty } from '@/domain/propertyTypes/Select';
-import { formatDateForDisplay, newDateProperty } from '@/domain/propertyTypes/Date';
+import { newDateProperty } from '@/domain/propertyTypes/Date';
 import { newMonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation';
 import {
@@ -41,8 +41,10 @@ describe( 'valueText', () => {
 		expect( valueText( property, newStringValue( 'o2' ) ) ).toBe( 'Pseudonym' );
 	} );
 
-	it( 'reads a date as dates are shown', () => {
-		expect( valueText( newDateProperty(), newStringValue( '1881-10-25' ) ) ).toBe( formatDateForDisplay( '1881-10-25' ) );
+	it( 'reads a date as dates are shown, in the user\'s language', () => {
+		setupMwMock( { config: { wgUserLanguage: 'de' } } );
+
+		expect( valueText( newDateProperty(), newStringValue( '1881-10-25' ) ) ).toBe( '25. Okt. 1881' );
 	} );
 
 	it( 'reads the texts of a monolingual text value', () => {
