@@ -258,7 +258,7 @@
 			"value": true
 		},
 		"NeoWikiFeatures": {
-			"description": "Turns NeoWiki features on or off by name, as in [ 'featureName' => true ]. A feature left out keeps its default, and any value other than true turns it off. See https://neowiki.ai/docs/operations/installation#turning-features-on-or-off",
+			"description": "Turns optional NeoWiki features on or off by name, as in [ 'featureName' => true ]. See https://neowiki.ai/docs/operations/installation#turning-features-on-or-off",
 			"value": {}
 		},
 		"NeoWikiEnableLua": {
