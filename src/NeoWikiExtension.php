@@ -2192,6 +2192,8 @@ class NeoWikiExtension {
 			pageIdentifiersLookup: $this->getPageIdentifiersLookup(),
 			connectionProvider: MediaWikiServices::getInstance()->getConnectionProvider(),
 			primaryRevision: $revision,
+			revisionPolicy: $this->getRevisionPolicy(),
+			viewer: $authority,
 		);
 
 		return new GetSubjectQuery(
