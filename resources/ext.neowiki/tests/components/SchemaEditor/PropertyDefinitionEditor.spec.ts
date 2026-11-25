@@ -25,10 +25,12 @@ import {
 	describedAs,
 	FieldProps,
 	findPropertyNameInput,
+	labelRows,
 	labelTextInputs,
 	propertyNameIsLocked,
 	reportPartlyClearedDate,
 	reportUnparseableNumber,
+	searchLanguageFromHandle,
 	selectedText,
 	setupMwMock,
 } from '../../VueTestHelpers.ts';
@@ -128,6 +130,7 @@ describe( 'PropertyDefinitionEditor', () => {
 			const wrapper = newWrapper( { ...newDateProperty( { name: 'Birth date' } ), labels: { en: 'Date of birth' } } );
 
 			await labelTextInputs( wrapper )[ 1 ].setValue( 'Birthday' );
+			await searchLanguageFromHandle( labelRows( wrapper )[ 1 ], 'English' );
 
 			expect( unparseableInputMessage( wrapper ) ).toBe( 'neowiki-field-single-value-per-language' );
 		} );

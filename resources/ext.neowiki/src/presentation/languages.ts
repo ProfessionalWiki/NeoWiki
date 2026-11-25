@@ -70,7 +70,15 @@ function uniqueLanguageTags( codes: readonly string[] ): string[] {
  * language once every one is.
  */
 export function newPartLanguageTag( partLanguageTags: readonly string[] ): string {
-	return dataLanguageTags().find( ( tag ) => !partLanguageTags.includes( tag ) ) ?? contentLanguageTag();
+	return unusedLanguageTag( partLanguageTags ) ?? contentLanguageTag();
+}
+
+/**
+ * The language a new part starts in where each language takes one part: the first data language, or else the
+ * content language, that no part is in yet. None once every one is, which leaves the choice to the editor.
+ */
+export function unusedLanguageTag( partLanguageTags: readonly string[] ): string | undefined {
+	return [ ...dataLanguageTags(), contentLanguageTag() ].find( ( tag ) => !partLanguageTags.includes( tag ) );
 }
 
 let namesIn: { userLanguage: string; names: Intl.DisplayNames | null } | undefined;

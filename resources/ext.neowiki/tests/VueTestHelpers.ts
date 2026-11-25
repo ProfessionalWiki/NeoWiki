@@ -161,6 +161,14 @@ export async function pickInLanguageSearch( languagePicker: VueWrapper | DOMWrap
 		.trigger( 'click' );
 }
 
+/**
+ * Picks a language for a language input holding none, whose handle opens the search itself.
+ */
+export async function searchLanguageFromHandle( languageInput: VueWrapper | DOMWrapper<Element>, text: string ): Promise<void> {
+	await languageInput.find( '.ext-neowiki-language-input [role="combobox"]' ).trigger( 'click' );
+	await pickInLanguageSearch( languageInput, text );
+}
+
 export function emittedTags( languageControl: VueWrapper ): string[] {
 	return ( languageControl.emitted( 'update:modelValue' ) ?? [] ).map( ( event ) => event[ 0 ] as string );
 }
@@ -235,6 +243,10 @@ export function dialogOfAnotherExtension(): HTMLElement {
  */
 export function labelTextInputs( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement>[] {
 	return wrapper.findComponent( LabelsInput ).findAll<HTMLInputElement>( '.ext-neowiki-monolingual-text-input__text input' );
+}
+
+export function labelRows( wrapper: VueWrapper ): DOMWrapper<Element>[] {
+	return wrapper.findComponent( LabelsInput ).findAll( '.ext-neowiki-monolingual-text-input__row' );
 }
 
 export function findPropertyNameInput( wrapper: VueWrapper ): DOMWrapper<HTMLInputElement> {

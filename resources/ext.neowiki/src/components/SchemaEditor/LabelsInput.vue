@@ -1,5 +1,6 @@
 <template>
 	<MonolingualTextInput
+		ref="input"
 		:model-value="value"
 		:label="props.label"
 		:property="labelsProperty"
@@ -9,9 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 import MonolingualTextInput from '@/components/Value/MonolingualTextInput.vue';
 import type { MonolingualTextValue, Value } from '@/domain/Value.ts';
+import type { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 import { newMonolingualTextProperty } from '@/domain/propertyTypes/MonolingualText.ts';
 import { labelsAsValue, labelsOf, repeatedLanguageViolations } from '@/components/SchemaEditor/labelEditing.ts';
 
@@ -28,8 +30,11 @@ const emit = defineEmits<{
 const labelsProperty = newMonolingualTextProperty( {
 	name: 'labels',
 	description: props.description,
-	multiple: true
+	multiple: true,
+	uniqueLanguages: true
 } );
+
+const input = ref<ValueInputExposes | null>( null );
 
 // Held here rather than read back from the labels emitted, which keep one label per language: a second one the user
 // typed in a language would vanish from the field.
@@ -47,6 +52,10 @@ export interface LabelsInputExposes {
 }
 
 function unparseableInputMessage(): string | null {
+	return input.value?.unparseableInputMessage?.() ?? repeatedLanguageMessage();
+}
+
+function repeatedLanguageMessage(): string | null {
 	return violations.value.length === 0 ? null : mw.message( 'neowiki-field-single-value-per-language' ).text();
 }
 

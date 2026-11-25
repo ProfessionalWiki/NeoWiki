@@ -24,12 +24,13 @@ describe( 'LanguageInput', () => {
 			config: { wgUserLanguage: 'en', wgContentLanguage: 'en', wgNeoWikiDataLanguages: dataLanguages },
 			messages: {
 				'neowiki-language-input-other': 'Other language…',
+				'neowiki-language-input-choose': 'Choose a language',
 			},
 		} );
 	}
 
 	// Hands each language back as the new one, the way a parent bound to it with v-model does.
-	function newWrapper( language: string ): VueWrapper {
+	function newWrapper( language: string | null ): VueWrapper {
 		wrapper = mount( LanguageInput, {
 			props: {
 				modelValue: language,
@@ -96,6 +97,47 @@ describe( 'LanguageInput', () => {
 		wikiWith( [ 'de', 'fr', 'it' ] );
 
 		expect( announcedLanguage( newWrapper( 'und' ).element ) ).toBe( 'und' );
+	} );
+
+	it( 'asks for a language when it holds none', () => {
+		wikiWith( [ 'de', 'fr', 'it' ] );
+
+		expect( announcedLanguage( newWrapper( null ).element ) ).toBe( 'Choose a language' );
+	} );
+
+	describe( 'holding no language', () => {
+
+		it( 'opens the search over every language when clicked', async () => {
+			wikiWith( [ 'de', 'fr', 'it' ] );
+			const input = newWrapper( null );
+
+			await list( input ).trigger( 'click' );
+
+			expect( searchIsOpen( input ) ).toBe( true );
+			await vi.waitFor( () => expect( document.activeElement ).toBe( search( input ).element ) );
+		} );
+
+		it( 'opens the search from the keyboard', async () => {
+			wikiWith( [ 'de', 'fr', 'it' ] );
+			const input = newWrapper( null );
+
+			await list( input ).trigger( 'keydown', { key: 'Enter' } );
+
+			expect( searchIsOpen( input ) ).toBe( true );
+		} );
+
+		it( 'closes the search when clicked again', async () => {
+			wikiWith( [ 'de', 'fr', 'it' ] );
+			const input = newWrapper( null );
+			await list( input ).trigger( 'click' );
+
+			// The browser moves the focus to what is clicked before the click lands.
+			list( input ).element.focus();
+			await list( input ).trigger( 'click' );
+
+			expect( searchIsOpen( input ) ).toBe( false );
+		} );
+
 	} );
 
 	it( 'names its list after the field it belongs to', () => {

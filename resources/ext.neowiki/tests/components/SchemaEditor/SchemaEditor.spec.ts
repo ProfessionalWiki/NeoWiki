@@ -14,7 +14,17 @@ import { newSchema } from '@/TestHelpers.ts';
 import { newRelationProperty } from '@/domain/propertyTypes/Relation.ts';
 import { newSelectProperty } from '@/domain/propertyTypes/Select.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
-import { afterQueuedTasks, createI18nMock, findPropertyNameInput, labelTextInputs, propertyNameIsLocked, reportUnparseableNumber, selectedText } from '../../VueTestHelpers.ts';
+import {
+	afterQueuedTasks,
+	createI18nMock,
+	findPropertyNameInput,
+	labelRows,
+	labelTextInputs,
+	propertyNameIsLocked,
+	reportUnparseableNumber,
+	searchLanguageFromHandle,
+	selectedText,
+} from '../../VueTestHelpers.ts';
 import { NeoWikiTestServices } from '../../NeoWikiTestServices.ts';
 import PaneDivider from '@/components/common/PaneDivider.vue';
 import { defineComponent, nextTick } from 'vue';
@@ -479,6 +489,7 @@ describe( 'SchemaEditor', () => {
 					labels: { en: 'Firm' },
 				} ), { opensOnSchema: true } );
 				await labelTextInputs( wrapper )[ 1 ].setValue( 'Company' );
+				await searchLanguageFromHandle( labelRows( wrapper )[ 1 ], 'English' );
 
 				return wrapper;
 			}
