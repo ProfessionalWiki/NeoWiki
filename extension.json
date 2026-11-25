@@ -851,6 +851,7 @@
 				"neowiki-subject-editor-target-load-error",
 				"neowiki-subject-editor-create-target-error",
 				"neowiki-subject-editor-partial-save",
+				"neowiki-subject-editor-nothing-changed",
 				"neowiki-subject-editor-edit-conflict-title",
 				"neowiki-subject-editor-edit-conflict",
 				"neowiki-subject-editor-edit-conflict-theirs",

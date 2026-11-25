@@ -129,6 +129,15 @@
 					{{ partialSaveMessage }}
 				</CdxMessage>
 
+				<CdxMessage
+					v-if="nothingChanged"
+					:inline="true"
+					type="warning"
+					class="ext-neowiki-subject-editor-dialog__nothing-changed"
+				>
+					{{ $i18n( 'neowiki-subject-editor-nothing-changed' ).text() }}
+				</CdxMessage>
+
 				<!-- Whatever the host has to ask alongside the save, such as which page a Subject
 					being created goes on. Above the actions, so the question is read before the
 					button that answers it. The footer sits outside the body's `inert`, so the host
@@ -223,9 +232,10 @@ import { useSubjectStore, type DependentSubjects } from '@/stores/SubjectStore.t
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 /**
- * Writes a Subject the wiki holds and its `dependentSubjects` in one write.
+ * Writes a Subject the wiki holds and its `dependentSubjects` in one write. Resolves to false when the write changed
+ * nothing.
  */
-type SubjectSaveHandler = ( subject: Subject, dependentSubjects: DependentSubjects, comment: string ) => Promise<void>;
+type SubjectSaveHandler = ( subject: Subject, dependentSubjects: DependentSubjects, comment: string ) => Promise<boolean | void>;
 
 /**
  * Writes a Subject this session invented, carrying the id minted for it, as a Subject of the
@@ -344,6 +354,9 @@ const activePaneId = ref<string>( rootPaneId.value );
 // Set when a save wrote some Subjects and then failed: the toast that says so vanishes,
 // and the dialog is still open.
 const partialSave = ref<{ written: number; attempted: number } | null>( null );
+
+const nothingChanged = ref( false );
+let wroteAChange = false;
 
 interface ConflictReview {
 	paneId: string;
@@ -808,6 +821,8 @@ function startSession(): void {
 	extraPanes.value = [];
 	activePaneId.value = rootPaneId.value;
 	partialSave.value = null;
+	nothingChanged.value = false;
+	wroteAChange = false;
 	conflict.value = null;
 	changedPaneIds.clear();
 	conflictBases.clear();
@@ -970,11 +985,11 @@ async function writeSubject(
 	subject: Subject,
 	dependentSubjects: DependentSubjects,
 	comment: string
-): Promise<void> {
+): Promise<boolean> {
 	if ( !pane.isNew ) {
-		await props.onSave( subject, dependentSubjects, comment );
+		const changed = await props.onSave( subject, dependentSubjects, comment );
 		dependentSubjectEditing.markWritten( dependentSubjects );
-		return;
+		return changed !== false;
 	}
 
 	if ( props.onCreate === undefined ) {
@@ -994,6 +1009,7 @@ async function writeSubject(
 
 	markPaneWritten( pane.id );
 	dependentSubjectEditing.markWritten( dependentSubjects );
+	return true;
 }
 
 async function writeDirtyPanes( summary: string ): Promise<void> {
@@ -1007,6 +1023,7 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 	await nextTick();
 
 	partialSave.value = null;
+	nothingChanged.value = false;
 
 	// Each flush writes only its own pane's violations, so none has to wait for another. The write
 	// set is read again afterwards rather than before: a validation round trip is awaited here, and
@@ -1080,11 +1097,12 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 		const subjectName = subjectDisplayName( updatedSubject );
 
 		try {
-			await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
+			const changed = await writeSubject( pane, updatedSubject, dependentSubjectsToWrite, summary || defaultSummaryFor( pane ) );
 			paneRefs.get( id )?.markWritten();
 			changedPaneIds.delete( id );
 			writtenPaneIds.push( id );
 			savedNames.push( subjectName );
+			wroteAChange = wroteAChange || changed;
 		} catch ( error ) {
 			failed = true;
 			// The toast naming the refused Subject vanishes; its pane is what stays.
@@ -1116,6 +1134,11 @@ async function writePanes( summary: string, mayWriteUnasked: boolean ): Promise<
 	// navigation takes away nor a close of a dialog that is going with it.
 	if ( props.onSaved !== undefined ) {
 		props.onSaved();
+		return;
+	}
+
+	if ( summary !== '' && !wroteAChange ) {
+		nothingChanged.value = true;
 		return;
 	}
 
@@ -1462,7 +1485,8 @@ defineExpose( { hasChanged: hasUnsavedEdits, rootLabel, shown, visible } );
 		padding: @spacing-50 @spacing-150 @spacing-100;
 	}
 
-	&__partial-save {
+	&__partial-save,
+	&__nothing-changed {
 		margin: 0 0 @spacing-50;
 	}
 

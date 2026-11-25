@@ -423,9 +423,10 @@ function editSubject( edited: Subject ): void {
 
 // Re-read rather than patch: a save can add or drop relations, so the referenced Subjects below are
 // no longer the ones the page was built from.
-async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
+async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<boolean> {
+	const changed = await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 	await reloadSubject();
+	return changed;
 }
 
 // No reload of its own: a created Subject always comes with the update that points at it, and that

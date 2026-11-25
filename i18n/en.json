@@ -299,6 +299,7 @@
 	"neowiki-subject-editor-target-load-error": "Could not load the related subject.",
 	"neowiki-subject-editor-create-target-error": "Could not create the related subject.",
 	"neowiki-subject-editor-partial-save": "Saved $1 of $2 {{PLURAL:$2|subject|subjects}}. The rest still have unsaved changes.",
+	"neowiki-subject-editor-nothing-changed": "Nothing was saved, because no value changed.",
 	"neowiki-subject-editor-edit-conflict-title": "$1 changed while you were editing",
 	"neowiki-subject-editor-edit-conflict": "Choose a value for each field you both changed.",
 	"neowiki-subject-editor-edit-conflict-theirs": "Theirs",

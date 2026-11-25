@@ -1011,6 +1011,18 @@ describe( 'RestSubjectRepository', () => {
 			expect( result.subject?.getRevisionId() ).toBe( 43 );
 		} );
 
+		it.each( [
+			[ 'updated', true ],
+			[ 'unchanged', false ],
+		] )( 'reports whether an update the server answered %s changed anything', async ( status, changed ) => {
+			const result = await newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
+				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':
+					new Response( JSON.stringify( writeResponseJson( { status } ) ), { status: 200 } ),
+			} ) ).updateSubject( new SubjectId( 's11111111111111' ), 41, null, new StatementList( [] ), [] );
+
+			expect( result.changed ).toBe( changed );
+		} );
+
 		it( 'throws EditConflictError when the Subject changed after the revision the edit is based on', async () => {
 			const conflict = newRepository( 'https://example.com/rest.php', new InMemoryHttpClient( {
 				'https://example.com/rest.php/neowiki/v0/subject/s11111111111111':

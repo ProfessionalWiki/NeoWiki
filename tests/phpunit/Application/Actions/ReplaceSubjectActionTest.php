@@ -346,6 +346,22 @@ class ReplaceSubjectActionTest extends TestCase {
 		$this->assertSame( $revision, $this->presenterSpy->revisionId );
 	}
 
+	public function testAWriteThatChangesNothingIsPresentedAsNoChange(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Unchanged' ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Unchanged', [], null );
+
+		$this->assertTrue( $this->presenterSpy->noChange );
+	}
+
+	public function testAWriteThatChangesTheSubjectIsPresentedAsAnUpdate(): void {
+		$this->storeSubject( TestSubject::build( id: self::SUBJECT_ID, label: 'Base' ) );
+
+		$this->newAction()->replace( new SubjectId( self::SUBJECT_ID ), $this->currentRevision(), 'Mine', [], null );
+
+		$this->assertFalse( $this->presenterSpy->noChange );
+	}
+
 	/**
 	 * A wiki that does not enforce validation persists the write and reports the violation, as
 	 * $wgNeoWikiEnforceValidation is the master switch for every violation alike (ADR 26).

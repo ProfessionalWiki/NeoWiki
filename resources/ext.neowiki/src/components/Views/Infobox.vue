@@ -104,9 +104,7 @@ const handleSaveSubject = async (
 	updatedSubject: Subject,
 	dependentSubjects: DependentSubjects,
 	comment: string
-): Promise<void> => {
-	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
-};
+): Promise<boolean> => subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 
 const handleCreateSubject = async (
 	subject: Subject,

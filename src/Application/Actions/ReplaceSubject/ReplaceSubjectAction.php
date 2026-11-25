@@ -150,12 +150,15 @@ readonly class ReplaceSubjectAction {
 		// The merged Subject is the persisted state: the builders already normalized what the request
 		// supplied. Which Subject the page treats as its own topic decides what a Subject
 		// without a label is called, and a replace cannot change it.
-		$this->presenter->presentUpdated(
-			$this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects ),
-			$this->schemaResolver->getSchema( $subject->getSchemaReference() ),
-			$proposedViolations,
-			$status->revisionId ?? $latest->revisionId
-		);
+		$responseItem = $this->responseItemFactory->createResponseItem( $subject, $pageIdentifiers, $pageSubjects );
+		$schema = $this->schemaResolver->getSchema( $subject->getSchemaReference() );
+
+		if ( $status->status === PageContentSavingStatus::NO_CHANGES ) {
+			$this->presenter->presentNoChange( $responseItem, $schema, $proposedViolations, $latest->revisionId );
+			return true;
+		}
+
+		$this->presenter->presentUpdated( $responseItem, $schema, $proposedViolations, $status->revisionId ?? $latest->revisionId );
 		return true;
 	}
 

@@ -154,6 +154,18 @@ class RestReplaceSubjectPresenterTest extends TestCase {
 		$this->assertArrayNotHasKey( 'schema', $presenter->getJsonArray() );
 	}
 
+	public function testPresentNoChangeAnswersAsAnUpdateDoesUnderTheStatusUnchanged(): void {
+		$violations = [ new Violation( propertyName: new PropertyName( 'Status' ), code: 'required' ) ];
+		$updated = new RestReplaceSubjectPresenter();
+		$updated->presentUpdated( $this->newSubject(), $this->newSchema(), $violations, 42 );
+		$unchanged = new RestReplaceSubjectPresenter();
+
+		$unchanged->presentNoChange( $this->newSubject(), $this->newSchema(), $violations, 42 );
+
+		$this->assertSame( 200, $unchanged->getStatusCode() );
+		$this->assertSame( [ 'status' => 'unchanged' ] + $updated->getJsonArray(), $unchanged->getJsonArray() );
+	}
+
 	public function testPresentValidationFailedYields422WithErrorBody(): void {
 		$presenter = new RestReplaceSubjectPresenter();
 

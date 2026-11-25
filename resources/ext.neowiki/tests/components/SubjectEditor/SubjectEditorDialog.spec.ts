@@ -109,6 +109,12 @@ function saveDisabled( wrapper: VueWrapper ): boolean {
 	return wrapper.findComponent( SummaryAction ).props( 'saveDisabled' ) as boolean;
 }
 
+function successToasts(): unknown[] {
+	return ( mw.notify as Mock ).mock.calls.filter(
+		( call ) => typeof call[ 0 ] === 'string' && call[ 0 ].includes( 'neowiki-subject-editor-success' ),
+	);
+}
+
 const CloseConfirmationDialogStub = {
 	template: '<div class="close-confirmation-stub"></div>',
 	props: [ 'open' ],
@@ -161,7 +167,7 @@ describe( 'SubjectEditorDialog', () => {
 	const mountComponent = (
 		canEditSchema: boolean,
 		stubs: Record<string, any>,
-		onSave?: ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>,
+		onSave?: ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<boolean | void>,
 		schema: Schema = mockSchema,
 		provide: Record<string, unknown> = {},
 		subject: Subject = mockSubject,
@@ -616,9 +622,7 @@ describe( 'SubjectEditorDialog', () => {
 			await flushPromises();
 
 			expect( onSave ).not.toHaveBeenCalled();
-			expect( ( mw.notify as Mock ).mock.calls.some(
-				( call ) => typeof call[ 0 ] === 'string' && call[ 0 ].includes( 'neowiki-subject-editor-success' ),
-			) ).toBe( false );
+			expect( successToasts() ).toHaveLength( 0 );
 			expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
 		} );
 
@@ -1749,7 +1753,7 @@ describe( 'SubjectEditorDialog', () => {
 			target: Subject;
 		}
 
-		type SaveHandler = ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<void>;
+		type SaveHandler = ( subject: any, dependentSubjects: readonly Subject[], comment: string ) => Promise<boolean | void>;
 
 		interface PaneStackOptions {
 			onSave?: SaveHandler;
@@ -2672,10 +2676,7 @@ describe( 'SubjectEditorDialog', () => {
 				await triggerSave( wrapper, '' );
 
 				expect( partialSaveLine( wrapper ).exists() ).toBe( false );
-				expect( ( mw.notify as Mock ).mock.calls.filter(
-					( call ) => typeof call[ 0 ] === 'string' &&
-						call[ 0 ].includes( 'neowiki-subject-editor-success' ),
-				) ).toHaveLength( 1 );
+				expect( successToasts() ).toHaveLength( 1 );
 				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
 			} );
 
@@ -2695,6 +2696,123 @@ describe( 'SubjectEditorDialog', () => {
 				await triggerSave( wrapper, '' );
 
 				expect( partialSaveLine( wrapper ).exists() ).toBe( false );
+			} );
+		} );
+
+		describe( 'A Subject saved without a change', () => {
+			function warning( wrapper: VueWrapper ): DOMWrapper<Element> {
+				return wrapper.find( '.ext-neowiki-subject-editor-dialog__nothing-changed' );
+			}
+
+			async function saveChangingNothing( summary: string, onSave: Mock = vi.fn().mockResolvedValue( false ) ): Promise<VueWrapper> {
+				const { wrapper } = mountWithTargetRepos( onSave );
+				await flushPromises();
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, summary );
+
+				return wrapper;
+			}
+
+			it( 'warns that nothing was saved', async () => {
+				const wrapper = await saveChangingNothing( 'a summary' );
+
+				expect( warning( wrapper ).text() ).toBe( 'neowiki-subject-editor-nothing-changed' );
+			} );
+
+			it( 'leaves the dialog open, without a success message, when saved with a summary', async () => {
+				const wrapper = await saveChangingNothing( 'a summary' );
+
+				expect( wrapper.emitted( 'update:open' ) ).toBeUndefined();
+				expect( successToasts() ).toHaveLength( 0 );
+			} );
+
+			it( 'closes the dialog with the success message when saved without a summary', async () => {
+				const wrapper = await saveChangingNothing( '' );
+
+				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				expect( successToasts() ).toHaveLength( 1 );
+			} );
+
+			it( 'closes the dialog with the success message when the save handler answers nothing', async () => {
+				const wrapper = await saveChangingNothing( 'a summary', vi.fn().mockResolvedValue( undefined ) );
+
+				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				expect( successToasts() ).toHaveLength( 1 );
+			} );
+
+			it( 'closes the dialog with the success message when an earlier attempt in the session changed another Subject', async () => {
+				const onSave = vi.fn()
+					.mockResolvedValueOnce( true )
+					.mockRejectedValueOnce( new ValidationFailedError( [] ) )
+					.mockResolvedValueOnce( false );
+				const { wrapper } = await mountWithSecondPaneOpen( { onSave } );
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+				await triggerSave( wrapper, 'a summary' );
+
+				await triggerSave( wrapper, 'a summary' );
+
+				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				expect( successToasts() ).toHaveLength( 1 );
+			} );
+
+			it( 'warns in a session that follows one whose save changed the Subject', async () => {
+				const { wrapper } = mountWithTargetRepos( vi.fn().mockResolvedValueOnce( true ).mockResolvedValueOnce( false ) );
+				await flushPromises();
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, 'a summary' );
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+				await makePaneDirty( wrapper, 0 );
+
+				await triggerSave( wrapper, 'a summary' );
+
+				expect( warning( wrapper ).exists() ).toBe( true );
+			} );
+
+			it( 'disables Save once it warns', async () => {
+				const wrapper = await saveChangingNothing( 'a summary' );
+
+				expect( saveDisabled( wrapper ) ).toBe( true );
+			} );
+
+			it( 'closes the dialog with the success message when another Subject saved with it changed', async () => {
+				const onSave = vi.fn()
+					.mockResolvedValueOnce( false )
+					.mockResolvedValueOnce( true )
+					.mockResolvedValueOnce( false );
+				const { wrapper } = await mountWithThreePanesOpen( { onSave } );
+				await makePaneDirty( wrapper, 0 );
+				await makePaneDirty( wrapper, 1 );
+				await makePaneDirty( wrapper, 2 );
+
+				await triggerSave( wrapper, 'a summary' );
+
+				expect( wrapper.emitted( 'update:open' ) ).toEqual( [ [ false ] ] );
+				expect( successToasts() ).toHaveLength( 1 );
+			} );
+
+			it( 'takes the warning away when the next save starts', async () => {
+				const onSave = vi.fn()
+					.mockResolvedValueOnce( false )
+					.mockRejectedValueOnce( new ValidationFailedError( [] ) );
+				const wrapper = await saveChangingNothing( 'a summary', onSave );
+
+				await makePaneDirty( wrapper, 0 );
+				await triggerSave( wrapper, 'a summary' );
+
+				expect( warning( wrapper ).exists() ).toBe( false );
+			} );
+
+			it( 'takes the warning away when the dialog reopens', async () => {
+				const wrapper = await saveChangingNothing( 'a summary' );
+
+				await wrapper.setProps( { open: false } );
+				await wrapper.setProps( { open: true } );
+				await flushPromises();
+
+				expect( warning( wrapper ).exists() ).toBe( false );
 			} );
 		} );
 

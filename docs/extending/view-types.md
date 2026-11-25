@@ -45,7 +45,7 @@ const { editingSubject, editingSchema, editorOpen, openEditor } = nw.useSubjectE
 ```
 
 Bind the three refs to the dialog, call `openEditor( subjectId )` from your edit control, and pass an `onSave` that
-writes through the Subject store:
+writes through the Subject store and resolves to false when the write changed nothing:
 `( subject, dependentSubjects, comment ) => subjectStore.updateSubject( subject, dependentSubjects, comment )`.
 `openEditor` reads the Subject and its Schema fresh, and reports a failed read instead of opening.
 

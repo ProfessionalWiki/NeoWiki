@@ -365,7 +365,8 @@ the Schema it instantiates, so a client does not have to re-read after a write:
 
 `subject` is the same shape `GET /subject/{subjectId}?expand=page` serves, so it reflects any normalisation the
 write applied. Its page fields are omitted when the server cannot resolve the Subject's page. `revisionId` is the
-revision the Subject is at after the write, also when the write changed nothing.
+revision the Subject is at after the write, also when the write made no revision. In that case, replacing a Subject
+answers `"status": "unchanged"`.
 
 `schema` carries no name of its own — that is the Subject's `schema` field — and is absent when the Schema does
 not exist or its page is unreadable. It is the Schema as of the write, which may define properties the client's

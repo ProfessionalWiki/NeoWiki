@@ -253,6 +253,19 @@ describe( 'Infobox', () => {
 		expect( dialog.props( 'schema' ) ).toStrictEqual( freshSchema );
 	} );
 
+	it( 'tells its editor when the store says a save changed nothing', async () => {
+		getSubjectForEditingMock.mockResolvedValue( mockSubject );
+		getSchemaMock.mockResolvedValue( mockSchema );
+		vi.spyOn( subjectStore, 'updateSubject' ).mockResolvedValue( false );
+		const wrapper = mountComponent( mockSubject, true );
+		await wrapper.findComponent( { name: 'CdxButton', props: { 'aria-label': 'neowiki-infobox-edit-link' } } ).trigger( 'click' );
+		await flushPromises();
+
+		const changed = await wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' )( mockSubject, [], 'a summary' );
+
+		expect( changed ).toBe( false );
+	} );
+
 	it( 'shows no schema badge for a subject already named after its schema', () => {
 		const labelledAfterSchema = newSubject( { id: 's1demo5sssssss2', label: 'TestSchema', schemaName: 'TestSchema' } );
 		subjectStore.setSubject( labelledAfterSchema );
@@ -322,7 +335,7 @@ describe( 'Infobox', () => {
 			await flushPromises();
 
 			const onSave = wrapper.findComponent( SubjectEditorDialog ).props( 'onSave' ) as
-				( subject: Subject, dependentSubjects: Subject[] | null, comment: string ) => Promise<void>;
+				( subject: Subject, dependentSubjects: Subject[] | null, comment: string ) => Promise<boolean | void>;
 			await onSave( clientCopy, null, 'summary' );
 			await flushPromises();
 		}
