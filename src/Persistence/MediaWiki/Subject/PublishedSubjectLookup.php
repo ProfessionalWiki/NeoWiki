@@ -30,6 +30,7 @@ readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRe
 		private PageIdentifiersLookup $pageIdentifiersLookup,
 		private RevisionLookup $revisionLookup,
 		private RevisionPolicy $revisionPolicy,
+		private int $revisionReadFlags,
 	) {
 	}
 
@@ -57,7 +58,7 @@ readonly class PublishedSubjectLookup implements SubjectLookup, PageSubjectsAtRe
 	}
 
 	private function getPublishedSubjects( int $pageId ): ?PageSubjects {
-		$revision = $this->revisionLookup->getRevisionByPageId( $pageId );
+		$revision = $this->revisionLookup->getRevisionByPageId( $pageId, 0, $this->revisionReadFlags );
 
 		if ( $revision === null ) {
 			return null;

@@ -63,6 +63,7 @@ use ProfessionalWiki\NeoWiki\EntryPoints\Actions\SubjectsAction;
 use ProfessionalWiki\NeoWiki\EntryPoints\Jobs\RebuildLastEditorPagesJob;
 use ProfessionalWiki\NeoWiki\EntryPoints\Scribunto\ScribuntoLuaLibrary;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildPublishedSubjectIndex;
+use ProfessionalWiki\NeoWiki\Maintenance\RebuildViolationIndex;
 use ProfessionalWiki\NeoWiki\Maintenance\RebuildSubjectPageIndex;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\Subject\MediaWikiSubjectRepository;
@@ -552,11 +553,14 @@ class NeoWikiHooks {
 		$updater->addExtensionTable( 'neowiki_subject_page', $sqlDirectory . '/neowiki_subject_page.sql' );
 		$updater->addExtensionTable( 'neowiki_subject', $sqlDirectory . '/neowiki_subject.sql' );
 		$updater->addExtensionTable( 'neowiki_relation', $sqlDirectory . '/neowiki_relation.sql' );
+		$updater->addExtensionTable( 'neowiki_violation', $sqlDirectory . '/neowiki_violation.sql' );
 
 		// Between creating a table and filling it, no Subject that existed before is found through it, so
 		// each backfill runs in the same update.php as the table it fills.
 		$updater->addPostDatabaseUpdateMaintenance( RebuildSubjectPageIndex::class );
 		$updater->addPostDatabaseUpdateMaintenance( RebuildPublishedSubjectIndex::class );
+		// After the indexes it reads: a relation target is found through them.
+		$updater->addPostDatabaseUpdateMaintenance( RebuildViolationIndex::class );
 
 		$updater->addExtensionUpdate( [ [ self::class, 'initializeGraphDatabases' ] ] );
 	}
@@ -733,6 +737,7 @@ class NeoWikiHooks {
 
 		if ( self::changedTheContent( $revision ) ) {
 			self::rebuildStoresHoldingChangedMapping( $wikiPage->getTitle() );
+			self::checkSubjectsOfChangedSchema( $wikiPage->getTitle() );
 		}
 	}
 
@@ -960,6 +965,15 @@ class NeoWikiHooks {
 	}
 
 	/**
+	 * Subjects are checked against their Schema as it is now, so a change to it can change their Violations.
+	 */
+	private static function checkSubjectsOfChangedSchema( Title $title ): void {
+		if ( $title->getNamespace() === NeoWikiExtension::NS_SCHEMA ) {
+			NeoWikiExtension::getInstance()->newViolationCheckQueue()->queueSchemaCheck( $title->getText() );
+		}
+	}
+
+	/**
 	 * A saved or deleted Mapping page changes what every mapped page's graph should contain, and nothing
 	 * reprojects those pages. Wikis that have asked for it have the stores holding that projection
 	 * rebuilt here; the rest are left to Special:GraphStores, which reports them as stale.
@@ -1044,6 +1058,7 @@ class NeoWikiHooks {
 
 		$title = Title::newFromPageIdentity( $page );
 		self::rebuildStoresHoldingChangedMapping( $title );
+		self::checkSubjectsOfChangedSchema( $title );
 	}
 
 	/**
@@ -1079,6 +1094,7 @@ class NeoWikiHooks {
 		// Restoring a Mapping page puts a projection back that the stores holding it were rebuilt
 		// without, so it changes what their graphs should contain exactly as deleting it did.
 		self::rebuildStoresHoldingChangedMapping( $title );
+		self::checkSubjectsOfChangedSchema( $title );
 	}
 
 	/**
