@@ -100,11 +100,16 @@ class SubjectDisplayName {
 	 * (ADR 14) is ASCII that MediaWiki leaves alone.
 	 */
 	public static function isTitledBySubjectOnIt( string $pageName, PageSubjects $pageSubjects ): bool {
-		return in_array(
-			lcfirst( self::titleText( $pageName ) ),
-			$pageSubjects->getAllSubjects()->getIdsAsTextArray(),
-			true
-		);
+		return self::isTitledByIdAmong( $pageName, $pageSubjects->getAllSubjects()->getIdsAsTextArray() );
+	}
+
+	/**
+	 * The same rule for a page known by the ids of the Subjects on it alone.
+	 *
+	 * @param string[] $subjectIds
+	 */
+	public static function isTitledByIdAmong( string $pageName, array $subjectIds ): bool {
+		return in_array( lcfirst( self::titleText( $pageName ) ), $subjectIds, true );
 	}
 
 	/**

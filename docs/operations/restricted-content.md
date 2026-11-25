@@ -15,7 +15,7 @@ reading ([Permissions](../api/rest-api.md#permissions)).
 |---|---|---|
 | Subject, subject-label search, Schema, Layout, Mapping and RDF reads over [REST](../api/rest-api.md#permissions) | The storing page's `read` | Absent data, never `403` |
 | `{{#view}}` | The storing page's `read`, per viewer over REST | Nothing rendered |
-| Links in Recent changes and watchlists to a page titled by a Subject id, which show its Main Subject's label | The linked page's `read`, per viewer | The page title |
+| Links to a page titled by a Subject id in lists, histories and edit summaries, but not in page content or API responses, which show its Main Subject's label | The linked page's `read`, per viewer | The page title |
 | `{{#neowiki_value}}` and the `nw.` accessors | The storing page's `read`, as the parsing user | Empty output, `nil`, or an empty table |
 | `{{#cypher_raw}}`, `{{#sparql_raw}}`, `nw.query`, `nw.sparqlQuery` | The parsing user's [`neowiki-query`](../api/query-api.md#permissions), a whole-store read | An error box; in Lua, no results |
 | `POST /query/cypher`, `POST /query/sparql` | The caller's `neowiki-query` | `403` |

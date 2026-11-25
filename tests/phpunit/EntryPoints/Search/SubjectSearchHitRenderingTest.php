@@ -275,12 +275,16 @@ class SubjectSearchHitRenderingTest extends FullTextSearchTestCase {
 		$page = $this->getServiceContainer()->getSpecialPageFactory()->getPage( 'Search' );
 		$this->assertNotNull( $page );
 
+		$reader = $authority ?? $this->getTestSysop()->getAuthority();
+		// A reader's request runs the page in the main context, where links find who reads them.
+		RequestContext::getMain()->setAuthority( $reader );
+
 		[ $html ] = ( new SpecialPageExecutor() )->executeSpecialPage(
 			$page,
 			'',
 			new FauxRequest( [ 'search' => $term, 'fulltext' => '1', 'profile' => 'advanced' ] + $namespaces ),
 			'qqx',
-			$authority ?? $this->getTestSysop()->getAuthority()
+			$reader
 		);
 
 		return $html;
