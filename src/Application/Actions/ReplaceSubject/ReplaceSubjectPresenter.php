@@ -15,11 +15,18 @@ interface ReplaceSubjectPresenter {
 	 * on the way in, so this is the state a subsequent read returns. A null Schema means the Subject
 	 * names a Schema that does not exist.
 	 *
-	 * $revisionId is the revision the Subject is now at, including after a write that changed nothing.
+	 * $revisionId is the revision the Subject is now at.
 	 *
 	 * @param Violation[] $violations
 	 */
 	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void;
+
+	/**
+	 * Called instead of presentUpdated when the write created no revision because the page already held what it sets.
+	 *
+	 * @param Violation[] $violations
+	 */
+	public function presentNoChange( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void;
 
 	/**
 	 * Called when the Subject or one of its Dependent Subjects changed after the base revision of the request, or

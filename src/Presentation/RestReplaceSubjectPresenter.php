@@ -33,8 +33,22 @@ class RestReplaceSubjectPresenter implements ReplaceSubjectPresenter {
 	 * @param Violation[] $violations
 	 */
 	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
+		$this->presentWrite( 'updated', $subject, $schema, $violations, $revisionId );
+	}
+
+	/**
+	 * @param Violation[] $violations
+	 */
+	public function presentNoChange( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
+		$this->presentWrite( 'unchanged', $subject, $schema, $violations, $revisionId );
+	}
+
+	/**
+	 * @param Violation[] $violations
+	 */
+	private function presentWrite( string $status, GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->apiResponse = [
-			'status' => 'updated',
+			'status' => $status,
 			'subjectId' => $subject->id,
 			'revisionId' => $revisionId,
 			'violations' => ViolationSerializer::serializeMany( $violations ),

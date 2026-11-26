@@ -3,6 +3,7 @@ import type {
 	ReferencingSubjects,
 	SubjectPageWriteResult,
 	SubjectRepository,
+	SubjectUpdateResult,
 	SubjectWithReferencedSubjects,
 	SubjectWriteResult,
 } from '@/domain/SubjectRepository';
@@ -97,6 +98,8 @@ type ReferencingSubjectsJson = {
 };
 
 type SubjectWriteResponseJson = {
+	/** `unchanged` for an update that made no revision. */
+	status: string;
 	subject: SubjectJson;
 	/** The revision the Subject is at after the write. */
 	revisionId?: number;
@@ -454,7 +457,7 @@ export class RestSubjectRepository implements SubjectRepository {
 		statements: StatementList,
 		dependentSubjects: readonly Subject[],
 		comment?: string,
-	): Promise<SubjectWriteResult> {
+	): Promise<SubjectUpdateResult> {
 		const response = await this.httpClient.put(
 			`${ this.mediaWikiRestApiUrl }/neowiki/v0/subject/${ id.text }`,
 			{
@@ -479,7 +482,9 @@ export class RestSubjectRepository implements SubjectRepository {
 			throw new Error( reason ?? 'Error updating subject' );
 		}
 
-		return this.deserializeWriteResult( await response.json() as SubjectWriteResponseJson );
+		const json = await response.json() as SubjectWriteResponseJson;
+
+		return { ...this.deserializeWriteResult( json ), changed: json.status !== 'unchanged' };
 	}
 
 	public async deleteSubject( id: SubjectId, comment?: string ): Promise<boolean> {

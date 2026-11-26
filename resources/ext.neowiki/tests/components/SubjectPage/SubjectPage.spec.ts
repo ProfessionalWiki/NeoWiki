@@ -1065,7 +1065,7 @@ describe( 'SubjectPage', () => {
 		// rather than left as the ones it was built from.
 		it( 'saves through the store and re-reads', async () => {
 			const wrapper = await mountLoadedPage();
-			const updateSubject = vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
+			const updateSubject = vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( true );
 			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
 			getSubjectWithReferencedSubjectsMock.mockClear();
 
@@ -1103,7 +1103,7 @@ describe( 'SubjectPage', () => {
 			silenceConsoleErrors();
 
 			const wrapper = await mountLoadedPage();
-			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( undefined );
+			vi.spyOn( useSubjectStore(), 'updateSubject' ).mockResolvedValue( true );
 			await openEditorOn( wrapper.find( EDIT_CONTROL ) );
 			getSubjectWithReferencedSubjectsMock.mockRejectedValue( new SubjectNotFoundError( SUBJECT_ID ) );
 

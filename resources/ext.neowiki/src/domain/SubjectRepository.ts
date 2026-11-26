@@ -51,6 +51,13 @@ export interface SubjectWriteResult {
 	revisionId: number | null;
 }
 
+export interface SubjectUpdateResult extends SubjectWriteResult {
+	/**
+	 * False when the page already held what the update sets, so the wiki made no revision.
+	 */
+	changed: boolean;
+}
+
 /**
  * What creating a Subject together with a page of its own returns, on top of the write itself: the
  * page created, which the caller has not named and cannot derive - a label may title no page, and
@@ -166,7 +173,7 @@ export interface SubjectRepository {
 		statements: StatementList,
 		dependentSubjects: readonly Subject[],
 		comment?: string
-	): Promise<SubjectWriteResult>;
+	): Promise<SubjectUpdateResult>;
 
 	deleteSubject( id: SubjectId, comment?: string ): Promise<boolean>;
 
@@ -268,10 +275,10 @@ export class StubSubjectRepository implements SubjectRepository {
 		return Promise.resolve( new SubjectId( 'smintedAAAAAAA1' ) );
 	}
 
-	public async updateSubject( id: SubjectId, baseRevisionId: number, label: string | null, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string ): Promise<SubjectWriteResult> {
+	public async updateSubject( id: SubjectId, baseRevisionId: number, label: string | null, statements: StatementList, _dependentSubjects: readonly Subject[], _comment?: string ): Promise<SubjectUpdateResult> {
 		const existing = await this.getSubject( id );
 
-		return this.newWriteResult( id, 0, label, existing.getSchemaName(), statements, baseRevisionId + 1 );
+		return { ...this.newWriteResult( id, 0, label, existing.getSchemaName(), statements, baseRevisionId + 1 ), changed: true };
 	}
 
 	private newWriteResult(

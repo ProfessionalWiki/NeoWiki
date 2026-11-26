@@ -48,7 +48,7 @@ describe( 'SubjectStore — subjectCreatorOpen', () => {
 } );
 
 function writeResult( subject: Subject | null, schema: Schema | null = null ): Record<string, unknown> {
-	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema, revisionId: subject?.getRevisionId() ?? null };
+	return { subjectId: new SubjectId( 's11111111111111' ), subject, schema, revisionId: subject?.getRevisionId() ?? null, changed: true };
 }
 
 function pageRead( pageId: number, ...subjects: Subject[] ): Record<string, unknown> {
@@ -455,13 +455,24 @@ describe( 'SubjectStore base revision of an update', () => {
 
 	it( 'bases a later update on the revision of a write whose answer carried no page context', async () => {
 		const repository = repositoryWritingRevisions( 42 );
-		repository.updateSubject.mockReset().mockResolvedValue( { subjectId: id, subject: null, schema: null, revisionId: 42 } );
+		repository.updateSubject.mockReset().mockResolvedValue( { subjectId: id, subject: null, schema: null, revisionId: 42, changed: true } );
 		const store = useSubjectStore();
 
 		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
 		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
 
 		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 42 ] );
+	} );
+
+	it( 'bases a later update on the revision the Subject was read from when the earlier write changed nothing', async () => {
+		const repository = repositoryWritingRevisions();
+		repository.updateSubject.mockResolvedValue( { ...writeResult( newSubject( { id: id.text, revisionId: 42 } ) ), changed: false } );
+		const store = useSubjectStore();
+
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+		await store.updateSubject( newSubject( { id: id.text, revisionId: 41 } ), [] );
+
+		expect( baseRevisionsSent( repository ) ).toEqual( [ 41, 41 ] );
 	} );
 
 	it( 'gives the Subject as the session\'s write stored it', async () => {
@@ -534,6 +545,14 @@ describe( 'SubjectStore write results', () => {
 		await subjectStore.updateSubject( newSubject( { id: id.text, revisionId: 1 } ), [] );
 
 		expect( useSchemaStore().getSchema( 'Person' ) ).toStrictEqual( schema );
+	} );
+
+	it.each( [ true, false ] )( 'resolves an update to whether it changed anything: %s', async ( changed ) => {
+		withWritingRepository( {
+			updateSubject: vi.fn().mockResolvedValue( { ...writeResult( newSubject( { id: id.text } ) ), changed } ),
+		} );
+
+		expect( await useSubjectStore().updateSubject( newSubject( { id: id.text, revisionId: 1 } ), [] ) ).toBe( changed );
 	} );
 
 	it( 'discards the bundled Schema when a Schema mutation landed while the save was in flight', async () => {
@@ -928,7 +947,7 @@ describe( 'SubjectStore writes of a Host Subject', () => {
 			getPageSubjects: vi.fn().mockRejectedValue( new Error( 'read failed' ) ),
 		} );
 
-		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBeUndefined();
+		await expect( useSubjectStore().updateSubject( host, [ birth ], 'why' ) ).resolves.toBe( true );
 	} );
 
 	it( 'creates a Subject on a page of its own together with its Dependent Subjects, and reads that page', async () => {

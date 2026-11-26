@@ -28,11 +28,18 @@ class ReplaceSubjectPresenterSpy implements ReplaceSubjectPresenter {
 
 	public ?int $conflictRevisionId = null;
 
+	public bool $noChange = false;
+
 	public function presentUpdated( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
 		$this->subject = $subject;
 		$this->schema = $schema;
 		$this->violations = $violations;
 		$this->revisionId = $revisionId;
+	}
+
+	public function presentNoChange( GetSubjectResponseItem $subject, ?Schema $schema, array $violations, int $revisionId ): void {
+		$this->presentUpdated( $subject, $schema, $violations, $revisionId );
+		$this->noChange = true;
 	}
 
 	public function presentConflict( GetSubjectResponseItem $currentSubject, int $currentRevisionId ): void {

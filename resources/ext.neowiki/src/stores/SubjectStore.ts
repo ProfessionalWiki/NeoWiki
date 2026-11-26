@@ -151,7 +151,10 @@ export const useSubjectStore = defineStore( 'subject', {
 			}
 			return this.getSubject( id );
 		},
-		async updateSubject( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<void> {
+		/**
+		 * Resolves to whether the write changed anything; see SubjectUpdateResult.
+		 */
+		async updateSubject( subject: Subject, dependentSubjects: DependentSubjects, comment?: string ): Promise<boolean> {
 			const schemaEpoch = useSchemaStore().mutationEpoch;
 
 			const result = await NeoWikiExtension.getInstance().getSubjectRepository().updateSubject(
@@ -163,11 +166,14 @@ export const useSubjectStore = defineStore( 'subject', {
 				comment,
 			);
 
-			this.recordWriteResult( result, schemaEpoch );
+			// A write that changed nothing leaves the next save based on what the form read, so others' edits merge in.
+			this.recordWriteResult( result.changed ? result : { ...result, revisionId: null }, schemaEpoch );
 
 			if ( result.subject !== null ) {
 				await this.reloadWrittenPage( result.subject.getPageIdentifiers().getPageId() );
 			}
+
+			return result.changed;
 		},
 		/**
 		 * Writes a Subject the client built, under the id it already carries. The counterpart to

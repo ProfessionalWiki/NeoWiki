@@ -510,8 +510,8 @@ async function demoteFromMain(): Promise<void> {
 }
 
 // No listing refresh of their own: the store reads the page again after each write.
-async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<void> {
-	await subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
+async function handleEditSave( updatedSubject: Subject, dependentSubjects: DependentSubjects, comment: string ): Promise<boolean> {
+	return subjectStore.updateSubject( updatedSubject, dependentSubjects, comment );
 }
 
 async function handleEditCreate(
