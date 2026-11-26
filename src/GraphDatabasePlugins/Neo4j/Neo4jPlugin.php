@@ -9,6 +9,7 @@ use MediaWiki\Parser\Parser;
 use MediaWiki\Permissions\Authority;
 use ProfessionalWiki\NeoWiki\Application\Source\SchemaResolver;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphDatabasePlugin;
+use ProfessionalWiki\NeoWiki\EntryPoints\FunctionCallTracking;
 use ProfessionalWiki\NeoWiki\EntryPoints\ParserAuthority;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\CompositeCypherQueryValidator;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Application\ExplainCypherQueryValidator;
@@ -97,9 +98,11 @@ readonly class Neo4jPlugin {
 	public function registerParserFunctions( Parser $parser ): void {
 		$parser->setFunctionHook(
 			'cypher_raw',
-			function ( Parser $parser, string $cypherQuery ): array {
-				return $this->newRawParserFunction( $parser )->handle( $parser, $cypherQuery );
-			}
+			FunctionCallTracking::trackingCallsOf(
+				function ( Parser $parser, string $cypherQuery ): array {
+					return $this->newRawParserFunction( $parser )->handle( $parser, $cypherQuery );
+				}
+			)
 		);
 	}
 
