@@ -7,8 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Application;
 use LogicException;
 
 /**
- * The outcome of publishing a page's data, whether from a new revision or from a refresh without an
- * edit (see PageRebuilder::rebuild()).
+ * The outcome of projecting a page into a graph store.
  */
 enum PageRefreshOutcome: string {
 	case Refreshed = 'refreshed';

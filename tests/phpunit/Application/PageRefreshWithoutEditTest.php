@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\Application;
 
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Title\Title;
-use ProfessionalWiki\NeoWiki\Application\PageRefreshOutcome;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Tests\Data\TestSubject;
 use ProfessionalWiki\NeoWiki\Tests\NeoWikiIntegrationTestCase;
@@ -18,7 +18,7 @@ use ProfessionalWiki\NeoWiki\Tests\TestDoubles\MutablePagePropertyProvider;
  * case this has to cover, since approval is tracked for ordinary content pages.
  *
  * @covers \ProfessionalWiki\NeoWiki\Application\PageRebuilder
- * @covers \ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler
+ * @covers \ProfessionalWiki\NeoWiki\NeoWikiExtension
  * @group Database
  */
 class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
@@ -48,24 +48,22 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 		$this->assertSame( 'draft', $this->readPageNodeProperty( $pageId, 'approvalState' ), 'precondition: the page starts as a draft' );
 
 		$this->provider->properties = [ 'approvalState' => 'approved' ];
-		$outcome = $this->refreshPage();
+		$this->refreshPage();
 
-		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertSame( 'approved', $this->readPageNodeProperty( $pageId, 'approvalState' ) );
 	}
 
 	/**
-	 * Through NeoWikiExtension's own wiring, not a hand-built handler: the registered policy has to reach
-	 * both PageRebuilder and the handler behind it, or a rebuild after approval would project the draft.
+	 * Through NeoWikiExtension's own wiring, not a hand-built projector: the registered policy has to reach
+	 * the projection a rebuild queues, or a rebuild after approval would project the draft.
 	 */
 	public function testRefreshProjectsTheRevisionTheRegisteredPolicyPublishes(): void {
 		$approved = $this->createPageWithSubjects( self::PAGE_NAME, TestSubject::build() );
 		$this->createPageWithSubjects( self::PAGE_NAME );
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishing( $approved ) );
 
-		$outcome = $this->refreshPage();
+		$this->refreshPage();
 
-		$this->assertSame( PageRefreshOutcome::Refreshed, $outcome );
 		$this->assertTrue(
 			$this->pageHoldsSubjectInGraph( $approved->getPageId() ),
 			'the approved revision holds a Subject the draft removed'
@@ -77,22 +75,31 @@ class PageRefreshWithoutEditTest extends NeoWikiIntegrationTestCase {
 		$this->assertTrue( $this->graphHoldsPage( $pageId ), 'precondition: saving the page projected it' );
 		$this->registerRevisionPolicy( FixedRevisionPolicy::publishingNothing() );
 
-		$outcome = $this->refreshPage();
+		$this->refreshPage();
 
-		$this->assertSame( PageRefreshOutcome::Unpublished, $outcome );
 		$this->assertFalse( $this->graphHoldsPage( $pageId ) );
 	}
 
-	public function testRefreshOfAMissingPageWritesNothing(): void {
-		$outcome = $this->refreshPage();
+	public function testRefreshReportsAnExistingPageAsFound(): void {
+		$this->insertPage( self::PAGE_NAME, 'No subjects here.' );
 
-		$this->assertSame( PageRefreshOutcome::SkippedMissingRevision, $outcome );
+		$this->assertTrue( $this->refreshPage() );
 	}
 
-	private function refreshPage(): PageRefreshOutcome {
-		return NeoWikiExtension::getInstance()
+	public function testRefreshReportsAMissingPageAsNotFound(): void {
+		$this->assertFalse( $this->refreshPage() );
+	}
+
+	/**
+	 * @return bool Whether the page was found
+	 */
+	private function refreshPage(): bool {
+		$found = NeoWikiExtension::getInstance()
 			->newPageRebuilder()
 			->rebuild( Title::newFromText( self::PAGE_NAME ) );
+		DeferredUpdates::doUpdates();
+
+		return $found;
 	}
 
 	private function pageHoldsSubjectInGraph( int $pageId ): bool {

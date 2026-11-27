@@ -7,8 +7,10 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\Jobs;
 use GenericParameterJob;
 use Job;
 use JobSpecification;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
+use ProfessionalWiki\NeoWiki\Domain\Page\PageId;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 
 /**
@@ -16,9 +18,10 @@ use ProfessionalWiki\NeoWiki\NeoWikiExtension;
  * an unblock showed it again (#1246). Out of band because a block changes every page the user last
  * edited at once, where the graph write path handles one page at a time.
  *
- * Nothing is caught: a projection failure fails the job, and the queue runs it again. Reprojecting a
- * page is idempotent, so a retry that redoes pages an earlier attempt already reached costs only the
- * writes.
+ * The page ids are read from the primary database: a replica that has yet to catch up would miss pages
+ * the user had just come to head. Each page is projected by a job of its own, so it is read as it then
+ * stands, deletion included, and a graph store that fails it fails that job, which the queue runs again:
+ * a store that missed the reprojection would go on serving a hidden name.
  */
 class RebuildLastEditorPagesJob extends Job implements GenericParameterJob {
 
@@ -52,9 +55,17 @@ class RebuildLastEditorPagesJob extends Job implements GenericParameterJob {
 			return true;
 		}
 
-		NeoWikiExtension::getInstance()
-			->newLastEditorPagesRebuilder()
-			->rebuildPagesLastEditedBy( UserIdentityValue::newRegistered( $userId, $userName ) );
+		$pageIds = NeoWikiExtension::getInstance()
+			->newLastEditorPageIdsLookup()
+			->getPageIdsLastEditedBy( UserIdentityValue::newRegistered( $userId, $userName ) );
+
+		MediaWikiServices::getInstance()->getJobQueueGroup()->push( array_map(
+			static fn ( int $pageId ): JobSpecification => ProjectPageJob::newSpecification(
+				new PageId( $pageId ),
+				isolateFailures: false
+			),
+			$pageIds
+		) );
 
 		return true;
 	}
