@@ -76,7 +76,8 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-setting-subject-first-subject-first-help': 'Each new Subject gets its own page.',
 				'neowiki-config-setting-data-languages': 'Data languages',
 				'neowiki-config-setting-data-languages-help': 'Languages of the wiki\'s data.',
-				'neowiki-config-setting-enforce-validation': 'Block edits that add validation errors',
+				'neowiki-config-setting-allow-edits-with-errors': 'Save edits even if they add errors',
+				'neowiki-config-setting-allow-edits-with-errors-help': 'Useful while importing.',
 				'neowiki-config-setting-initial-constraint-severity': 'Default Severity of new Constraints',
 				'neowiki-config-setting-initial-constraint-severity-warning-help': 'Edits that add Violations still save.',
 				'neowiki-config-setting-initial-constraint-severity-error-help': 'Edits that add Violations are blocked.',
@@ -182,10 +183,11 @@ describe( 'ConfigEditor', () => {
 		return JSON.parse( pageSaver.saves[ 0 ].source );
 	}
 
-	it( 'shows a setting with its label and help text', () => {
-		const editor = newEditor();
-
-		expect( settingLabelled( editor, 'Data languages' ).text() ).toContain( 'Languages of the wiki\'s data.' );
+	it.each( [
+		[ 'Data languages', 'Languages of the wiki\'s data.' ],
+		[ 'Save edits even if they add errors', 'Useful while importing.' ],
+	] )( 'shows a setting with its label and help text: %s', ( label, help ) => {
+		expect( settingLabelled( newEditor(), label ).text() ).toContain( help );
 	} );
 
 	it( 'offers the wiki types as a choice, each with its help text', () => {
@@ -222,7 +224,7 @@ describe( 'ConfigEditor', () => {
 	it.each( [
 		'Wiki type',
 		'Data languages',
-		'Block edits that add validation errors',
+		'Save edits even if they add errors',
 		'Default Severity of new Constraints',
 		'Show Main Subjects as infoboxes',
 	] )(
@@ -270,7 +272,7 @@ describe( 'ConfigEditor', () => {
 		expect( document.activeElement ).toBe( radio( editor, 'Error' ).element );
 	} );
 
-	it.each( [ 'Block edits', 'Show Main Subjects' ] )(
+	it.each( [ 'Save edits', 'Show Main Subjects' ] )(
 		'moves the focus to the setting it returns to its default: %s',
 		async ( label ) => {
 			const editor = newEditor( { enforceValidation: true, autoRenderMainSubject: false } );
@@ -328,14 +330,17 @@ describe( 'ConfigEditor', () => {
 		expect( savedJson( pageSaver ) ).toEqual( { subjectFirst: true, autoRenderMainSubject: false } );
 	} );
 
-	it( 'saves validation enforcement as set in its checkbox', async () => {
+	it.each( [
+		[ true, false ],
+		[ false, true ],
+	] )( 'saves validation enforcement as the opposite of allowing edits that add errors: ticked %s', async ( ticked, enforced ) => {
 		const pageSaver = new SpyPageSaver();
-		const editor = newEditor( {}, { pageSaver } );
+		const editor = newEditor( { enforceValidation: ticked }, { pageSaver } );
 
-		await checkbox( editor, 'Block edits' ).setValue( true );
+		await checkbox( editor, 'Save edits' ).setValue( ticked );
 		await save( editor );
 
-		expect( savedJson( pageSaver ) ).toEqual( { enforceValidation: true } );
+		expect( savedJson( pageSaver ) ).toEqual( { enforceValidation: enforced } );
 	} );
 
 	it( 'saves the Severity of new Constraints as chosen', async () => {
@@ -503,7 +508,7 @@ describe( 'ConfigEditor', () => {
 	it( 'shows the settings read-only to someone who may not change them', () => {
 		const editor = newEditor( { autoRenderMainSubject: false }, { canEdit: false } );
 
-		expect( checkbox( editor, 'Block edits' ).element.disabled ).toBe( true );
+		expect( checkbox( editor, 'Save edits' ).element.disabled ).toBe( true );
 		expect( radio( editor, 'Error' ).element.disabled ).toBe( true );
 		expect( checkbox( editor, 'Show Main Subjects' ).element.disabled ).toBe( true );
 		expect( editor.findAll( 'button' ) ).toHaveLength( 0 );
