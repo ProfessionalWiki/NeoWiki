@@ -117,17 +117,18 @@
 
 		<div class="ext-neowiki-config-editor__setting">
 			<CdxCheckbox
-				ref="enforcementCheckbox"
-				v-model="enforceValidation"
+				ref="allowErrorsCheckbox"
+				v-model="allowEditsWithErrors"
 				:disabled="!props.canEdit"
 			>
-				{{ enforcementLabel }}
+				{{ allowErrorsLabel }}
 				<template #description>
+					<span class="ext-neowiki-config-editor__help">{{ $i18n( 'neowiki-config-setting-allow-edits-with-errors-help' ).text() }}</span>
 					<button
 						v-if="canReset( 'enforceValidation' )"
 						type="button"
 						class="ext-neowiki-config-editor__reset"
-						:aria-label="$i18n( 'neowiki-config-editor-reset-label', enforcementLabel ).text()"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', allowErrorsLabel ).text()"
 						@click="reset( 'enforceValidation' )"
 					>
 						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
@@ -219,7 +220,7 @@ const props = defineProps<ConfigEditorJsConfig & {
 
 const wikiTypeLabel = mw.message( 'neowiki-config-setting-subject-first' ).text();
 const dataLanguagesLabel = mw.message( 'neowiki-config-setting-data-languages' ).text();
-const enforcementLabel = mw.message( 'neowiki-config-setting-enforce-validation' ).text();
+const allowErrorsLabel = mw.message( 'neowiki-config-setting-allow-edits-with-errors' ).text();
 const initialSeverityLabel = mw.message( 'neowiki-config-setting-initial-constraint-severity' ).text();
 const infoboxLabel = mw.message( 'neowiki-config-setting-auto-render-main-subject' ).text();
 const saveLabel = mw.message( 'neowiki-config-editor-save' ).text();
@@ -228,6 +229,12 @@ const values = ref<PageValues>( { ...props.pageValues } );
 const subjectFirst = valueInEffect( 'subjectFirst' );
 const dataLanguages = valueInEffect( 'dataLanguages' );
 const enforceValidation = valueInEffect( 'enforceValidation' );
+const allowEditsWithErrors = computed( {
+	get: (): boolean => !enforceValidation.value,
+	set: ( allow: boolean ): void => {
+		enforceValidation.value = !allow;
+	}
+} );
 const initialConstraintSeverity = valueInEffect( 'initialConstraintSeverity' );
 const autoRenderMainSubject = valueInEffect( 'autoRenderMainSubject' );
 const source = computed( (): string => pageSource( values.value ) );
@@ -242,7 +249,7 @@ const changedMeanwhile = ref( false );
 
 const wikiTypeField = ref<InstanceType<typeof CdxField> | null>( null );
 const languageList = ref<InstanceType<typeof LanguageListInput> | null>( null );
-const enforcementCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
+const allowErrorsCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 const initialSeverityField = ref<InstanceType<typeof CdxField> | null>( null );
 const infoboxCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
@@ -270,7 +277,7 @@ function canReset( key: keyof ConfigValues ): boolean {
 const focusSetting: Record<keyof ConfigValues, () => void> = {
 	subjectFirst: () => inputOf( wikiTypeField.value, 'input:checked' )?.focus(),
 	dataLanguages: () => languageList.value?.focus(),
-	enforceValidation: () => inputOf( enforcementCheckbox.value, 'input' )?.focus(),
+	enforceValidation: () => inputOf( allowErrorsCheckbox.value, 'input' )?.focus(),
 	initialConstraintSeverity: () => inputOf( initialSeverityField.value, 'input:checked' )?.focus(),
 	autoRenderMainSubject: () => inputOf( infoboxCheckbox.value, 'input' )?.focus()
 };

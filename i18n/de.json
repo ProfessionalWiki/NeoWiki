@@ -517,7 +517,6 @@
 	"neowiki-config-setting-subject-first-page-first-help": "Ein Subjekt wird auf der Seite gespeichert, von der aus es erstellt wird. Links auf das Subjekt führen zu dieser Seite.",
 	"neowiki-config-setting-subject-first-subject-first": "Subjektorientiert",
 	"neowiki-config-setting-subject-first-subject-first-help": "Jedes neue Subjekt erhält eine eigene Seite, auf der es angezeigt wird.",
-	"neowiki-config-setting-enforce-validation": "Bearbeitungen verhindern, die neue Validierungsfehler verursachen",
 	"neowiki-config-setting-auto-render-main-subject": "Hauptsubjekte automatisch auf ihren Seiten anzeigen",
 	"neowiki-config-setting-data-languages": "Datensprachen",
 	"neowiki-config-setting-data-languages-help": "Sprachen der Daten dieses Wikis. Bei der Eingabe von Text mit Sprachangabe werden sie in dieser Reihenfolge angeboten.",
