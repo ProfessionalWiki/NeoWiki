@@ -8,6 +8,7 @@ use MediaWiki\Config\Config;
 use MediaWiki\WikiMap\WikiMap;
 use ProfessionalWiki\NeoWiki\Application\Rdf\RdfPageProjector;
 use ProfessionalWiki\NeoWiki\Domain\GraphDatabase\GraphStoreName;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\GraphDatabasePlugins\Neo4j\Neo4jPlugin;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -24,7 +25,7 @@ class NeoWikiConfigFactory {
 	 * Turned on by $wgNeoWikiEnableExperimentalFeatures. Every optional Property Type is experimental so far, so these
 	 * are also the names $wgNeoWikiEnabledPropertyTypes can list.
 	 */
-	private const array EXPERIMENTAL_PROPERTY_TYPES = [];
+	private const array EXPERIMENTAL_PROPERTY_TYPES = [ EdtfType::NAME ];
 
 	public function __construct(
 		private readonly LoggerInterface $logger = new NullLogger(),
@@ -66,7 +67,7 @@ class NeoWikiConfigFactory {
 			$types = array_merge( $types, self::EXPERIMENTAL_PROPERTY_TYPES );
 		}
 
-		return $types;
+		return array_values( array_unique( $types ) );
 	}
 
 	/**

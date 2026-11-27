@@ -9,7 +9,8 @@ import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
 import type { SubjectCountLookup } from '@/application/SubjectCountLookup.ts';
-import { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
+import { EdtfHumanizer } from '@/domain/EdtfHumanizer.ts';
+import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { ViewTypeRegistry } from '@/ViewTypeRegistry.ts';
 import { LayoutPermissionHints } from '@/application/LayoutPermissionHints.ts';
 import { LayoutRepository } from '@/application/LayoutRepository.ts';
@@ -25,6 +26,7 @@ export enum Service { // TODO: make private
 	SubjectLabelSearch = 'SubjectLabelSearch',
 	SubjectSummaryLookup = 'SubjectSummaryLookup',
 	SubjectCountLookup = 'SubjectCountLookup',
+	EdtfHumanizer = 'EdtfHumanizer',
 	PageTitleSearch = 'PageTitleSearch',
 	ViewTypeRegistry = 'ViewTypeRegistry',
 	LayoutPermissionHints = 'LayoutPermissionHints',
@@ -53,6 +55,7 @@ export class NeoWikiServices {
 			[ Service.SubjectLabelSearch ]: neoWiki.getSubjectLabelSearch(),
 			[ Service.SubjectSummaryLookup ]: neoWiki.getSubjectSummaryLookup(),
 			[ Service.SubjectCountLookup ]: neoWiki.getSubjectCountLookup(),
+			[ Service.EdtfHumanizer ]: neoWiki.getEdtfHumanizer(),
 			[ Service.PageTitleSearch ]: neoWiki.getPageTitleSearch(),
 			[ Service.ViewTypeRegistry ]: neoWiki.getViewTypeRegistry(),
 			[ Service.LayoutPermissionHints ]: neoWiki.newLayoutPermissionHints(),
@@ -95,6 +98,10 @@ export class NeoWikiServices {
 
 	public static getSubjectCountLookup(): SubjectCountLookup {
 		return inject( Service.SubjectCountLookup ) as SubjectCountLookup;
+	}
+
+	public static getEdtfHumanizer(): EdtfHumanizer {
+		return inject( Service.EdtfHumanizer ) as EdtfHumanizer;
 	}
 
 	public static getPageTitleSearch(): PageTitleSearch {

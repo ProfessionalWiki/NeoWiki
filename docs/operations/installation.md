@@ -231,9 +231,15 @@ stands for the wiki's content language (`$wgLanguageCode`). You can also set the
 
 ## Optional Property Types
 
-List the optional [Property Types](../glossary.md#property-type) you want in `$wgNeoWikiEnabledPropertyTypes`; NeoWiki
-has none yet. On top of those, `$wgNeoWikiEnableExperimentalFeatures` turns on every experimental feature, experimental
-Property Types included, as on a demo wiki:
+List the optional [Property Types](../api/schema-format.md#property-types) you want in `$wgNeoWikiEnabledPropertyTypes`,
+as on a wiki that wants only EDTF date:
+
+```php
+$wgNeoWikiEnabledPropertyTypes = [ 'edtf' ];
+```
+
+On top of those, `$wgNeoWikiEnableExperimentalFeatures` turns on every experimental feature, experimental Property
+Types included, as on a demo wiki:
 
 ```php
 $wgNeoWikiEnableExperimentalFeatures = true;

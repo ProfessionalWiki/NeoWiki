@@ -50,6 +50,8 @@ import { SubjectRepository } from '@/domain/SubjectRepository.ts';
 import { isSeverity, type Severity } from '@/domain/Severity.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
+import { EdtfHumanizer } from '@/domain/EdtfHumanizer.ts';
+import { RestEdtfHumanizer } from '@/persistence/RestEdtfHumanizer.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
 import { RestSubjectLabelSearch } from '@/persistence/RestSubjectLabelSearch.ts';
 import type { SubjectSummaryLookup } from '@/application/SubjectSummaryLookup.ts';
@@ -310,6 +312,13 @@ export class NeoWikiExtension {
 
 	public getSubjectCountLookup(): SubjectCountLookup {
 		return new RestSubjectCountLookup(
+			this.getMediaWiki().util.wikiScript( 'rest' ),
+			this.newHttpClient(),
+		);
+	}
+
+	public getEdtfHumanizer(): EdtfHumanizer {
+		return new RestEdtfHumanizer(
 			this.getMediaWiki().util.wikiScript( 'rest' ),
 			this.newHttpClient(),
 		);

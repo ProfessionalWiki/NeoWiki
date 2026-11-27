@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { markRaw } from 'vue';
-import { registerEnabledPropertyTypes } from '@/presentation/optionalPropertyTypes';
+import { OPTIONAL_PROPERTY_TYPES, registerEnabledPropertyTypes } from '@/presentation/optionalPropertyTypes';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
 import { TypeSpecificComponentRegistry } from '@/TypeSpecificComponentRegistry';
 import { PropertyTypeRegistry } from '@/domain/PropertyType';
@@ -25,7 +25,7 @@ function registration( typeName: string ): PropertyTypeRegistration {
 	};
 }
 
-function typeNamesRegisteredFrom( optionalTypes: PropertyTypeRegistration[] ): string[] {
+function typeNamesRegisteredFrom( optionalTypes: readonly PropertyTypeRegistration[] ): string[] {
 	const typeRegistry = new PropertyTypeRegistry();
 
 	registerEnabledPropertyTypes(
@@ -41,6 +41,12 @@ describe( 'registerEnabledPropertyTypes', () => {
 		setupMwMock( { config: { wgNeoWikiEnabledPropertyTypes: [ 'color' ] } } );
 
 		expect( typeNamesRegisteredFrom( [ registration( 'shape' ), registration( 'color' ) ] ) ).toEqual( [ 'color' ] );
+	} );
+
+	it( 'registers EDTF date where the wiki turns it on', () => {
+		setupMwMock( { config: { wgNeoWikiEnabledPropertyTypes: [ 'edtf' ] } } );
+
+		expect( typeNamesRegisteredFrom( OPTIONAL_PROPERTY_TYPES ) ).toContain( 'edtf' );
 	} );
 
 	it( 'registers no optional Property Type on a page that does not say which are on', () => {

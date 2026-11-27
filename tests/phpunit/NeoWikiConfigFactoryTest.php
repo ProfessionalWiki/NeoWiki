@@ -339,6 +339,26 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		) );
 	}
 
+	public function testExperimentalFeaturesTurnOnEdtf(): void {
+		$config = $this->buildPropertyTypeConfig( [], experimentalFeatures: true );
+
+		$this->assertSame( [ 'edtf' ], $config->enabledPropertyTypes );
+	}
+
+	public function testListingEdtfLogsNoWarning(): void {
+		$logger = new TestLogger();
+
+		$this->buildPropertyTypeConfig( [ 'edtf' ], experimentalFeatures: false, logger: $logger );
+
+		$this->assertFalse( $logger->hasWarningRecords() );
+	}
+
+	public function testEdtfBothListedAndExperimentalIsEnabledOnce(): void {
+		$config = $this->buildPropertyTypeConfig( [ 'edtf' ], experimentalFeatures: true );
+
+		$this->assertSame( [ 'edtf' ], $config->enabledPropertyTypes );
+	}
+
 	/**
 	 * @param string[] $listedTypes
 	 */

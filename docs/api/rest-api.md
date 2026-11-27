@@ -53,6 +53,7 @@ of a `{subjectId}`, see [IDs](subject-format.md#ids).
 | `GET /neowiki/v0/subject-counts` | Count the Subjects of each Schema: `{"counts": {"Artist": 12}}`. A Schema with no Subjects is absent; one whose page is deleted or unreadable can be present. A count can lag a change by up to a minute. |
 | `GET /neowiki/v0/subject-labels` | Find Subjects by name — the label, or for a Main Subject without one, the page title unless that is the ID of a Subject on the page. Other label-less Subjects and [Dependent Subjects](subject-format.md#dependent-subjects) are absent. Returns each Subject's `id`, `label` and the prefixed `pageTitle` of the page holding it. Query: `schema` (only Subjects of these Schemas, pipe-separated; omit for every Schema), `search` (name prefix; empty, it lists the Subjects of the Schemas in `schema` sorted by name, and returns an empty list without `schema`), `limit`. |
 | `GET /neowiki/v0/subject/{subjectId}/referencingSubjects` | List the Subjects whose relations point at this one. See [Referencing Subjects](subject-format.md#referencing-subjects). |
+| `GET /neowiki/v0/edtf/humanize` | Humanize an EDTF value into its reader-facing reading. Returns `{value, humanized}`, with `humanized` null when the library provides no reading. Query: `value` (required), `language` (default `en`). |
 
 ### Pages and Subjects
 
