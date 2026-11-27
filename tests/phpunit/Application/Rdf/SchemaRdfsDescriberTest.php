@@ -84,8 +84,7 @@ class SchemaRdfsDescriberTest extends TestCase {
 				Person:Birth_date a rdf:Property ;
 					rdfs:label "Birth date" ;
 					rdfs:comment "Date of birth" ;
-					rdfs:domain neo-schema:Person ;
-					rdfs:range xsd:date .
+					rdfs:domain neo-schema:Person .
 				TURTLE ),
 			$this->triplesOf( $this->personSchema( '', [ 'Birth date' => TestProperty::buildDate( description: 'Date of birth' ) ] ) )
 		);
@@ -137,7 +136,6 @@ class SchemaRdfsDescriberTest extends TestCase {
 		yield 'select' => [ TestProperty::buildSelect(), 'http://www.w3.org/2001/XMLSchema#string' ];
 		yield 'number' => [ TestProperty::buildNumber(), 'http://www.w3.org/2001/XMLSchema#decimal' ];
 		yield 'boolean' => [ TestProperty::buildBoolean(), 'http://www.w3.org/2001/XMLSchema#boolean' ];
-		yield 'date' => [ TestProperty::buildDate(), 'http://www.w3.org/2001/XMLSchema#date' ];
 		yield 'dateTime' => [ TestProperty::buildDateTime(), 'http://www.w3.org/2001/XMLSchema#dateTime' ];
 		yield 'monolingualText' => [
 			new MonolingualTextProperty( self::core(), multiple: false, uniqueLanguages: false, minLength: null, maxLength: null ),
@@ -147,6 +145,10 @@ class SchemaRdfsDescriberTest extends TestCase {
 
 	public function testUrlPropertyHasNoRange(): void {
 		$this->assertSame( [], $this->objectsOf( TestProperty::buildUrl(), 'range' ) );
+	}
+
+	public function testDatePropertyHasNoRange(): void {
+		$this->assertSame( [], $this->objectsOf( TestProperty::buildDate(), 'range' ) );
 	}
 
 	public function testPropertyOfAnUnregisteredTypeHasNoRange(): void {

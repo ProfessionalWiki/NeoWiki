@@ -40,6 +40,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { CdxIcon, CdxTextInput } from '@wikimedia/codex';
 import { cdxIconEdit } from '@wikimedia/codex-icons';
+import { useAfterPress } from '@/composables/useAfterPress.ts';
 
 /**
  * Inline edit-in-place for text: renders the value as plain text (styled by its
@@ -115,48 +116,12 @@ function commit(): void {
 	}
 }
 
-// Swapping the input for text mid-press re-lays out the dialog, and the release then lands
-// away from what was pressed: on the backdrop instead of Save, which asks to discard the edit.
-// The close waits one task past the release, so the click the press produces is dispatched first.
-let pressed = false;
-let closeOnRelease = false;
+const { afterPress } = useAfterPress( editing );
 
 function closeField(): void {
-	if ( pressed ) {
-		closeOnRelease = true;
-		return;
-	}
-
-	editing.value = false;
-}
-
-function onPointerDown(): void {
-	pressed = true;
-}
-
-function onPointerUp(): void {
-	pressed = false;
-
-	if ( closeOnRelease ) {
-		closeOnRelease = false;
-		setTimeout( () => {
-			editing.value = false;
-		} );
-	}
-}
-
-function watchPresses(): void {
-	pressed = false;
-	closeOnRelease = false;
-	document.addEventListener( 'pointerdown', onPointerDown, true );
-	document.addEventListener( 'pointerup', onPointerUp, true );
-	document.addEventListener( 'pointercancel', onPointerUp, true );
-}
-
-function stopWatchingPresses(): void {
-	document.removeEventListener( 'pointerdown', onPointerDown, true );
-	document.removeEventListener( 'pointerup', onPointerUp, true );
-	document.removeEventListener( 'pointercancel', onPointerUp, true );
+	afterPress( () => {
+		editing.value = false;
+	} );
 }
 
 const dirty = computed( () => editing.value && draft.value !== props.modelValue );
@@ -187,19 +152,9 @@ watch( () => props.modelValue, () => {
 	}
 } );
 
-watch( editing, ( isEditing ) => {
-	if ( isEditing ) {
-		watchPresses();
-	} else {
-		stopWatchingPresses();
-	}
-} );
-
 // A field taken down mid-edit, with the dialog that closes around it, can no longer be
 // discarded by the user, so it withdraws its own report.
 onBeforeUnmount( () => {
-	stopWatchingPresses();
-
 	if ( dirty.value ) {
 		emit( 'dirty', false );
 	}

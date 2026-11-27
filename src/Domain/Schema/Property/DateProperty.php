@@ -4,8 +4,6 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Domain\Schema\Property;
 
-use DateTimeImmutable;
-use Exception;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
 use ProfessionalWiki\NeoWiki\Domain\Schema\InvalidFieldException;
 use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyCore;
@@ -13,70 +11,33 @@ use ProfessionalWiki\NeoWiki\Domain\Schema\PropertyDefinition;
 
 class DateProperty extends PropertyDefinition {
 
-	/**
-	 * Matches xsd:date-like strings: a calendar date with no time or timezone
-	 * component. Mirrors the regex used in the TypeScript DateType; a
-	 * subsequent calendar-overflow check rejects inputs like `2025-02-30`.
-	 *
-	 * Carries no delimiters and stays within ECMA-262, so that the JSON Schema
-	 * documents can use it as a `pattern`.
-	 */
-	public const string ISO_DATE_PATTERN = '^(-?[0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$';
+	private const string EXPECTED = 'a date in the form YYYY, YYYY-MM or YYYY-MM-DD';
 
-	private const string ISO_DATE_REGEX = '/' . self::ISO_DATE_PATTERN . '/';
-
-	private const string EXPECTED = 'a date in the form YYYY-MM-DD';
+	private const string EXPECTED_MIN_PRECISION = '"year", "month" or "day"';
 
 	public function __construct(
 		PropertyCore $core,
 		private readonly ?string $minimum,
 		private readonly ?string $maximum,
+		private readonly ?DatePrecision $minPrecision,
 	) {
-		self::ensureValidBoundOrNull( 'minimum', $minimum );
-		self::ensureValidBoundOrNull( 'maximum', $maximum );
+		self::ensureValidDateOrNull( 'minimum', $minimum );
+		self::ensureValidDateOrNull( 'maximum', $maximum );
 
 		if ( is_string( $core->default ) ) {
-			self::ensureValidBoundOrNull( 'default', $core->default );
+			self::ensureValidDateOrNull( 'default', $core->default );
 		}
 
 		parent::__construct( $core );
 	}
 
-	private static function ensureValidBoundOrNull( string $field, ?string $value ): void {
+	private static function ensureValidDateOrNull( string $field, ?string $value ): void {
 		if ( $value === null ) {
 			return;
 		}
 
-		if ( !self::isValidIsoDate( $value ) ) {
+		if ( PartialDate::tryParse( $value ) === null ) {
 			throw InvalidFieldException::mustBe( $field, self::EXPECTED, $value );
-		}
-	}
-
-	private static function isValidIsoDate( string $value ): bool {
-		if ( preg_match( self::ISO_DATE_REGEX, $value, $matches ) !== 1 ) {
-			return false;
-		}
-
-		// Reject calendar overflows that the regex alone cannot detect (e.g. Feb 30).
-		return checkdate( (int)$matches[2], (int)$matches[3], (int)$matches[1] );
-	}
-
-	/**
-	 * Parses a strict ISO 8601 calendar date (`YYYY-MM-DD`). Returns a
-	 * DateTimeImmutable at UTC midnight, or null if the value is malformed,
-	 * carries a time/timezone component, or is a calendar overflow.
-	 *
-	 * Mirrors the TS parseStrictDate helper.
-	 */
-	public static function parseStrictDate( string $value ): ?DateTimeImmutable {
-		if ( !self::isValidIsoDate( $value ) ) {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable( $value . 'T00:00:00Z' );
-		} catch ( Exception ) {
-			return null;
 		}
 	}
 
@@ -100,25 +61,49 @@ class DateProperty extends PropertyDefinition {
 		return $this->maximum !== null;
 	}
 
+	public function getMinPrecision(): DatePrecision {
+		return $this->minPrecision ?? DatePrecision::Day;
+	}
+
 	public static function fromPartialJson( PropertyCore $core, array $property ): self {
 		return new self(
 			core: $core,
 			minimum: self::stringOrNull( $property, 'minimum', self::EXPECTED ),
 			maximum: self::stringOrNull( $property, 'maximum', self::EXPECTED ),
+			minPrecision: self::minPrecisionFromJson( self::stringOrNull( $property, 'minPrecision', self::EXPECTED_MIN_PRECISION ) ),
 		);
+	}
+
+	private static function minPrecisionFromJson( ?string $minPrecision ): ?DatePrecision {
+		if ( $minPrecision === null ) {
+			return null;
+		}
+
+		return DatePrecision::tryFrom( $minPrecision )
+			?? throw InvalidFieldException::mustBe( 'minPrecision', self::EXPECTED_MIN_PRECISION, $minPrecision );
 	}
 
 	public function nonCoreToJson(): array {
 		return [
 			'minimum' => $this->getMinimum(),
 			'maximum' => $this->getMaximum(),
+			'minPrecision' => $this->minPrecision?->value,
 		];
 	}
 
+	/**
+	 * A full date must also be a calendar date, which only `format` can say; the shorter forms
+	 * have nothing for it to check, so they pass on their length alone.
+	 */
 	public function toJsonSchema(): array {
-		return $this->listValueSchema(
-			[ 'type' => 'string', 'format' => 'date', 'pattern' => self::ISO_DATE_PATTERN ]
-		);
+		return $this->listValueSchema( [
+			'type' => 'string',
+			'pattern' => PartialDate::patternOfAtLeast( $this->getMinPrecision() ),
+			'anyOf' => [
+				[ 'maxLength' => strlen( 'YYYY-MM' ) ],
+				[ 'format' => 'date' ],
+			],
+		] );
 	}
 
 }

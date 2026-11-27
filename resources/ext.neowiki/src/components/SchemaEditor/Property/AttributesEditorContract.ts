@@ -10,9 +10,9 @@ export type AttributesEditorEmits<T extends PropertyDefinition> = {
 
 export interface AttributesEditorExposes {
 	/**
-	 * The message a field of this editor is showing because it holds text it cannot turn into
-	 * an attribute, or null when none does, as ValueInputExposes.unparseableInputMessage
-	 * describes for a value. Editors without such a field omit this.
+	 * A message an attribute field is showing that holds the save, such as for text the field
+	 * cannot turn into an attribute, or null. Callers hold the save while it is non-null, as for a
+	 * value input's `unparseableInputMessage`. Editors whose fields show no such message omit this.
 	 */
 	unparseableInputMessage?(): string | null;
 }

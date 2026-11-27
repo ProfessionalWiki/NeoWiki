@@ -13,13 +13,13 @@ import { ref, watch } from 'vue';
 import { CdxTextInput } from '@wikimedia/codex';
 
 /**
- * A CdxTextInput for the browser's own number, date and date and time fields. Such a field can show
- * text the browser cannot read, such as "-" or a date with one part cleared, while reporting it as
+ * A CdxTextInput for the browser's own number and date and time fields. Such a field can show
+ * text the browser cannot read, such as "-" or a date and time with one part cleared, while reporting it as
  * empty: this input reports text only while the browser can read the field, and says when it cannot.
  */
 const props = defineProps<{
 	modelValue: string;
-	inputType: 'number' | 'date' | 'datetime-local';
+	inputType: 'number' | 'datetime-local';
 }>();
 
 const emit = defineEmits<{
@@ -30,7 +30,6 @@ const emit = defineEmits<{
 
 const unparseableMessages = {
 	number: 'neowiki-field-invalid-number',
-	date: 'neowiki-field-invalid-date',
 	'datetime-local': 'neowiki-field-invalid-datetime'
 } as const;
 
@@ -81,7 +80,7 @@ function setUnparseable( value: boolean ): void {
 	emit( 'unparseable-change', value ? mw.message( unparseableMessages[ props.inputType ] ).text() : null );
 }
 
-// A date field changes no value, and so fires no input event, when a first part is typed into it empty
+// A date and time field changes no value, and so fires no input event, when a first part is typed into it empty
 // or its last part is cleared. It also shows nothing for a date it cannot display, such as one in the
 // year 0, which only a deletion key may clear: Tab's release lands in the field it moves the focus to.
 function onKeyup( event: KeyboardEvent ): void {
