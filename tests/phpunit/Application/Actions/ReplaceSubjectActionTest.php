@@ -591,9 +591,8 @@ class ReplaceSubjectActionTest extends TestCase {
 	}
 
 	/**
-	 * Both sides of the violation diff drop empty parts, so a request that echoes one back leaves
-	 * the violations of the parts around it on the same part index. A violation that moved would
-	 * read as new, and enforcement blocks new blocking violations.
+	 * Both sides of the violation diff drop empty parts, so a request that echoes one back adds no
+	 * violation.
 	 */
 	public function testEchoingBackAnEmptyPartIsNotBlocked(): void {
 		$this->registerSchemaWithMultiValueWebsite();

@@ -102,27 +102,33 @@ class ViolationDiffTest extends TestCase {
 		$this->assertSame( [ $urlAtIndex1 ], $result );
 	}
 
-	public function testRepeatedBadValueAtSameIndexIsNotReportedAsNew(): void {
-		$urlAtIndex0 = $this->invalidUrlAt( 0 );
-
+	public function testTwoViolationsWhosePartsMovedAreNotNew(): void {
 		$result = ViolationDiff::newViolations(
-			proposed: [ $urlAtIndex0 ],
-			prior: [ $urlAtIndex0 ],
+			proposed: [ $this->invalidUrlAt( 2 ), $this->invalidUrlAt( 3 ) ],
+			prior: [ $this->invalidUrlAt( 0 ), $this->invalidUrlAt( 1 ) ],
 		);
 
 		$this->assertSame( [], $result );
 	}
 
-	public function testNullAndZeroValuePartIndexAreDistinct(): void {
-		$indexZero = new Violation( new PropertyName( 'Website' ), 'invalid-url', valuePartIndex: 0 );
-		$indexNull = new Violation( new PropertyName( 'Website' ), 'invalid-url' );
+	public function testABadPartAddedBeforeAStoredOneIsTheOneReportedAsNew(): void {
+		$addedPart = $this->invalidUrlAt( 0 );
 
 		$result = ViolationDiff::newViolations(
-			proposed: [ $indexNull ],
-			prior: [ $indexZero ],
+			proposed: [ $addedPart, $this->invalidUrlAt( 1 ) ],
+			prior: [ $this->invalidUrlAt( 1 ) ],
 		);
 
-		$this->assertSame( [ $indexNull ], $result );
+		$this->assertSame( [ $addedPart ], $result );
+	}
+
+	public function testAViolationThatMovedToAnotherPartIsNotNew(): void {
+		$result = ViolationDiff::newViolations(
+			proposed: [ $this->invalidUrlAt( 0 ) ],
+			prior: [ $this->invalidUrlAt( 1 ) ],
+		);
+
+		$this->assertSame( [], $result );
 	}
 
 	public function testSameViolationWithDifferentSeverityIsNotNew(): void {
