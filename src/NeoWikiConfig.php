@@ -12,6 +12,7 @@ readonly class NeoWikiConfig {
 
 	/**
 	 * @param SparqlStoreConfig[] $sparqlStores The configured SPARQL graph stores (#586), possibly empty.
+	 * @param string[] $enabledPropertyTypes
 	 */
 	public function __construct(
 		public bool $enableDevelopmentUIs,
@@ -20,6 +21,7 @@ readonly class NeoWikiConfig {
 		public string $wikiId,
 		public string $rdfBaseUri,
 		public array $sparqlStores,
+		public array $enabledPropertyTypes,
 	) {
 	}
 

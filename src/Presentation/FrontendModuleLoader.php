@@ -21,6 +21,7 @@ class FrontendModuleLoader {
 
 	/**
 	 * @param string[] $dataLanguages
+	 * @param string[] $enabledPropertyTypes
 	 */
 	public function __construct(
 		private readonly HookContainer $hookContainer,
@@ -29,6 +30,7 @@ class FrontendModuleLoader {
 		private readonly Severity $initialConstraintSeverity,
 		private readonly bool $subjectFirst,
 		private readonly array $dataLanguages,
+		private readonly array $enabledPropertyTypes,
 	) {
 	}
 
@@ -42,6 +44,7 @@ class FrontendModuleLoader {
 			'wgNeoWikiInitialConstraintSeverity' => $this->initialConstraintSeverity->value,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
 			'wgNeoWikiDataLanguages' => $this->dataLanguages,
+			'wgNeoWikiEnabledPropertyTypes' => $this->enabledPropertyTypes,
 			// The counts include Subjects on pages the viewer may not read, so only a viewer who may run queries
 			// gets them.
 			'wgNeoWikiSubjectCountsAvailable' => $out->getAuthority()->isAllowed( AuthorityBasedRawQueryAuthorizer::RIGHT ),

@@ -317,6 +317,45 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		);
 	}
 
+	public function testListedPropertyTypeIsEnabled(): void {
+		$config = $this->buildPropertyTypeConfig( [ 'someType' ], experimentalFeatures: false );
+
+		$this->assertSame( [ 'someType' ], $config->enabledPropertyTypes );
+	}
+
+	public function testExperimentalFeaturesKeepTheListedPropertyTypes(): void {
+		$config = $this->buildPropertyTypeConfig( [ 'someType' ], experimentalFeatures: true );
+
+		$this->assertContains( 'someType', $config->enabledPropertyTypes );
+	}
+
+	public function testListedNameOfNoOptionalPropertyTypeIsLoggedAsAWarning(): void {
+		$logger = new TestLogger();
+
+		$this->buildPropertyTypeConfig( [ 'someType' ], experimentalFeatures: false, logger: $logger );
+
+		$this->assertTrue( $logger->hasWarningThatPasses(
+			static fn ( array $record ): bool => ( $record['context']['name'] ?? null ) === 'someType'
+		) );
+	}
+
+	/**
+	 * @param string[] $listedTypes
+	 */
+	private function buildPropertyTypeConfig(
+		array $listedTypes,
+		bool $experimentalFeatures,
+		LoggerInterface $logger = new NullLogger()
+	): NeoWikiConfig {
+		return $this->buildConfig(
+			[
+				'NeoWikiEnabledPropertyTypes' => $listedTypes,
+				'NeoWikiEnableExperimentalFeatures' => $experimentalFeatures,
+			],
+			$logger
+		);
+	}
+
 	/**
 	 * @param array<int, mixed> $sparqlStores
 	 */
@@ -334,6 +373,8 @@ class NeoWikiConfigFactoryTest extends TestCase {
 			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => null,
 			'NeoWikiNeo4jInternalReadUrl' => null,
+			'NeoWikiEnabledPropertyTypes' => [],
+			'NeoWikiEnableExperimentalFeatures' => false,
 		] ) );
 	}
 

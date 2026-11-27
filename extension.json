@@ -261,6 +261,14 @@
 			"description": "Whether NeoWiki registers its Lua library (mw.neowiki) with Scribunto. When false, requiring the library fails like any missing module. The parser functions are unaffected.",
 			"value": true
 		},
+		"NeoWikiEnableExperimentalFeatures": {
+			"description": "Whether this wiki has NeoWiki's experimental features, experimental Property Types included. See https://neowiki.ai/docs/operations/installation#optional-property-types",
+			"value": false
+		},
+		"NeoWikiEnabledPropertyTypes": {
+			"description": "Optional Property Types this wiki has, by name; $wgNeoWikiEnableExperimentalFeatures adds the experimental ones. See https://neowiki.ai/docs/operations/installation#optional-property-types",
+			"value": []
+		},
 		"NeoWikiEnforceValidation": {
 			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block.",
 			"value": true

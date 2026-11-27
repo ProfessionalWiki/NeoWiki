@@ -201,6 +201,8 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiNeo4jInternalReadUrl` | Bolt URL for read and query traffic | _none_ | For Neo4j features |
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnableLua` | Registers the `mw.neowiki` Lua library with Scribunto | `true` | No |
+| `$wgNeoWikiEnableExperimentalFeatures` | Turns on every experimental feature: see [Optional Property Types](#optional-property-types) | `false` | No |
+| `$wgNeoWikiEnabledPropertyTypes` | Optional Property Types to turn on, by name: see [Optional Property Types](#optional-property-types) | `[]` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `true` | No |
 | `$wgNeoWikiInitialConstraintSeverity` | Severity the Schema editor gives new Constraints, `"warning"` or `"error"` | `"warning"` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox, or in full on a subject-first wiki | `true` | No |
@@ -227,6 +229,16 @@ Other languages stay one search away, and texts already in them keep their langu
 stands for the wiki's content language (`$wgLanguageCode`). You can also set the list in the
 [on-wiki settings](#on-wiki-settings).
 
+## Optional Property Types
+
+List the optional [Property Types](../glossary.md#property-type) you want in `$wgNeoWikiEnabledPropertyTypes`; NeoWiki
+has none yet. On top of those, `$wgNeoWikiEnableExperimentalFeatures` turns on every experimental feature, experimental
+Property Types included, as on a demo wiki:
+
+```php
+$wgNeoWikiEnableExperimentalFeatures = true;
+```
+
 ## Logging
 
 NeoWiki logs these on the `NeoWiki` channel:
@@ -234,6 +246,7 @@ NeoWiki logs these on the `NeoWiki` channel:
 - A graph store failing on save
 - The pages a rebuild could not project
 - A `$wgNeoWikiSparqlStores` entry or graph store name it will not accept
+- A `$wgNeoWikiEnabledPropertyTypes` entry that names no optional Property Type
 - RDF a projection had to drop
 
 Below `warning`, it also records rebuild decisions and denied page reads. MediaWiki routes no channel anywhere by

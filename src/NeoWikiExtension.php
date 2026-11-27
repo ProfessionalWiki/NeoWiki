@@ -1553,6 +1553,7 @@ class NeoWikiExtension {
 			initialConstraintSeverity: $this->getInitialConstraintSeverity(),
 			subjectFirst: $this->isSubjectFirst(),
 			dataLanguages: $this->getDataLanguages(),
+			enabledPropertyTypes: $this->config->enabledPropertyTypes,
 		);
 	}
 

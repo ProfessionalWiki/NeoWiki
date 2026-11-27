@@ -145,6 +145,7 @@ class NeoWikiConfigTest extends TestCase {
 			wikiId: 'testwiki',
 			rdfBaseUri: 'https://wiki.example',
 			sparqlStores: $sparqlStores,
+			enabledPropertyTypes: [],
 		);
 	}
 

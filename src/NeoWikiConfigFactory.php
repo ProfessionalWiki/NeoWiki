@@ -20,6 +20,12 @@ class NeoWikiConfigFactory {
 	 */
 	private const int DEFAULT_SPARQL_UPDATE_TIMEOUT_SECONDS = 10;
 
+	/**
+	 * Turned on by $wgNeoWikiEnableExperimentalFeatures. Every optional Property Type is experimental so far, so these
+	 * are also the names $wgNeoWikiEnabledPropertyTypes can list.
+	 */
+	private const array EXPERIMENTAL_PROPERTY_TYPES = [];
+
 	public function __construct(
 		private readonly LoggerInterface $logger = new NullLogger(),
 	) {
@@ -38,7 +44,29 @@ class NeoWikiConfigFactory {
 			wikiId: WikiMap::getCurrentWikiId(),
 			rdfBaseUri: $this->buildRdfBaseUri( $config ),
 			sparqlStores: $this->buildSparqlStores( $config ),
+			enabledPropertyTypes: $this->buildEnabledPropertyTypes( $config ),
 		);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	private function buildEnabledPropertyTypes( Config $config ): array {
+		/** @var string[] $types */
+		$types = $config->get( 'NeoWikiEnabledPropertyTypes' );
+
+		foreach ( array_diff( $types, self::EXPERIMENTAL_PROPERTY_TYPES ) as $type ) {
+			$this->logger->warning(
+				'Ignoring NeoWikiEnabledPropertyTypes entry "{name}": no optional Property Type of that name.',
+				[ 'name' => $type ]
+			);
+		}
+
+		if ( $config->get( 'NeoWikiEnableExperimentalFeatures' ) === true ) {
+			$types = array_merge( $types, self::EXPERIMENTAL_PROPERTY_TYPES );
+		}
+
+		return $types;
 	}
 
 	/**
