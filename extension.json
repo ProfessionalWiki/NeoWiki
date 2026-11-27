@@ -262,8 +262,8 @@
 			"value": true
 		},
 		"NeoWikiEnforceValidation": {
-			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block. When false, violations are surfaced in responses but writes always persist.",
-			"value": false
+			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block.",
+			"value": true
 		},
 		"NeoWikiAutoRenderMainSubject": {
 			"description": "Whether a page's Main Subject is automatically rendered on content pages: as an infobox, or in full on a subject-first wiki.",

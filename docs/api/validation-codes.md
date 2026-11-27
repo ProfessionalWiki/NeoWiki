@@ -60,21 +60,17 @@ reference below documents its own severity.
 Where a violation is backed by a Constraint the schema author writes — `required`, `multiple`, `minimum`,
 `maximum`, `minPrecision`, `minLength`, `maxLength`, `uniqueItems`, `uniqueLanguages`, `options` — that author
 sets its severity in the Schema, per Constraint, and the default is `warning`. See
-[Constraint severity](schema-format.md#constraint-severity) for the JSON. Because the default is `warning`, an
-unannotated Schema blocks nothing at all: invalid Subjects are a normal, supported state, and blocking is what an
-author opts into. Every other code reports a system condition rather than a user-correctable Constraint, so its
-severity is fixed.
+[Constraint severity](schema-format.md#constraint-severity) for the JSON. Every other code reports a system condition
+rather than a user-correctable Constraint, so its severity is fixed.
 
-Blocking matters only when an admin enables enforcement (`$wgNeoWikiEnforceValidation`, or
-`enforceValidation` on [`MediaWiki:NeoWiki`](../operations/installation.md#on-wiki-settings); off by
-default, so every write that keeps the [rules for Dependent Subjects](#rules-for-dependent-subjects)
-persists). Under enforcement, a write that introduces *new* `error`
-violations is rejected with `422 Unprocessable Entity` and an `{ status, message, violations }` body,
-where `violations` carries the full proposed list, not just the newly-introduced ones. Violations
-already present on the stored Subject never block, so an already-invalid Subject stays editable, and
-raising a Constraint's severity does not make an existing violation count as newly introduced. See
-[ADR 21](../adr/021-add-backend-validation.md) and
-[ADR 26](../adr/026-validation-severity-levels.md).
+Enforcement (`$wgNeoWikiEnforceValidation`, or `enforceValidation` on
+[`MediaWiki:NeoWiki`](../operations/installation.md#on-wiki-settings)) is on by default. Under enforcement, a write that
+introduces *new* `error` violations is rejected with `422 Unprocessable Entity` and an `{ status, message, violations }`
+body, where `violations` carries the full proposed list, not just the newly-introduced ones. Violations already present
+on the stored Subject never block, so an already-invalid Subject stays editable, and raising a Constraint's severity
+does not make an existing violation count as newly introduced. With enforcement off, a write persists unless it breaks
+the [rules for Dependent Subjects](#rules-for-dependent-subjects). See [ADR 21](../adr/021-add-backend-validation.md)
+and [ADR 26](../adr/026-validation-severity-levels.md).
 
 ## Code reference
 

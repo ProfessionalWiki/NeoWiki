@@ -267,6 +267,8 @@ class DependentSubjectRestWritesTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testSettingARelationToADependentSubjectOnAnotherPageIsRefused(): void {
+		// Under enforcement, relation-target-schema-mismatch refuses the write before the rule is checked.
+		$this->overrideConfigValue( 'NeoWikiEnforceValidation', false );
 		$this->pageWithPersonAndBirth( 'Holds the Birth' );
 		$this->createPageWithSubjects(
 			'Another person',
