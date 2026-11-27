@@ -359,7 +359,7 @@ endif
 .PHONY: _ensure-frontend-bundle
 _ensure-frontend-bundle:
 ifeq ($(filter node,$(ACTIVE_PROFILES)),)
-	@if [ ! -f resources/ext.neowiki/dist/neowiki.js ]; then \
+	@if [ ! -f resources/ext.neowiki/dist/neowiki.js ] || [ ! -f resources/ext.neowiki/dist/modelBundles.js ]; then \
 		echo "No frontend bundle and no node watcher selected; building once..."; \
 		$(DC_DEV) run --rm node sh -c 'npm install && npm run build' < /dev/null; \
 	fi

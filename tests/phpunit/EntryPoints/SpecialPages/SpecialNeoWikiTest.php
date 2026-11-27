@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace ProfessionalWiki\NeoWiki\Tests\EntryPoints\SpecialPages;
 
+use MediaWiki\Registration\ExtensionRegistry;
 use ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages\SpecialNeoWiki;
 use ProfessionalWiki\NeoWiki\Persistence\MediaWiki\DatabaseSubjectPageIndex;
 use SpecialPageTestBase;
@@ -19,6 +20,7 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 	private const string GRAPH_STORES_ATTRIBUTE = 'data-mw-neowiki-can-manage-graph-stores';
 	private const string CONFIGURATION_ATTRIBUTE = 'data-mw-neowiki-can-edit-configuration';
 	private const string SUBJECTS_ATTRIBUTE = 'data-mw-neowiki-wiki-has-subjects';
+	private const string EXTENSION_LINKS_ATTRIBUTE = 'data-mw-neowiki-extension-links';
 
 	protected function newSpecialPage(): SpecialNeoWiki {
 		return new SpecialNeoWiki();
@@ -95,6 +97,51 @@ class SpecialNeoWikiTest extends SpecialPageTestBase {
 		[ $output ] = $this->executeSpecialPage( '', null, null, $this->getTestUser()->getUser() );
 
 		$this->assertStringNotContainsString( self::SUBJECTS_ATTRIBUTE, $output );
+	}
+
+	public function testHandsTheOverviewThePagesOtherExtensionsAdd(): void {
+		$reset = ExtensionRegistry::getInstance()->setAttributeForTest( 'NeoWikiOverviewLinks', [
+			[ 'page' => 'Special:Example', 'label' => 'example-label', 'description' => 'example-description' ],
+		] );
+
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '', null, 'qqx', $this->getTestUser()->getUser() );
+
+		$this->assertEquals(
+			[ [ 'page' => 'Special:Example', 'label' => '(example-label)', 'description' => '(example-description)' ] ],
+			$this->extensionLinksIn( $output )
+		);
+	}
+
+	public function testLeavesOutAPageOtherExtensionsAddForAUserWithoutTheRightsItNames(): void {
+		$reset = ExtensionRegistry::getInstance()->setAttributeForTest( 'NeoWikiOverviewLinks', [
+			[ 'page' => 'Special:Example', 'label' => 'example-label', 'description' => 'example-description', 'rights' => [ 'editinterface' ] ],
+		] );
+
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '', null, 'qqx', $this->getTestUser()->getUser() );
+
+		$this->assertSame( [], $this->extensionLinksIn( $output ) );
+	}
+
+	public function testOffersAPageOtherExtensionsAddToAUserWithTheRightsItNames(): void {
+		$reset = ExtensionRegistry::getInstance()->setAttributeForTest( 'NeoWikiOverviewLinks', [
+			[ 'page' => 'Special:Example', 'label' => 'example-label', 'description' => 'example-description', 'rights' => [ 'editinterface' ] ],
+		] );
+
+		/** @var string $output */
+		[ $output ] = $this->executeSpecialPage( '', null, 'qqx', $this->getTestSysop()->getUser() );
+
+		$this->assertSame( [ 'Special:Example' ], array_column( $this->extensionLinksIn( $output ), 'page' ) );
+	}
+
+	/**
+	 * @return mixed The value of the overview's attribute that lists the pages other extensions add.
+	 */
+	private function extensionLinksIn( string $output ): mixed {
+		preg_match( '/' . self::EXTENSION_LINKS_ATTRIBUTE . '="([^"]*)"/', $output, $matches );
+
+		return json_decode( html_entity_decode( $matches[1] ?? '' ), true );
 	}
 
 	/**

@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\EntryPoints\SpecialPages;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
 use ProfessionalWiki\NeoWiki\NeoWikiExtension;
 use ProfessionalWiki\NeoWiki\Presentation\DocumentationUrl;
@@ -42,7 +43,36 @@ class SpecialNeoWiki extends SpecialPage {
 			$attributes['data-mw-neowiki-wiki-has-subjects'] = 'true';
 		}
 
+		$attributes['data-mw-neowiki-extension-links'] = json_encode( $this->extensionLinks(), JSON_THROW_ON_ERROR );
+
 		$this->getOutput()->addHTML( Html::element( 'div', $attributes ) );
+	}
+
+	/**
+	 * The pages other extensions add to the map, each listed in the NeoWikiOverviewLinks attribute of its
+	 * extension.json with the keys of its label and description messages, and any rights a user needs to get it.
+	 *
+	 * @return list<array{page: string, label: string, description: string}>
+	 */
+	private function extensionLinks(): array {
+		return array_values( array_map(
+			fn ( array $link ) => [
+				'page' => $link['page'],
+				'label' => $this->msg( $link['label'] )->text(),
+				'description' => $this->msg( $link['description'] )->text(),
+			],
+			array_filter(
+				ExtensionRegistry::getInstance()->getAttribute( 'NeoWikiOverviewLinks' ),
+				fn ( array $link ) => $this->mayOpen( $link['rights'] ?? [] )
+			)
+		) );
+	}
+
+	/**
+	 * @param string[] $rights
+	 */
+	private function mayOpen( array $rights ): bool {
+		return $rights === [] || $this->getAuthority()->isAllowedAll( ...$rights );
 	}
 
 	/**

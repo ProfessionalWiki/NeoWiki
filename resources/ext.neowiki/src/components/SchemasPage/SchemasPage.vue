@@ -36,6 +36,12 @@
 			</div>
 		</div>
 
+		<component
+			:is="notice.component"
+			v-for="( notice, index ) in notices"
+			:key="index"
+		/>
+
 		<CdxMessage
 			v-if="listState === 'failed'"
 			type="error"
@@ -85,7 +91,7 @@
 			/>
 		</div>
 		<p
-			v-else
+			v-else-if="emptyText !== null"
 			class="ext-neowiki-schemas-page__empty"
 		>
 			{{ emptyText }}
@@ -127,6 +133,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import { type ButtonGroupItem, CdxButton, CdxIcon, CdxMessage, CdxSearchInput, CdxToggleButtonGroup } from '@wikimedia/codex';
 import { cdxIconAdd, cdxIconListBullet, cdxIconViewCompact } from '@wikimedia/codex-icons';
 import { useSchemaPermissions } from '@/composables/useSchemaPermissions.ts';
@@ -151,6 +158,11 @@ import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDial
 
 const SCHEMA_PREFIX = 'Schema:';
 const VIEW_STORAGE_KEY = 'neowiki-schemas-view';
+
+const props = defineProps<{
+	/** What other extensions show above the Schemas. */
+	notices: RegisteredNotice[];
+}>();
 
 const {
 	canEditSchema,
@@ -196,9 +208,14 @@ let schemaDialogRequest = 0;
 
 const foundSchemas = computed( () => schemasMatchingSearch( schemas.value, findText.value ) );
 
-const emptyText = computed( () => schemas.value.length === 0 ?
-	mw.msg( 'neowiki-schemas-empty' ) :
-	mw.msg( 'neowiki-schemas-no-match', findText.value.trim() ) );
+// Null where a notice takes the place of the note that the wiki has no Schemas.
+const emptyText = computed( () => {
+	if ( schemas.value.length > 0 ) {
+		return mw.msg( 'neowiki-schemas-no-match', findText.value.trim() );
+	}
+
+	return props.notices.some( ( notice ) => notice.replacesNote ) ? null : mw.msg( 'neowiki-schemas-empty' );
+} );
 
 async function loadSchemas(): Promise<void> {
 	const sequence = ++listingSequence;

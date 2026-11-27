@@ -611,7 +611,8 @@
 						"cdxIconDatabase",
 						"cdxIconSettings",
 						"cdxIconNext",
-						"cdxIconReload"
+						"cdxIconReload",
+						"cdxIconPuzzle"
 					]
 				}
 			],
@@ -965,6 +966,8 @@
 				"neowiki-schemas-import-error-empty",
 				"neowiki-schemas-import-error-no-property-definitions",
 				"neowiki-schemas-import-error-unreadable-schema",
+				"neowiki-schemas-import-model-bundle",
+				"neowiki-schemas-import-schemas-only",
 				"neowiki-schemas-import-title",
 				"neowiki-schemas-import-new",
 				"neowiki-schemas-import-changed",

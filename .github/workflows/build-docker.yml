@@ -156,6 +156,8 @@ jobs:
           path: |
             resources/ext.neowiki/dist/neowiki.js
             resources/ext.neowiki/dist/neowiki.css
+            resources/ext.neowiki/dist/modelBundles.js
+            resources/ext.neowiki/dist/modelBundles.css
           if-no-files-found: error
 
   publish_mediawiki:

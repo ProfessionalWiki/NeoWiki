@@ -19,12 +19,15 @@
 		"noFallthroughCasesInSwitch": true,
 
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"ext.neowiki": ["./src/public-api.ts"]
 		}
 	},
 	"include": [
 		"./node_modules/types-mediawiki",
 		"src/**/*.ts",
-		"src/**/*.vue"
+		"src/**/*.vue",
+		"modelBundles/src/**/*.ts",
+		"modelBundles/src/**/*.vue"
 	]
 }

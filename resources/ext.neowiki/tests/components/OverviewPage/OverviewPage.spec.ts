@@ -1,9 +1,10 @@
 import { enableAutoUnmount, mount, VueWrapper, flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { h, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { CdxButton, CdxCard, CdxMessage } from '@wikimedia/codex';
 import OverviewPage from '@/components/OverviewPage/OverviewPage.vue';
+import type { RegisteredNotice } from '@/presentation/FrontendRegistrar.ts';
 import RecentSubjectsTable from '@/components/SubjectsTable/RecentSubjectsTable.vue';
 import SubjectCreatorDialog from '@/components/SubjectCreator/SubjectCreatorDialog.vue';
 import { createI18nMock, setupMwMock } from '../../VueTestHelpers.ts';
@@ -35,15 +36,20 @@ const ALWAYS_MAPPED = [ '/wiki/Special:Subjects', '/wiki/Special:Schemas', '/wik
 
 let pinia: ReturnType<typeof createPinia>;
 
+// A notice that takes the place of the first steps, as the setup of a data model does on a wiki without one.
+const FIRST_STEPS_REPLACEMENT: RegisteredNotice = { component: { render: () => h( 'p', 'Set up your data model' ) }, replacesNote: true };
+
 interface OverviewProps {
 	canManageGraphStores: boolean;
 	canEditConfiguration: boolean;
 	wikiHasSubjects: boolean;
+	extensionLinks: { page: string; label: string; description: string }[];
+	notices: RegisteredNotice[];
 }
 
 function mountPage( offered: Partial<OverviewProps> = {} ): VueWrapper {
 	return mount( OverviewPage, {
-		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, ...offered },
+		props: { canManageGraphStores: false, canEditConfiguration: false, wikiHasSubjects: true, extensionLinks: [], notices: [], ...offered },
 		global: {
 			plugins: [ pinia ],
 			mocks: { $i18n: createI18nMock() },
@@ -84,7 +90,7 @@ function precedes( earlier: Element, later: Element ): boolean {
 
 describe( 'OverviewPage', () => {
 	beforeEach( () => {
-		setupMwMock( { functions: [ 'util' ] } );
+		setupMwMock( { functions: [ 'util', 'msg' ] } );
 		grantedRight = true;
 		canCreateSubjectPageRef.value = false;
 		pinia = createPinia();
@@ -96,6 +102,20 @@ describe( 'OverviewPage', () => {
 		await flushPromises();
 
 		expect( findCreateSubjectButton( wrapper ) ).toBeDefined();
+	} );
+
+	it( 'offers creating a subject as the primary action', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false } );
+		await flushPromises();
+
+		expect( findCreateSubjectButton( wrapper )!.classes( 'cdx-button--weight-primary' ) ).toBe( true );
+	} );
+
+	it( 'offers creating a subject as a secondary action while a notice takes the place of the first steps', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ FIRST_STEPS_REPLACEMENT ] } );
+		await flushPromises();
+
+		expect( findCreateSubjectButton( wrapper )!.classes( 'cdx-button--weight-primary' ) ).toBe( false );
 	} );
 
 	it( 'offers no way to create a subject to a user who may not', async () => {
@@ -155,12 +175,34 @@ describe( 'OverviewPage', () => {
 		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/MediaWiki:NeoWiki' ] );
 	} );
 
-	it( 'offers a card that leads to the schemas', async () => {
+	it( 'maps the pages other extensions add after NeoWiki\'s own', async () => {
+		const wrapper = mountPage( {
+			canManageGraphStores: true,
+			extensionLinks: [ { page: 'Special:DataModel', label: 'Data model', description: 'Install model bundles.' } ],
+		} );
+		await flushPromises();
+
+		expect( mappedPages( wrapper ) ).toEqual( [ ...ALWAYS_MAPPED, '/wiki/Special:DataModel', '/wiki/Special:GraphStores' ] );
+	} );
+
+	it( 'offers a card for a page another extension adds, under the label and description it gives', async () => {
+		const wrapper = mountPage( {
+			extensionLinks: [ { page: 'Special:DataModel', label: 'Data model', description: 'Install model bundles.' } ],
+		} );
+		await flushPromises();
+
+		expect( findCard( wrapper, '/wiki/Special:DataModel' )!.text() ).toMatch( /Data model.*Install model bundles\./s );
+	} );
+
+	it( 'offers a card that leads to the schemas, in the reader\'s language', async () => {
+		setupMwMock( {
+			functions: [ 'util', 'msg' ],
+			messages: { 'neowiki-special-schemas': 'Schemas', 'neowiki-overview-schemas-description': 'Define the types of subjects.' },
+		} );
 		const wrapper = mountPage();
 		await flushPromises();
 
-		expect( findCard( wrapper, '/wiki/Special:Schemas' )!.text() )
-			.toMatch( /neowiki-special-schemas.*neowiki-overview-schemas-description/s );
+		expect( findCard( wrapper, '/wiki/Special:Schemas' )!.text() ).toMatch( /Schemas.*Define the types of subjects\./s );
 	} );
 
 	it( 'shows the create button, then the map, then the recent Subjects', async () => {
@@ -173,6 +215,29 @@ describe( 'OverviewPage', () => {
 
 		expect( precedes( createButton, map ) ).toBe( true );
 		expect( precedes( map, recentSubjects ) ).toBe( true );
+	} );
+
+	it( 'shows the notices other extensions register above the map', async () => {
+		const wrapper = mountPage( { notices: [
+			{ component: { render: () => h( 'p', { class: 'test-notice' }, 'Updates are available' ) }, replacesNote: false },
+		] } );
+		await flushPromises();
+
+		expect( precedes( wrapper.find( '.test-notice' ).element, wrapper.findComponent( CdxCard ).element ) ).toBe( true );
+	} );
+
+	it( 'leaves out the first steps while a notice takes their place', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ FIRST_STEPS_REPLACEMENT ] } );
+		await flushPromises();
+
+		expect( isShown( findFirstSteps( wrapper ) ) ).toBe( false );
+	} );
+
+	it( 'loads no recent Subjects while a notice takes the place of the first steps', async () => {
+		const wrapper = mountPage( { wikiHasSubjects: false, notices: [ FIRST_STEPS_REPLACEMENT ] } );
+		await flushPromises();
+
+		expect( wrapper.findComponent( RecentSubjectsTable ).exists() ).toBe( false );
 	} );
 
 	it( 'shows first steps on a wiki without Subjects to a user who may create one', async () => {

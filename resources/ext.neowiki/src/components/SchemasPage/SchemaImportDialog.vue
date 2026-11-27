@@ -18,6 +18,13 @@
 		</template>
 
 		<template v-if="outcome === null">
+			<CdxMessage
+				v-if="leavesOutOtherItems"
+				class="ext-neowiki-schema-import-dialog__note"
+			>
+				{{ $i18n( 'neowiki-schemas-import-schemas-only' ).text() }}
+			</CdxMessage>
+
 			<div
 				v-for="section in selectableSections"
 				:key="section.heading"
@@ -108,6 +115,8 @@ import { useSchemaStore } from '@/stores/SchemaStore.ts';
 
 const props = defineProps<{
 	items: SchemaImportItem[];
+	/** Whether the file held more than Schemas, which the import leaves out. */
+	leavesOutOtherItems: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -199,6 +208,10 @@ function nameList( names: string[] ): string {
 @import ( reference ) '@wikimedia/codex-design-tokens/theme-wikimedia-ui.less';
 
 .ext-neowiki-schema-import-dialog {
+	&__note {
+		margin-bottom: @spacing-100;
+	}
+
 	&__section + &__section {
 		margin-top: @spacing-100;
 	}

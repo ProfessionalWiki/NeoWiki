@@ -27,7 +27,7 @@ describe( 'FrontendRegistrar', () => {
 	it( 'inserts a registered type into the property type registry', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [], [] );
 
 		registrar.registerPropertyType( registration( 'foo' ) );
 
@@ -38,7 +38,7 @@ describe( 'FrontendRegistrar', () => {
 	it( 'inserts components, label and icon into the component registry', () => {
 		const componentRegistry = new TypeSpecificComponentRegistry();
 		const typeRegistry = new PropertyTypeRegistry();
-		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry() );
+		const registrar = new FrontendRegistrar( componentRegistry, typeRegistry, new ViewTypeRegistry(), [], [] );
 
 		const reg = registration( 'bar' );
 		registrar.registerPropertyType( reg );
@@ -57,6 +57,8 @@ describe( 'FrontendRegistrar', () => {
 			new TypeSpecificComponentRegistry(),
 			new PropertyTypeRegistry(),
 			viewTypeRegistry,
+			[],
+			[],
 		);
 
 		const component = markRaw( { render: (): null => null } );
@@ -70,7 +72,7 @@ describe( 'FrontendRegistrar after the UI has started', () => {
 	const warn = vi.fn();
 
 	function newRegistrar( typeRegistry = new PropertyTypeRegistry() ): FrontendRegistrar {
-		return new FrontendRegistrar( new TypeSpecificComponentRegistry(), typeRegistry, new ViewTypeRegistry() );
+		return new FrontendRegistrar( new TypeSpecificComponentRegistry(), typeRegistry, new ViewTypeRegistry(), [], [] );
 	}
 
 	beforeEach( () => {

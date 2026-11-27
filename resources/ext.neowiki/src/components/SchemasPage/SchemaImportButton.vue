@@ -14,6 +14,7 @@
 		<SchemaImportDialog
 			v-if="items !== null"
 			:items="items"
+			:leaves-out-other-items="leavesOutOtherItems"
 			@imported="emit( 'imported' )"
 			@close="items = null"
 		/>
@@ -25,7 +26,7 @@ import { ref, shallowRef } from 'vue';
 import { CdxButton, CdxIcon } from '@wikimedia/codex';
 import { cdxIconUpload } from '@wikimedia/codex-icons';
 import SchemaImportDialog from '@/components/SchemasPage/SchemaImportDialog.vue';
-import { parseSchemaExport } from '@/components/SchemasPage/schemaExport.ts';
+import { holdsMoreThanSchemas, parseSchemaExport } from '@/components/SchemasPage/schemaExport.ts';
 import { planSchemaImport, type SchemaImportItem } from '@/components/SchemasPage/schemaImport.ts';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
 import { useSchemaStore } from '@/stores/SchemaStore.ts';
@@ -38,6 +39,7 @@ const schemaStore = useSchemaStore();
 const schemaLookup = NeoWikiServices.getSchemaRepository();
 const fileInput = ref<HTMLInputElement | null>( null );
 const items = shallowRef<SchemaImportItem[] | null>( null );
+const leavesOutOtherItems = ref( false );
 
 async function onFileChosen( event: Event ): Promise<void> {
 	const input = event.target as HTMLInputElement;
@@ -51,8 +53,20 @@ async function onFileChosen( event: Event ): Promise<void> {
 	}
 
 	try {
-		const schemas = parseSchemaExport( await file.text() );
+		const text = await file.text();
+		const holdsMore = holdsMoreThanSchemas( text );
+
+		if ( holdsMore && modelBundlesInstalled() ) {
+			mw.notify(
+				mw.message( 'neowiki-schemas-import-model-bundle' ).parseDom(),
+				{ type: 'warn', autoHideSeconds: 'long' }
+			);
+			return;
+		}
+
+		const schemas = parseSchemaExport( text );
 		const summaries = await schemaStore.fetchAllSchemaSummaries();
+		leavesOutOtherItems.value = holdsMore;
 		items.value = await planSchemaImport( schemas, summaries.map( ( summary ) => summary.name ), schemaLookup );
 	} catch ( error ) {
 		mw.notify(
@@ -63,5 +77,10 @@ async function onFileChosen( event: Event ): Promise<void> {
 			}
 		);
 	}
+}
+
+// Model Bundles installs such a file whole, on its Special:DataModel.
+function modelBundlesInstalled(): boolean {
+	return mw.loader.getState( 'ext.neowiki.modelBundles' ) !== null;
 }
 </script>
