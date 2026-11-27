@@ -31,6 +31,7 @@ import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { LayoutDeserializer } from '@/persistence/LayoutDeserializer.ts';
 import { showPendingNotification } from '@/presentation/PendingNotification.ts';
 import { FrontendRegistrar } from '@/presentation/FrontendRegistrar';
+import { OPTIONAL_PROPERTY_TYPES, registerEnabledPropertyTypes } from '@/presentation/optionalPropertyTypes';
 import { useSubjectStore } from '@/stores/SubjectStore';
 import SubjectCreatorButton from '@/components/SubjectCreator/SubjectCreatorButton.vue';
 import { subjectCreatorButtonProps } from '@/components/SubjectCreator/subjectCreatorButtonProps.ts';
@@ -347,6 +348,7 @@ if ( !isTestEnvironment ) {
 	keepMenuEscapesFromDialogs();
 
 	const registrar = newFrontendRegistrar();
+	registerEnabledPropertyTypes( registrar, OPTIONAL_PROPERTY_TYPES );
 	mw.hook( 'neowiki.registration' ).fire( registrar );
 
 	// A value is deserialized once, against the Property Types registered at that moment, so the UI has

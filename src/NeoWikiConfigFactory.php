@@ -21,10 +21,12 @@ class NeoWikiConfigFactory {
 	private const int DEFAULT_SPARQL_UPDATE_TIMEOUT_SECONDS = 10;
 
 	/**
-	 * @param Feature[] $features
+	 * Turned on by $wgNeoWikiEnableExperimentalFeatures. Every optional Property Type is experimental so far, so these
+	 * are also the names $wgNeoWikiEnabledPropertyTypes can list.
 	 */
+	private const array EXPERIMENTAL_PROPERTY_TYPES = [];
+
 	public function __construct(
-		private readonly array $features,
 		private readonly LoggerInterface $logger = new NullLogger(),
 	) {
 	}
@@ -42,93 +44,29 @@ class NeoWikiConfigFactory {
 			wikiId: WikiMap::getCurrentWikiId(),
 			rdfBaseUri: $this->buildRdfBaseUri( $config ),
 			sparqlStores: $this->buildSparqlStores( $config ),
-			enabledFeatures: $this->buildEnabledFeatures( $config ),
+			enabledPropertyTypes: $this->buildEnabledPropertyTypes( $config ),
 		);
 	}
 
 	/**
 	 * @return string[]
 	 */
-	private function buildEnabledFeatures( Config $config ): array {
-		$setting = $config->get( 'NeoWikiFeatures' );
+	private function buildEnabledPropertyTypes( Config $config ): array {
+		/** @var string[] $types */
+		$types = $config->get( 'NeoWikiEnabledPropertyTypes' );
 
-		if ( !is_array( $setting ) ) {
+		foreach ( array_diff( $types, self::EXPERIMENTAL_PROPERTY_TYPES ) as $type ) {
 			$this->logger->warning(
-				'Ignoring NeoWikiFeatures, which is not an array of feature names to true or false, as in '
-				. '[ \'featureName\' => true ].'
+				'Ignoring NeoWikiEnabledPropertyTypes entry "{name}": no optional Property Type of that name.',
+				[ 'name' => $type ]
 			);
-			$setting = [];
 		}
 
-		$this->warnAboutUnusableEntries( $setting );
-
-		return $this->namesOfEnabledFeatures( $setting );
-	}
-
-	/**
-	 * @return string[]
-	 */
-	private function namesOfEnabledFeatures( array $setting ): array {
-		$names = [];
-
-		foreach ( $this->features as $feature ) {
-			if ( self::isEnabled( $feature, $setting ) ) {
-				$names[] = $feature->name;
-			}
+		if ( $config->get( 'NeoWikiEnableExperimentalFeatures' ) === true ) {
+			$types = array_merge( $types, self::EXPERIMENTAL_PROPERTY_TYPES );
 		}
 
-		return $names;
-	}
-
-	/**
-	 * Only true turns a feature on, as with NeoWiki's other switches, so that a wiki writing 0 to turn one off
-	 * gets it off.
-	 */
-	private static function isEnabled( Feature $feature, array $setting ): bool {
-		if ( array_key_exists( $feature->name, $setting ) ) {
-			return $setting[$feature->name] === true;
-		}
-
-		return $feature->enabledByDefault;
-	}
-
-	/**
-	 * An entry NeoWiki cannot use is logged rather than thrown: it may be a typo, or name a feature a later
-	 * release removed, and neither must take down the wiki.
-	 */
-	private function warnAboutUnusableEntries( array $setting ): void {
-		$featureNames = array_column( $this->features, 'name' );
-
-		foreach ( $setting as $key => $value ) {
-			$problem = self::entryProblem( $key, $value, $featureNames );
-
-			if ( $problem !== null ) {
-				$this->logger->warning( $problem, [ 'name' => is_int( $key ) ? $value : $key ] );
-			}
-		}
-	}
-
-	/**
-	 * What is wrong with an entry of the setting, as a message to log about the feature it names, or null when
-	 * nothing is.
-	 *
-	 * @param string[] $featureNames
-	 */
-	private static function entryProblem( int|string $key, mixed $value, array $featureNames ): ?string {
-		if ( is_int( $key ) ) {
-			return 'Ignoring NeoWikiFeatures entry "{name}", which lacks true or false. Write it as \'{name}\' => true.';
-		}
-
-		if ( !in_array( $key, $featureNames, true ) ) {
-			return 'Ignoring NeoWikiFeatures entry "{name}": NeoWiki has no feature of that name to turn on or off. '
-				. 'Check its spelling, and the release notes of the version you run.';
-		}
-
-		if ( !is_bool( $value ) ) {
-			return 'NeoWikiFeatures entry "{name}" is neither true nor false, so the feature is off.';
-		}
-
-		return null;
+		return $types;
 	}
 
 	/**

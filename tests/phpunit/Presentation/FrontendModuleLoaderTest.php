@@ -160,13 +160,13 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->addedJsConfigVars['wgNeoWikiSubjectFirst'] ?? null );
 	}
 
-	public function testTellsTheFrontendWhichFeaturesAreOn(): void {
+	public function testTellsTheFrontendWhichOptionalPropertyTypesAreOn(): void {
 		$this->clearHook( 'NeoWikiGetFrontendModules' );
 
-		$this->newLoader( enabledFeatures: [ 'lua', 'pageType' ] )
+		$this->newLoader( enabledPropertyTypes: [ 'someType' ] )
 			->load( $this->newCapturingOutputPage(), $this->createMock( Skin::class ) );
 
-		$this->assertSame( [ 'lua', 'pageType' ], $this->addedJsConfigVars['wgNeoWikiEnabledFeatures'] ?? null );
+		$this->assertSame( [ 'someType' ], $this->addedJsConfigVars['wgNeoWikiEnabledPropertyTypes'] ?? null );
 	}
 
 	public function testEmitsThatTheViewerMayEditThePagesSubjects(): void {
@@ -282,13 +282,13 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @param string[] $enabledFeatures
+	 * @param string[] $enabledPropertyTypes
 	 */
 	private function newLoader(
 		int $validationDebounceMs = 300,
 		bool $validationEnforced = false,
 		bool $subjectFirst = false,
-		array $enabledFeatures = []
+		array $enabledPropertyTypes = []
 	): FrontendModuleLoader {
 		return new FrontendModuleLoader(
 			$this->getServiceContainer()->getHookContainer(),
@@ -297,7 +297,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 			Severity::Warning,
 			$subjectFirst,
 			[],
-			$enabledFeatures,
+			$enabledPropertyTypes,
 		);
 	}
 
