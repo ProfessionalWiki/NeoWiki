@@ -337,7 +337,7 @@ class NeoWikiExtension {
 
 	public static function getInstance(): self {
 		self::$instance ??= new self(
-			( new NeoWikiConfigFactory( NeoWikiFeatures::all(), LoggerFactory::getInstance( 'NeoWiki' ) ) )
+			( new NeoWikiConfigFactory( LoggerFactory::getInstance( 'NeoWiki' ) ) )
 				->buildFromMediaWikiConfig( MediaWikiServices::getInstance()->getMainConfig() )
 		);
 
@@ -1361,10 +1361,6 @@ class NeoWikiExtension {
 		return $this->config->enableDevelopmentUIs;
 	}
 
-	public function isFeatureEnabled( string $name ): bool {
-		return $this->config->isFeatureEnabled( $name );
-	}
-
 	public function shouldAutoRenderMainSubject(): bool {
 		return $this->getWikiConfigLookup()->getEffectiveValue( 'autoRenderMainSubject' ) === true;
 	}
@@ -1557,7 +1553,6 @@ class NeoWikiExtension {
 			initialConstraintSeverity: $this->getInitialConstraintSeverity(),
 			subjectFirst: $this->isSubjectFirst(),
 			dataLanguages: $this->getDataLanguages(),
-			enabledFeatures: $this->config->enabledFeatures,
 		);
 	}
 

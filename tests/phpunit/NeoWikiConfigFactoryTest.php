@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\Log\Test\TestLogger;
-use ProfessionalWiki\NeoWiki\Feature;
 use ProfessionalWiki\NeoWiki\NeoWikiConfig;
 use ProfessionalWiki\NeoWiki\NeoWikiConfigFactory;
 use ProfessionalWiki\NeoWiki\SparqlStoreConfig;
@@ -318,156 +317,23 @@ class NeoWikiConfigFactoryTest extends TestCase {
 		);
 	}
 
-	public function testExperimentalFeatureIsOffUnlessTheWikiTurnsItOn(): void {
-		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), [] );
-
-		$this->assertFalse( $config->isFeatureEnabled( 'pageType' ) );
-	}
-
-	public function testExperimentalFeatureTheWikiTurnsOnIsEnabled(): void {
-		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), [ 'pageType' => true ] );
-
-		$this->assertTrue( $config->isFeatureEnabled( 'pageType' ) );
-	}
-
-	public function testStableFeatureOnByDefaultIsEnabledWhenTheWikiSaysNothing(): void {
-		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [] );
-
-		$this->assertTrue( $config->isFeatureEnabled( 'lua' ) );
-	}
-
-	public function testStableFeatureTheWikiTurnsOffIsDisabled(): void {
-		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [ 'lua' => false ] );
-
-		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
-	}
-
-	public function testEnabledFeaturesListsOnlyTheFeaturesThatAreOn(): void {
-		$config = $this->buildFeatureConfig(
-			[
-				Feature::stable( 'lua', enabledByDefault: true ),
-				Feature::experimental( 'pageType' ),
-				Feature::experimental( 'userType' ),
-				Feature::stable( 'rdf', enabledByDefault: true ),
-			],
-			[ 'userType' => true, 'rdf' => false ]
-		);
-
-		$this->assertEqualsCanonicalizing( [ 'lua', 'userType' ], $config->enabledFeatures );
-	}
-
-	public function testNameOfNoFeatureEnablesNothing(): void {
-		$config = $this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pagetype' => true ] );
-
-		$this->assertSame( [], $config->enabledFeatures );
-	}
-
-	public function testNameOfNoFeatureIsLoggedAsAWarning(): void {
-		$logger = new TestLogger();
-
-		$this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pagetype' => true ], $logger );
-
-		$this->assertTrue( $this->hasWarningNaming( $logger, 'pagetype' ) );
-	}
-
-	public function testFeatureSetToTrueOrFalseLogsNoWarning(): void {
-		$logger = new TestLogger();
-
-		$this->buildFeatureConfig(
-			[ Feature::experimental( 'pageType' ), Feature::stable( 'lua', enabledByDefault: true ) ],
-			[ 'pageType' => true, 'lua' => false ],
-			$logger
-		);
-
-		$this->assertFalse( $logger->hasWarningRecords() );
-	}
-
-	public function testNameListedWithoutTrueOrFalseIsLoggedAsAWarning(): void {
-		$logger = new TestLogger();
-
-		$this->buildFeatureConfig( [ Feature::experimental( 'pageType' ) ], [ 'pageType' ], $logger );
-
-		$this->assertTrue( $this->hasWarningNaming( $logger, 'pageType' ) );
-	}
-
-	/**
-	 * @dataProvider nonBooleanFeatureValueProvider
-	 */
-	public function testValueOtherThanTrueOrFalseTurnsTheFeatureOffWithWarning( mixed $value ): void {
-		$logger = new TestLogger();
-
-		$config = $this->buildFeatureConfig( [ Feature::stable( 'lua', enabledByDefault: true ) ], [ 'lua' => $value ], $logger );
-
-		$this->assertFalse( $config->isFeatureEnabled( 'lua' ) );
-		$this->assertTrue( $this->hasWarningNaming( $logger, 'lua' ) );
-	}
-
-	public function nonBooleanFeatureValueProvider(): iterable {
-		yield 'zero' => [ 0 ];
-		yield 'one' => [ 1 ];
-		yield 'string' => [ 'true' ];
-	}
-
-	public function testSettingThatIsNotAMapLeavesEveryFeatureAtItsDefaultWithWarning(): void {
-		$logger = new TestLogger();
-
-		$config = $this->buildFeatureConfig( $this->luaPageTypeAndUserType(), 'pageType', $logger );
-
-		$this->assertSame( [ 'lua' ], $config->enabledFeatures );
-		$this->assertTrue( $logger->hasWarningRecords() );
-	}
-
-	/**
-	 * @return Feature[]
-	 */
-	private function luaPageTypeAndUserType(): array {
-		return [
-			Feature::stable( 'lua', enabledByDefault: true ),
-			Feature::experimental( 'pageType' ),
-			Feature::experimental( 'userType' ),
-		];
-	}
-
-	private function hasWarningNaming( TestLogger $logger, string $featureName ): bool {
-		return $logger->hasWarningThatPasses(
-			static fn ( array $record ): bool => ( $record['context']['name'] ?? null ) === $featureName
-		);
-	}
-
-	/**
-	 * @param Feature[] $features
-	 */
-	private function buildFeatureConfig(
-		array $features,
-		mixed $setting,
-		LoggerInterface $logger = new NullLogger()
-	): NeoWikiConfig {
-		return $this->buildConfig( [ 'NeoWikiFeatures' => $setting ], $features, $logger );
-	}
-
 	/**
 	 * @param array<int, mixed> $sparqlStores
 	 */
 	private function buildSparqlConfig( array $sparqlStores, LoggerInterface $logger = new NullLogger() ): NeoWikiConfig {
-		return $this->buildConfig( [ 'NeoWikiSparqlStores' => $sparqlStores ], [], $logger );
+		return $this->buildConfig( [ 'NeoWikiSparqlStores' => $sparqlStores ], $logger );
 	}
 
 	/**
 	 * @param array<string, mixed> $settings
-	 * @param Feature[] $features
 	 */
-	private function buildConfig(
-		array $settings,
-		array $features = [],
-		LoggerInterface $logger = new NullLogger()
-	): NeoWikiConfig {
-		return ( new NeoWikiConfigFactory( $features, $logger ) )->buildFromMediaWikiConfig( new HashConfig( $settings + [
+	private function buildConfig( array $settings, LoggerInterface $logger = new NullLogger() ): NeoWikiConfig {
+		return ( new NeoWikiConfigFactory( $logger ) )->buildFromMediaWikiConfig( new HashConfig( $settings + [
 			'NeoWikiEnableDevelopmentUI' => false,
 			'NeoWikiRdfBaseUri' => null,
 			'CanonicalServer' => 'https://wiki.example',
 			'NeoWikiNeo4jInternalWriteUrl' => null,
 			'NeoWikiNeo4jInternalReadUrl' => null,
-			'NeoWikiFeatures' => [],
 		] ) );
 	}
 

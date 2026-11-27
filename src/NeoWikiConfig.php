@@ -12,7 +12,6 @@ readonly class NeoWikiConfig {
 
 	/**
 	 * @param SparqlStoreConfig[] $sparqlStores The configured SPARQL graph stores (#586), possibly empty.
-	 * @param string[] $enabledFeatures
 	 */
 	public function __construct(
 		public bool $enableDevelopmentUIs,
@@ -21,12 +20,7 @@ readonly class NeoWikiConfig {
 		public string $wikiId,
 		public string $rdfBaseUri,
 		public array $sparqlStores,
-		public array $enabledFeatures,
 	) {
-	}
-
-	public function isFeatureEnabled( string $name ): bool {
-		return in_array( $name, $this->enabledFeatures, true );
 	}
 
 	public function hasNeo4jBackend(): bool {

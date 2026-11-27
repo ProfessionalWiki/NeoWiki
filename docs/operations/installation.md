@@ -6,7 +6,7 @@ order: 1
 # Installing NeoWiki
 
 NeoWiki is not production-ready yet. From 0.1 on, every breaking change to stored data ships with a migration script or
-written upgrade steps, except for data that [experimental features](#turning-features-on-or-off) store.
+written upgrade steps.
 
 Install the newest release in one of two ways:
 
@@ -208,7 +208,6 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |
 | `$wgNeoWikiDataLanguages` | Languages the wiki's data is in: see [Data languages](#data-languages) | `[]` (the content language) | No |
 | `$wgNeoWikiSparqlStores` | SPARQL 1.1 graph stores to keep in sync and query, e.g. QLever | `[]` | No |
-| `$wgNeoWikiFeatures` | Turns features on or off: see [Turning features on or off](#turning-features-on-or-off) | `[]` (each feature's default) | No |
 | `$wgNeoWikiAutoRebuildOnMappingChange` | Rebuilds every store holding a Mapping's projection when that Mapping changes | `false` | No |
 
 ## Choosing page-first or subject-first
@@ -228,17 +227,6 @@ Other languages stay one search away, and texts already in them keep their langu
 stands for the wiki's content language (`$wgLanguageCode`). You can also set the list in the
 [on-wiki settings](#on-wiki-settings).
 
-## Turning features on or off
-
-To turn on an optional feature, set it to `true`, or to `false` to turn it off:
-
-```php
-$wgNeoWikiFeatures['featureName'] = true;
-```
-
-Experimental features are off by default, and any release may change or remove one, so you may need to fix the data it
-stored by hand.
-
 ## Logging
 
 NeoWiki logs these on the `NeoWiki` channel:
@@ -246,7 +234,6 @@ NeoWiki logs these on the `NeoWiki` channel:
 - A graph store failing on save
 - The pages a rebuild could not project
 - A `$wgNeoWikiSparqlStores` entry or graph store name it will not accept
-- A `$wgNeoWikiFeatures` entry it cannot use
 - RDF a projection had to drop
 
 Below `warning`, it also records rebuild decisions and denied page reads. MediaWiki routes no channel anywhere by
