@@ -12,6 +12,7 @@ use MediaWiki\Permissions\SimpleAuthority;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiIntegrationTestCase;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use ProfessionalWiki\NeoWiki\Presentation\FrontendModuleLoader;
 use Skin;
@@ -280,6 +281,7 @@ class FrontendModuleLoaderTest extends MediaWikiIntegrationTestCase {
 			$this->getServiceContainer()->getHookContainer(),
 			$validationDebounceMs,
 			$validationEnforced,
+			Severity::Warning,
 			$subjectFirst,
 			[],
 		);

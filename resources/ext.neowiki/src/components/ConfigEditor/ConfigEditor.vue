@@ -73,6 +73,49 @@
 		</div>
 
 		<div class="ext-neowiki-config-editor__setting">
+			<CdxField
+				ref="initialSeverityField"
+				:is-fieldset="true"
+				:disabled="!props.canEdit"
+			>
+				<template #label>
+					{{ initialSeverityLabel }}
+				</template>
+				<template #description>
+					<button
+						v-if="canReset( 'initialConstraintSeverity' )"
+						type="button"
+						class="ext-neowiki-config-editor__reset"
+						:aria-label="$i18n( 'neowiki-config-editor-reset-label', initialSeverityLabel ).text()"
+						@click="reset( 'initialConstraintSeverity' )"
+					>
+						{{ $i18n( 'neowiki-config-editor-reset' ).text() }}
+					</button>
+				</template>
+				<CdxRadio
+					v-model="initialConstraintSeverity"
+					input-value="warning"
+					name="ext-neowiki-config-editor-initial-constraint-severity"
+				>
+					{{ $i18n( 'neowiki-severity-warning' ).text() }}
+					<template #description>
+						{{ $i18n( 'neowiki-config-setting-initial-constraint-severity-warning-help' ).text() }}
+					</template>
+				</CdxRadio>
+				<CdxRadio
+					v-model="initialConstraintSeverity"
+					input-value="error"
+					name="ext-neowiki-config-editor-initial-constraint-severity"
+				>
+					{{ $i18n( 'neowiki-severity-error' ).text() }}
+					<template #description>
+						{{ $i18n( 'neowiki-config-setting-initial-constraint-severity-error-help' ).text() }}
+					</template>
+				</CdxRadio>
+			</CdxField>
+		</div>
+
+		<div class="ext-neowiki-config-editor__setting">
 			<CdxCheckbox
 				ref="enforcementCheckbox"
 				v-model="enforceValidation"
@@ -177,6 +220,7 @@ const props = defineProps<ConfigEditorJsConfig & {
 const wikiTypeLabel = mw.message( 'neowiki-config-setting-subject-first' ).text();
 const dataLanguagesLabel = mw.message( 'neowiki-config-setting-data-languages' ).text();
 const enforcementLabel = mw.message( 'neowiki-config-setting-enforce-validation' ).text();
+const initialSeverityLabel = mw.message( 'neowiki-config-setting-initial-constraint-severity' ).text();
 const infoboxLabel = mw.message( 'neowiki-config-setting-auto-render-main-subject' ).text();
 const saveLabel = mw.message( 'neowiki-config-editor-save' ).text();
 
@@ -184,6 +228,7 @@ const values = ref<PageValues>( { ...props.pageValues } );
 const subjectFirst = valueInEffect( 'subjectFirst' );
 const dataLanguages = valueInEffect( 'dataLanguages' );
 const enforceValidation = valueInEffect( 'enforceValidation' );
+const initialConstraintSeverity = valueInEffect( 'initialConstraintSeverity' );
 const autoRenderMainSubject = valueInEffect( 'autoRenderMainSubject' );
 const source = computed( (): string => pageSource( values.value ) );
 const savedSource = ref( source.value );
@@ -198,6 +243,7 @@ const changedMeanwhile = ref( false );
 const wikiTypeField = ref<InstanceType<typeof CdxField> | null>( null );
 const languageList = ref<InstanceType<typeof LanguageListInput> | null>( null );
 const enforcementCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
+const initialSeverityField = ref<InstanceType<typeof CdxField> | null>( null );
 const infoboxCheckbox = ref<InstanceType<typeof CdxCheckbox> | null>( null );
 const saveButton = ref<InstanceType<typeof CdxButton> | null>( null );
 
@@ -225,6 +271,7 @@ const focusSetting: Record<keyof ConfigValues, () => void> = {
 	subjectFirst: () => inputOf( wikiTypeField.value, 'input:checked' )?.focus(),
 	dataLanguages: () => languageList.value?.focus(),
 	enforceValidation: () => inputOf( enforcementCheckbox.value, 'input' )?.focus(),
+	initialConstraintSeverity: () => inputOf( initialSeverityField.value, 'input:checked' )?.focus(),
 	autoRenderMainSubject: () => inputOf( infoboxCheckbox.value, 'input' )?.focus()
 };
 

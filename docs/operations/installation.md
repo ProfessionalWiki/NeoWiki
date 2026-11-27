@@ -202,6 +202,7 @@ These are the settings you are most likely to change. For the full list with des
 | `$wgNeoWikiEnableDevelopmentUI` | Enables development-only UIs | `false` | No |
 | `$wgNeoWikiEnableLua` | Registers the `mw.neowiki` Lua library with Scribunto | `true` | No |
 | `$wgNeoWikiEnforceValidation` | Rejects writes that introduce new `error`-severity violations | `true` | No |
+| `$wgNeoWikiInitialConstraintSeverity` | Severity the Schema editor gives new Constraints, `"warning"` or `"error"` | `"warning"` | No |
 | `$wgNeoWikiAutoRenderMainSubject` | Automatically renders a page's Main Subject as an infobox, or in full on a subject-first wiki | `true` | No |
 | `$wgNeoWikiSubjectFirst` | Puts Subjects before pages: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `false` | No |
 | `$wgNeoWikiSubjectPageNamespace` | Namespace a subject-first wiki creates each Subject's own page in: see [Choosing page-first or subject-first](#choosing-page-first-or-subject-first) | `7480` (`Subject`) | No |

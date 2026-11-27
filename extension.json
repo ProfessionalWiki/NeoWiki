@@ -265,6 +265,10 @@
 			"description": "Whether write endpoints reject edits that introduce new error-severity violations. Warnings never block.",
 			"value": true
 		},
+		"NeoWikiInitialConstraintSeverity": {
+			"description": "The severity the Schema editor gives new Constraints: \"warning\", the default, or \"error\".",
+			"value": "warning"
+		},
 		"NeoWikiAutoRenderMainSubject": {
 			"description": "Whether a page's Main Subject is automatically rendered on content pages: as an infobox, or in full on a subject-first wiki.",
 			"value": true
@@ -635,6 +639,9 @@
 				"neowiki-config-setting-data-languages",
 				"neowiki-config-setting-data-languages-help",
 				"neowiki-config-setting-enforce-validation",
+				"neowiki-config-setting-initial-constraint-severity",
+				"neowiki-config-setting-initial-constraint-severity-warning-help",
+				"neowiki-config-setting-initial-constraint-severity-error-help",
 				"neowiki-config-setting-auto-render-main-subject",
 				"neowiki-config-editor-intro",
 				"neowiki-config-editor-read-only",

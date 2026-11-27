@@ -31,6 +31,11 @@ class ConfigSchema {
 				valueType: ConfigValueType::LanguageList,
 			),
 			new ConfigSetting(
+				pageKey: 'initialConstraintSeverity',
+				settingName: 'NeoWikiInitialConstraintSeverity',
+				valueType: ConfigValueType::Severity,
+			),
+			new ConfigSetting(
 				pageKey: 'enforceValidation',
 				settingName: 'NeoWikiEnforceValidation',
 				valueType: ConfigValueType::Boolean,

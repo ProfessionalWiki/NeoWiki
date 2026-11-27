@@ -83,9 +83,16 @@ describe( 'NeoWikiExtension.isValidationEnforced', () => {
 		expect( NeoWikiExtension.getInstance().isValidationEnforced() ).toBe( false );
 	} );
 
-	it( 'is false when the wiki did not say, since enforcement is opt-in', () => {
+	it( 'is false when the wiki did not say', () => {
 		setupMwMock();
 		expect( NeoWikiExtension.getInstance().isValidationEnforced() ).toBe( false );
+	} );
+} );
+
+describe( 'NeoWikiExtension.getInitialConstraintSeverity', () => {
+	it( 'is warning when the wiki did not say', () => {
+		setupMwMock();
+		expect( NeoWikiExtension.getInstance().getInitialConstraintSeverity() ).toBe( 'warning' );
 	} );
 } );
 

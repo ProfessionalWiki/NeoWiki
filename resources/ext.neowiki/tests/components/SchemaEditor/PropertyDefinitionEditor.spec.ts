@@ -61,6 +61,10 @@ describe( 'PropertyDefinitionEditor', () => {
 		await wrapper.findComponent( CdxSelect ).vm.$emit( 'update:selected', type );
 	}
 
+	async function setRequired( wrapper: VueWrapper, required: boolean ): Promise<void> {
+		await wrapper.findComponent( '.ext-neowiki-property-editor__required' ).findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', required );
+	}
+
 	it( 'keeps the definition when its own type is picked again', async () => {
 		const wrapper = newWrapper( newDateProperty( { name: 'Born', minimum: '1990' } ) );
 
@@ -186,6 +190,36 @@ describe( 'PropertyDefinitionEditor', () => {
 		expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { required: 'error' } );
 	} );
 
+	describe( 'on a wiki that gives new Constraints an error', () => {
+		beforeEach( () => {
+			setupMwMock( { config: { wgUserLanguage: 'en', wgNeoWikiInitialConstraintSeverity: 'error' } } );
+		} );
+
+		it( 'gives a Constraint the author sets that severity', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await setRequired( wrapper, true );
+
+			expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { required: 'error' } );
+		} );
+
+		it( 'gives the Constraints a property starts with when its type changes that severity', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status' } ) );
+
+			await changeTypeTo( wrapper, 'select' );
+
+			expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { multiple: 'error' } );
+		} );
+
+		it( 'keeps a required value at warning when the type changes', async () => {
+			const wrapper = newWrapper( newTextProperty( { name: 'Status', required: true } ) );
+
+			await changeTypeTo( wrapper, 'select' );
+
+			expect( lastEmittedProperty( wrapper ).constraintSeverities ).toEqual( { multiple: 'error' } );
+		} );
+	} );
+
 	describe( 'unsetting a Constraint', () => {
 		it( 'keeps the severity of a bound that is cleared, since a bound being typed reads as cleared', async () => {
 			const wrapper = newWrapper( {
@@ -239,7 +273,7 @@ describe( 'PropertyDefinitionEditor', () => {
 				constraintSeverities: { required: 'error' },
 			} );
 
-			await wrapper.findComponent( '.ext-neowiki-property-editor__required' ).findComponent( CdxCheckbox ).vm.$emit( 'update:modelValue', false );
+			await setRequired( wrapper, false );
 
 			const property = lastEmittedProperty( wrapper );
 			expect( property.required ).toBe( false );

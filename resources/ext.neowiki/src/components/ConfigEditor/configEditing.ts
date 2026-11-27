@@ -1,3 +1,5 @@
+import type { Severity } from '@/domain/Severity.ts';
+
 /**
  * The settings on MediaWiki:NeoWiki, by their key on the page.
  */
@@ -5,6 +7,7 @@ export interface ConfigValues {
 	subjectFirst: boolean;
 	/** BCP 47 tags, in order. */
 	dataLanguages: string[];
+	initialConstraintSeverity: Severity;
 	enforceValidation: boolean;
 	autoRenderMainSubject: boolean;
 }

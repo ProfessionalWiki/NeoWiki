@@ -47,7 +47,10 @@ class ConfigSchemaTest extends TestCase {
 			( new ConfigSchema() )->getSettings()
 		);
 
-		$this->assertEqualsCanonicalizing( [ 'subjectFirst', 'autoRenderMainSubject', 'dataLanguages', 'enforceValidation' ], $keys );
+		$this->assertEqualsCanonicalizing(
+			[ 'subjectFirst', 'autoRenderMainSubject', 'dataLanguages', 'enforceValidation', 'initialConstraintSeverity' ],
+			$keys
+		);
 	}
 
 	public function testUnknownKeyHasNoSetting(): void {
