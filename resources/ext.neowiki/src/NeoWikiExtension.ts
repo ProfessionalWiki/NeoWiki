@@ -4,7 +4,6 @@ import { SubjectPermissionHints } from '@/application/SubjectPermissionHints.ts'
 import { RightsFetcher, UserObjectBasedRightsFetcher } from '@/persistence/UserObjectBasedRightsFetcher.ts';
 import { TextType } from '@/domain/propertyTypes/Text.ts';
 import TextDisplay from '@/components/Value/TextDisplay.vue';
-import EdtfDisplay from '@/components/Value/EdtfDisplay.vue';
 import { UrlType } from '@/domain/propertyTypes/Url.ts';
 import UrlDisplay from '@/components/Value/UrlDisplay.vue';
 import { NumberType } from '@/domain/propertyTypes/Number.ts';
@@ -14,7 +13,6 @@ import SelectDisplay from '@/components/Value/SelectDisplay.vue';
 import { RelationType } from '@/domain/propertyTypes/Relation.ts';
 import { DateTimeType } from '@/domain/propertyTypes/DateTime.ts';
 import { DateType } from '@/domain/propertyTypes/Date.ts';
-import { EdtfType } from '@/domain/propertyTypes/Edtf.ts';
 import { BooleanType } from '@/domain/propertyTypes/Boolean.ts';
 import BooleanDisplay from '@/components/Value/BooleanDisplay.vue';
 import { MonolingualTextType } from '@/domain/propertyTypes/MonolingualText.ts';
@@ -161,14 +159,6 @@ export class NeoWikiExtension {
 			valueEditor: DateInput,
 			attributesEditor: DateAttributesEditor,
 			label: 'neowiki-property-type-date',
-			icon: cdxIconCalendar,
-		} );
-
-		registry.registerType( EdtfType.typeName, {
-			valueDisplayComponent: EdtfDisplay,
-			valueEditor: TextInput,
-			attributesEditor: BooleanAttributesEditor,
-			label: 'neowiki-property-type-edtf',
 			icon: cdxIconCalendar,
 		} );
 

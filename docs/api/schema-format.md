@@ -276,7 +276,7 @@ and any `default` use the same format.
 
 ### EDTF (`edtf`)
 
-A date in Extended Date/Time Format, levels 0, 1 and 2 (e.g. `1985-04-12` or `15XX-12-25`; see [`invalid-edtf`](validation-codes.md#invalid-edtf)). No type-specific fields.
+A date in Extended Date/Time Format, levels 0, 1 and 2 (e.g. `1985-04-12` or `15XX-12-25`; see [`invalid-edtf`](validation-codes.md#invalid-edtf)). No type-specific fields. Experimental: a wiki has it only when its administrator turns it on, through either [setting](../operations/installation.md#optional-property-types).
 
 ## REST API
 

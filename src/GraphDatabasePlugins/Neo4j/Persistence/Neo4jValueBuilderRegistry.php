@@ -69,7 +69,6 @@ class Neo4jValueBuilderRegistry {
 		$registry->registerBuilder( 'boolean', $toScalars );
 		$registry->registerBuilder( 'dateTime', self::buildDateTimeNeo4jValue( ... ) );
 		$registry->registerBuilder( 'date', self::buildDateNeo4jValue( ... ) );
-		$registry->registerBuilder( 'edtf', $toScalars );
 		$registry->registerBuilder( 'monolingualText', self::buildMonolingualTextNeo4jValue( ... ) );
 
 		return $registry;

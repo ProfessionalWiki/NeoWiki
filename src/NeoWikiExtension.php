@@ -149,7 +149,9 @@ use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
+use ProfessionalWiki\NeoWiki\Domain\Value\NeoValue;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
@@ -467,6 +469,8 @@ class NeoWikiExtension {
 			$this->valueBuilderRegistry = Neo4jValueBuilderRegistry::withCoreBuilders();
 		}
 
+		$this->ensureExtensionsRegistered();
+
 		return $this->valueBuilderRegistry;
 	}
 
@@ -504,19 +508,24 @@ class NeoWikiExtension {
 
 		$this->extensionsRegistered = true;
 
-		MediaWikiServices::getInstance()->getHookContainer()->run(
-			'NeoWikiRegistration',
-			[ new NeoWikiRegistrar(
-				$this->getPropertyTypeRegistry(),
-				$this->getValueBuilderRegistry(),
-				$this->getPagePropertyProviderRegistry(),
-				$this->getGraphDatabasePluginRegistry(),
-				$this->getRdfValueMapperRegistry(),
-				$this->getSubjectEditNoticeProviderRegistry(),
-				$this->getRevisionPolicyRegistry(),
-				$this->getSourceRegistry(),
-			) ]
+		$registrar = new NeoWikiRegistrar(
+			$this->getPropertyTypeRegistry(),
+			$this->getValueBuilderRegistry(),
+			$this->getPagePropertyProviderRegistry(),
+			$this->getGraphDatabasePluginRegistry(),
+			$this->getRdfValueMapperRegistry(),
+			$this->getSubjectEditNoticeProviderRegistry(),
+			$this->getRevisionPolicyRegistry(),
+			$this->getSourceRegistry(),
 		);
+
+		if ( in_array( EdtfType::NAME, $this->config->enabledPropertyTypes, true ) ) {
+			$registrar->addPropertyType( new EdtfType() );
+			$registrar->addRdfValueMapper( EdtfType::NAME, RdfValueMapperRegistry::mapEdtf( ... ) );
+			$registrar->addNeo4jValueBuilder( EdtfType::NAME, static fn ( NeoValue $value ): mixed => $value->toScalars() );
+		}
+
+		MediaWikiServices::getInstance()->getHookContainer()->run( 'NeoWikiRegistration', [ $registrar ] );
 	}
 
 	public function newSubjectContentDataDeserializer(): SubjectContentDataDeserializer {

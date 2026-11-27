@@ -15,7 +15,6 @@ use InvalidArgumentException;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\BooleanType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateTimeType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\DateType;
-use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\EdtfType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\MonolingualTextType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\NumberType;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\Types\SelectType;
@@ -77,7 +76,6 @@ class RdfValueMapperRegistry {
 		$registry->registerMapper( BooleanType::NAME, self::mapBoolean( ... ) );
 		$registry->registerMapper( DateType::NAME, self::mapDate( ... ) );
 		$registry->registerMapper( DateTimeType::NAME, self::mapDateTime( ... ) );
-		$registry->registerMapper( EdtfType::NAME, self::mapEdtf( ... ) );
 		$registry->registerMapper( MonolingualTextType::NAME, self::mapMonolingualText( ... ) );
 
 		return $registry;
@@ -206,7 +204,7 @@ class RdfValueMapperRegistry {
 	/**
 	 * @return RdfTerm[]
 	 */
-	private static function mapEdtf( NeoValue $value ): array {
+	public static function mapEdtf( NeoValue $value ): array {
 		$scalars = $value->toScalars();
 
 		if ( !is_array( $scalars ) ) {

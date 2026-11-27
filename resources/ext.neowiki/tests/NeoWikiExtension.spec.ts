@@ -27,6 +27,10 @@ describe( 'NeoWikiExtension registry caching', () => {
 		expect( registry.getLabel( MonolingualTextType.typeName ) ).toBe( 'neowiki-property-type-monolingualtext' );
 	} );
 
+	it( 'leaves EDTF date out of the Property Types it offers, to the optional ones', () => {
+		expect( NeoWikiExtension.getInstance().getTypeSpecificComponentRegistry().getPropertyTypes() ).not.toContain( 'edtf' );
+	} );
+
 	it( 'returns the same ViewTypeRegistry instance on repeated calls so extension registrations persist', () => {
 		const ext = NeoWikiExtension.getInstance();
 		expect( ext.getViewTypeRegistry() )
