@@ -299,6 +299,8 @@ class SetStatementApiTest extends NeoWikiIntegrationTestCase {
 	}
 
 	public function testGivenPropertyTypeIsStoredOverTheSchemaType(): void {
+		// Under enforcement, the new type-mismatch refuses the write.
+		$this->overrideConfigValue( 'NeoWikiEnforceValidation', false );
 		$this->createSubjectPage();
 
 		$this->executeHandler(

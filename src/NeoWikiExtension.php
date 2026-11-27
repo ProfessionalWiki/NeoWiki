@@ -149,6 +149,7 @@ use ProfessionalWiki\NeoWiki\Application\Source\SourceRoutingSubjectLookup;
 use ProfessionalWiki\NeoWiki\Domain\Source\SourceRegistry;
 use ProfessionalWiki\NeoWiki\Domain\Subject\SubjectIdParser;
 use ProfessionalWiki\NeoWiki\Domain\PropertyType\PropertyTypeRegistry;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\EntryPoints\NeoWikiRegistrar;
 use ProfessionalWiki\NeoWiki\EntryPoints\OnRevisionCreatedHandler;
 use ProfessionalWiki\NeoWiki\EntryPoints\REST\CancelGraphStoreRebuildApi;
@@ -1549,6 +1550,7 @@ class NeoWikiExtension {
 			hookContainer: MediaWikiServices::getInstance()->getHookContainer(),
 			validationDebounceMs: is_int( $debounceMs ) ? $debounceMs : 300,
 			validationEnforced: $this->isValidationEnforced(),
+			initialConstraintSeverity: $this->getInitialConstraintSeverity(),
 			subjectFirst: $this->isSubjectFirst(),
 			dataLanguages: $this->getDataLanguages(),
 		);
@@ -2279,6 +2281,13 @@ class NeoWikiExtension {
 
 	private function isValidationEnforced(): bool {
 		return $this->getWikiConfigLookup()->getEffectiveValue( 'enforceValidation' ) === true;
+	}
+
+	private function getInitialConstraintSeverity(): Severity {
+		/** @var string $severity */
+		$severity = $this->getWikiConfigLookup()->getEffectiveValue( 'initialConstraintSeverity' );
+
+		return Severity::from( $severity );
 	}
 
 	public function newSubjectValidator( Authority $authority ): SubjectValidator {

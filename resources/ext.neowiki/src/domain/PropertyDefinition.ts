@@ -50,7 +50,9 @@ export interface PropertyDefinition {
 	 * Severity per Constraint name for Constraints written in the object form
 	 * (ADR 26). Absent means every Constraint has the default `warning` severity;
 	 * the map is only set when at least one Constraint is annotated, so shorthand
-	 * Schemas produce domain objects identical to factory-built ones.
+	 * Schemas produce domain objects identical to factory-built ones. While
+	 * editing on a wiki whose initial severity is `error`, the Schema editor may
+	 * also hold an explicit `warning` here, which serialization drops.
 	 */
 	readonly constraintSeverities?: Readonly<Record<string, Severity>>;
 
@@ -60,7 +62,9 @@ export interface PropertyDefinition {
  * The Constraint-severity change to emit from an attributes editor: the given Constraint set to
  * the given severity, the other annotations kept. Warning is the default and is not stored, so
  * setting it removes the annotation, and an emptied map is dropped altogether — a definition
- * with no annotations stays identical to one that never had any.
+ * with no annotations stays identical to one that never had any. While editing on a wiki whose
+ * initial severity is `error`, the Schema editor may still hold an explicit `warning` for a
+ * Constraint, which serialization drops.
  */
 export function withConstraintSeverity(
 	property: PropertyDefinition,
@@ -109,7 +113,7 @@ export function withoutSeveritiesOfClearedConstraints<T extends PropertyDefiniti
 	return { constraintSeverities: Object.keys( severities ).length > 0 ? severities : undefined };
 }
 
-const SEVERITY_SURVIVES_CLEARING = [ 'multiple', 'uniqueLanguages' ];
+export const SEVERITY_SURVIVES_CLEARING = [ 'multiple', 'uniqueLanguages' ];
 
 function constraintIsCleared( value: unknown ): boolean {
 	return value === false || ( Array.isArray( value ) && value.length === 0 );

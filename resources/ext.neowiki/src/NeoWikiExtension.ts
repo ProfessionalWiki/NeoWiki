@@ -47,6 +47,7 @@ import { SchemaDeserializer } from '@/persistence/SchemaDeserializer.ts';
 import { RightsBasedSchemaPermissionHints } from '@/persistence/RightsBasedSchemaPermissionHints.ts';
 import { SchemaPermissionHints } from '@/application/SchemaPermissionHints.ts';
 import { SubjectRepository } from '@/domain/SubjectRepository.ts';
+import { isSeverity, type Severity } from '@/domain/Severity.ts';
 import { RestSubjectRepository } from '@/persistence/RestSubjectRepository.ts';
 import { SubjectLabelSearch } from '@/domain/SubjectLabelSearch.ts';
 import type { PageTitleSearch } from '@/domain/PageTitleSearch.ts';
@@ -361,6 +362,12 @@ export class NeoWikiExtension {
 	/** Whether the wiki rejects writes that introduce new error-severity violations (`$wgNeoWikiEnforceValidation`). */
 	public isValidationEnforced(): boolean {
 		return mw.config.get( 'wgNeoWikiEnforceValidation' ) === true;
+	}
+
+	/** The severity new Constraints start at in the Schema editor (`$wgNeoWikiInitialConstraintSeverity`). */
+	public getInitialConstraintSeverity(): Severity {
+		const severity = mw.config.get( 'wgNeoWikiInitialConstraintSeverity' );
+		return isSeverity( severity ) ? severity : 'warning';
 	}
 
 	public getPropertyTypeRegistry(): PropertyTypeRegistry {

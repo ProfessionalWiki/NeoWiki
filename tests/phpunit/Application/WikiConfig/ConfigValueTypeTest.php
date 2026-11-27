@@ -52,4 +52,23 @@ class ConfigValueTypeTest extends TestCase {
 		yield 'a list holding a malformed tag' => [ [ 'de', 'fr_CH', 'it' ] ];
 	}
 
+	public function testSeverityAcceptsWarningAndError(): void {
+		$this->assertTrue( ConfigValueType::Severity->isValidValue( 'warning' ) );
+		$this->assertTrue( ConfigValueType::Severity->isValidValue( 'error' ) );
+	}
+
+	/**
+	 * @dataProvider notASeverityProvider
+	 */
+	public function testSeverityRejectsAValueThatIsNoSeverity( mixed $value ): void {
+		$this->assertFalse( ConfigValueType::Severity->isValidValue( $value ) );
+	}
+
+	public static function notASeverityProvider(): iterable {
+		yield 'a capitalized severity' => [ 'Error' ];
+		yield 'another word' => [ 'info' ];
+		yield 'a boolean' => [ true ];
+		yield 'null' => [ null ];
+	}
+
 }

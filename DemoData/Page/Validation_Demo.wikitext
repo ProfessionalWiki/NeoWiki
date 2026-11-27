@@ -1,8 +1,8 @@
-Every Subject is checked against its Schema as you edit it. Each constraint carries a severity: warnings inform, errors block saving on wikis that enforce validation. This wiki does not, so invalid values are stored, and the editor shows their violations again when reopened.
+Every Subject is checked against its Schema as you edit it. Each Constraint has a Severity: on this wiki, errors block saving, while warnings do not, and the editor shows them again when you reopen it.
 
 == Try it ==
 
-Open the Data tab of [[Validation Clean]], choose '''Edit''', and break a value: clear the Title, set the Score to 150, or change a Tags entry to <code>ftp://example.com</code>. Each violation appears at its field with its severity.
+Open the Data tab of [[Validation Clean]], choose '''Edit''', and break a value: clear the Title, set the Score to 150, change a Tags entry to <code>ftp://example.com</code>, or shorten the Summary to under ten characters. Each Violation appears at its field with its Severity.
 
 {| class="wikitable"
 ! Property !! Constraint !! Severity

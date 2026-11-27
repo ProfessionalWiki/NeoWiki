@@ -87,11 +87,13 @@
 
 <script setup lang="ts">
 import { PropertyDefinition, PropertyName, withConstraintSeverity, withoutSeveritiesOfClearedConstraints } from '@/domain/PropertyDefinition.ts';
+import { activeConstraints, withInitialSeverities } from '@/domain/initialConstraintSeverity.ts';
 import type { Severity } from '@/domain/Severity.ts';
 import SeverityInput from '@/components/SchemaEditor/Property/SeverityInput.vue';
 import LabelsInput, { type LabelsInputExposes } from '@/components/SchemaEditor/LabelsInput.vue';
 import { CdxCheckbox, CdxField, CdxSelect, CdxTextArea, CdxTextInput, type MenuItemData } from '@wikimedia/codex';
 import { NeoWikiServices } from '@/NeoWikiServices.ts';
+import { NeoWikiExtension } from '@/NeoWikiExtension.ts';
 import { ValueInputExposes } from '@/components/Value/ValueInputContract.ts';
 import type { AttributesEditorExposes } from '@/components/SchemaEditor/Property/AttributesEditorContract.ts';
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
@@ -197,18 +199,22 @@ function updateRequiredSeverity( severity: Severity ): void {
 	updatePropertyAttributes( withConstraintSeverity( localProperty.value as PropertyDefinition, 'required', severity ) );
 }
 
+const initialSeverity = NeoWikiExtension.getInstance().getInitialConstraintSeverity();
+
 // Every Constraint change from this editor and the type-specific attributes editors funnels
-// through here, so this is where a cleared Constraint also loses its severity.
+// through here, so this is where a cleared Constraint loses its severity and a Constraint the
+// change sets gets the wiki's initial one.
 function updatePropertyAttributes<T extends PropertyDefinition>( attributes: Partial<T> ): void {
 	const updated = {
 		...localProperty.value,
 		...attributes
 	} as PropertyDefinition;
 
-	localProperty.value = {
-		...updated,
-		...withoutSeveritiesOfClearedConstraints( updated, attributes )
-	};
+	localProperty.value = withInitialSeverities(
+		{ ...updated, ...withoutSeveritiesOfClearedConstraints( updated, attributes ) },
+		activeConstraints( localProperty.value as PropertyDefinition ),
+		initialSeverity
+	);
 }
 
 const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
@@ -217,7 +223,8 @@ const propertyTypeRegistry = NeoWikiServices.getPropertyTypeRegistry();
 // initialized (e.g. a Select gets an empty options list). Otherwise the editors
 // for the new type would receive a property missing the fields they expect.
 // The type-specific Constraints go, and their severities with them; required is
-// shared by every type, so it keeps its severity along with its value.
+// shared by every type, so it keeps its severity along with its value. The
+// Constraints active as the new type starts are new to the property.
 function changePropertyType( type: string ): void {
 	if ( type === localProperty.value.type ) {
 		return;
@@ -225,16 +232,20 @@ function changePropertyType( type: string ): void {
 
 	const requiredSeverity = localProperty.value.constraintSeverities?.required;
 
-	localProperty.value = propertyTypeRegistry.getType( type ).createPropertyDefinition(
-		{
-			name: localProperty.value.name,
-			type: type,
-			description: localProperty.value.description,
-			labels: localProperty.value.labels,
-			required: localProperty.value.required,
-			default: undefined,
-			...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
-		} as PropertyDefinition
+	localProperty.value = withInitialSeverities(
+		propertyTypeRegistry.getType( type ).createPropertyDefinition(
+			{
+				name: localProperty.value.name,
+				type: type,
+				description: localProperty.value.description,
+				labels: localProperty.value.labels,
+				required: localProperty.value.required,
+				default: undefined,
+				...( requiredSeverity === undefined ? {} : { constraintSeverities: { required: requiredSeverity } } )
+			} as PropertyDefinition
+		),
+		localProperty.value.required ? [ 'required' ] : [],
+		initialSeverity
 	);
 }
 

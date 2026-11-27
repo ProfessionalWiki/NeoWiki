@@ -55,6 +55,7 @@ const LOCAL_SETTINGS_VALUES: ConfigValues = {
 	subjectFirst: false,
 	dataLanguages: [ 'de' ],
 	enforceValidation: false,
+	initialConstraintSeverity: 'warning',
 	autoRenderMainSubject: true,
 };
 
@@ -76,6 +77,11 @@ describe( 'ConfigEditor', () => {
 				'neowiki-config-setting-data-languages': 'Data languages',
 				'neowiki-config-setting-data-languages-help': 'Languages of the wiki\'s data.',
 				'neowiki-config-setting-enforce-validation': 'Block edits that add validation errors',
+				'neowiki-config-setting-initial-constraint-severity': 'Default Severity of new Constraints',
+				'neowiki-config-setting-initial-constraint-severity-warning-help': 'Edits that add Violations still save.',
+				'neowiki-config-setting-initial-constraint-severity-error-help': 'Edits that add Violations are blocked.',
+				'neowiki-severity-warning': 'Warning',
+				'neowiki-severity-error': 'Error',
 				'neowiki-config-setting-auto-render-main-subject': 'Show Main Subjects as infoboxes',
 				'neowiki-config-editor-remove-language': ( name: string ) => `Remove ${ name }`,
 				'neowiki-config-editor-reset': 'Reset to default',
@@ -113,6 +119,7 @@ describe( 'ConfigEditor', () => {
 					subjectFirst: null,
 					dataLanguages: null,
 					enforceValidation: null,
+					initialConstraintSeverity: null,
 					autoRenderMainSubject: null,
 					...pageValues,
 				},
@@ -189,6 +196,13 @@ describe( 'ConfigEditor', () => {
 		expect( settingLabelled( editor, 'Wiki type' ).text() ).toContain( 'Each new Subject gets its own page.' );
 	} );
 
+	it( 'describes what each Severity of new Constraints does', () => {
+		const setting = settingLabelled( newEditor(), 'Default Severity of new Constraints' );
+
+		expect( setting.text() ).toContain( 'Edits that add Violations still save.' );
+		expect( setting.text() ).toContain( 'Edits that add Violations are blocked.' );
+	} );
+
 	it( 'shows a setting the page does not set with the value in effect, with no way back to the default', () => {
 		const editor = newEditor();
 
@@ -205,13 +219,20 @@ describe( 'ConfigEditor', () => {
 		expect( resetLink( editor, 'Show Main Subjects' ).exists() ).toBe( true );
 	} );
 
-	it.each( [ 'Wiki type', 'Data languages', 'Block edits that add validation errors', 'Show Main Subjects as infoboxes' ] )(
+	it.each( [
+		'Wiki type',
+		'Data languages',
+		'Block edits that add validation errors',
+		'Default Severity of new Constraints',
+		'Show Main Subjects as infoboxes',
+	] )(
 		'names the setting its reset link is for, for a screen reader: %s',
 		( label ) => {
 			const editor = newEditor( {
 				subjectFirst: true,
 				dataLanguages: [ 'fr' ],
 				enforceValidation: true,
+				initialConstraintSeverity: 'error',
 				autoRenderMainSubject: false,
 			} );
 
@@ -235,6 +256,18 @@ describe( 'ConfigEditor', () => {
 		await editor.vm.$nextTick();
 
 		expect( document.activeElement ).toBe( radio( editor, 'Subject-first' ).element );
+	} );
+
+	it( 'moves the focus to the Severity in effect for new Constraints when it returns them to their default', async () => {
+		const editor = newEditor(
+			{ initialConstraintSeverity: 'warning' },
+			{ localSettingsValues: { initialConstraintSeverity: 'error' } },
+		);
+
+		await resetLink( editor, 'Default Severity of new Constraints' ).trigger( 'click' );
+		await editor.vm.$nextTick();
+
+		expect( document.activeElement ).toBe( radio( editor, 'Error' ).element );
 	} );
 
 	it.each( [ 'Block edits', 'Show Main Subjects' ] )(
@@ -303,6 +336,16 @@ describe( 'ConfigEditor', () => {
 		await save( editor );
 
 		expect( savedJson( pageSaver ) ).toEqual( { enforceValidation: true } );
+	} );
+
+	it( 'saves the Severity of new Constraints as chosen', async () => {
+		const pageSaver = new SpyPageSaver();
+		const editor = newEditor( {}, { pageSaver } );
+
+		await radio( editor, 'Error' ).setValue();
+		await save( editor );
+
+		expect( savedJson( pageSaver ) ).toEqual( { initialConstraintSeverity: 'error' } );
 	} );
 
 	it( 'saves the data languages as changed in their list', async () => {
@@ -461,6 +504,7 @@ describe( 'ConfigEditor', () => {
 		const editor = newEditor( { autoRenderMainSubject: false }, { canEdit: false } );
 
 		expect( checkbox( editor, 'Block edits' ).element.disabled ).toBe( true );
+		expect( radio( editor, 'Error' ).element.disabled ).toBe( true );
 		expect( checkbox( editor, 'Show Main Subjects' ).element.disabled ).toBe( true );
 		expect( editor.findAll( 'button' ) ).toHaveLength( 0 );
 	} );

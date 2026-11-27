@@ -529,9 +529,6 @@ class SubjectValidatorTest extends TestCase {
 			$schema,
 		);
 
-		// Distinct valuePartIndex per target is what lets ViolationDiff treat a newly-added bad
-		// target as new on the Replace enforcement path, rather than collapsing it into a
-		// pre-existing same-code violation on the same property.
 		$this->assertCount( 2, $violations );
 		$this->assertSame( 'relation-target-schema-mismatch', $violations[0]->code );
 		$this->assertSame( 0, $violations[0]->valuePartIndex );
@@ -552,8 +549,7 @@ class SubjectValidatorTest extends TestCase {
 		// The valid target at index 0 emits nothing, so the sole violation belongs to the target at
 		// index 1. Pinning the position here is what the all-targets-invalid case above cannot do:
 		// there, the array position and the ordinal of the violation itself agree, so a counter-based
-		// implementation would pass it. ViolationDiff keys on valuePartIndex, so the difference
-		// decides whether an edit's violations line up with the pre-existing ones.
+		// implementation would pass it.
 		$this->assertCount( 1, $violations );
 		$this->assertSame( 'relation-target-schema-mismatch', $violations[0]->code );
 		$this->assertSame( 1, $violations[0]->valuePartIndex );

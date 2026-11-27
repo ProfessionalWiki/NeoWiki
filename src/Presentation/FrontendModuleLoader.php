@@ -7,6 +7,7 @@ namespace ProfessionalWiki\NeoWiki\Presentation;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionStatus;
+use ProfessionalWiki\NeoWiki\Domain\Validation\Severity;
 use ProfessionalWiki\NeoWiki\Infrastructure\AuthorityBasedRawQueryAuthorizer;
 use Skin;
 
@@ -25,6 +26,7 @@ class FrontendModuleLoader {
 		private readonly HookContainer $hookContainer,
 		private readonly int $validationDebounceMs,
 		private readonly bool $validationEnforced,
+		private readonly Severity $initialConstraintSeverity,
 		private readonly bool $subjectFirst,
 		private readonly array $dataLanguages,
 	) {
@@ -37,6 +39,7 @@ class FrontendModuleLoader {
 		$out->addJsConfigVars( [
 			'wgNeoWikiValidationDebounceMs' => $this->validationDebounceMs,
 			'wgNeoWikiEnforceValidation' => $this->validationEnforced,
+			'wgNeoWikiInitialConstraintSeverity' => $this->initialConstraintSeverity->value,
 			'wgNeoWikiSubjectFirst' => $this->subjectFirst,
 			'wgNeoWikiDataLanguages' => $this->dataLanguages,
 			// The counts include Subjects on pages the viewer may not read, so only a viewer who may run queries
