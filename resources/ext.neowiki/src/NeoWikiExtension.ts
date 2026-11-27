@@ -359,6 +359,11 @@ export class NeoWikiExtension {
 		return typeof value === 'number' ? value : 300;
 	}
 
+	public isFeatureEnabled( name: string ): boolean {
+		const enabled = mw.config.get( 'wgNeoWikiEnabledFeatures' );
+		return Array.isArray( enabled ) && enabled.includes( name );
+	}
+
 	/** Whether the wiki rejects writes that introduce new error-severity violations (`$wgNeoWikiEnforceValidation`). */
 	public isValidationEnforced(): boolean {
 		return mw.config.get( 'wgNeoWikiEnforceValidation' ) === true;
