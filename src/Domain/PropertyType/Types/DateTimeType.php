@@ -43,7 +43,7 @@ class DateTimeType implements PropertyType {
 			return [];
 		}
 
-		$rawValue = $this->extractFirstString( $value );
+		$rawValue = $value instanceof StringValue ? $value->firstTrimmedPart() : null;
 
 		if ( $rawValue === null ) {
 			return $definition->isRequired()
@@ -83,17 +83,6 @@ class DateTimeType implements PropertyType {
 			return null;
 		}
 		return new Violation( propertyName: null, code: 'max-value', args: [ $maxString ], severity: $severity );
-	}
-
-	private function extractFirstString( NeoValue $value ): ?string {
-		if ( !$value instanceof StringValue ) {
-			return null;
-		}
-		if ( $value->strings === [] ) {
-			return null;
-		}
-		$first = trim( $value->strings[0] );
-		return $first === '' ? null : $first;
 	}
 
 	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {

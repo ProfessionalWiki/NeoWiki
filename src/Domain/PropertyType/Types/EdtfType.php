@@ -43,7 +43,7 @@ class EdtfType implements PropertyType {
 			return [];
 		}
 
-		$rawValue = $this->extractFirstString( $value );
+		$rawValue = $value instanceof StringValue ? $value->firstTrimmedPart() : null;
 
 		if ( $rawValue === null ) {
 			return $definition->isRequired()
@@ -56,17 +56,6 @@ class EdtfType implements PropertyType {
 		}
 
 		return [ new Violation( propertyName: null, code: 'invalid-edtf', severity: Severity::Error ) ];
-	}
-
-	private function extractFirstString( NeoValue $value ): ?string {
-		if ( !$value instanceof StringValue ) {
-			return null;
-		}
-		if ( $value->strings === [] ) {
-			return null;
-		}
-		$first = trim( $value->strings[0] );
-		return $first === '' ? null : $first;
 	}
 
 	public function searchText( NeoValue $value, ?PropertyDefinition $definition ): array {
