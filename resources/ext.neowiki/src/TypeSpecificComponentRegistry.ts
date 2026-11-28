@@ -5,6 +5,7 @@ export interface TypeSpecificStuff {
 	valueDisplayComponent: Component;
 	valueEditor: Component;
 	attributesEditor: Component;
+	displayAttributesEditor?: Component;
 	label: string;
 	icon: Icon;
 }
@@ -67,6 +68,14 @@ export class TypeSpecificComponentRegistry {
 	 */
 	public getAttributesEditor( propertyType: string ): Component {
 		return this.resolveType( propertyType ).attributesEditor;
+	}
+
+	/**
+	 * Returns a Component following DisplayAttributesEditorContract.ts.
+	 * The builder of the Component is responsible for providing a PropertyDefinition of the correct type.
+	 */
+	public getDisplayAttributesEditor( propertyType: string ): Component | undefined {
+		return this.resolveType( propertyType ).displayAttributesEditor;
 	}
 
 	public getPropertyTypes(): string[] {

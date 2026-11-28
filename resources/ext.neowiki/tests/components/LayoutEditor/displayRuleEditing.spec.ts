@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { unifiedRows, rulesAfterToggle, rulesAfterShowingAll, rulesAfterReorder } from '@/components/LayoutEditor/displayRuleEditing.ts';
+import {
+	unifiedRows,
+	rulesAfterToggle,
+	rulesAfterShowingAll,
+	rulesAfterReorder,
+	rulesInEffect,
+	rulesAfterShowingAt,
+	rulesAfterSettingDisplayAttributes,
+	attributesAfterPatch,
+} from '@/components/LayoutEditor/displayRuleEditing.ts';
 import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
 import { PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
@@ -133,6 +142,74 @@ describe( 'rulesAfterReorder', () => {
 
 		expect( ruleNames( result ) ).toEqual( [ 'Beta', 'Gamma', 'Alpha' ] );
 		expect( result[ 2 ].displayAttributes ).toEqual( { precision: 2 } );
+	} );
+
+} );
+
+describe( 'rulesInEffect', () => {
+
+	it( 'is the Display Rules a Layout has', () => {
+		const displayRules = newDisplayRules( 'Gamma', 'Alpha' );
+
+		expect( rulesInEffect( properties( 'Alpha', 'Beta', 'Gamma' ), displayRules, [] ) ).toEqual( displayRules );
+	} );
+
+	it( 'shows every property in Schema order for a Layout without Display Rules, but those left out', () => {
+		const result = rulesInEffect( properties( 'Alpha', 'Beta', 'Gamma' ), [], [ new PropertyName( 'Beta' ) ] );
+
+		expect( ruleNames( result ) ).toEqual( [ 'Alpha', 'Gamma' ] );
+	} );
+
+} );
+
+describe( 'rulesAfterSettingDisplayAttributes', () => {
+
+	it( 'gives the named property\'s rule the Display Attributes, leaving the other rules as they are', () => {
+		const displayRules: DisplayRule[] = [
+			{ property: new PropertyName( 'Alpha' ), displayAttributes: { precision: 1 } },
+			{ property: new PropertyName( 'Beta' ) },
+			{ property: new PropertyName( 'Gamma' ) },
+		];
+
+		const result = rulesAfterSettingDisplayAttributes( displayRules, 'Beta', { precision: 3 } );
+
+		expect( result ).toEqual( [
+			{ property: new PropertyName( 'Alpha' ), displayAttributes: { precision: 1 } },
+			{ property: new PropertyName( 'Beta' ), displayAttributes: { precision: 3 } },
+			{ property: new PropertyName( 'Gamma' ) },
+		] );
+	} );
+
+	it( 'leaves a rule without Display Attributes when none are left to set', () => {
+		const displayRules: DisplayRule[] = [ { property: new PropertyName( 'Alpha' ), displayAttributes: { precision: 1 } } ];
+
+		const result = rulesAfterSettingDisplayAttributes( displayRules, 'Alpha', {} );
+
+		expect( result ).toEqual( [ { property: new PropertyName( 'Alpha' ) } ] );
+	} );
+
+} );
+
+describe( 'attributesAfterPatch', () => {
+
+	it( 'sets what the patch sets, keeping what it leaves out', () => {
+		expect( attributesAfterPatch( { precision: 1, colour: 'red' }, { precision: 3 } ) ).toEqual( { precision: 3, colour: 'red' } );
+	} );
+
+	it( 'drops what the patch takes away, so the Schema\'s applies', () => {
+		expect( attributesAfterPatch( { precision: 1, colour: 'red' }, { precision: undefined } ) ).toEqual( { colour: 'red' } );
+	} );
+
+} );
+
+describe( 'rulesAfterShowingAt', () => {
+
+	it( 'shows a hidden property at the place given among the shown ones', () => {
+		const schemaProperties = properties( 'Alpha', 'Beta', 'Gamma', 'Delta' );
+
+		const result = rulesAfterShowingAt( schemaProperties, newDisplayRules( 'Alpha', 'Gamma', 'Delta' ), 'Beta', 2 );
+
+		expect( ruleNames( result ) ).toEqual( [ 'Alpha', 'Gamma', 'Beta', 'Delta' ] );
 	} );
 
 } );

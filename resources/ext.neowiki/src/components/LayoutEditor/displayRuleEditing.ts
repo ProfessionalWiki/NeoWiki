@@ -1,10 +1,54 @@
-import type { PropertyDefinition } from '@/domain/PropertyDefinition.ts';
+import type { PropertyDefinition, PropertyName } from '@/domain/PropertyDefinition.ts';
 import type { DisplayRule } from '@/domain/Layout.ts';
 import { withItemMoved } from '@/components/common/reordering.ts';
 
 export interface UnifiedRow {
 	property: PropertyDefinition;
 	shown: boolean;
+}
+
+/**
+ * The Display Rules a View follows: the Layout's own, or for a Layout without any, one for every property but those
+ * left out.
+ */
+export function rulesInEffect(
+	schemaProperties: PropertyDefinition[],
+	displayRules: DisplayRule[],
+	leftOut: PropertyName[],
+): DisplayRule[] {
+	if ( displayRules.length > 0 ) {
+		return displayRules;
+	}
+
+	const leftOutNames = leftOut.map( ( name ) => name.toString() );
+
+	return schemaProperties
+		.filter( ( property ) => !leftOutNames.includes( property.name.toString() ) )
+		.map( ( property ) => ( { property: property.name } ) );
+}
+
+/** What a Display Attributes editor's patch leaves: what it sets, without what it drops, and the rest as it was. */
+export function attributesAfterPatch(
+	attributes: Record<string, unknown>,
+	patch: Record<string, unknown>,
+): Record<string, unknown> {
+	return Object.fromEntries( Object.entries( { ...attributes, ...patch } ).filter( ( [ , value ] ) => value !== undefined ) );
+}
+
+export function rulesAfterSettingDisplayAttributes(
+	displayRules: DisplayRule[],
+	name: string,
+	displayAttributes: Record<string, unknown>,
+): DisplayRule[] {
+	return displayRules.map( ( rule ): DisplayRule => {
+		if ( rule.property.toString() !== name ) {
+			return rule;
+		}
+
+		return Object.keys( displayAttributes ).length === 0 ?
+			{ property: rule.property } :
+			{ property: rule.property, displayAttributes };
+	} );
 }
 
 export function unifiedRows(
@@ -58,6 +102,22 @@ export function rulesAfterReorder(
 	newIndex: number,
 ): DisplayRule[] {
 	const rows = withItemMoved( unifiedRows( schemaProperties, displayRules ), oldIndex, newIndex );
+
+	return rulesFromRows( rows, displayRules );
+}
+
+export function rulesAfterShowingAt(
+	schemaProperties: PropertyDefinition[],
+	displayRules: DisplayRule[],
+	name: string,
+	index: number,
+): DisplayRule[] {
+	const rows = unifiedRows( schemaProperties, displayRules ).filter( ( row ) => row.property.name.toString() !== name );
+	const property = schemaProperties.find( ( candidate ) => candidate.name.toString() === name );
+
+	if ( property !== undefined ) {
+		rows.splice( index, 0, { property, shown: true } );
+	}
 
 	return rulesFromRows( rows, displayRules );
 }

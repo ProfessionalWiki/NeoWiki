@@ -363,6 +363,13 @@ export function lastSortableOptions(): UseSortableOptions {
 	return vi.mocked( useSortable ).mock.lastCall![ 1 ];
 }
 
+/** The options a component last made the given element sortable with. */
+export function sortableOptionsOf( container: Element ): UseSortableOptions {
+	const call = [ ...vi.mocked( useSortable ).mock.calls ].reverse().find( ( [ containerRef ] ) => containerRef.value === container );
+	expect( call, 'a sortable for the element' ).toBeDefined();
+	return call![ 1 ];
+}
+
 /**
  * The text of the live region a component speaks through, however it marks the region polite.
  */

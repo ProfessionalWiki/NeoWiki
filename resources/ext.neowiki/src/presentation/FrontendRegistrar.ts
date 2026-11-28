@@ -35,6 +35,7 @@ export class FrontendRegistrar {
 			valueDisplayComponent: registration.displayComponent,
 			valueEditor: registration.inputComponent,
 			attributesEditor: registration.attributesEditor,
+			displayAttributesEditor: registration.displayAttributesEditor,
 			label: registration.label,
 			icon: registration.icon,
 		} );
