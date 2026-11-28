@@ -39,11 +39,12 @@
       "enabled": false
     },
     {
-      "description": "Lock-file maintenance and minor and patch updates merge themselves once every check passes and the release is past the age gate. Renovate merges them on a later run rather than through GitHub's auto-merge, which waits only for required checks.",
+      "description": "Lock-file maintenance and minor and patch updates merge themselves once every check passes and the release is past the age gate. Renovate merges them on a later run rather than through GitHub's auto-merge, which waits only for required checks. Renovate rebases them only on a conflict: a run that rebases a branch does not merge it, and master moves between most daily runs.",
       "matchUpdateTypes": ["lockFileMaintenance", "minor", "patch"],
       "automerge": true,
       "platformAutomerge": false,
-      "automergeStrategy": "squash"
+      "automergeStrategy": "squash",
+      "rebaseWhen": "conflicted"
     },
     {
       "description": "Major updates wait on the Dependency Dashboard until someone ticks them.",
