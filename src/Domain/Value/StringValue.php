@@ -29,4 +29,8 @@ readonly class StringValue implements NeoValue {
 		return $this->strings === [];
 	}
 
+	public function firstTrimmedPart(): ?string {
+		return $this->strings === [] ? null : trim( $this->strings[0] );
+	}
+
 }
