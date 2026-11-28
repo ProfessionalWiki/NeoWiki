@@ -92,7 +92,7 @@ services:
     profiles:
       - test
     # The build the qlever service runs, so the test suite covers it.
-    image: docker.io/adfreiburg/qlever@sha256:b83d71c3dc1e1b7f88bb62c81790eaa0ade3ab8f85892be416c455e58d384f72
+    image: docker.io/adfreiburg/qlever@sha256:ae95b43f928b02846920478173e2cdd0036f81e8843b410eeb80f030bd03fd66
     restart: unless-stopped
     # Same ceiling as the `qlever` service in docker-compose.yml.
     mem_limit: 1536m
